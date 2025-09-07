@@ -1,0 +1,30 @@
+export type RoundChoice = { id: string; label: string; isCorrect: boolean };
+export type RoundQuestion = {
+  id: string;
+  text: string;
+  theme: string | null;
+  difficulty: string | null;
+  img: string | null;
+  choices: RoundChoice[];
+  acceptedNorms: string[];
+  correctLabel: string; 
+};
+export type GameState = {
+  roomId: string;
+  gameId: string;
+  questions: RoundQuestion[];
+  index: number;
+  endsAt?: number;
+  roundStartMs?: number;
+  timer?: NodeJS.Timeout;
+  answeredThisRound: Set<string>;
+  pgIds: Set<string>;  
+};
+export type Client = {
+  socketId: string;
+  playerId: string;
+  playerGameId: string;
+  gameId: string;
+  roomId: string;
+  name: string;
+};

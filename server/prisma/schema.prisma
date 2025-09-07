@@ -7,53 +7,75 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Room {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  createdAt DateTime @default(now())
+  games     Game[]
+}
+
 model Game {
-  id        String     @id @default(cuid())
-  code      String     @unique
-  createdAt DateTime   @default(now())
-  state     String
-  players   Player[]
-  questions Question[]
-  answers   Answer[]
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  state       String
+  room        Room         @relation(fields: [roomId], references: [id])
+  roomId      String
+  playerGames PlayerGame[]
 }
 
 model Player {
-  id      String   @id @default(cuid())
-  name    String
-  score   Int      @default(0)
-  game    Game     @relation(fields: [gameId], references: [id])
-  gameId  String
-  answers Answer[]
+  id          String       @id @default(cuid())
+  name        String
+  playerGames PlayerGame[]
 }
 
 model Question {
-  id        String   @id @default(cuid())
-  text      String
-  choices   Choice[]
-  correctId String
-  game      Game     @relation(fields: [gameId], references: [id])
+  id              String           @id @default(cuid())
+  text            String
+  choices         Choice[]
+  theme           String?
+  difficulty      String?
+  img             String?
+  playerGames     PlayerGame[]
+  acceptedAnswers AcceptedAnswer[]
+}
+
+model PlayerGame {
+  id        String     @id @default(cuid())
+  game      Game       @relation(fields: [gameId], references: [id])
   gameId    String
-  order     Int
+  player    Player     @relation(fields: [playerId], references: [id])
+  playerId  String
+  questions Question[]
   answers   Answer[]
+  score     Int        @default(0)
+
+  @@unique([gameId, playerId], name: "gameId_playerId")
 }
 
 model Choice {
   id         String   @id @default(cuid())
   label      String
+  isCorrect  Boolean  @default(false)
   question   Question @relation(fields: [questionId], references: [id])
   questionId String
 }
 
 model Answer {
-  id         String   @id @default(cuid())
-  player     Player   @relation(fields: [playerId], references: [id])
-  playerId   String
-  question   Question @relation(fields: [questionId], references: [id])
-  questionId String
-  game       Game     @relation(fields: [gameId], references: [id])
-  gameId     String
-  choiceId   String
-  createdAt  DateTime @default(now())
+  id           String     @id @default(cuid())
+  playerGame   PlayerGame @relation(fields: [playerGameId], references: [id])
+  playerGameId String
+  text         String
+  correct      Boolean
+  createdAt    DateTime   @default(now())
+}
 
-  @@unique([playerId, questionId])
+model AcceptedAnswer {
+  id         String   @id @default(cuid())
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId String
+  text       String
+  norm       String
+
+  @@unique([questionId, norm])
 }

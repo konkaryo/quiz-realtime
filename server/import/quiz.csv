@@ -1,0 +1,1299 @@
+type,img,question,A,B,C,D,difficulte,theme,fuzzy
+S,3,Quel est le nom de cet acteur ?,Brad Pitt,Leonardo DiCaprio,Johnny Depp,Matt Damon,1,Cinéma & Séries,pitt | william bradley pitt
+S,4,Quel est le nom de cet acteur ?,Robert Redford,Dustin Hoffman,Paul Newman,Steve McQueen,3,Cinéma & Séries,redford | charles robert redford jr
+S,1,Quel est le nom de cette peinture ?,La Joconde,La Nuit étoilée,Les Tournesols,Guernica,1,Arts & Culture,monna lisa | portrait de monna lisa
+S,,Quel est l'aliment préféré des Tortues Ninja ?,Les pizzas,Les hot-dogs,Les sushis,Les burgers,2,Cinéma & Séries,pizza
+S,,Quel héros de bande dessinée tire plus vite que son ombre ?,Lucky Luke,Spirou,Tintin,Astérix,1,Jeux & BD,-
+S,,Dans quel pays se situe la ville de Sfax ?,La Tunisie,Le Maroc,La Libye,L'Égypte,3,Géographie,republique tunisienne
+S,,Quel pays africain doit son nom à l'abondance de crevettes dans ses rivières ?,Le Cameroun,Le Mozambique,La Gambie,L'Angola,3,Géographie,-
+S,,Que casse-t-on traditionnellement à la fin d'un mariage juif ? ,Un verre,Une assiette,Une bouteille,Un miroir,3,Croyances,-
+S,,Quel est le symbole chimique du sodium dans le tableau périodique des éléments ?,Na,S,So,Cl,2,Sciences exactes,-
+S,,"Quel prix littéraire, décerné depuis 1937, distingue chaque année un recueil de poésie en langue française ?",Prix Mallarmé,Prix Renaudot,Prix Goncourt,Prix Lamartine,3,Littérature,mallarme
+S,,Quelle est la couleur d'un billet de 50 euros ?,Orange,Rouge,Jaune,Vert,1,Économie & Politique,-
+S,,À quel élément est associé le signe astrologique du Scorpion ?,Eau,Terre,Feu,Air,3,Croyances,-
+S,,"Quel café associe espresso, mousse de lait et chocolat saupoudré ?",Le cappuccino,Le café viennois,Le moka,Le latte macchiato,2,Gastronomie,-
+S,,"Quel est le nom français du ""french toast"" ?",Le pain perdu,Le croque-monsieur,La quiche lorraine,La tarte Tatin,2,Gastronomie,-
+S,,"Quelle entreprise américaine a été fondée par Steve Jobs, Steve Wozniak et Ronald Wayne en 1976 ?",Apple,Google,IBM,Microsoft,1,Économie & Politique,apple inc | apple computer | apple computer inc
+S,,Quel dieu égyptien est représenté avec une tête de chacal et est associé à la mort ?,Anubis,Osiris,Seth,Horus,2,Croyances,-
+S,,Quelle civilisation antique a construit la cité de Machu Picchu ?,Les Incas,Les Aztèques,Les Mayas,Les Toltèques,3,Histoire,inca | civilisation inca
+S,,Quel skipper a remporté l'édition 2020 du Vendée Globe ?,Yannick Bestaven,Charlie Dalin,Thomas Ruyant,Clarisse Crémer,3,Sport,bestaven
+S,,Avec quel pays l’Ukraine a-t-elle organisé l’Euro 2012 de football ?,La Pologne,La Roumanie,La Hongrie,La Russie,2,Sport,-
+S,,De quel arbre la faine est-elle le fruit ?,Le hêtre,Le frêne,Le chêne,Le châtaignier,3,Sciences de la vie,fagus | fagus sylvatica
+S,,"Quel animal marin porte le surnom de ""licorne des mers"" ?",Le narval,Le béluga,L'espadon,Le marlin,3,Sciences de la vie,-
+S,,Pour quel film Leonardo DiCaprio a-t-il remporté l'Oscar du meilleur acteur ?,The Revenant,Titanic,Inception,Le Loup de Wall Street,2,Cinéma & Séries,revenant
+S,,Quelle lettre est le surnom de l'école Polytechnique ?,X,W,Y,Z,2,Divers,-
+S,,Dans quel pays africain le Lesotho est-il enclavé ?,Afrique du Sud,Mozambique,Zimbabwe,Congo,2,Géographie,-
+S,,Quel footballeur a remporté le tout premier Ballon d’or en 1956 ?,Stanley Matthews,Raymond Kopa,Lev Yachine,Alfredo Di Stéfano,4,Sport,matthews
+S,,Quel scientifique a identifié le bacille responsable de la tuberculose en 1882 ?,Robert Koch,Louis Pasteur,Alexander Fleming,Joseph Lister,3,Sciences exactes,koch
+S,,Dans quel pays se situe le volcan Krakatoa ?,Indonésie,Japon,Malaisie,Philippines,4,Géographie,-
+S,,Quelle est la forme caractéristique de la badiane ?,Une étoile,Une spirale,Un coeur,Une cloche,3,Sciences de la vie,etoiles
+S,,Quel est le nom de l’alliage métallique fer-nickel connu pour sa très faible dilatation thermique ?,L'invar,Le cupro-nickel,L'alpax,L'acier,4,Sciences exactes,-
+S,,Quel est le nom de l’alliage formé de cuivre et d'étain ?,Le bronze,Le laiton,L'acier,Le titane,2,Sciences exactes,-
+S,,Quel est le nom de l’alliage formé de cuivre et de zinc ?,Le laiton,Le bronze,L'acier,Le titane,3,Sciences exactes,-
+S,,Quel métal est connu pour rouiller au contact de l’air et de l’humidité ?,Le fer,Le cuivre,L'argent,Le zinc,2,Sciences exactes,fe
+S,,"Quel aristocrate subit l’emprise financière et affective de l'héroïne dans le roman ""Nana"" (1879) ?",Le comte Muffat,Le baron Hulot d'Ervy,Le duc de Guermantes,Le marquis de La Mole,4,Littérature,muffat | xavier de muffat | comte xavier de muffat
+S,,"Dans quel théâtre parisien l'héroïne fait-elle ses débuts dans le roman ""Nana"" (1879) ?",Le Théâtre des Variétés,La Comédie-Française,Le Théâtre du Châtelet,L'opéra Garnier,4,Littérature,varietes
+S,,"Quel dramaturge français a écrit ""Le Cid"" (1637) ?",Pierre Corneille,Jean Racine,Edmond Rostand,Molière,2,Littérature,corneille
+S,,Quel archéologue a découvert la tombe de Toutânkhamon en 1922 ?,Howard Carter,Jean-François Champollion,Theodore M. Davis,Richard Lepsius,3,Histoire,carter
+S,,"Quel restaurant parisien, fondé par Bernard Pacau, est triplement étoilé au Guide Michelin depuis 1988 ?",L'Ambroisie,Le Clos des Sens,Auberge du Vieux Puits,Arpège,4,Gastronomie,-
+S,,"Quel chef cuisinier lyonnais est surnommé ""le pape de la gastronomie"" ? ",Paul Bocuse,Joël Robuchon,Alain Ducasse,Michel Guérard,3,Gastronomie,bocuse
+S,,"Quel chef cuisinier français est surnommé ""le roi des cuisiniers et cuisinier des rois"" ?",Marie-Antoine Carême,Paul Bocuse,Auguste Escoffier,Joël Robuchon,3,Gastronomie,antonin careme | careme
+S,,Quel est le seul membre de la famille des canidés capable d'hiberner ?,Le tanuki,Le renard roux,Le loup gris,Le lycaon,4,Sciences de la vie,chien viverrin | nyctereutes procyonoides
+S,,"Quel homme a assassiné John Lennon devant son domicile new-yorkais, le 8 décembre 1980 ?",Mark David Chapman,Lee Harvey Oswald,James Earl Ray,John Hinckley Jr.,3,Actualités & Médias,chapman
+S,,"Quel alcool écossais est obtenu par distillation d'orge maltée, puis vieilli en fûts de chêne ?",Le whisky,Le gin,La vodka,Le bourbon,2,Gastronomie,scotch | scotch whisky | whiskey
+S,,Qui est la première femme à avoir remporté la Route du Rhum en 1990 ?,Florence Arthaud,Ellen MacArthur,Isabelle Autissier,Samantha Davies,3,Sport,arthaud
+S,,"Quel mat, réalisable en quatre coups, est souvent le premier appris par les nouveaux joueurs d’échecs ?",Le mat du berger,Le mat du couloir,Le mat de Boden,Le mat du sot,3,Jeux & BD,berger
+S,,Quel skipper a disparu en mer lors de la première édition de la Route du Rhum en 1978 ?,Alain Colas,Éric Tabarly,Loïc Caradec,Donald Crowhurst,4,Sport,colas
+S,,Quel skipper a remporté la première édition de la Route du Rhum en 1978 ?,Mike Birch,Michel Malinovsky,Alain Colas,Bruno Peyron,4,Sport,birch
+S,,Quel est le deuxième prénom d'Elvis Presley ?,Aaron,Robert,Lee,Joseph,4,Musique,-
+S,,Quelle est la capitale de l'État américain de Californie ?,Sacramento,Los Angeles,San Francisco,Fresno,3,Géographie,-
+S,,Qui est l’inventeur du système d’écriture tactile à points utilisé par les personnes non voyantes ?,Louis Braille,Valentin Haüy,Charles Barbier,Auguste Bébian,3,Technologie,braille
+S,,Que veut dire D.C. dans Washington D.C. ?,District of Columbia,District of California,District of Colorado,District of Connecticut,3,Géographie,district columbia
+S,,Quelle couleur de fumée annonce l'élection d'un nouveau pape ?,Blanche,Noire,Verte,Rouge,2,Croyances,blanc
+S,,Dans quelle ville se situe la bibliothèque Bodléienne ?,Oxford,Londres,Cambridge,Exeter,4,Divers,-
+S,,Quel alcool est élaboré à partir de la distillation de l'agave bleu ?,La tequila,Le rhum,La vodka,Le whisky,3,Gastronomie,-
+S,,"Quelle petite pastille noire, à base de réglisse, est connue pour parfumer l’haleine ?",Le cachou,Le salmiakki,La pastille de Vichy,La gomme arabique,3,Gastronomie,cachous
+S,,Quelle confiserie orientale est composée de pâte gélifiée parfumée et recouverte de sucre glace ?,Le loukoum,Le baklava,Le mochi,Le halva,3,Gastronomie,loukoums
+S,,Quelle astronaute a été la première femme française à aller dans l'espace en 1996 ?,Claudie Haigneré,Hélène Courtois,Samantha Cristoforetti,Françoise Combes,3,Actualités & Médias,haignere | claudie andre deshays | andre deshays
+S,,"Quelle personnalité britannique est à la tête du magazine ""Vogue"" aux États-Unis depuis 1988 ?",Anna Wintour,Miuccia Prada,Donatella Versace,Tom Ford,3,Économie & Politique,wintour
+S,,Quelle est la deuxième plus grande ville de Corée du Sud par sa population ?,Busan,Séoul,Incheon,Daegu,3,Géographie,-
+S,,Quelle est la deuxième plus grande ville du Danemark par sa population ?,Aarhus,Copenhague,Odense,Aalborg,4,Géographie,-
+S,,Quel mode de reproduction est caractérisé par la gestation dans l'organisme maternel ?,La viviparité,L'oviparité,L'ovoviviparité,La parthénogenèse,3,Sciences de la vie,vivipare
+S,,Quelle discipline scientifique se consacre à l’observation et à l’analyse du comportement animal ?,L'éthologie,La zoologie,La bionomie,L'anthropologie,3,Sciences de la vie,-
+S,,Comment désigne-t-on la tendance naturelle de certains animaux à former des groupes ?,Le grégarisme,Le mimétisme,Le nomadisme,Le mutualisme,3,Sciences de la vie,gregaire
+S,,Quel footballeur colombien a été assassiné après avoir marqué contre son camp lors du Mondial 1994 ?,Andrés Escobar,Carlos Valderrama,René Higuita,Freddy Rincón,3,Sport,escobar | andres escobar saldarriaga
+S,,"Quel personnage du jeu ""Animal Crossing"" occupe le rôle de maire avant le joueur ?",Tortimer,Thibou,Amiral,Tom Nook,4,Jeux & BD,-
+S,,Quel monument garde l’entrée du plateau de Gizeh ?,Le Grand Sphinx,La statue de Ramsès II,Le colosse de Memnon,L'obélisque de Louxor,2,Géographie,sphinx | grand sphinx de gizeh
+S,,Quelle est la plus imposante des pyramides situées sur le plateau de Gizeh ?,La pyramide de Khéops,La pyramide de Khéphren,La pyramide de Mykérinos,La pyramide de Djoser,2,Géographie,kheops
+S,,Dans quel pays se trouvent les pyramides de Meroë ?,Le Soudan,L'Égypte,La Libye,Le Tchad,3,Géographie,republique du soudan
+S,,"Dans quel pays se trouvent les pyramides de Khéops, Khéphren et Mykérinos ?",L'Égypte,Le Mexique,La Grèce,La Chine,1,Géographie,republique arabe d'egypte | egypte
+S,,Quel tsar russe a lancé la construction du Transsibérien ?,Alexandre III,Nicolas II,Nicolas Ier,Pierre le Grand,4,Histoire,alexandre 3 | tsar alexandre iii | alexandre iii de russie
+S,,Quel est le terminus oriental de la ligne du Transsibérien ?,Vladivostok,Moscou,Irkoutsk,Magadan,3,Géographie,-
+S,,Quel animal cacarde ?,L'oie,Le canard,La poule,La dinde,2,Sciences de la vie,-
+S,,Quelle est la capitale du Cameroun ?,Yaoundé,Douala,Abuja,Libreville,3,Géographie,-
+S,,Quelle est la capitale de l'Angola ?,Luanda,Windhoek,Benguela,Kampala,3,Géographie,-
+S,,Quel auteur français a décliné le prix Nobel de littérature qu’il avait remporté en 1964 ?,Jean-Paul Sartre,Albert Camus,François Mauriac,André Gide,3,Littérature,sartre
+S,,"Qui écrit ""Le Crime de Sylvestre Bonnard"" et a été honoré du prix Nobel de littérature en 1921 ?",Anatole France,André Gide,Romain Rolland,Maurice Maeterlinck,4,Littérature,france | françois anatole thibault
+S,,"Comment s’appelle la forme poétique japonaise composée de trois vers de 5, 7 et 5 syllabes ?",Le haïku,Le tanka,Le renga,Un haïbun,3,Littérature,haikus
+S,,Quelle unité de mesure du Système international sert à exprimer la charge électrique ?,Le coulomb,Le farad,Le joule,L'ampère,3,Sciences exactes,-
+S,,Quelle unité de mesure du Système international sert à exprimer la résistance électrique ?,L'ohm,Le farad,L'ampère,Le volt,2,Sciences exactes,-
+S,,Quelle plante est traditionnellement associée à la Saint-Patrick et à l’Irlande ?,Le trèfle,La jonquille,La rose,Le chardon,2,Croyances,trefles
+S,,Quelle fête chrétienne commémore la présentation de Jésus au Temple ?,La Chandeleur,L'Épiphanie,Mardi Gras,La Pentecôte,3,Croyances,-
+S,,"Quelle fête française, célébrée le 2 février, est associée à la dégustation de crêpes ?",La Chandeleur,L'Épiphanie,Mardi Gras,La Pentecôte,2,Gastronomie,-
+S,,Quel dessert à base de chocolat et de cerises porte le nom d’une région allemande ?,La forêt-noire,La pavlova,Le strudel,Le saint-honoré,2,Gastronomie,-
+S,,Quel herbivore africain combine l’allure d’une girafe et les rayures d’un zèbre ?,L'okapi,Le kudu,Le bongon,Le gnou,3,Sciences de la vie,okapis
+S,,Quelle course à la voile en solitaire relie Saint-Malo à Pointe-à-Pitre depuis 1978 ?,La Route du Rhum,La Transat Café L'Or,La Solitaire du Figaro,Le Vendée Globe,2,Sport,-
+S,,Quel plat écossais est composé de panse de brebis et de farce aux abats et à l’avoine ?,Le haggis,Le black pudding,Le sheperd's pie,Le Cornish pasty,3,Gastronomie,-
+S,,Quel plat milanais est composé de jarret de veau cuit lentement avec légumes et sauce tomate ?,L'osso buco,Le saltimbocca,Le bollito misto,Le cacciatore,3,Gastronomie,ossobuco
+S,,"Quel plat maghrébin est composé de tomates, poivrons, oignons et oeufs pochés ?",La chakchouka,La harira,Le menemen,Le tajine,4,Gastronomie,shakshuka | chakchuka
+S,,Quel est le nom du supercontinent unique qui existait il y a environ 300 millions d'années ?,La Pangée,La Laurasie,Le Gondwana,Le Panthalassa,2,Histoire,-
+S,,Dans quel type d’aliment trouve-t-on naturellement la capsaïcine ?,Les piments,Les oignons,Les radis,Les gingembres,2,Gastronomie,piment | capsicum
+S,,Quel composé chimique est responsable de la sensation de brûlure lorsqu’on mange des piments ?,La capsaïcine,La pipérine,L'allicine,La sinephrine,3,Gastronomie,-
+S,,Quelle fête juive commémore l'exode des Hébreux hors d'Égypte ?,Pessa'h,Yom Kippour,Hanoucca,Roch Hachana,3,Croyances,pessah
+S,,Quelle chaîne de montagnes est associée à la légende du yéti ?,L'Himalaya,Les Andes,Les Carpates,Le Caucase,1,Croyances,-
+S,,Comment s’appelle la fête hindoue des lumières qui symbolise la victoire du bien sur le mal ?,Diwali,Navrati,Holi,Pongal,3,Croyances,divali | deepavali
+S,,Quelle combinaison de couleurs est utilisée pour reconnaître le fil de terre ?,Vert et jaune,Jaune et bleu,Bleu et Rouge,Rouge et vert,3,Sciences exactes,jaune vert | vert jaune | jaune et vert
+S,,"Complétez cette expression : ""Faute avouée...""",À moitié pardonnée,N'est pas jugée,Est vite oubliée,Vaut d'être excusée,1,Littérature,-
+S,,"Complétez cette expression : ""Abondance de biens...""",Ne nuit pas,Rend heureux,N'apporte rien,Attire l'envie,2,Littérature,-
+S,,"Complétez cette expression : ""Il n'y a pas de fumée...""",Sans feu,Sans chaleur,Sans flamme,Sans braise,1,Littérature,-
+S,,"Complétez cette expression : ""Qui sème le vent...""",Récolte la tempête,Récolte la foudre,Récolte la poussière,Récolte la pluie,2,Littérature,-
+S,,"Complétez cette expression : ""Petit à petit...""",L'oiseau fait son nid,La rivière fait son lit,Le temps fait son tri,Le vent fait son bruit,2,Littérature,-
+S,,"Complétez cette expression : ""Quand le chat n'est pas là...""",Les souris dansent,Les oiseaux chantent,Les chiens aboient,La maison dort,1,Littérature,-
+S,,"Complétez cette expression : ""L'habit ne fait pas...""",Le moine,Le roi,Le héros,L'homme,1,Littérature,-
+S,,"Complétez cette expression : ""Chat échaudé...""",Craint l'eau froide,Miaule sans raison,Sauve sa peau,Cherche un abri,2,Littérature,-
+S,,Quelle langue créée en 1887 par Zamenhof vise à faciliter la communication internationale ?,L'espéranto,Le volapük,Le quenya,Le klingon,2,Littérature,-
+S,,Quelle lettre marque la terminaison des adverbes en espéranto ?,e,a,o,i,3,Littérature,-
+S,,Quelle lettre marque la terminaison des adjectifs en espéranto ?,a,o,e,u,3,Littérature,-
+S,,Quelle lettre marque le pluriel des noms en espéranto ?,j,x,k,n,3,Littérature,-
+S,,Comment se nomme l’hymne adopté par les locuteurs d’espéranto du monde entier ?,La Espero,La Pacflago,Internacia Kanto,"Unu Mondo, Unu Lingvo",4,Musique,-
+S,,Quel linguiste a inventé la langue espéranto ?,Louis-Lazare Zamenhof,Johann Martin Schleyer,Marc Okrand,J.R.R. Tolkien,4,Littérature,zamenhof | ludwik zamenhof | ludwik lejzer zamenhof
+S,,"Qui est le créateur original du jeu ""The Binding of Isaac"" ?",Edmund McMillen,Markus Persson,Tommy Refenes,Eric Barone,3,Jeux & BD,mcmillen
+S,,"Quelle est la couleur du bandeau de Michelangelo dans la série ""Les Tortues Ninja"" ?",Orange,Bleu,Rouge,Violet,2,Cinéma & Séries,-
+S,,"Quelle est la couleur du bandeau de Donatello dans la série ""Les Tortues Ninja"" ?",Violet,Orange,Rouge,Bleu,2,Cinéma & Séries,-
+S,,"Quelle est la couleur du bandeau de Leonardo dans la série ""Les Tortues Ninja"" ?",Bleu,Orange,Rouge,Violet,2,Cinéma & Séries,-
+S,,"Quel psychanalyste et pédiatre est connu pour son ouvrage ""Lorsque l’enfant paraît"" ?",Françoise Dolto,Maria Montessori,Maud Mannoni,Melanie Klein,3,Littérature,dolto
+S,,Quel tissu végétal a pour rôle d’acheminer la sève produite par les feuilles vers le reste de la plante ?,Le phloème,Le cambium,Le parenchyme,Le périderme,4,Sciences de la vie,-
+S,,"De quel pays est originaire Tony Montana dans le film ""Scarface"" (1983) ?",Cuba,La Colombie,Le Mexique,La Bolivie,3,Cinéma & Séries,-
+S,,"Quelle couleur a une nuance nommée ""céladon"" ?",Le vert,Le jaune,Le rouge,Le blanc,2,Arts & Culture,-
+S,,Quel est le pays d’origine de l’avocatier ?,Le Mexique,Le Brésil,Le Chili,La Colombie,2,Sciences de la vie,-
+S,,Dans quelle ville est situé le musée Van Gogh ?,Amsterdam,Paris,Bruxelles,Londres,2,Arts & Culture,-
+S,,Dans quel État américain est située la Silicon Valley ?,La Californie,Le Texas,New York,Le Massachussets,2,Technologie,-
+S,,Dans quelle ville américaine est situé le Madison Square Garden ?,New York,Los Angeles,Chicago,Dallas,2,Géographie,-
+S,,Dans quel pays se situe la ville d'Acapulco ?,Le Mexique,Le Pérou,Le Costa Rica,Les États-Unis,2,Géographie,-
+S,,Dans quel sport joue-t-on avec une chistera ?,La pelote basque,Le polo,Le squash,Le hurling,3,Sport,-
+S,,"Quel est le nom du mandrill qui conseille Simba dans le film ""Le Roi Lion"" (1994) ?",Rafiki,Zazu,Pumbaa,Timon,2,Cinéma & Séries,-
+S,,Dans quel pays se situe la ville d'Antalya ?,La Turquie,La Grèce,L'Albanie,La Roumanie,2,Géographie,-
+S,,Dans quel pays se situe la ville d'Izmir ?,La Turquie,La Syrie,L'Arménie,La Jordanie,3,Géographie,-
+S,,Dans quel pays se situe la ville de Benghazi ?,La Libye,Le Liban,La Tunisie,L'Égypte,4,Géographie,-
+S,,"Quel personnage du jeu ""Animal Crossing"" sert le café aux habitants ?",Robusto,Kéké Laglisse,Céleste,Porcelette,4,Jeux & BD,-
+S,,"Quelle monnaie virtuelle est utilisée dans le jeu ""Animal Crossing"" ?",Les clochettes,Les rubis,Les étoiles,Les baies,3,Jeux & BD,clochette
+S,,"Quel personnage du jeu ""Animal Crossing"" dirige le musée du village ?",Thibou,Amiral,Tom Nook,Robusto,4,Jeux & BD,-
+S,,Quel physicien primé au Nobel est reconnu pour ses travaux sur l’intrication quantique ?,Alain Aspect,Serge Haroche,Claude Cohen-Tannoudji,Gérard Mourou,3,Sciences exactes,aspect
+S,,"Quel homme politique italien a fondé le parti ""Forza Italia"" en 1994 ?",Silvio Berlusconi,Matteo Renzi,Matteo Salvini,Enrico Letta,2,Économie & Politique,berlusconi
+S,,"Quel homme politique britannique a fondé le ""Brexit Party"" en 2019 ?",Nigel Farage,Jacob Rees-Mogg,Michael Gove,Dominic Cummings,3,Économie & Politique,farage | nigel paul farage
+S,,"Quel homme politique français a fondé le ""Rassemblement pour la France"" (RPF) en 1999 ?",Charles Pasqua,Nicolas Dupont-Aignan,Alain Juppé,Jacques Chirac,3,Économie & Politique,pasqua
+S,,"Quel homme politique français a fondé le parti ""La France insoumise"" en 2016 ?",Jean-Luc Mélenchon,Benoît Hamon,Manuel Bompard,François Ruffin,1,Économie & Politique,melenchon
+S,,"Quel homme politique français a fondé le ""Front national"" en 1972 ?",Jean-Marie Le Pen,Carl Lang,Gilbert Collard,Bruno Mégret,1,Économie & Politique,le pen
+S,,"Quel homme politique français a fondé le parti ""En Marche !"" en 2016 ?",Emmanuel Macron,Édouard Philippe,Manuel Valls,Jean Castex,1,Économie & Politique,macron
+S,,"Quel homme politique français a fondé le ""Rassemblement pour la République"" (RPR) en 1976 ?",Jacques Chirac,Charles Pasqua,Édouard Balladur,Alain Juppé,2,Économie & Politique,chirac
+S,,"Quel homme politique français a fondé le ""Mouvement Démocrate"" (MoDem) en 2007 ?",François Bayrou,Jean-Louis Borloo,Dominique de Villepin,Manuel Valls,2,Économie & Politique,bayrou
+S,,Quel élevage porte le nom de cuniculiculture ?,Les lapins,Les huîtres,Les vers à soie,Les chauves-souris,3,Sciences de la vie,lapin
+S,,"Quelle partie de l’animal désigne-t-on par le terme culinaire ""rognons"" ?",Les reins,Les testicules,Le foie,La cervelle,3,Gastronomie,rein
+S,,Quel artiste a vu l'une de ses chansons partir dans l’espace à bord des sondes Voyager en 1977 ?,Chuck Berry,Louis Armstrong,Bob Dylan,The Beatles,3,Musique,berry | charles edward anderson berry
+S,,"Quel ordre militaire protège le Mur dans la série ""Game of Thrones"" ?",La Garde de Nuit,Les Lames Noires,Les Veilleurs du Nord,Les Frères de l'Hiver,2,Cinéma & Séries,night's watch
+S,,"Comment se nomme la capitale des Sept Couronnes dans la série ""Game of Thrones"" ?",Port-Réal,Harrenhal,Peyredragon,Hautjardin,2,Cinéma & Séries,king's landing
+S,,"Quelle maison porte pour emblème un cerf couronné sur fond doré dans la série ""Game of Thrones"" ?",Baratheon,Tyrell,Martell,Arryn,2,Cinéma & Séries,-
+S,,"Quel métal fictif peut tuer les Marcheurs Blancs dans la série ""Game of Thrones"" ?",L'acier valyrien,L'or-dragon,Le fer d'Asshaï,Le sang d'obsidienne,3,Cinéma & Séries,valyrian steel
+S,,"Quel est le nom du continent principal où se déroule l’intrigue de la série ""Game of Thrones"" ?",Westeros,Sothoryos,Andalos,Valyria,2,Cinéma & Séries,-
+S,,Quel tueur en série a terrorisé le quartier de Whitechapel à Londres en 1888 ?,Jack l'Éventreur,Zodiac,H.H. Holmes,Ted Bundy,2,Histoire,jack the ripper
+S,,Quel service de cloud est reconnaissable à son logo en forme de boîte bleue ouverte ?,Dropbox,Google Drive,OneDrive,Mega,1,Technologie,-
+S,,Dans quel pays se situe la ville de Malmö ?,La Suède,Le Danemark,La Norvège,La Finlande,2,Géographie,-
+S,,"Quelle épice surnomme-t-on ""l’or rouge"" ?",Le safran,Le curcuma,Le paprika,Le sumac,2,Gastronomie,-
+S,,"Quelle enseigne de fast-food commercialise le sandwich ""Big Mac"" ?",McDonald's,Quick,Five Guys,Burger King,1,Économie & Politique,-
+S,,"Quelle enseigne de fast-food a pour slogan emblématique ""Have it your way"" ?",Burger King,Subway,McDonald's,Taco Bell,2,Économie & Politique,-
+S,,"Quelle enseigne de fast-food a été popularisée par ses ""11 herbes et épices secrètes"" ?",KFC,Popeyes,Chick-fil-A,Texas Chicken,2,Économie & Politique,kentucky fried chicken
+S,,Quelle enseigne de fast-food utilise un clown nommé Ronald comme emblème publicitaire ?,McDonald's,Burger King,KFC,Subway,1,Économie & Politique,-
+S,,Quel savant est célèbre pour avoir déchiffré les hiéroglyphes grâce à la pierre de Rosette ?,Jean-François Champollion,Howard Carter,Hérodote,Rosalind Franklin,3,Histoire,champollion
+S,,Quelle fine pellicule mate et poudreuse recouvre naturellement la peau des raisins ?,La pruine,La sporée,L'arille,La ziste,4,Sciences de la vie,-
+S,,Quel poisson marin au corps serpentiforme et aux puissantes mâchoires vit dans les anfractuosités rocheuses ?,La murène,L'anguille,Le barracuda,La rascasse,3,Sciences de la vie,murenes | murenides
+S,,Quel est le nom du vaste complexe impérial situé au cœur de Pékin et fermé au public jusqu'au XXe siècle ?,La Cité interdite,Le temple du Ciel,Le palais d'Été,Le palais de Mukden,3,Histoire,-
+S,,Quel mammifère carnivore est naturellement immunisé contre certains venins de serpent ?,La mangouste,Le suricate,La civette,La genette,3,Sciences de la vie,herpestides
+S,,Quel traité de 1555 a mis temporairement fin aux guerres de religion dans le Saint-Empire romain germanique ?,La paix d’Augsbourg,La paix de Westphalie,La paix de Ryswick,La paix de Nimègue,4,Histoire,-
+S,,Quel événement a entraîné l’abdication de Charles X à la suite d’un soulèvement populaire en 1830 ?,Les Trois Glorieuses,Les Cent-Jours,La Semaine sanglante,La Nuit du 4 août,3,Histoire,revolution de juillet | revolution de 1830 | 3 glorieuses
+S,,"Quel dieu romain à deux visages opposés est associé aux portes, aux choix et aux passages ?",Janus,Portunus,Bacchus,Faunus,3,Croyances,-
+S,,Quelle couleur est associée à la révolution pacifique survenue en Ukraine après l’élection présidentielle de 2004 ?,Le orange,Le jaune,Le bleu,Le rouge,2,Actualités & Médias,-
+S,,Quelle liqueur bleue d’origine néerlandaise est aromatisée à partir d’écorces d’oranges amères ?,Le curaçao,Le Cointreau,Le Grand Marnier,Le Malibu,2,Gastronomie,-
+S,,Quelle fleur donne son nom à une posture de yoga ?,Le lotus,Le lys,L'orchidée,Le jasmin,2,Sciences de la vie,-
+S,,Quelle partie interne de la Terre est composée à environ 80% de fer ?,Le noyau,Le moho,Le manteau,La croûte,2,Sciences exactes,noyau terrestre
+S,,De quelle roche sédimentaire sont principalement constituées les falaises d’Étretat ?,La craie,Le basalte,Le grès,Le schiste,3,Sciences exactes,-
+S,,À quelle couleur est associé le club anglais de Chelsea FC ?,Le bleu,Le rouge,Le vert,Le orange,2,Sport,-
+S,,Quel est le bipède le plus rapide du règne animal ?,L'autruche,L'humain,Le gibbon,Le kangourou,3,Sciences de la vie,struthionides
+S,,Quelle graine oléagineuse est broyée pour produire le tahini ?,Le sésame,Le lin,Le tournesol,La courge,3,Gastronomie,graine de sesame
+S,,Quel phénomène est responsable du brunissement des aliments lors de la cuisson ?,La réaction de Maillard,La réaction de Vernet,La réaction de Follin,La réaction de Prévost,4,Gastronomie,maillard
+S,,Quel nom donne-t-on au cuir fabriqué avec la peau de poissons cartilagineux ?,Le galuchat,Le nubuck,Le cordovan,La karung,4,Arts & Culture,-
+S,,Quel poisson a la réputation d'avoir une très mauvaise mémoire ?,Le poisson rouge,Le poisson-clown,Le poisson-lune,Le poisson-chat,1,Sciences de la vie,poissons rouges
+S,,Dans quelle saga littéraire scandinave rencontre-t-on la hackeuse Lisbeth Salander ?,Millénium,Le Département V,Wallander,Les Enquêtes de Harry Hole,2,Littérature,-
+S,,Quel potage est préparé à partir de crustacés finement mixés et longuement mijotés ?,La bisque,La garbure,La chorba,Le minestrone,2,Gastronomie,-
+S,,Quelle rivière franchie par Napoléon est devenue synonyme d'échec ?,La Bérézina,La Moskova,La Volga,La Maritza,3,Histoire,-
+S,,Quelle fleur est à l’honneur lors d’une fête nationale populaire des Pays-Bas ?,La tulipe,Le tournesol,La jonquille,La rose,2,Sciences de la vie,-
+S,,Quelle vertèbre cervicale tire son nom d’un titan de la mythologie grecque ?,Atlas,Persès,Téthys,Cronos,3,Sciences de la vie,-
+S,,"Qui a dit : ""Rien ne se perd, rien ne se crée, tout se transforme"" ?",Antoine Lavoisier,Marie Curie,Galilée,Blaise Pascal,3,Sciences exactes,lavoisier
+S,,Quel nom donne-t-on au processus par lequel de nouveaux bitcoins sont créés et validés sur le réseau ?,Le minage,Le staking,Le forging,Le farming,2,Technologie,mining
+S,,Sous quel pseudonyme est connu le créateur du Bitcoin ?,Satoshi Nakamoto,Vitalik Buterin,Hal Finney,Craig Wright,3,Technologie,satoshi | nakamoto
+S,,Quel personnage biblique est connu pour avoir vécu 969 ans ?,Mathusalem,Abraham,Hénoch,Melchisédech,3,Croyances,-
+S,,"Quelle préparation pâtissière, à base de crème d’amandes, garnit traditionnellement la galette des rois ?",La frangipane,La ganache,La crème anglaise,Le praliné,2,Gastronomie,creme frangipane
+S,,Comment appelle-t-on une étroite bande de terre reliant deux masses continentales et séparant deux étendues d’eau ?,Un isthme,Un détroit,Un delta,Une péninsule,4,Géographie,-
+S,,"Quelle couleur a une nuance nommée ""garance"" ?",Le rouge,Le bleu,Le vert,Le jaune,3,Arts & Culture,-
+S,,"Quel dirigeant italien était surnommé ""Il Duce"" ?",Benito Mussolini,Giuseppe Garibaldi,Silvio Berlusconi,Victor Emmanuel III,2,Histoire,mussolini
+S,,Quel pays a remporté la première Coupe du Monde de rugby à XV en 1987 ?,La Nouvelle-Zélande,La France,L'Angleterre,L'Afrique du Sud,2,Sport,-
+S,,Dans quelle ville américaine Martin Luther King a-t-il été assassiné en 1968 ?,Memphis,Atlanta,New York,Dallas,3,Histoire,-
+S,,Où Napoléon a-t-il signé son abdication en 1814 ?,Fontainebleau,Versailles,Les Tuileries,Saint-Cloud,3,Histoire,chateau de fontainebleau
+S,,À quel pays Albert Einstein a-t-il refusé la présidence en 1952 ?,Israël,L'Autriche,La Suisse,Le Liban,3,Histoire,-
+S,,"Quel pays est surnommé ""la terre de glace et de feu"" ?",L'Islande,La Nouvelle-Zélande,Le Chili,La Finlande,3,Géographie,-
+S,,Quelle était la nationalité de Sigmund Freud ?,Autrichienne,Allemande,Russe,Suisse,2,Divers,autriche | autrichien
+S,,Quel nom donne-t-on au quartier financier principal de Londres ?,La City,Le District,Le Market,Le Square,2,Économie & Politique,-
+S,,Comment appelle-t-on l’habitude involontaire de serrer ou grincer des dents ?,Le bruxisme,L'halitose,La malocclusion,La dysphagie,2,Sciences de la vie,-
+S,,"Quel inventeur suisse surnommé ""Jetman"" a traversé la Manche avec une aile à réaction fixée dans le dos ?",Yves Rossy,Felix Baumgartner,Richard Browning,Bertrand Piccard,4,Technologie,rossy
+S,,"Quelle course cycliste est surnommée ""La Doyenne"" ?",Liège-Bastogne-Liège,Paris-Roubaix,Milan-San Remo,Flèche Wallonne,3,Sport,-
+S,,Comment s’appelle la danse de guerre maorie devenue emblématique des All Blacks ?,Le haka,Le hula,Le cibi,Le siva tau,2,Sport,-
+S,,Quelle fête a lieu le 21 juin en France ?,La Fête de la musique,La Fête nationale,La Saint-Jean,La Fête du cinéma,2,Actualités & Médias,musique
+S,,"Quelle navigatrice est surnommée ""la petite fiancée de l’Atlantique"" ?",Florence Arthaud,Ellen MacArthur,Isabelle Autissier,Samantha Davies,3,Sport,arthaud
+S,,De quel légume le paprika est-il extrait ?,Le poivron,L'aubergine,La tomate,La citrouille,3,Gastronomie,poivrons | piment doux
+S,,Qui est le premier athlète centenaire à avoir couru un marathon ?,Fauja Singh,Jenny Wood‑Allen,Harriette Thompson,Ralph Maxwell,4,Sport,singh
+S,,Quelle épice coûteuse extrait-on des fleurs de crocus ?,Le safran,Le paprika,La cannelle,Le curcuma,3,Sciences de la vie,-
+S,,Quel courant artistique repose sur l'utilisation de petits points de couleur juxtaposés pour créer une image ?,Le pointillisme,L'impressionnisme,Le cubisme,Le fauvisme,2,Arts & Culture,-
+S,,Quel agent conversationnel est commercialisé par OpenAI depuis 2022 ?,ChatGPT,Midjourney,Watson,Siri,1,Technologie,-
+S,,De quel oiseau s’inspire le personnage de dessin animé Woody Woodpecker ?,Le pivert,Le colibri,Le rouge-gorge,Le martin-pêcheur,2,Sciences de la vie,pic vert | picus viridis
+S,,Quelle soupe italienne épaisse à base de légumes est parfois accompagnée de pâtes ou de riz ?,Le minestrone,La ribollita,Le gaspacho,La panade,3,Gastronomie,-
+S,,Quelle pratique thérapeutique chinoise utilise des aiguilles placées sur des points précis du corps ?,L'acupuncture,La chiropraxie,Le reiki,La phytothérapie,2,Sciences de la vie,acuponcture
+S,,Quel plat italien est fait de tranches crues très fines de viande ou de poisson ?,Le carpaccio,Le tartare,Le ceviche,Le sashimi,2,Gastronomie,-
+S,,"Quelle ville est surnommée ""la capitale mondiale du diamant"" ?",Anvers,Tel-Aviv,Johannesburg,Dubaï,3,Géographie,antwerpen
+S,,Quel mot désigne la pause entre deux parties d'une pièce de théâtre ?,L'entracte,La transition,L'interlude,L'intermède,2,Arts & Culture,-
+S,,"Quel pigment naturel est responsable de la couleur de la peau, des cheveux et des yeux chez l’être humain ?",La mélanine,La kératine,La carotène,L'hémoglobine,2,Sciences de la vie,-
+S,,Quel est le nom du trophée remis à l’équipe championne de la NBA chaque année ?,Larry O'Brien,Vince Lombardi,Maurice Podoloff,Bill Russell,3,Sport,o brien | obrien
+S,,Quelle joueuse a remporté le premier Ballon d’Or féminin de l’histoire ?,Ada Hegerberg,Megan Rapinoe,Marta,Wendie Renard,3,Sport,hegerberg
+S,,Quel mathématicien du XIXe siècle a donné son nom à l’algèbre utilisée en logique informatique ?,George Boole,Claude Shannon,Alan Turing,Blaise Pascal,3,Sciences exactes,boole
+S,,Comment appelle-t-on la partie blanche visible de l’œil humain ?,La sclère,La conjonctive,Le limbe,La rétine,2,Sciences de la vie,sclerotique
+S,,Quelle partie de l’oeil humain détermine la couleur des yeux ?,L'iris,La pupille,La rétine,Le cristallin,2,Sciences de la vie,-
+S,,Quel élément chimique est représenté par la structure géante de l’Atomium ?,Le fer,Le carbone,L'uranium,L'or,3,Divers,Fe
+S,,"Quelle matière première précieuse, utilisée en parfumerie, était extraite de la glande d’un cerf d’Asie ?",Le musc,Le nard,La myrrhe,La civette,3,Sciences de la vie,-
+S,,"Quel os plat, situé au centre de la poitrine, relie les côtes et protège le cœur chez l'humain ?",Le sternum,L'omoplate,La clavicule,Le sacrum,2,Sciences de la vie,-
+S,,Quel os long et horizontal forme une courbe entre le cou et l’épaule chez l'humain ?,La clavicule,L'omoplate,Le sternum,Le radius,2,Sciences de la vie,-
+S,,Quel est l’os le plus long et le plus solide du corps humain ?,Le fémur,L'humérus,Le cubitus,La clavicule,2,Sciences de la vie,-
+S,,Quel petit os situé à l'extrémité de la colonne vertébrale est un vestige de la queue chez l'humain ?,Le coccyx,Le sternum,Le sacrum,Le calcanéum,2,Sciences de la vie,-
+S,,Quel os du crâne forme la saillie des pommettes sur le visage humain ?,Le zygomatique,Le temporal,Le mandibulaire,Le frontal,4,Sciences de la vie,os zygomatique | zygoma | os malaire | os jugal
+S,,Quelle lettre grecque désigne figurativement quelque chose de minuscule ou insignifiant ?,Iota,Omega,Bêta,Delta,3,Littérature,-
+S,,Quel os impair et plat forme la partie inférieure de la cloison nasale chez l’être humain ?,Le vomer,Le sphénoïde,Le maxillaire,Le zygomatique,4,Sciences de la vie,-
+S,,Dans quel sport dispute-t-on la Ryder Cup ?,Le golf,Le tennis,Le baseball,Le hockey sur glace,3,Sport,-
+S,,Quel plat traditionnel coréen est composé de chou fermenté et d'épices ?,Le kimchi,Le miso,Le bibimbap,Le bulgogi,3,Gastronomie,-
+S,,Quelle ville était la capitale de la Yougoslavie ?,Belgrade,Sarajevo,Zagreb,Ljubljana,3,Géographie,-
+S,,Quel joueur français a été le premier à avoir été sacré champion NBA ?,Tony Parker,Boris Diaw,Rudy Gobert,Nicolas Batum,2,Sport,parker | tp | william anthony parker ii
+S,,"Quel animal était Paul, qui a pronostiqué les résultats de la Coupe du monde de football 2010 ?",Un poulpe,Un perroquet,Un chien,Un rat,2,Sport,pieuvre
+S,,Comment appelle-t-on la capacité à reconnaître les notes musicales sans repère externe ?,L'oreille absolue,La mémoire tonale,L'intonation naturelle,La synesthésie auditive,2,Musique,-
+S,,Que collectionne un philatéliste ?,Les timbres-poste,Les pièces de monnaie,Les cartes postales,Les coquillages,2,Divers,timbre | timbres
+S,,Quel est le nom scientifique des moustaches sensibles du chat ?,Les vibrisses,Les pelotes,Les palpes,Les barbillons,3,Sciences de la vie,vibrisse
+S,,Quelle caractéristique esthétique est appelée synophridie ?,Un monosourcil,Un strabisme convergent,Des oreilles décollées,Une fossette au menton,3,Sciences de la vie,-
+S,,Quel goût les chats sont-ils incapables de percevoir ?,Le sucré,L'amer,Le salé,L'acide,3,Sciences de la vie,-
+S,,Comment appelle-t-on l’odeur caractéristique des livres anciens ?,La bibliosmie,La libranée,La papyrine,Le codexol,4,Divers,-
+S,,Quel nom scientifique porte l’odeur de terre mouillée après la pluie ?,Le petrichor,L'ozonol,La myrrhe,La tellurine,4,Divers,-
+S,,Quelle lettre se trouve entre le I et le P sur un clavier AZERTY ?,O,L,U,Aucune,1,Technologie,-
+S,,Que vaut la somme des deux faces opposées d’un dé classique à 6 faces ?,7,6,5,8,2,Jeux & BD,sept
+S,,"Quel volcan actif est surnommé le ""phare de la Méditerranée"" ?",Le Stromboli,Le Vésuve,L'Etna,Le Santorin,4,Géographie,-
+S,,Quel animal un myrmécologue étudie-t-il ?,Les fourmis,Les scorpions,Les araignées,Les scarabées,3,Sciences de la vie,fourmi
+S,,Quel est le premier élément du tableau périodique des éléments ?,L'hydrogène,L'oxygène,L'hélium,Le carbone,2,Sciences exactes,h
+S,,Quel est le point de la sphère céleste situé exactement à l’opposé du zénith ?,Le nadir,Le périgée,L'antipode,L'azimut,4,Sciences exactes,-
+S,,Comment surnomme-t-on les membres de l'Académie française ?,Les immortels,Les intemporels,Les vénérables,Les honorables,3,Littérature,immortel
+S,,"En France, quel ministre de l’Emploi a fait voter la loi sur les 35 heures ?",Martine Aubry,Laurent Fabius,Dominique Strauss-Kahn,Ségolène Royal,3,Économie & Politique,aubry
+S,,Quel humoriste français a envisagé d’être candidat aux élections présidentielles de 1981 ?,Coluche,Thierry Le Luron,Pierre Desproges,Guy Bedos,2,Actualités & Médias,michel colucci | colucci
+S,5,Quel est le nom de ce chanteur ?,Benson Boone,Shawn Mendes,Charlie Puth,Harry Styles,2,Musique,boone
+S,6,Quel est le nom de ce chanteur ?,Bad Bunny,Daddy Yankee,J Balvin,Ozuna,1,Musique,benito ocasio | ocasio
+S,,Quel pays a offert la statue de la Liberté aux États-Unis ?,La France,Le Royaume-Uni,L'Espagne,L'Allemagne,1,Histoire,-
+S,,"Quel chiffre est considéré comme de mauvais augure au Japon, en Chine et en Corée ?",4,0,8,2,2,Croyances,quatre
+S,,Quel mot allemand utilise-t-on pour trinquer ?,Prost,Skål,Salud,Cheers,3,Divers,-
+S,,Quel mot désigne à la fois un trouble oculaire et la chute d'un cours d'eau ?,Une cataracte,Une cascade,Un glaucome,Une cornée,3,Littérature,-
+S,,Quel était le prénom du moine russe Raspoutine ?,Grigori,Piotr,Dmitri,Ivan,3,Histoire,-
+S,,Quel animal produit la propolis à partir de résines végétales ?,L'abeille,La fourmi,Le scarabée,Le papillon,3,Sciences de la vie,abeilles
+S,,Quel produit de l'abeille est réputé pour ses propriétés antiseptiques et cicatrisantes ?,La propolis,La gelée royale,La cire,Le miellat,4,Sciences de la vie,-
+S,,Quelle était la nationalité de Mata Hari ?,Néerlandaise,Allemande,Française,Indonésienne,3,Histoire,hollandaise
+S,,Quelle danseuse d’origine néerlandaise a été fusillée pour espionnage contre la France en 1917 ?,Mata Hari,Joséphine Baker,Nancy Wake,Virginia Hall,3,Histoire,margaretha geertruida zelle | grietje zelle | zelle | hari
+S,,Quel grand jardin parisien se situe entre les Champs-Élysées et la place de la Concorde ?,Le jardin des Tuileries,Le jardin du Luxembourg,Le jardin des Plantes,Le jardin du Palais-Royal,3,Géographie,tuileries | jardins des tuileries
+S,,Quel est le nom du détroit qui traverse la ville d’Istanbul ?,Le détroit du Bosphore,Le détroit de Malacca,Le détroit des Dardanelles,Le détroit d'Ormuz,3,Géographie,bosphore
+S,,Dans quelle ville a été ouvert le premier Hard Rock Café en 1971 ?,Londres,Paris,New York,Los Angeles,3,Actualités & Médias,-
+S,,"Comment abrège-t-on le mot ""Maître"" devant le nom d’un avocat ?",Me,Ma,Mt,Mr,2,Économie & Politique,-
+S,,Dans quel pays le shintoïsme est-il né ?,Le Japon,La Chine,L'Inde,Le Vietnam,2,Croyances,-
+S,,Combien d’étoiles figurent sur le drapeau de la Chine ?,5,1,3,7,3,Géographie,cinq
+S,,"Dans quelle ville le métro est-il couramment appelé ""The Tube"" ?",Londres,New York,Sydney,Toronto,3,Géographie,-
+S,,"Dans quel pays a été tournée la trilogie du ""Seigneur des anneaux"" ?",La Nouvelle-Zélande,L'Islande,L'Afrique du Sud,Le Canada,3,Cinéma & Séries,-
+S,,Dans quel pays peut-on visiter le temple d'Angkor Wat ?,Le Cambodge,La Thaïlande,Le Laos,Le Vietnam,3,Géographie,royaume du cambodge
+S,,Dans quelle ville se situe le Stade de France ?,Saint-Denis,Nanterre,Colombes,Créteil,3,Géographie,-
+S,,Quelle ville allemande a été divisée par un mur pendant la guerre froide ?,Berlin,Munich,Hambourg,Francfort,1,Histoire,-
+S,,Quel joueur de tennis Yannick Noah a-t-il battu en finale de Roland-Garros en 1983 ?,Mats Wilander,Ivan Lendl,John McEnroe,Jimmy Connors,3,Sport,wilander
+S,,Quel est le nom du parlement israélien ?,La Knesset,La Diète,La Douma,La Shura,4,Économie & Politique,-
+S,,Quel personnage biblique tire sa force surhumaine de ses cheveux ?,Samson,David,Goliath,Gédéon,3,Croyances,-
+S,,Quel oiseau migrateur est associé aux paysages de la Camargue ?,Le flamant rose,La cigogne blanche,Le héron cendré,L'oie des neiges,3,Sciences de la vie,flamants roses | phoenicopterus roseus
+S,,"Quel animal du début du XXe siècle était surnommé ""Hans le Malin"" ?",Un cheval,Un chien,Un singe,Un perroquet,3,Divers,-
+S,,À quel domaine artistique associe-t-on Constantin Stanislavski ?,Le théâtre,La musique classique,La peinture,La sculpture,3,Arts & Culture,dramaturgie
+S,,Dans quelle ville se situe le siège social du constructeur aéronautique Airbus ?,Toulouse,Marseille,Metz,Rennes,2,Technologie,-
+S,,Quel président américain a donné son nom à l’aéroport international principal de New York ?,John Fitzgerald Kennedy,Franklin D. Roosevelt,George Washington,Abraham Lincoln,2,Économie & Politique,kennedy | jfk | john kennedy
+S,,De quel pays est originaire la compagnie aérienne KLM ?,Les Pays-Bas,Le Royaume-Uni,La France,Le Danemark,3,Technologie,hollande
+S,,Quel est le surnom donné à Alain Prost ?,Le Professeur,Le Stratège,Le Magicien,L'Ingénieur,3,Sport,prof
+S,,Dans quel sport Tiger Woods s’est-il illustré ?,Le golf,Le tennis,La Formule 1,Le basketball,1,Sport,-
+S,,Dans quel sport Teddy Riner s’est-il illustré ?,Le judo,La boxe,La lutte,Le taekwondo,1,Sport,-
+S,,Dans quel sport Martin Fourcade s’est-il illustré ?,Le biathlon,Le patinage de vitesse,Le ski alpin,Le saut à ski,2,Sport,-
+S,,Dans quel sport Tony Parker s’est-il illustré ?,Le basketball,Le handball,L’athlétisme,Le football,1,Sport,basket
+S,,Dans quel sport Yannick Noah s’est-il illustré ?,Le tennis,Le basketball,Le football,La boxe,2,Sport,-
+S,,Dans quel sport Kevin Mayer s’est-il illustré ?,Le décathlon,Le saut à la perche,Le 100 mètres,Le triathlon,2,Sport,epreuves combinees | heptathlon
+S,,"Quel héros de l’indépendance sud-américaine est connu sous le nom de ""El Libertador"" ?",Simón Bolívar,Francisco de Miranda,Che Guevara,Fidel Castro,3,Histoire,bolivar
+S,,Quelle est la couleur de l’imperméable porté par l’inspecteur Gadget ?,Gris,Noir,Bleu marine,Vert olive,2,Jeux & BD,-
+S,,De quel pays est originaire le didjeridoo ?,L'Australie,L'Afrique du Sud,Le Brésil,La Mongolie,2,Musique,-
+S,,Sous quel titre était désigné l’héritier du royaume de France ?,Le dauphin,Le requin,Le lamantin,Le marsouin,2,Histoire,dauphin de france
+S,,Quel aliment déclenche chez le narrateur une réminiscence involontaire dans l’œuvre de Proust ?,La madeleine,Le macaron,Le pain d'épices,Le cannelé,1,Littérature,-
+S,,Quel nom donne-t-on aux légendes urbaines à visée horrifique diffusées sur le web ?,Une creepypasta,Un rottenramen,Un scarytoast,Une bloodysoup,2,Actualités & Médias,creepypastas
+S,,"Quel célèbre pilote de chasse allemand de la Première Guerre mondiale était surnommé le ""Baron rouge"" ?",Manfred von Richthofen,Hermann Göring,Ernst Udet,Otto Lilienthal,4,Histoire,manfred von richthofen | von richthofen | richthofen
+S,,Quel membre de la famille royale danoise accède au trône en janvier 2024 ?,Frederik X,Margrethe II,Harald V,Willem-Alexander,4,Économie & Politique,frederic x | frederik andre henrik christian | frederik 10
+S,,"Qui est l’auteur du roman ""Les Cerfs-volants de Kaboul"" (2003) ?",Khaled Hosseini,Elif Shafak,Tahar Ben Jelloun,Mohsin Hamid,4,Littérature,hosseini
+S,,Comment s'appelle le fruit produit par le baobab ?,Le pain de singe,Le lait de zèbre,La farine de buffle,Le beurre d'autruche,4,Sciences de la vie,-
+S,,"À quel genre musical est associé le courant appelé ""bebop"" ?",Le jazz,Le rock,Le blues,Le reggae,3,Musique,-
+S,,Quel pays est souvent décrit comme ayant la forme d’une botte ?,L'Italie,La Grèce,Le Portugal,La Croatie,1,Géographie,-
+S,,"Quel est le nom de la chèvre dans le conte ""La Chèvre de monsieur Seguin"" ?",Blanquette,Suzette,Coquette,Clochette,4,Littérature,-
+S,,À quel pays appartiennent les îles Féroé ?,Le Danemark,La Norvège,Le Royaume-Uni,La Finlande,2,Géographie,-
+S,,Quel est le dernier État à avoir rejoint les États-Unis d’Amérique ?,Hawaï,L'Alaska,Porto Rico,L'Arizona,3,Géographie,hawaii
+S,,Quel est le nom de la première poche de l’estomac chez les ruminants ?,La panse,Le bonnet,Le feuillet,La caillette,4,Sciences de la vie,rumen
+S,,"Quel criminel a été le premier à être officiellement désigné ""ennemi public n°1"" par le FBI ?",John Dillinger,Al Capone,Lucky Luciano,Baby Face Nelson,4,Actualités & Médias,dillinger
+S,,Quel ingrédient principal entre dans la préparation du massepain ?,L'amande,La noix de coco,La noisette,La pomme de terre,3,Gastronomie,amandes
+S,,Quelle est la monnaie officielle utilisée en Suisse ?,Le franc suisse,L'euro,Le florin,Le mark suisse,2,Économie & Politique,-
+S,,Quelle est la langue officielle de la principauté d’Andorre ?,Le catalan,Le français,L'espagnol,L'occitan,3,Géographie,catalane
+S,,Quelle substance psychoactive est principalement responsable des effets psychotropes du cannabis ?,THC,CBD,LSD,CBN,3,Sciences de la vie,tétrahydrocannabinol
+S,,"Dans quel jeu vidéo peut-on incarner les personnages Raze, Cypher et Omen ?",Valorant,Apex Legends,Overwatch,Rainbow Six: Siege,2,Jeux & BD,-
+S,,Quel entrepreneur français a fondé la plateforme de covoiturage BlaBlaCar ?,Frédéric Mazzella,Jean-Baptiste Rudelle,Tristan Nitot,Marc Simoncini,3,Technologie,mazzella
+S,,Quel homme d'affaires a dirigé pendant plus de 30 ans le club de football de l'Olympique Lyonnais ?,Jean-Michel Aulas,Bernard Tapie,Michel Platini,Nasser Al-Khelaïfi,2,Sport,aulas
+S,,Qui est le fondateur de l'opérateur télécom français Free ?,Xavier Niel,Patrick Drahi,Marc Simoncini,Frédéric Mazzella,2,Technologie,niel
+S,,Quelle invention majeure doit-on à Alessandro Volta en l’an 1800 ?,La pile électrique,La radio,Le paratonnerre,Le téléphone,1,Technologie,pile | piles | piles electriques
+S,,"Quel peintre a traversé une phase artistique surnommée ""la période bleue"" ?",Pablo Picasso,Salvador Dalí,Joan Miró,Georges Braque,2,Arts & Culture,picasso
+S,,Quel est l'indicatif téléphonique international de la France ?,33,41,39,352,2,Technologie,trente trois | +33
+S,,Quel souverain veut éliminer l’enfant Jésus selon le récit de la Nativité ?,Hérode,Pilate,Ptolémée,Caïphe,4,Croyances,herode ier | herode ier le grand
+S,,Quelle ville est désignée dans la Bible comme le lieu de naissance de Jésus ?,Bethléem,Jérusalem,Nazareth,Capharnaüm,2,Croyances,-
+S,,"Quel joueur surnommé ""The Power"" a dominé le monde des fléchettes avec 16 titres de champion du monde ?",Phil Taylor,Michael van Gerwen,Adrian Lewis,Peter Wright,3,Sport,taylor | philip douglas taylor
+S,,Combien de segments numérotés composent une cible de fléchettes standard ?,20,10,15,30,1,Jeux & BD,vingt
+S,,Quel est le titre du recueil de poèmes publié par Paul Éluard en 1926 ?,Capitale de la douleur,Paroles,L’Invention de la solitude,La Vie immédiate,4,Littérature,-
+S,,"Qui est l’auteur du poème ""Le Dormeur du val"" ?",Arthur Rimbaud,Alfred de Musset,Guillaume Apollinaire,Stéphane Mallarmé,3,Littérature,rimbaud
+S,,Quel est le titre du recueil de poèmes de Charles Baudelaire publié en 1857 ?,Les Fleurs du mal,Une Saison en enfer,Les Contemplations,Spleen de Paris,2,Littérature,-
+S,,Quelle figure de style consiste à attribuer des caractéristiques humaines à un objet ou un animal ?,La personnification,La métaphore,L'épiphore,La synecdoque,2,Littérature,-
+S,,Combien de syllabes un alexandrin compte-t-il traditionnellement ?,12,8,10,14,2,Littérature,douze | 12 syllabes
+S,,Combien de vers compte un sonnet classique en langue française ?,14,10,12,16,2,Littérature,quatorze | 14 vers
+S,,Quelle race de chien possède la plus grande espérance de vie moyenne ?,Chihuahua,Beagle,Labrador Retriever,Rottweiler,3,Sciences de la vie,-
+S,,Quelle ancienne route commerciale Marco Polo a-t-il empruntée pour atteindre l’Asie ?,La route de la soie,La route des Indes,La route des épices,La voie royale perse,2,Histoire,-
+S,,Dans quel conte une citrouille est-elle transformée en carrosse ?,Cendrillon,La Belle et la Bête,Blanche-Neige,La Belle au bois dormant,1,Cinéma & Séries,-
+S,,Quelle fête est associée à la décoration de citrouilles sculptées ?,Halloween,Thanksgiving,Noël,Día de los Muertos,1,Croyances,-
+S,,Quel célèbre club de plage est emblématique des soirées festives de Saint-Tropez depuis les années 60 ?,Club 55,Casa Malca,L’Amnesia,La Guérite,4,Actualités & Médias,-
+S,,Quelle ville a été la première au monde à proposer un réseau 5G commercial ?,Séoul,Tokyo,San Francisco,Dubaï,3,Technologie,-
+S,,Quelle viande est traditionnellement servie lors de la fête de Thanksgiving aux États-Unis ?,La dinde,L'agneau,Le boeuf,Le canard,2,Gastronomie,-
+S,,Quel pigeon voyageur a sauvé des soldats américains encerclés en 1918 ?,Cher Ami,Bel Amant,Bon Copain,Joli Coeur,4,Histoire,-
+S,,Quel est le symbole chimique du mercure dans le tableau périodique des éléments ?,Hg,Me,Cn,Mc,3,Sciences exactes,-
+S,,"Quel scientifique est crédité de la découverte de plusieurs gaz nobles, dont le néon, le krypton et le xénon ?",William Ramsay,Antoine Lavoisier,Henry Cavendish,Joseph Priestley,4,Sciences exactes,ramsay
+S,,"Sous quel pseudonyme l’auteur de la chasse au trésor ""La Chouette d’or"" a-t-il publié les énigmes en 1993 ?",Max Valentin,Jacques Lenoir,Michel Rossetti,Philippe Montfort,4,Jeux & BD,valentin
+S,,Quel était le nom de la chienne envoyée dans l’espace par l’URSS en 1957 ?,Laïka,Belka,Mishka,Luna,3,Actualités & Médias,-
+S,,"Quel sommet français est surnommé le ""Géant de Provence"" ?",Le mont Ventoux,La montagne Sainte-Victoire,Le mont Aigoual,Les Dentelles de Montmirail,3,Géographie,-
+S,,Quel adjectif utilise-t-on pour désigner le sud ?,Méridional,Septentrional,Austral,Zénithal,2,Géographie,-
+S,,Quel adjectif utilise-t-on pour désigner le nord ?,Septentrional,Méridional,Boréal,Polaire,2,Géographie,-
+S,,"Quelle ville française est surnommée ""la ville rose"" ?",Toulouse,Lille,Reims,Avignon,1,Géographie,-
+S,,Quel est le point culminant de la Belgique ?,Le signal de Botrange,Le mont Cassel,Le Grand Ballon,Le mont Kemmel,4,Géographie,-
+S,,Quel est le plus haut sommet de France ?,Le mont Blanc,La barre des Écrins,Le pic du Midi d’Ossau,Le puy de Sancy,1,Géographie,-
+S,,Quel pays est traversé par l’équateur et le méridien de Greenwich ?,Le Gabon,Le Mali,L'Ouganda,Le Sénégal,4,Géographie,-
+S,,Quel est le plus long fleuve de France ?,La Loire,La Seine,Le Rhône,La Garonne,1,Géographie,-
+S,,"Quelle ville française est surnommée ""la cité phocéenne"" ?",Marseille,Montpellier,Nice,Saint-Tropez,2,Géographie,-
+S,,Quel est le chef-lieu des Alpes-Maritimes ?,Nice,Cannes,Antibes,Toulon,2,Géographie,-
+S,,Quelle chaîne de montagnes forme une frontière naturelle entre l’Asie et l’Europe ?,L'Oural,Les Carpates,Le Caucase,L'Altaï,2,Géographie,-
+S,,Quelle planète est la plus proche du Soleil ?,Mercure,Vénus,Jupiter,Mars,1,Sciences exactes,-
+S,,"Quel acteur interprète le rôle du Père Noël dans le film ""Le Père Noël est une ordure"" (1982) ?",Gérard Jugnot,Christian Clavier,Michel Blanc,Thierry Lhermitte,2,Cinéma & Séries,jugnot
+S,,"Quel savant grec est à l’origine de l’exclamation ""Eureka"" ?",Archimède,Pythagore,Euclide,Platon,2,Sciences exactes,archimede de syracuse
+S,7,Quel savant grec est représenté dans cette oeuvre de Domenico Fetti ?,Archimède,Pythagore,Euclide,Platon,3,Arts & Culture,archimede de syracuse
+S,,Quel canal relie l’océan Atlantique à l’océan Pacifique ?,Le canal de Panama,Le canal de Suez,Le canal de Kiel,Le canal de Corinthe,2,Géographie,panama
+S,,Quel homme politique français a créé le Puy du Fou en 1989 ?,Philippe de Villiers,Jean-Frédéric Poisson,Charles Millon,Paul-Marie Coûteaux,3,Économie & Politique,philippe le jolis de villiers de saintignon | de villiers
+S,,Quel est le nom du quartier général du département de la Défense aux États-Unis ?,Le Pentagone,Fort Knox,Langley,Le Capitole,2,Économie & Politique,-
+S,,"De quelle série télévisée la sitcom ""Young Sheldon"" est-elle un spin-off ?",The Big Bang Theory,Modern Family,How I Met Your Mother,Malcolm,2,Cinéma & Séries,big bang theory
+S,,Dans quelle ville se trouve la célèbre plage de Copacabana ?,Rio de Janeiro,Buenos Aires,Los Angeles,Cancún,2,Géographie,-
+S,,Quel fruit est utilisé dans la préparation d’une pizza hawaïenne ?,L'ananas,La mangue,La banane,La papaye,1,Gastronomie,-
+S,,Quel arôme a été le premier à être synthétisé chimiquement ?,La vanille,La fraise,La menthe,Le citron,2,Sciences exactes,vanilline
+S,,Quel prénom féminin est associé à une chanson de Roch Voisine sortie en 1989 ?,Hélène,Caroline,Lucie,Nathalie,2,Musique,-
+S,,Au cours de quel mois célèbre-t-on la fête des Pères en France ?,Juin,Mars,Septembre,Novembre,1,Divers,-
+S,,Dans quelle région française a eu lieu le Débarquement des Alliés en juin 1944 ?,La Normandie,La Bretagne,Le Nord-Pas-de-Calais,Le Pays de la Loire,1,Histoire,-
+S,,Quel surnom est associé au roi de France Louis VI ?,Le Gros,Le Juste,Le Hutin,Le Bel,4,Histoire,-
+S,,Quel périphérique informatique permet de déplacer le curseur sur un écran d’ordinateur ?,La souris,Le clavier,Le scanner,Le disque dur,1,Technologie,-
+S,,Quelle ville française est célèbre pour sa production de pruneaux ?,Agen,Reims,Nîmes,Carcassonne,1,Géographie,-
+S,,Dans quel jeu de société est-il possible d’effectuer un roque ?,Les échecs,Le backgammon,Le shōgi,Les dames,2,Jeux & BD,-
+S,,Quelle est l’avenue emblématique du théâtre à New York ?,Broadway,Fifth Avenue,Madison Avenue,Wall Street,2,Arts & Culture,-
+S,,À quel joueur Zidane a-t-il donné un coup de tête en finale de la Coupe du monde 2006 ?,Marco Materazzi,Fabio Cannavaro,Paolo Maldini,Gennaro Gattuso,2,Sport,materazzi
+S,,Quel est le pays d’origine du peuple Maori ?,La Nouvelle-Zélande,Hawaï,L'Australie,La Papouasie-Nouvelle-Guinée,2,Géographie,-
+S,,Quel est le nom du liquide qui entoure le fœtus pendant la grossesse ?,Le liquide amniotique,Le liquide céphalo-rachidien,Le liquide synovial,Le liquide péritonéal,2,Sciences de la vie,amniotique
+S,,Quelle est la couleur du permis de conduire français ?,Rose,Jaune,Gris,Vert,1,Divers,-
+S,,Quel personnage mythologique fait traverser le Styx aux âmes des morts ?,Charon,Achéron,Thanatos,Hadès,3,Croyances,-
+S,,Quel dictateur a dirigé le Chili après le coup d’État de 1973 ?,Augusto Pinochet,Fidel Castro,Hugo Chávez,Jorge Rafael Videla,2,Histoire,pinochet
+S,,"Dans quel pays actuel se déroule l'action du roman ""L'Étranger"" (1942) ?",L'Algérie,La France,Le Liban,L'Espagne,2,Littérature,-
+S,,Quelle est la couleur d'un billet de 100 euros ?,Vert,Orange,Bleu,Jaune,1,Économie & Politique,-
+S,,Quel nom donne-t-on à une personne qui écrit et dessine des mangas ?,Mangaka,Sakuhaka,Komakka,Kakika,2,Jeux & BD,mangakas
+S,,"Qui est l’auteur du manga ""One Piece"" ?",Eiichirō Oda,Akira Toriyama,Masashi Kishimoto,Tite Kubo,3,Jeux & BD,oda
+S,,"Comment s’appelle l’île finale de la route de Grand Line dans le manga ""One Piece"" ?",Laugh Tale,Marineford,Whole Cake Island,Jaya,2,Jeux & BD,raftel
+S,,Quel dessert normand à base de riz au lait est longuement cuit au four avec de la cannelle ?,La teurgoule,La flognarde,Le clafoutis,Le riz à l'impératrice,2,Gastronomie,teurd-goule | torgoule | tergoule
+S,,Quelle eau-de-vie normande est élaborée à partir de cidre ?,Le calvados,L'armagnac,Le cognac,Le kirsch,2,Gastronomie,-
+S,,Qui est la première femme à avoir reçu le prix Pritzker d’architecture ?,Zaha Hadid,Kazuyo Sejima,Odile Decq,Gae Aulenti,4,Arts & Culture,hadid
+S,,"Quel sport pratiquait René Lacoste, le fondateur de la marque au crocodile ?",Le tennis,Le golf,Le rugby,L'équitation,2,Sport,-
+S,,Quelle marque de vêtement a pour logo un crocodile ?,Lacoste,Fred Perry,Kappa,Tommy Hilfiger,1,Économie & Politique,la chemise lacoste
+S,,Quel est le nom du personnage barbu qui garde les clés et les énigmes dans Fort Boyard ?,Le Père Fouras,Passe-Partout,Passe-Muraille,Mister Boo,1,Actualités & Médias,-
+S,,Quelle est la couleur d'un billet de 200 euros ?,Jaune,Vert,Bleu,Violet,1,Économie & Politique,-
+S,,Quel événement sportif majeur détermine le champion de la NFL ?,Le Super Bowl,Le Big Bowl,Le Mega Bowl,Le Grand Bowl,2,Sport,-
+S,,Quel mot désigne le deuxième enfant d'une famille ?,Le cadet,L'aîné,Le benjamin,Le secondaire,1,Littérature,-
+S,,Quel animal légendaire est l’emblème national de l’Écosse ?,La licorne,Le dragon,Le griffon,Le phénix,2,Géographie,-
+S,,Quelle race de chien est devenue un symbole de la monarchie britannique sous Élisabeth II ?,Corgi,Beagle,Bichon maltais,Jack Russell terrier,2,Sciences de la vie,welsh corgi pembroke
+S,,Où se déroule traditionnellement le couronnement des souverains britanniques ?,L’abbaye de Westminster,Le château de Windsor,La cathédrale Saint-Paul,Le palais de Buckingham,3,Histoire,westminster
+S,,Dans quel océan se trouve le département français de Mayotte ?,Océan Indien,Océan Atlantique,Océan Pacifique,Océan Austral,1,Géographie,indien
+S,,"Quelle île française est parfois surnommée ""l'île-hippocampe"" en raison de sa forme ?",Mayotte,La Martinique,La Réunion,La Guadeloupe,2,Géographie,-
+S,,"Quelle est la signification de la lettre ""E"" dans l’acronyme UNESCO ?",Éducation,Économie,Environnement,État,2,Économie & Politique,-
+S,,Quel nom donne-t-on aux forces de maintien de la paix de l’ONU ?,Casques bleus,Forces grises,Gardes de la paix,Soldats neutres,2,Économie & Politique,casque bleu
+S,,Dans quelle ville se trouve le siège de l'Organisation des Nations unies (ONU) ?,New York,Bruxelles,Genève,La Haye,2,Économie & Politique,-
+S,,Dans quel pays se trouve le canal de Suez ?,L'Égypte,L'Arabie Saoudite,La Libye,La Jordanie,2,Géographie,egypte
+S,,Quel est le nom donné aux membres du crime organisé au Japon ?,Yakuza,Keimusho,Ashigaru,Shinigami,2,Divers,yakuzas
+S,,Quel est le terme utilisé pour désigner le centre d’un cyclone ?,L’oeil,Le vortex,Le noyau,L'épicentre,1,Sciences exactes,oeil du cyclone
+S,,Quel est le nom actuel de l’ancienne Guyane hollandaise ?,Le Suriname,Trinité-et-Tobago,Le Belize,Saint-Martin,3,Géographie,-
+S,,À quel récipient associe-t-on historiquement la ville de Soissons ?,Un vase,Une amphore,Un tonneau,Une marmite,2,Histoire,-
+S,,"Complétez ce proverbe : ""La nuit, tous les chats sont...""",Gris,Noirs,Blancs,Roux,1,Littérature,-
+S,,Comment s'appelle la place centrale de Moscou ?,La place Rouge,La place Blanche,La place Grise,La place Bleue,2,Géographie,rouge | red square
+S,,"Quel acronyme anglais signifie ""dès que possible"" ?",ASAP,TBD,BRB,ETA,2,Technologie,-
+S,,Quel animal terrifie l'aventurier Indiana Jones ?,Les serpents,Les araignées,Les rats,Les scorpions,2,Cinéma & Séries,serpent
+S,,Quel pays de l’Union Européenne possède un hymne national sans paroles officielles ?,L'Espagne,L'Italie,Les Pays-Bas,L'Allemagne,3,Musique,-
+S,,Quel mot d'origine grecque désigne une variété de citron ?,Eureka,Eros,Physis,Chronos,3,Gastronomie,-
+S,,"Quelle plante sauvage appelle-t-on aussi la ""dent-de-lion"" ?",Le pissenlit,L'ortie,Le plantain,La chicorée,2,Sciences de la vie,-
+S,,"Quelle ville de Bretagne portait le nom de ""Napoléonville"" sous le Premier Empire ?",Pontivy,Quimper,Auray,Saint-Malo,4,Géographie,-
+S,,Quel aviateur est le premier à avoir dépassé la vitesse du son en 1947 ?,Chuck Yeager,Charles Lindbergh,Jacqueline Cochran,Scott Crossfield,3,Technologie,yeager | charles elwood yeager
+S,,Quel tournoi de tennis du Grand Chelem se joue exclusivement sur gazon ?,Wimbledon,Roland-Garros,US Open,Open d'Australie,2,Sport,tournoi de wimbledon | the championships
+S,,"Quelle ville est surnommée ""la ville trois fois sainte"" ?",Jérusalem,Istanbul,Médine,Lourdes,2,Croyances,-
+S,,Quel est le terme anatomique pour désigner la pointe de la langue ?,Apex,Dorsum,Radix,Frenulum,3,Sciences de la vie,-
+S,,En l'honneur de quel dieu grec étaient célébrés les jeux olympiques antiques ?,Zeus,Apollon,Athéna,Hermès,2,Croyances,-
+S,,"Quel est le véritable nom de Neo dans le film ""Matrix"" (1999) ?",Thomas Anderson,Jack Harper,John Connor,Clark Kent,3,Cinéma & Séries,anderson
+S,,"Quel personnage propose la pilule rouge à Neo dans le film ""Matrix"" (1999) ?",Morpheus,Trinity,Cypher,Smith,3,Cinéma & Séries,-
+S,,"Quelle est la marque de la voiture conduite par Walt Kowalski dans le film ""Gran Torino"" (2008) ?",Ford,Chevrolet,Dodge,Pontiac,3,Cinéma & Séries,-
+S,,"Quel acteur interprète le rôle de Walt Kowalski dans le film ""Gran Torino"" (2008) ?",Clint Eastwood,Harrison Ford,Robert De Niro,Mel Gibson,2,Cinéma & Séries,eastwood | clint eastwood jr
+S,,"Quel objet les deux prisonniers doivent-ils utiliser pour tenter de se libérer dans le film ""Saw"" (2004) ?",Une scie,Une pince coupante,Un marteau,Une clé,3,Cinéma & Séries,scie a metaux
+S,,"Quel surnom porte le tueur qui piège ses victimes dans des jeux mortels dans le film ""Saw"" (2004) ?",Jigsaw,The Riddler,Ghostface,Zodiac,3,Cinéma & Séries,-
+S,,"Quel événement le personnage principal revit-il sans cesse dans le film ""Un jour sans fin"" (1993) ? ",Le jour de la marmotte,Le jour du hérisson,Le jour de l'écureuil,Le jour de la taupe,3,Cinéma & Séries,groundhog day
+S,,"Quel est le nom de la princesse élevée par les loups dans le film ""Princesse Mononoké"" (1997) ?",San,Moro,Kaya,Yuki,3,Cinéma & Séries,-
+S,,"Quel est le nom du robot dont Wall-E tombe amoureux dans le film ""Wall-E"" (2008) ?",Eve,Ada,Otto,Hal,3,Cinéma & Séries,-
+S,,"Comment s'appelle l'entraîneur de Rocky dans le film ""Rocky"" (1976) ?",Mickey,Paulie,Duke,Tony,4,Cinéma & Séries,mickey goldmill | goldmill
+S,,"Qui est l'adversaire de Rocky lors du combat final du film ""Rocky"" (1976) ?",Apollo Creed,Ivan Drago,Tommy Gunn,Clubber Lang,3,Cinéma & Séries,apollo | creed
+S,,"Quel est le surnom du tueur en série traqué par le FBI dans le film ""Le Silence des agneaux"" (1991) ?",Buffalo Bill,Hannibal Lecter,Jack Crawford,The Ripper,3,Cinéma & Séries,-
+S,,"Quel personnage est interprété par Anthony Hopkins dans le film ""Le Silence des agneaux"" (1991) ?",Hannibal Lecter,Buffalo Bill,Jack Crawford,Mason Verger,2,Cinéma & Séries,lecter | hannibal
+S,,"Quel chanteur conseille à Clarence de tuer le proxénète Drexl dans le film ""True Romance"" (1993) ?",Elvis Presley,Frank Sinatra,John Lennon,Bob Dylan,3,Cinéma & Séries,elvis | presley
+S,,"Quel acteur interprète le rôle de Clarence Worley dans le film ""True Romance"" (1993) ?",Christian Slater,Val Kilmer,Gary Oldman,Nicolas Cage,3,Cinéma & Séries,slater
+S,,"Quel prénom portait le peintre surnommé ""le Douanier Rousseau"" ?",Henri,Paul,Édouard,Auguste,2,Arts & Culture,henri rousseau
+S,,Qui a été le premier athlète à courir le 100 mètres en moins de 10 secondes ?,Jim Hines,Jesse Owens,Carl Lewis,Usain Bolt,3,Sport,hines | james ray hines
+S,,Quel trophée est décerné à l’équipe victorieuse du Top 14 ?,Le bouclier de Brennus,La coupe Webb Ellis,Le trophée Jean Prat,L'ovale d'or,2,Sport,-
+S,,"Comment se nomme le chat de la marâtre dans le film d'animation ""Cendrillon"" (1950) ?",Lucifer,Dinah,Bruton,Boniface,3,Cinéma & Séries,-
+S,,"Quel acronyme désigne le ""mauvais cholestérol"" dans les analyses sanguines ?",LDL,TGL,HDL,IDL,2,Sciences de la vie,-
+S,,"Qui est le Prince de Sang-Mêlé dans l'univers de ""Harry Potter"" ?",Severus Rogue,Albus Dumbledore,Drago Malefoy,Harry Potter,2,Cinéma & Séries,rogue | severus snape | snape
+S,,Dans quel pays se situe la cité troglodyte de Pétra ?,La Jordanie,L'Égypte,L'Arabie Saoudite,Le Liban,3,Géographie,-
+S,,"Quel chevalier breton était surnommé le ""Dogue noir de Brocéliande"" ?",Bertrand du Guesclin,Olivier de Clisson,Gilles de Rais,Arthur de Richemont,3,Histoire,du guesclin | duguesclin
+S,,"À quel artiste est consacré le film ""Rocketman"" (2019) ?",Elton John,Freddie Mercury,Mick Jagger,George Michael,2,Cinéma & Séries,john | reginald kenneth dwight
+S,,Dans quelle ville se situe le siège de l'UNESCO ?,Paris,Rome,New York,Genève,3,Économie & Politique,-
+S,,Comment désignait-on les gladiateurs qui combattaient avec un trident et un filet ?,Les rétiaires,Les dimachères,Les mirmillons,Les thraces,3,Histoire,retiaire | retiarius
+S,,Quel est le nom de l'orifice respiratoire situé au sommet de la tête des cétacés ?,L'évent,Le spiracle,Le goulot,La fontanelle,2,Sciences de la vie,event
+S,,"Quelle ville française est surnommée ""la cité corsaire"" ?",Saint-Malo,La Rochelle,Granville,Brest,3,Géographie,-
+S,,"Quelle équipe nationale de rugby est surnommée le ""XV du Poireau"" ?",Le pays de Galles,L'Irlande,L'Angleterre,L'Écosse,2,Sport,-
+S,,De quel animal Ganesh porte-t-il la tête selon la tradition hindoue ?,L'éléphant,Le tigre,Le singe,Le lion,2,Croyances,elephant
+S,,"Quel instrument de musique est parfois familièrement surnommée la ""grand-mère"" ?",La contrebasse,La harpe,Le piano,Le violoncelle,4,Musique,-
+S,,Dans quel pays actuel se situe la ville antique d'Éphèse ?,La Turquie,La Grèce,L'Italie,Chypre,3,Histoire,-
+S,,Quel est le nom actuel de la ville antique de Lugdunum ?,Lyon,Lisbonne,Lourdes,Londres,2,Histoire,-
+S,,Dans quel pays actuel se situe la ville antique de Babylone ?,L'Irak,La Turquie,La Grèce,La Jordanie,3,Histoire,-
+S,,"Dans la Bible, comment s'appelle le troisième fils d'Adam et Ève ?",Seth,Caïn,Abel,Noé,3,Croyances,-
+S,,Quel animal est le plus cité dans les titres des fables de La Fontaine ?,Le renard,Le rat,Le lion,Le loup,3,Littérature,-
+S,,Quelle échelle sert à exprimer la force des piments ?,L'échelle de Scoville,L'échelle de Brinell,L'échelle de Weber,L'échelle de Piquance,2,Gastronomie,scoville
+S,,"Quelle fable de La Fontaine a pour morale : ""Tel est pris qui croyait prendre"" ?",Le Rat et l’Huître,Le Loup et l’Agneau,Le Renard et la Cigogne,La Cigale et la Fourmi,3,Littérature,-
+S,,Quel est le symbole chimique de l'hydrogène dans le tableau périodique des éléments ?,H,O,C,Hy,1,Sciences exactes,-
+S,,Quel est le symbole chimique de l'hélium dans le tableau périodique des éléments ?,He,H,Hu,Hl,1,Sciences exactes,-
+S,8,"Quel peintre est l'auteur de ""Autoportrait à l'oreille bandée"" (1889) ?",Vincent van Gogh,Paul Gauguin,Claude Monet,Georges Seurat,1,Arts & Culture,van gogh
+S,9,"Quel peintre est l'auteur de ""Crâne de squelette fumant une cigarette"" (1886) ?",Vincent van Gogh,Edvard Munch,Francisco de Goya,Egon Schiele,3,Arts & Culture,van gogh
+S,10,"Quel peintre est l'auteur de ""La Nuit étoilée"" (1889) ?",Vincent van Gogh,Paul Cézanne,Henri de Toulouse-Lautrec,Claude Monet,1,Arts & Culture,van gogh
+S,11,"Quel peintre est l'auteur de ""Les Tournesols"" (1889) ?",Vincent van Gogh,Henri Matisse,Edvard Munch,Paul Cézanne,1,Arts & Culture,van gogh
+S,12,"Quel peintre est l'auteur de ""Les Mangeurs de pommes de terre"" (1885) ?",Vincent van Gogh,Jean-François Millet,Camille Pissaro,Gustave Courbet,3,Arts & Culture,van gogh
+S,13,"Quel peintre est l'auteur de ""Champ de blé aux corbeaux"" (1890) ?",Vincent van Gogh,Paul Cézanne,Camille Pissaro,Jean-François Millet,3,Arts & Culture,van gogh
+S,14,"Quel peintre est l'auteur de ""La Chambre à Arles"" (1889) ?",Vincent van Gogh,Paul Gauguin,Henri de Toulouse-Lautrec,Édouard Manet,3,Arts & Culture,van gogh
+S,15,"Quel peintre est l'auteur de ""La Promenade"" (1875) ?",Claude Monet,Pierre-Auguste Renoir,Édouard Manet,Edgar Degas,2,Arts & Culture,monet
+S,16,"Quel peintre est l'auteur de ""Les Coquelicots"" (1873) ?",Claude Monet,Alfred Sisley,Vincent van Gogh,Camille Pissaro,2,Arts & Culture,monet
+S,17,"Quel peintre est l'auteur de ""Promenade sur la falaise, Pourville"" (1882) ?",Claude Monet,Berthe Morisot,Pierre-Auguste Renoir,Paul Cézanne,3,Arts & Culture,monet
+S,18,"Quel peintre est l'auteur de ""La Grenouillère"" (1869) ?",Claude Monet,Gustave Caillebotte,Camille Pissaro,Édouard Manet,3,Arts & Culture,monet
+S,19,"Quel peintre est l'auteur de ""La Pie"" (1869) ?",Claude Monet,Jean-Baptiste Camille Corot,Gustave Courbet,Alfred Sisley,3,Arts & Culture,monet
+S,20,"Quel peintre est l'auteur de ""La Gare Saint-Lazare"" (1877) ?",Claude Monet,Édouard Manet,Pierre-Auguste Renoir,Camille Pissaro,3,Arts & Culture,monet
+S,21,"Quel peintre est l'auteur de ""Régates à Argenteuil"" (1872) ?",Claude Monet,Gustave Caillebotte,Pierre-Auguste Renoir,Alfred Sisley,3,Arts & Culture,monet
+S,22,"Quel peintre est l'auteur de ""La Tamise et le Parlement"" (1871) ?",Claude Monet,J.M.W. Turner,John Constable,Camille Pissaro,3,Arts & Culture,monet
+S,23,"Quel peintre est l'auteur de ""Printemps"" (1872) ?",Claude Monet,Élisabeth Vigée Le Brun,Édouard Manet,Berthe Morisot,3,Arts & Culture,monet
+S,24,"Quel peintre est l'auteur de ""Le Pont d'Argenteuil"" (1874) ?",Claude Monet,Gustave Caillebotte,Pierre-Auguste Renoir,Alfred Sisley,3,Arts & Culture,monet
+S,25,"Quel peintre est l'auteur de ""Impression, Soleil levant"" (1872) ?",Claude Monet,Pierre-Auguste Renoir,Camille Pissaro,Alfred Sisley,2,Arts & Culture,monet
+S,26,"Quel peintre est l'auteur de ""Saturne dévorant un de ses fils"" (1823) ?",Francisco de Goya,Edvard Munch,Hieronymus Bosch,Théodore Géricault,2,Arts & Culture,de goya | goya
+S,27,"Quel peintre est l'auteur de ""Tres de mayo"" (1814) ?",Francisco de Goya,Eugène Delacroix,Diego Velázquez,Francisco de Zurbarán,2,Arts & Culture,de goya | goya
+S,28,"Quel peintre est l'auteur de ""La maja nue"" (1800) ?",Francisco de Goya,Titien,Édouard Manet,Jean-Auguste-Dominique Ingres,3,Arts & Culture,de goya | goya
+S,29,"Quel peintre est l'auteur de ""La famille de Charles IV"" (1800) ?",Francisco de Goya,Jacques-Louis David,Jean-Auguste-Dominique Ingres,Élisabeth Vigée Le Brun,3,Arts & Culture,de goya | goya
+S,30,"Quel peintre est l'auteur de ""Le Sabbat des sorcières"" (1798) ?",Francisco de Goya,Hieronymus Bosch,Pieter Bruegel l’Ancien,Henry Fuseli,3,Arts & Culture,de goya | goya
+S,31,"Quel peintre est l'auteur de ""La Laitière de Bordeaux"" (1827) ?",Francisco de Goya,Jean-Baptiste Greuze,Bartolomé Esteban Murillo,Eugène Delacroix,4,Arts & Culture,de goya | goya
+S,32,"Quel peintre est l'auteur de ""L'Adoration du nom de Dieu"" (1772) ?",Francisco de Goya,El Greco,Giovanni Battista Tiepolo,Bartolomé Esteban Murillo,3,Arts & Culture,de goya | goya
+S,,"Quel artiste interprète ""God's Plan"" (2018) ?",Drake,Kendrick Lamar,Travis Scott,Kanye West,2,Musique,aubrey drake graham
+S,,"Quel artiste interprète ""Perfect"" (2018) ?",Ed Sheeran,Sam Smith,James Blunt,Lewis Capaldi,2,Musique,sheeran | edward christopher sheeran
+S,,"Quel artiste interprète ""Havana"" (2018) ?",Camila Cabello,Dua Lipa,Selena Gomez,Ariana Grande,2,Musique,cabello | young thug
+S,,Quel homme politique français a été maire de Bordeaux de 1947 à 1995 ?,Jacques Chaban-Delmas,Alain Juppé,Michel Debré,Édouard Balladur,3,Économie & Politique,chaban delmas | delmas
+S,,Quel homme politique français a été maire de Marseille de 1995 à 2020 ?,Jean-Claude Gaudin,Gaston Defferre,Samia Ghali,Robert Vigouroux,3,Économie & Politique,gaudin
+S,,Quel homme politique français a été maire de Paris de 1977 à 1995 ?,Jacques Chirac,Valéry Giscard d'Estaing,François Miterrand,Nicolas Sarkozy,2,Économie & Politique,chirac
+S,,Quel homme politique français a été maire de Paris de 2001 à 2014 ?,Bertrand Delanoë,Jacques Chirac,Jean Tiberi,Anne Hidalgo,3,Économie & Politique,delanoe
+S,,Quel homme politique français a été maire de Bordeaux de 1995 à 2004 puis de 2006 à 2019 ?,Alain Juppé,François Bayrou,Dominique de Villepin,Jacques Chaban-Delmas,2,Économie & Politique,juppe
+S,,Quel homme politique français a été maire de Marseille de 1953 à 1986 ?,Gaston Defferre,Pierre Mauroy,Alain Juppé,Edmond Garcin,3,Économie & Politique,defferre
+S,,Quel homme politique français a été maire de Tulle de 2001 à 2008 ?,François Hollande,Manuel Valls,Michel Rocard,Lionel Jospin,2,Économie & Politique,hollande
+S,,Quel homme politique français a été maire de Neuilly-sur-Seine de 1983 à 2002 ?,Nicolas Sarkozy,Charles Pasqua,Patrick Balkany,Jean-Christophe Fromantin,2,Économie & Politique,sarkozy
+S,,Quel homme politique français a été maire de Nantes de 1989 à 2012 ?,Jean-Marc Ayrault,François Fillon,Édouard Philippe,Alain Juppé,3,Économie & Politique,ayrault
+S,,Quel homme politique français a été maire de Lille de 1973 à 2001 ?,Pierre Mauroy,Lionel Jospin,Martine Aubry,Gaston Defferre,3,Économie & Politique,mauroy
+S,,Quel homme politique français a été maire de Levallois-Perret de 1983 à 1995 puis de 2001 à 2020 ?,Patrick Balkany,André Santini,Charles Pasqua,Roger Karoutchi,3,Économie & Politique,balkany
+S,,Quel femme politique française a été maire de Lille de 2001 à 2025 ?,Martine Aubry,Ségolène Royal,Anne Hidalgo,Christiane Taubira,3,Économie & Politique,aubry
+S,,Quelle est la fosse sous-marine la plus profonde de la planète Terre ?,La fosse des Mariannes,La fosse des Tonga,La fosse des Kermadec,La fosse du Japon,1,Géographie,mariannes
+S,,"Quel est le nom du point le plus profond connu des océans, situé dans la fosse des Mariannes ?",Challenger Deep,Sirena Deep,Horizon Deep,Factorian Deep,2,Géographie,-
+S,,Quelle arme incendiaire a fait la puissance navale de l'Empire byzantin au Moyen Âge ?,Le feu grégeois,Le napalm,Le vitriol,La poudre noire,3,Histoire,-
+S,,"Quel est le nom du plus grand glacier du monde, situé en Antarctique oriental ?",Le glacier de Lambert,Le glacier Hubbard,Le glacier Jakobshavn,Le glacier Perito Moreno,4,Géographie,lambert
+S,,Quelle est la monnaie officielle d'Israël ?,Le shekel,Le riyal,Le dinar,La livre,3,Économie & Politique,nouveau shekel | sheqel | nouveau sheqel
+S,,Quelle est la deuxième plus grande ville d'Argentine par sa population ?,Córdoba,Rosario,Mendoza,Buenos Aires,3,Géographie,-
+S,,"À quelle race de dragons appartient Krokmou dans le film ""Dragons"" (2010) ?",Furie Nocturne,Nadder Mortel,Vipère des Glaces,Change-Écailles,3,Cinéma & Séries,night fury
+S,,"Quelle race de chien de traineau, aux yeux parfois clairs, est traditionnellement utilisée par les peuples tchouktches ?",Le husky sibérien,Le malamute de l'Alaska,L'esquimau canadien,Le samoyède,1,Sciences de la vie,husky | husky de siberie
+S,,À quelle catégorie d’étoiles appartient le Soleil ?,Naine jaune,Géante rouge,Naine blanche,Supergéante bleue,3,Sciences exactes,naines jaunes | g2v
+S,,Quel serment officiel prononce un vétérinaire diplômé en France ?,Le serment de Bourgelat,Le serment de Galien,Le serment d’Hippocrate,Le serment d’Esculape,4,Sciences de la vie,bourgelat
+S,,"Quel est le nom du premier navire de l’équipage de Luffy dans le manga ""One Piece"" ?",Le Vogue Merry,Le Thousand Sunny,Le Oro Jackson,Le Red Force,3,Jeux & BD,going merry
+S,,"Quel studio de développement a créé le jeu vidéo ""Overwatch"" (2016) ?",Blizzard Entertainment,Ubisoft,Valve Corporation,Riot Games,2,Jeux & BD,blizzard
+S,,"Quel studio de développement a créé le jeu vidéo ""The Witcher 3: Wild Hunt"" (2015) ?",CD Projekt Red,BioWare,Rockstar Games,Square Enix,2,Jeux & BD,cd projekt
+S,,"Quel studio de développement a créé le jeu vidéo ""Red Dead Redemption 2"" (2018) ?",Rockstar Studios,CD Projekt Red,Naughty Dog,FromSoftware,2,Jeux & BD,rockstar | rockstar games
+S,,"Quel studio de développement a créé le jeu vidéo ""The Last of Us"" (2013) ?",Naughty Dog,Ubisoft,BioWare,Insomniac Games,3,Jeux & BD,-
+S,,"Quel studio de développement a créé le jeu vidéo ""Portal 2"" (2011) ?",Valve Corporation,Epic Games,Naughty Dog,Ubisoft,2,Jeux & BD,valve
+S,,"Quel studio de développement a créé le jeu vidéo ""Silent Hill 2"" (2001) ?",Konami,Capcom,Square Enix,Sega,3,Jeux & BD,konami holdings corporation
+S,,"Quelle est la monnaie utilisée dans le manga ""One Piece"" ?",Le berry,Le zeni,Le ryo,Le gil,3,Jeux & BD,berrys | belly
+S,,Quels sont les noms des deux frères jumeaux à l’origine mythique de la fondation de Rome ?,Romulus et Rémus,Titus et Publius,Gaius et Lucius,Flavius et Tiberius,1,Croyances,remus romulus
+S,,Quel oiseau est le seul capable de voler en arrière ?,Le colibri,Le moineau,Le martin-pêcheur,Le faucon pèlerin,3,Sciences de la vie,colibris
+S,,Que redoute un insecte lucifuge ?,La lumière,L'eau,Le bruit,La chaleur,2,Sciences de la vie,-
+S,,Vers quelle direction l’aiguille du logo Safari est-elle orientée ?,Nord-Est,Ouest,Sud,Sud-Est,2,Technologie,-
+S,,Quel gaz les plantes produisent-elles grâce à la photosynthèse ?,L'oxygène,Le dioxyde de carbone,L'azote,Le méthane,1,Sciences de la vie,o2 | dioxygene
+S,,À quel thermostat faut-il régler un four pour obtenir 180 °C ?,Thermostat 6,Thermostat 5,Thermostat 7,Thermostat 8,2,Gastronomie,6 | six
+S,,"Quel joueur de football brésilien est surnommé ""le roi"" ?",Pelé,Neymar,Ronaldo,Garrincha,2,Sport,edson arantes do nascimento
+S,,Quel animal était la mascotte officielle de la Coupe du monde de football 1998 ?,Un coq,Un lion,Un kangourou,Un loup,2,Sport,-
+S,,Quel jeu vidéo sorti en 2005 sur PlayStation 2 met en scène un héros affrontant seize colosses pour redonner vie à une jeune fille ?,Shadow of the Colossus,Monster Hunter,The Last Guardian,Final Fantasy XV,2,Jeux & BD,wander and the colossus
+S,,Quel jeu vidéo a remporté le prix du Game of the Year (GOTY) aux Game Awards 2022 ?,Elden Ring,God of War Ragnarök,The Last of Us Part II,Resident Evil 4,3,Jeux & BD,-
+S,,Quel jeu vidéo a remporté le prix du Game of the Year (GOTY) aux Game Awards 2016 ?,Overwatch,Doom,God of War,Fallout 4,3,Jeux & BD,-
+S,,Quel numéro porte habituellement le demi d’ouverture au rugby à XV ?,10,8,11,15,2,Sport,dix
+S,,Quel numéro porte habituellement le demi de mêlée au rugby à XV ?,9,10,15,3,2,Sport,neuf
+S,,Quel numéro porte habituellement le talonneur au rugby à XV ?,2,1,5,12,2,Sport,deux
+S,,"Quel poste occupait habituellement Jonah Lomu, joueur néo-zélandais de rugby à XV ?",Ailier,Arrière,Centre,Pilier,3,Sport,ailier droit | ailier gauche | 11 | 14
+S,,"Quel rugbyman français était surnommé ""Casque d'or"" ?",Jean-Pierre Rives,Serge Blanco,Philippe Sella,Fabien Galthié,3,Sport,rives
+S,,"Quel rugbyman toulousain, deuxième ligne emblématique du XV de France, détient le record de sélections avec 118 matchs internationaux ?",Fabien Pelous,Thierry Dusautoir,Frédéric Michalak,Philippe Sella,3,Sport,pelous
+S,,Quel athlète américain est entré dans l’histoire en remportant quatre médailles d’or aux Jeux olympiques de Berlin en 1936 ?,Jesse Owens,Jim Thorpe,Carl Lewis,Michael Johnson,3,Sport,owens | james cleveland owens
+S,,"Quel nageur américain détient le record absolu de médailles olympiques avec 28 podiums, dont 23 en or ?",Michael Phelps,Mark Spitz,Ryan Lochte,Ian Thorpe,2,Sport,phelps
+S,,"Quel judoka français, plusieurs fois champion olympique dans la catégorie des poids lourds, est resté invaincu de 2010 à 2020 ?",Teddy Riner,David Douillet,Clarisse Agbegnenou,Kosei Inoue,1,Sport,riner
+S,,Qui était l’épouse de Louis XVI et dernière reine de l’Ancien Régime ?,Marie-Antoinette d'Autriche,Marie de Médicis,Joséphine de Beauharnais,Marguerite de Valois,2,Histoire,marie antoinette
+S,,"Quel équipementier sportif utilise le ""swoosh"" comme logo depuis les années 1970 ?",Nike,Adidas,Reebok,Asics,2,Économie & Politique,-
+S,,Quel est le nom du tapis emblématique déroulé pour les célébrités lors du Festival de Cannes ?,Le tapis rouge,Le tapis bleu,Le tapis doré,Le tapis blanc,1,Actualités & Médias,rouge
+S,,"Qui est l’auteur du roman ""L’Ombre du vent"" (2001) ?",Carlos Ruiz Zafón,Paulo Coelho,Arturo Pérez-Reverte,Ildefonso Falcones,3,Littérature,zafon
+S,,"Au cours de quelle guerre l'aviateur allemand Manfred von Richthofen, surnommé le Baron rouge, est-il mort ?",La Première Guerre mondiale,La guerre franco-prussienne,La Seconde Guerre mondiale,La guerre du Vietnam,2,Histoire,wwi
+S,,Quel est le nom de la discipline qui s’intéresse à l'étude des blasons et des armoiries ?,L'héraldique,La vexillologie,La sigillographie,La numismatique,3,Histoire,-
+S,,Quel appareil utilise-t-on pour mesurer le tempo d’un morceau de musique ?,Le métronome,Le diapason,Le séquenceur,Le sonomètre,2,Musique,-
+S,,Qui est considéré comme le dernier pharaon de l’Égypte antique ?,Cléopâtre VII,Ramsès II,Néfertiti,Ptolémée XV,3,Histoire,cleopatre 7 | cleopatre vii philopator
+S,,En quelle année l’euro a-t-il officiellement remplacé le franc comme monnaie courante en France ?,2002,1996,1999,2005,2,Économie & Politique,deux mille deux
+S,,Qui exerce la co-souveraineté d’Andorre avec le président de la République française ?,L’évêque d’Urgell,Le roi d’Espagne,Le cardinal de Barcelone,Le président du Parlement catalan,4,Économie & Politique,-
+S,,Quel est l'indicatif téléphonique international des États-Unis ?,1,44,39,81,2,Technologie,un | +1
+S,,Quel astronome a donné son nom à un élément chimique découvert en 1996 ?,Nicolas Copernic,Galilée,Johannes Kepler,Isaac Newton,3,Sciences exactes,copernic
+S,,Quel marchand d'art parisien a soutenu des artistes comme Cézanne et Picasso au début de leur carrière ?,Ambroise Vollard,Paul Durand-Ruel,Berthe Weill,Aimé Maeght,3,Arts & Culture,vollard
+S,,Quel chien garde les portes des enfers dans la mythologie grecque ?,Cerbère,Orthos,Fenrir,Garmr,1,Croyances,-
+S,,"Qui est la mère de Cerbère, de la Chimère et du lion de Némée dans la mythologie grecque ?",Échidna,Méduse,Gaïa,Nyx,3,Croyances,-
+S,,De quelle région française est originaire le fromage camembert ?,La Normandie,La Savoie,L'Auvergne,La Bourgogne,2,Gastronomie,-
+S,,De quelle région française est originaire le fromage époisses ?,La Bourgogne,Le Jura,La Normandie,Le Nord-Pas-de-Calais,3,Gastronomie,-
+S,,"Quel est le nom de la famille texane dont on suit les rivalités dans la série ""Dallas"" ?",Ewing,Carrington,Forrester,Abbott,3,Cinéma & Séries,-
+S,,"Quel légume, amer et croquant, est une variété de chicorée cultivée à l'abri de la lumière ?",L'endive,Le fenouil,Le poireau,La scarole,3,Gastronomie,chicon | chicoree de bruxelles | chicoree de belgique | barbe de capucin
+S,,Quel peintre surréaliste s’est tourné vers l’art après un accident de bus en 1925 ?,Frida Kahlo,Salvador Dalí,Claude Monet,Max Ernst,2,Arts & Culture,kahlo
+S,,Quelle commune espagnole constitue une enclave au sein du département français des Pyrénées-Orientales ?,Llivia,Andorre,Olivenza,Portbou,4,Géographie,-
+S,,"Quel photographe français est l’auteur de ""La Terre vue du ciel"" (1999) ?",Yann Arthus-Bertrand,Raymond Depardon,Henri Cartier-Bresson,Robert Doisneau,3,Arts & Culture,arthus bertrand
+S,,Quel entraîneur français a dirigé le club anglais d’Arsenal FC de 1996 à 2018 ?,Arsène Wenger,Gérard Houllier,Laurent Blanc,Didier Deschamps,2,Sport,wenger
+S,,Quelle matière brillante et irisée tapisse l’intérieur de certaines coquilles comme l’ormeau ou l'huître perlière ?,La nacre,Le mica,La chitine,Le corail,3,Sciences de la vie,-
+S,,Dans quelle ville se situe la basilique de la Sagrada Família ?,Barcelone,Madrid,Séville,Valence,1,Géographie,-
+S,,"Quel youtubeur retrace son ascension de l'Everest dans le documentaire ""Kaizen"" ?",Inoxtag,Squeezie,Tibo InShape,Mastu,1,Actualités & Médias,ines benazzouz | benazzouz
+S,,"Quelle région du Proche-Orient antique signifie littéralement ""pays entre les fleuves"" ?",La Mésopotamie,La Phénicie,L'Anatolie,La Babylonie,2,Géographie,-
+S,,Dans quel pays les Contras ont-ils mené une guérilla contre le gouvernement sandiniste ?,Le Nicaragua,Le Panama,Le Salvador,La Colombie,4,Histoire,-
+S,,"Quel est le nom de l'appendice de chair qui pend au fond du palais, à l’arrière de la gorge ?",La luette,L'épiglotte,Les amygdales,La glotte,2,Sciences de la vie,uvule
+S,,Quel adjectif utilise-t-on pour désigner le Moyen Âge ?,Médiéval,Baroque,Antique,Classique,1,Histoire,-
+S,,"Comment s’appelaient les longs navires vikings utilisés pour le commerce, l’exploration et la guerre ?",Drakkar,Hersir,Skald,Ginnungagap,1,Histoire,-
+S,,Qui est l'inventeur de l'imprimerie à caractères mobiles au XVe siècle en Europe ?,Johannes Gutenberg,Martin Luther,Aldo Manuce,William Caxton,2,Technologie,gutenberg
+S,,Quel studio d’animation a été fondé par Hayao Miyazaki et Isao Takahata en 1985 ?,Studio Ghibli,Toei Animation,Sunrise,Gainax,3,Cinéma & Séries,ghibli
+S,,"Qui est l'auteur du roman classique français ""La Princesse de Clèves"" (1678) ?",Madame de La Fayette,Madame de Sévigné,Madame de Staël,Madame de Graffigny,2,Littérature,lafayette | marie madeleine de la fayette | marie madeleine pioche de la vergne
+S,,"Quel est le nom de jeune fille de l’héroïne de ""La Princesse de Clèves"" ?",Mademoiselle de Chartres,Mademoiselle de Nevers,Mademoiselle d'Anjou,Mademoiselle de Guise,4,Littérature,-
+S,,"Qui est l'auteur du roman épistolaire français ""Les Liaisons dangereuses"" (1782) ?",Pierre Choderlos de Laclos,Madame de Staël,Le Marquis de Sade,Beaumarchais,2,Littérature,choderlos de laclos
+S,,"Quel personnage féminin est la complice du vicomte de Valmont dans ""Les Liaisons dangereuses"" ?",La marquise de Merteuil,Madame de Tourvel,Cécile de Volanges,Sophie Carnay,3,Littérature,merteuil
+S,,Quelle ville a accueilli la première exposition universelle en 1851 ?,Londres,Paris,New York,Vienne,2,Histoire,-
+S,,Quel pays a connu une révolution en 1917 qui a mené à l’instauration du communisme ?,La Russie,La Chine,L'Espagne,L'Allemagne,1,Histoire,empire russe
+S,,Quel peuple a inventé l’écriture cunéiforme ?,Les Sumériens,Les Babyloniens,Les Égyptiens,Les Phéniciens,3,Technologie,-
+S,,Quelle bataille de 732 a vu Charles Martel arrêter l'invasion musulmane en Europe ?,Bataille de Poitiers,Bataille de Tolbiac,Bataille de Roncevaux,Bataille de Bouvines,2,Histoire,poitiers | bataille tours | tours | bataille du pave des martyrs | pave des martyrs
+S,,Quel mot d'origine arabe désigne une incursion violente et soudaine pour dérober des biens ?,Une razzia,Un guet-apens,Un blitz,Une escarmouche,2,Histoire,razzias
+S,,Qui était président des États-Unis pendant la crise des missiles de Cuba en 1962 ?,John F. Kennedy,Dwight D. Eisenhower,Richard Nixon,Harry S. Truman,2,Histoire,kennedy | jfk | john kennedy | john fitzgerald kennedy
+S,,Quelle ville a été le centre de la Renaissance en Italie ?,Florence,Rome,Venise,Naples,2,Arts & Culture,firenze
+S,,"Quel roi de France était surnommé ""le Roi-Soleil"" ?",Louis XIV,Henri IV,François Ier,Louis XIII,1,Histoire,louis 14
+S,,Qui a dirigé l’Union soviétique pendant la Seconde Guerre mondiale ?,Joseph Staline,Nikita Khrouchtchev,Lénine,Mikhaïl Gorbatchev,1,Histoire,staline | iossif vissarionovitch djougachvili
+S,,Quel nom donne-t-on au système de camps de travail forcé mis en place en Union soviétique sous Staline ?,Le goulag,Le kolkhoze,Le kremlim,Le NKVD,1,Histoire,-
+S,,Quel site historique de la Côte d'Azur sert de résidence estivale aux présidents français depuis 1968 ?,Le fort de Brégançon,Le château de Rambouillet,Le palais de l'Alma,La Lanterne,2,Économie & Politique,bregançon
+S,,Quelle est la capitale de la Pologne ?,Varsovie,Poznań,Cracovie,Riga,1,Géographie,-
+S,,Quel canton suisse possède l'italien comme seule langue officielle ?,Le Tessin,La Toscane,Les Grisons,Le Piémont,2,Géographie,-
+S,,Dans quel pays actuel se situe la ville antique de Capharnaüm ?,Israël,La Turquie,L'Égypte,La Syrie,3,Géographie,-
+S,,Quelle opération militaire allemande visait à envahir l’URSS en 1941 ?,L'opération Barbarossa,L'opération Overlord,L'opération Citadelle,L'opération Bagration,2,Histoire,barbarossa
+S,,Quel traité signé en 1494 partageait le Nouveau Monde entre l'Espagne et le Portugal ?,Le traité de Tordesillas,Le traité d’Alcaçovas,Le traité de Madrid,Le traité de Saragosse,3,Histoire,tordesillas
+S,,Quelle guerre a opposé le Nord et le Sud des États-Unis de 1861 à 1865 ?,La guerre de Sécession,La guerre d'Indépendance américaine,La guerre hispano-américaine,La guerre de Sept Ans,2,Histoire,secession | guerre civile americaine | civil war
+S,,"Quel empereur romain a divisé l’Empire en deux parties, orientale et occidentale ?",Dioclétien,Constantin Ier,Théodose Ier,Auguste,4,Histoire,-
+S,,Quel célèbre discours Martin Luther King a-t-il prononcé en 1963 ?,I Have a Dream,Yes We Can,Give Me Liberty or Give Me Death,We Shall Overcome,1,Histoire,-
+S,,"Quel homme d’État prussien, surnommé le ""chancelier de fer"", a mené l'unification allemande en 1871 ?",Otto von Bismarck,Guillaume Ier,Metternich,Frédéric II de Prusse,3,Histoire,von bismarck
+S,,Quelle dynastie régnait sur la France avant la Révolution de 1789 ?,Les Bourbons,Les Valois,Les Mérovingiens,Les Carolingiens,2,Histoire,-
+S,,Quelle bataille a permis à Guillaume le Conquérant de devenir roi d’Angleterre en 1066 ?,La bataille d'Hastings,La bataille d'Azincourt,La bataille de Bouvines,La bataille de Poitiers,3,Histoire,hastings
+S,,Quel roi d'Angleterre a eu six épouses ?,Henri VIII,George III,Richard Cœur de Lion,Édouard III,3,Histoire,henri 8
+S,,Quel traité a mis fin à la Première Guerre mondiale ?,Traité de Versailles,Traité de Francfort,Traité de Vienne,Traité de Sèvres,2,Histoire,versailles
+S,,Qui était le roi de France lors de la Révolution française ?,Louis XVI,Louis XIV,Charles X,François Ier,1,Histoire,louis 16 | louis capet | louis auguste de france
+S,,Quel événement marque le début de la Révolution française ?,La Prise de la Bastille,La Fuite de Varennes,Le Serment du Jeu de Paume,Le coup d'État de Napoléon Bonaparte,1,Histoire,-
+S,,"Qui a écrit : ""Choisir, c'est renoncer."" ?",André Gide,Jean-Paul Sartre,Blaise Pascal,Paul Valéry,3,Littérature,gide
+S,,"Qui a écrit : ""Science sans conscience n'est que ruine de l'âme."" ?",Rabelais,Descartes,Pascal,Montaigne,3,Littérature,françois rabelais
+S,,"Qui a écrit : ""À vaincre sans péril, on triomphe sans gloire."" ?",Pierre Corneille,Jean Racine,Molière,Jean de La Fontaine,3,Littérature,corneille
+S,,"Qui a écrit : ""Tout ce qui est impossible reste à accomplir."" ?",Jules Verne,Napoléon Bonaparte,René Char,Paul Éluard,3,Littérature,verne
+S,,Quel est le premier pays à avoir utilisé des billets de banque ?,La Chine,Le Royaume-Uni,Les États-Unis,L'Allemagne,2,Économie & Politique,-
+S,,Quel athlète a remporté les CrossFit Games chez les hommes en 2021 ?,Justin Medeiros,Mat Fraser,Noah Ohlsen,Patrick Vellner,4,Sport,medeiros
+S,,Quel chef d'État français est décédé le 26 septembre 2019 ?,Jacques Chirac,Valéry Giscard d'Estaing,François Mitterrand,Georges Pompidou,1,Économie & Politique,chirac
+S,,Dans quel pays se situe le lac Baïkal ?,La Russie,La Mongolie,La Chine,Le Kazakhstan,2,Géographie,-
+S,,Dans quel pays se situe le lac Balaton ?,La Hongrie,L'Autriche,La Slovénie,La Croatie,3,Géographie,-
+S,,Quel est le plus long nerf du corps humain ?,Le nerf sciatique,Le nerf motopedique,Le nerf pediluvien,Le nerf rachidien,2,Sciences de la vie,sciatique | nerf ischiatique | ischiatique | grand sciatique | nerf grand sciatique
+S,,Quel est l'aliment préféré d'Homer Simpson ?,Les donuts,Les cookies,Les glaces,Les hot-dogs,1,Cinéma & Séries,donut
+S,,Quel est le plat préféré de Garfield ?,Les lasagnes,Les pâtes à la carbonara,Les spaghettis à la bolognaise,Les cannellonis,2,Cinéma & Séries,lasagne | lasagnes à la bolognaise
+S,,"Comment s'appelle la version 3D du jeu de société ""Puissance 4"" ?",Le sogo,Le morpion,Le gomoku,Le puissance 5,3,Jeux & BD,score four | score 4 | puissance 4 advance
+S,,Dans quel pays se situe le cap de Bonne-Espérance ?,L'Afrique du Sud,Le Chili,L'Australie,L'Espagne,2,Géographie,-
+S,,Quel skipper a remporté l'édition 2012 du Vendée Globe ?,François Gabart,Alex Thomson,Armel Le Cléac'h,Michel Desjoyaux,3,Sport,gabart
+S,,Quelle est la bière emblématique de l'Oktoberfest ?,La Märzen,La Weizenbier,La Kölsch,La Dunkel,3,Gastronomie,märzenbier | oktoberfestbier
+S,,Quelle est la couleur caractéristique d'une bière de type stout ?,Noire,Blonde,Rouge,Dorée,2,Gastronomie,brune | brun | noir
+S,,Quelle ville accueille chaque année l'Oktoberfest ?,Munich,Prague,Bruxelles,Dublin,2,Actualités & Médias,-
+S,,Quelle est la principale céréale utilisée pour fabriquer la bière ?,L'orge,Le maïs,Le blé,Le riz,2,Gastronomie,-
+S,,Quel est le surnom du cycliste français Bernard Hinault ?,Le blaireau,Le renard,Le lièvre,Le lynx,2,Sport,menhir breton
+S,,Comment s'appelle le chanteur du groupe Metallica ?,James Hetfield,Mick Jagger,Kurt Cobain,Lemmy Kilmister,2,Musique,hetfield
+S,,Quel pays possède la plus grande zone économique exclusive ?,Les États-Unis,La France,L'Australie,La Russie,2,Économie & Politique,usa | etats unis d'amerique
+S,,Quelle ethnie a été principalement visée pendant le génocide rwandais de 1994 ?,Les Tutsis,Les Hutus,Les Bakongos,Les Fangs,2,Histoire,
+S,,Qui est devenu président de l'Afrique du Sud en 2018 ?,Cyril Ramaphosa,Jacob Zuma,Nelson Mandela,Thabo Mbeki,3,Économie & Politique,ramaphosa | matamela cyril ramaphosa
+S,,Qui a été président de la France entre 2012 et 2017 ?,François Hollande,Jacques Chirac,Nicolas Sarkozy,Emmanuel Macron,1,Économie & Politique,hollande
+S,,Qui est devenu président de l'Inde en 2022 ?,Droupadi Murmu,Narendra Modi,Ram Nath Kovind,Pranab Mukherjee,3,Économie & Politique,murmu
+S,,Qui a été Premier ministre du Canada entre 2006 et 2015 ?,Stephen Harper,Jean Chrétien,Justin Trudeau,Paul Martin,3,Économie & Politique,harper
+S,,Quelle institution est responsable de la politique monétaire dans la zone euro ?,La Banque centrale européenne,Le Fonds monétaire international,La Commission européenne,Le Conseil de l'Union européenne,2,Économie & Politique,bce
+S,33,Quel est le nom de cette série d'animation ?,Ulysse 31,Albator,Goldorak,Capitaine Flam,3,Cinéma & Séries,-
+S,34,Quel est le nom de cette actrice ?,Natalie Portman,Keira Knightley,Scarlett Johansson,Anne Hathaway,1,Cinéma & Séries,portman | natalie hershlag | hershlag
+S,35,Quel est le nom de cet acteur ?,Jeff Bridges,Kurt Russell,Kevin Costner,Nick Nolte,2,Cinéma & Séries,bridges | jeffrey leon bridges
+S,36,Quel est le nom de cet acteur ?,Jean Reno,Vincent Cassel,Daniel Auteuil,Christian Clavier,1,Cinéma & Séries,reno | juan moreno herrera y jimenez
+S,37,Quel est le nom de cet acteur ?,Gérard Depardieu,Alain Delon,Jean-Paul Belmondo,Christian Clavier,1,Cinéma & Séries,depardieu
+S,38,Quel est le nom de cet acteur ?,Jack Nicholson,Robert De Niro,Marlon Brando,Dustin Hoffman,1,Cinéma & Séries,nicholson | john joseph nicholson
+S,39,Quel est le nom de cet acteur ?,Christopher Lee,Peter Cushing,Vincent Price,Ian McKellen,2,Cinéma & Séries,lee | sir christopher lee
+S,40,Quel est le nom de cette actrice ?,Penélope Cruz,Salma Hayek,Eva Longoria,Jennifer Lopez,2,Cinéma & Séries,cruz | penelope cruz sanchez
+S,41,Quel est le nom de cet acteur ?,Javier Bardem,Antonio Banderas,Benicio del Toro,Jeffrey Dean Morgan,2,Cinéma & Séries,bardem
+S,42,Quel est le nom de cette actrice ?,Zendaya,Storm Reid,Amandla Stenberg,Keke Palmer,1,Cinéma & Séries,zendaya coleman | coleman
+S,43,Quel est le nom de cette actrice ?,Scarlett Johansson,Charlize Theron,Natalie Portman,Emily Blunt,1,Cinéma & Séries,johansson
+S,44,Quel est le nom de cette actrice ?,Jennifer Lawrence,Shailene Woodley,Brie Larson,Kristen Stewart,1,Cinéma & Séries,lawrence
+S,45,Quel est le nom de cet acteur ?,Robert Pattinson,Daniel Radcliffe,Andrew Garfield,Taylor Lautner,2,Cinéma & Séries,pattinson | robert douglas thomas pattinson
+S,46,Quel est le nom de cet acteur ?,Rupert Grint,Daniel Radcliffe,Tom Felton,Matthew Lewis,2,Cinéma & Séries,grint | rupert alexander lloyd grint
+S,47,Quel est le nom de cette actrice ?,Ana de Armas,Eva Mendes,Gal Gadot,Penélope Cruz,2,Cinéma & Séries,de armas | ana celia de armas caso
+S,48,Quel est le nom de cette actrice ?,Anya Taylor-Joy,Emma Stone,Florence Pugh,Elle Fanning,2,Cinéma & Séries,taylor joy | anya josephine marie taylor joy
+S,49,Quel est le nom de cet acteur ?,Viggo Mortensen,Sean Bean,Mads Mikkelsen,Russel Crowe,2,Cinéma & Séries,mortensen | viggo peter mortensen jr
+S,50,Quel est le nom de cette actrice ?,Nicole Kidman,Cate Blanchett,Charlize Theron,Naomi Watts,2,Cinéma & Séries,kidman | nicole mary kidman
+S,51,Quel est le nom de cet acteur ?,Kevin Spacey,Bryan Cranston,John Malkovich,Gary Oldman,2,Cinéma & Séries,spacey | kevin spacey fowler
+S,52,Quel est le nom de cet acteur ?,Jake Gyllenhaal,Tobey Maguire,Heath Ledger,Joseph Gordon-Levitt,2,Cinéma & Séries,gyllenhaal | jacob benjamin gyllenhaal
+S,53,Quel est le nom de cet acteur ?,Morgan Freeman,Samuel L. Jackson,Forest Whitaker,Denzel Washington,1,Cinéma & Séries,freeman | morgan portefield freeman jr
+S,54,Quel est le nom de cette actrice ?,Bérénice Bejo,Juliette Binoche,Marion Cotillard,Sophie Marceau,2,Cinéma & Séries,bejo | berenice consuelo bejo
+S,55,Quel est le nom de cette actrice ?,Virginie Efira,Léa Seydoux,Cécile de France,Isabelle Huppert,2,Cinéma & Séries,efira
+S,56,Quel est le nom de cet acteur ?,Hugh Grant,Jude Law,Colin Firth,Pierce Brosnan,2,Cinéma & Séries,grant | hugh john mnugo grant
+S,57,Quel est le nom de cet acteur ?,Jim Carrey,Robin Williams,Mike Myers,Steve Carell,1,Cinéma & Séries,carrey | james eugene carrey
+S,58,Quel est le nom de cet acteur ?,Christoph Waltz,Ralph Fiennes,Daniel Brühl,Michael Fassbender,2,Cinéma & Séries,waltz
+S,59,Quel est le nom de cet acteur ?,Laurence Fishburne,Samuel L. Jackson,Denzel Washington,Idris Elba,2,Cinéma & Séries,fishburne | laurence john fishburne iii
+S,60,Quel est le nom de cet acteur ?,Bradley Cooper,Ryan Gosling,Chris Pratt,Jeremy Renner,2,Cinéma & Séries,cooper | bradley charles cooper
+S,61,Quel est le nom de cette actrice ?,Mila Kunis,Megan Fox,Emma Stone,Natalie Portman,2,Cinéma & Séries,kunis | kounis | milena kounis
+S,62,Quel est le nom de cette actrice ?,Demi Moore,Sandra Bullock,Courteney Cox,Winona Ryder,2,Cinéma & Séries,moore | demetria gene guynes
+S,63,Quel est le nom de cet acteur ?,John Malkovich,Gary Oldman,Willem Dafoe,Jeremy Irons,2,Cinéma & Séries,malkovich | john gavin malkovich
+S,64,Quel est le nom de ce jeu vidéo ?,Limbo,Inside,Little Nightmares,Hollow Knight,2,Jeux & BD,-
+S,65,Quel est le nom de ce jeu vidéo ?,Hollow Knight,Dead Cells,Celeste,Blasphemous,2,Jeux & BD,-
+S,66,Quel est le nom de ce jeu vidéo ?,Cuphead,Undertale,Bendy and the Ink Machine,Shovel Knight,2,Jeux & BD,-
+S,67,Quel est le nom de ce jeu vidéo ?,Minecraft,Roblox,Terraria,Fortnite,1,Jeux & BD,-
+S,68,Quel est le nom de cette actrice ?,Jodie Foster,Julianne Moore,Sigourney Weaver,Helen Hunt,2,Cinéma & Séries,foster | alicia christian foster
+S,69,Quel est le nom de cet acteur ?,Ron Perlman,David Harbour,Clancy Brown,Vincent D’Onofrio,3,Cinéma & Séries,perlman | francis ronald perlman
+S,70,Quel est le nom de cet acteur ?,Danny Trejo,Robert Rodriguez,Edward James Olmos,Cheech Marin,3,Cinéma & Séries,trejo | daniel trejo
+S,71,Quel est le nom de cet acteur ?,Alexandre Astier,Alain Chabat,Kad Merad,Franck Pitiot,2,Cinéma & Séries,astier
+S,72,Quel est le nom de cet acteur ?,Alain Chabat,Dominique Farrugia,Édouard Baer,Didier Bourdon,2,Cinéma & Séries,chabat
+S,73,Quel est le nom de cet acteur ?,Edward Norton,Mark Ruffalo,Guy Pearce,Adrien Brody,2,Cinéma & Séries,norton
+S,74,Quel est le nom de cet acteur ?,Cillian Murphy,Tom Hardy,James McAvoy,Daniel Day-Lewis,2,Cinéma & Séries,murphy
+S,75,Quel est le nom de cette actrice ?,Gal Gadot,Anne Hathaway,Natalie Portman,Brie Larson,2,Cinéma & Séries,gadot
+S,76,Quel est le nom de cet acteur ?,George Clooney,Val Kilmer,Richard Gere,Hugh Grant,1,Cinéma & Séries,clooney
+S,,"Dans quelle ville américaine se situe le musée ""World of Coca-Cola"" ?",Atlanta,New York,Boston,Dallas,3,Économie & Politique,-
+S,,Quel est le nom de code du premier essai nucléaire français ?,Gerboise bleue,Gerboise blanche,Gerboise rouge,Gerboise verte,3,Histoire,-
+S,,Dans quel club de football Zinédine Zidane a-t-il terminé sa carrière de joueur ?,Real Madrid,Al-Sadd SC,AS Cannes,Juventus Turin,2,Sport,real madrid club futbol | real madrid cf
+S,,Quel psychologue a proposé la hiérarchie des besoins représentée sous forme de pyramide ?,Abraham Maslow,Sigmund Freud,Ivan Pavlov,Wilhelm Wundt,2,Divers,maslow
+S,,"En chimie, que signifie le sigle ""pH"" utilisé pour mesurer l’acidité d’une solution ?",Potentiel hydrogène,Potentiel hydraulique,Potentiel hydroélectrique,Potentiel hydrochimique,3,Sciences exactes,-
+S,,Quelle est la valeur du pH d’une solution neutre ?,7,1,3,12,2,Sciences exactes,sept
+S,,Quelle est la console de jeux vidéo la plus vendue de tous les temps ?,PlayStation 2,Nintendo Wii,Xbox 360,Nintendo Switch,2,Jeux & BD,ps2
+S,,Quelle est la couleur de l'améthyste ?,Violet,Orange,Bleu,Vert,2,Divers,violette
+S,,"Que manque-t-il à la statue de la ""Vénus de Milo"" ?",Les bras,La tête,Les seins,Le nez,2,Arts & Culture,ses bras
+S,,Quel est le signe astrologique d'une personne née un 5 avril ?,Bélier,Taureau,Poisson,Balance,2,Croyances,-
+S,,Quel groupe sanguin est le moins répandu dans la population mondiale ?,AB,O,A,B,2,Sciences de la vie,AB-
+S,,Quel est le groupe sanguin d’une personne considérée comme donneur universel ?,O-,B+,AB-,A+,2,Sciences de la vie,O négatif
+S,,Quel nom donne-t-on aux noces célébrées pour 60 ans de mariage ?,Les noces de diamant,Les noces d'or,Les noces de platine,Les noces de chêne,3,Divers,diamant
+S,,Quel homme politique a occupé le poste de Chancelier fédéral allemand de 1998 à 2005 ?,Gerhard Schröder,Helmut Kohl,Olaf Scholz,Angela Merkel,3,Économie & Politique,schroder
+S,,"Dans un tournoi de football à élimination directe, combien d'équipes s’affrontent en 16èmes de finale ?",32,16,8,4,1,Sport,trente deux | 32 equipes
+S,,Dans quelle ville française se situe la place Stanislas ?,Nancy,Metz,Dijon,Valenciennes,3,Géographie,-
+S,,Quelle est la carte d’atout ayant la valeur la plus élevée à la Belote ?,Valet,Roi,9,As,2,Jeux & BD,valet d'atout
+S,,"Dans un jeu de cartes français, quelle carte est surnommée ""Pallas"" ?",La Dame de pique,Le Valet de trèfle,Le Roi de coeur,L'As de carreau,4,Jeux & BD,-
+S,,"Quel souverain franc est surnommé ""l'Empereur à la barbe fleurie"" ?",Charlemagne,Clovis,Louis le Pieux,Charles Martel,2,Histoire,carolus magnus | charles i
+S,,Quel footballeur a remporté le titre de meilleur buteur du Mondial 1986 au Mexique ?,Gary Lineker,Diego Maradona,Careca,Emilio Butragueño,4,Sport,lineker
+S,,Quel est le subjonctif imparfait à la première personne du singulier du verbe boire ?,Que je busse,Que j'eusse bu,Que j'aie bu,Que je boive,3,Littérature,-
+S,,À quel peuple doit-on l’invention de la boussole magnétique ?,Les Chinois,Les Égyptiens,Les Grecs,Les Incas,2,Technologie,-
+S,,Quel fruit obtient-on en récoltant un plaqueminier ?,Le kaki,Le fruit du dragon,Le jujube,La mûre,3,Sciences de la vie,plaquemine japon | plaquemine chine | figue caque
+S,,Quel État européen a intégré la zone euro le 1er janvier 2023 ?,La Croatie,La Pologne,Malte,La Hongrie,3,Économie & Politique,-
+S,,"Dans quelle région française est né le mouvement des ""Bonnets rouges"" en 2013 ?",La Bretagne,La Corse,L'Île-de-France,La Guyane,2,Actualités & Médias,-
+S,,"En médecine, quel terme désigne la perte complète du sens olfactif ?",L'anosmie,La nasotomie,L'ablairose,La phantosmie,3,Sciences de la vie,-
+S,,"En médecine, quel terme désigne la perte complète du sens du goût ?",L’agueusie,La xérostomie,L’aphasie,La cacosmie,3,Sciences de la vie,-
+S,,Quel est le terme médical pour décrire une hallucination olfactive ?,La phantosmie,L’hyposmie,La cacosmie,L’anosmie,4,Sciences de la vie,-
+S,,Dans quelle partie du corps humain trouve-t-on l’uvée ?,L'oeil,L'estomac,Le pharynx,L'oreille interne,2,Sciences de la vie,yeux
+S,,"Comment s'appelle le personnage principal du roman ""Le Parfum"" (1985) ?",Jean-Baptiste Grenouille,Jean-Marc Lézard,Jean-Marie Raton,Jean-Pierre Castor,3,Littérature,grenouille
+S,,Quel pigment donne leur couleur verte aux plantes ?,La chlorophylle,La carotène,La lignine,La xanthophylle,2,Sciences de la vie,-
+S,,Dans quel pays se situe la Kaaba ?,L'Arabie saoudite,La Turquie,Le Pakistan,L'Égypte,2,Croyances,-
+S,,Quel élément de l'oeil s'opacifie lors d'une cataracte ?,Le cristallin,La cornée,La rétine,L'iris,2,Sciences de la vie,-
+S,,Dans quel pays se situe la ville de Dubaï ?,Les Émirats arabes unis,L'Arabie saoudite,Le Qatar,Le Bahreïn,2,Géographie,eau
+S,,"Quel pays est surnommé le ""pays du Soleil levant"" ?",Le Japon,La Chine,Le Vietnam,La Corée du Sud,1,Géographie,-
+S,,"Dans quel océan se situe le ""triangle des Bermudes"" ?",L'océan Atlantique,L'océan Pacifique,L'océan Indien,L'océan Arctique,1,Géographie,atlantique
+S,,Quel alcool est utilisé dans la réalisation d'un mojito ?,Le rhum,La vodka,Le gin,La tequila,2,Gastronomie,-
+S,,En quelle année la mission Apollo 11 a-t-elle permis le premier pas de l’homme sur la Lune ?,1969,1959,1963,1974,2,Histoire,-
+S,,De quel végétal se nourrit principalement le koala ?,L'eucalyptus,Le bambou,L'aloe vera,Le mimosa,3,Sciences de la vie,-
+S,,Que vaut ce chiffre romain : XXXV ?,35,20,8,97,2,Histoire,trente cinq
+S,,Qui a fondé la communauté Emmaüs pour venir en aide aux plus démunis ?,L'abbé Pierre,Mère Teresa,Coluche,Jean Vanier,2,Divers,henry groues | groues
+S,,"Quel phénomène esthétique provoque l’aspect bosselé de la peau appelé ""peau d’orange"" ?",La cellulite,Le vitiligo,Les vergetures,Le psoriasis,2,Sciences de la vie,-
+S,,Quel glucide complexe est stocké par les plantes et retrouvé en grande quantité dans les féculents ?,L'amidon,Le saccharose,Le glycogène,L'insuline,2,Sciences exactes,-
+S,,"Quel est le nom donné au cuir de chèvre, raffiné et coloré, employé en reliure fine ?",Le maroquin,La basane,Le nubuck,Le chagrin,4,Arts & Culture,cuir marocain
+S,,"En chant lyrique, quel type de voix masculine se trouve entre la basse et le ténor ?",Le baryton,Le soprano,Le contralto,Le contre-ténor,2,Musique,-
+S,,Dans quel pays a eu lieu la révolution spartakiste en janvier 1919 ?,L'Allemagne,La Russie,L'Italie,L'Espagne,3,Histoire,-
+S,,"Quelle danseuse du Moulin Rouge portait le surnom de ""La Goulue"" ?",Louise Weber,Jane Avril,Josephine Baker,Isadora Duncan,4,Histoire,weber
+S,,"Quel footballeur autrichien des années 1930 était surnommé le ""Mozart du football"" ?",Matthias Sindelar,Josef Bican,Ernst Happel,Herbert Prohaska,4,Sport,sindelar
+S,77,Quel est le nom de cet acteur ?,Hugh Jackman,Russell Crowe,Christian Bale,Gerard Butler,2,Cinéma & Séries,jackman
+S,78,Quel est le nom de cette actrice ?,Rachel McAdams,Evangeline Lilly,Isla Fisher,Rachel Weisz,2,Cinéma & Séries,mcadams
+S,,Dans quel pays se situe la ville de Cuzco (~ 440 000 hab.) ?,Le Pérou,Le Mexique,La Bolivie,La Colombie,2,Géographie,-
+S,,"Dans quel pays se situe la ville de Caracas (~ 3,5 millions hab.) ?",Le Venezuela,La Colombie,Le Mexique,L'Équateur,2,Géographie,-
+S,,"Dans quel pays se situe la ville de Manaus (~ 2,2 millions hab.) ?",Le Brésil,La Colombie,Le Venezuela,Le Suriname,2,Géographie,-
+S,,"Dans quel pays se situe la ville de Monterrey (~ 1,1 million hab.) ?",Le Mexique,L'Argentine,Les États-Unis,L'Espagne,2,Géographie,-
+S,,"Dans quel pays se situe la ville de Conakry (~ 2,3 millions hab.) ?",La Guinée,Le Liberia,Le Ghana,Le Sénégal,3,Géographie,-
+S,79,Quel est le nom de cet acteur ?,Joaquin Phoenix,Jared Leto,Christian Bale,Adrien Brody,2,Cinéma & Séries,phoenix | joaquin rafael bottom
+S,80,Quel est le nom de cet acteur ?,Elijah Wood,Tobey Maguire,Daniel Radcliffe,Dominic Monaghan,2,Cinéma & Séries,wood
+S,81,Quel est le nom de cette actrice ?,Zoe Saldaña,Rosario Dawson,Zendaya,Halle Berry,2,Cinéma & Séries,saldana
+S,82,Quel est le nom de cet acteur ?,Daniel Craig,Pierce Brosnan,Roger Moore,Sean Connery,2,Cinéma & Séries,craig
+S,83,Quel est le nom de cet acteur ?,Harrison Ford,Kevin Costner,Mel Gibson,Tommy Lee Jones,2,Cinéma & Séries,ford
+S,84,Quel est le nom de cet acteur ?,Daniel Radcliffe,Elijah Wood,Tom Felton,Robert Pattinson,1,Cinéma & Séries,radcliffe
+S,85,Quel est le nom de cette actrice ?,Gwyneth Paltrow,Nicole Kidman,Naomi Watts,Cameron Diaz,2,Cinéma & Séries,paltrow
+S,86,Quel est le nom de cette actrice ?,Kate Winslet,Julianne Moore,Nicole Kidman,Cate Blanchett,2,Cinéma & Séries,winslet
+S,87,Quel est le nom de cette actrice ?,Margot Robbie,Cara Delevingne,Amber Heard,Scarlett Johansson,2,Cinéma & Séries,robbie
+S,,Quel nom porte le code éthique qui régissait la vie et les valeurs des samouraïs ?,Le bushido,Le seppuku,Le shogunat,Le kabuki,3,Histoire,-
+S,,"Quel est le nom de la première girafe arrivée en France, offerte à Charles X en 1827 ?",Zarafa,Soukaina,Nubia,Kafira,3,Histoire,-
+S,,Comment s’appelait l’impôt obligatoire sur le sel appliqué jusqu'à la Révolution française ?,La gabelle,La dîme,Le cens,La taille,3,Histoire,gabelle du sel
+S,,"Quel roi de France est surnommé le ""Roi-Soleil"" ?",Louis XIV,François Ier,Henri IV,Louis XVI,1,Histoire,louis 14
+S,,"Quel baron de la drogue colombien, chef du cartel de Medellín, était surnommé le ""roi de la cocaïne"" ?",Pablo Escobar,Griselda Blanco,Joaquín Guzmán,Carlos Lehder,1,Histoire,escobar
+S,,Quelle est la capitale de l'Australie ?,Canberra,Sydney,Melbourne,Brisbane,2,Géographie,-
+S,,Quel est l’organe interne le plus lourd du corps humain ?,Le foie,Le coeur,Le cerveau,Les poumons,2,Sciences de la vie,-
+S,,Quelle est la plus grande planète du système solaire ?,Jupiter,Saturne,Terre,Neptune,1,Sciences exactes,-
+S,,Quel scientifique britannique a découvert la pénicilline en 1928 ?,Alexander Fleming,Edward Jenner,Robert Koch,Joseph Lister,3,Sciences exactes,fleming
+S,,Quel scientifique est à l’origine de la théorie de la relativité restreinte et générale ?,Albert Einstein,Isaac Newton,Niels Bohr,Stephen Hawking,1,Sciences exactes,einstein
+S,,"Quel acteur interprète le rôle de James Bond dans ""Goldfinger"" (1964) ?",Sean Connery,Pierce Brosnan,Roger Moore,Timothy Dalton,2,Cinéma & Séries,connery
+S,,"Donnez la bonne orthographe de ce mot : ""lo-go-ré""",Logorrhée,Laugorré,Loggaurée,Laughoré,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""ko-ro-bo-ré""",Corroborer,Coroborrer,Corroborrer,Coroborer,2,Littérature,corroboré
+S,,"Donnez la bonne orthographe de ce mot : ""é-ki-moz""",Ecchymose,Echymose,Ecchimose,Echimose,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""a-ka-bi""",Acabit,Acabbi,Acabis,Accabis,2,Littérature,-
+S,,"Quelle sauce chaude française est préparée avec du beurre, des jaunes d’œufs, de l’estragon et des échalotes ?",La sauce béarnaise,La sauce bordelaise,La sauce gribiche,La sauce tartare,2,Gastronomie,bearnaise
+S,,"Quel est le nom de ce personnage du jeu ""Overwatch"" (2016) ?",Reinhardt,Bastion,Doomfist,Torbjörn,3,Jeux & BD,reinhardt wilhelm
+S,89,Quel est le nom de cette actrice ?,Diane Kruger,Keira Knightley,Naomi Watts,Eva Green,2,Cinéma & Séries,kruger | diane heidkruger | heidkruger
+S,90,Quel est le nom de cette actrice ?,Sophie Marceau,Isabelle Adjani,Emmanuelle Béart,Juliette Binoche,2,Cinéma & Séries,marceau | sophie maupu | maupu
+S,91,Quel est le nom de cette actrice ?,Meryl Streep,Sigourney Weaver,Susan Sarandon,Jessica Lange,2,Cinéma & Séries,streep
+S,92,Quel est le nom de cet acteur ?,Bruce Willis,Harrison Ford,Chuck Norris,Sylvester Stallone,1,Cinéma & Séries,willis | walter bruce willis
+S,93,Quel est le nom de cette actrice ?,Kaya Scodelario,Natalie Dormer,Lily Collins,Emma Watson,3,Cinéma & Séries,scodelario | humphrey
+S,,"Quelle sauce française à base d’œufs durs, de moutarde et de fines herbes, accompagne souvent la tête de veau ?",La sauce gribiche,La sauce béarnaise,La sauce aïoli,La sauce hollandaise,2,Gastronomie,gribiche
+S,,Quelle sauce française à base de beurre d’écrevisse accompagne traditionnellement les quenelles de brochet ?,La sauce Nantua,La sauce gribiche,La sauce mornay,La sauce américaine,3,Gastronomie,nantua
+S,,Quel système d’exploitation mobile développé par Google est utilisé sur la majorité des smartphones dans le monde ?,Android,iOS,Symbian,Windows Phone,1,Technologie,-
+S,,Quel système d’exploitation développé par Microsoft est le plus répandu sur les ordinateurs personnels ?,Windows,Linux,Solaris,macOS,1,Technologie,-
+S,,Quelles lignes horizontales imaginaires relient les points de même latitude sur un globe terrestre ?,Les parallèles,Les méridiens,Les isobares,Les fuseaux horaires,2,Géographie,parallele
+S,,Quels oiseaux des îles Galápagos ont permis à Darwin de développer sa théorie de l’évolution ?,Les pinsons,Les ibis,Les cormorans,Les colibris,3,Sciences de la vie,pinson
+S,,Quel savant français du XIXe siècle est l’auteur de la première grande théorie transformiste de l’évolution ?,Jean-Baptiste de Lamarck,Charles Darwin,Georges Cuvier,Gregor Mendel,3,Sciences de la vie,lamarck
+S,,Quel officier de marine britannique a commandé le HMS Beagle lors du voyage de Charles Darwin autour du monde ?,Robert FitzRoy,Thomas Huxley,Matthew Flinders,Horatio Nelson,4,Divers,fitzroy
+S,,Quel nom est donné à un entier naturel dont la somme des diviseurs propres est supérieure à lui-même ?,Un nombre abondant,Un nombre premier,Un nombre transcendant,Un nombre déficient,4,Sciences exactes,-
+S,,"Quel compositeur italien est l'auteur de l'opéra ""La Traviata"" (1853) ?",Giuseppe Verdi,Gioachino Rossini,Gaetano Donizetti,Vincenzo Bellini,2,Musique,verdi
+S,,"Quel hippodrome du bois de Boulogne accueille chaque année le ""Prix de l'Arc de Triomphe"" ?",L’hippodrome de Longchamp,L’hippodrome de Vincennes,L’hippodrome de Chantilly,L’hippodrome d’Auteuil,3,Sport,longchamp
+S,94,Quel est le nom de cette plante à fleurs ?,Le coquelicot,La tulipe,L'anémone,Le géranium,2,Sciences de la vie,coquelicots | papaver rhoeas
+S,,"Dans la mythologie grecque, quel est le royaume des morts qui n’ont pas péri au combat ?",Helheim,Valhalla,Muspelheim,Alfheim,3,Croyances,hel
+S,,Quelle femme d’origine russe a été la muse et le grand amour de Salvador Dalí ?,Gala,Dora,Lou,Kiki,3,Arts & Culture,gala dali | elena ivanovna diakonova | diakonova
+S,,Quel terme scientifique désigne le passage direct d'un corps de l'état solide à l'état gazeux ?,La sublimation,L'évaporation,La fusion,La condensation,2,Sciences exactes,-
+S,,Quel terme scientifique désigne le passage d'un corps de l'état solide à l'état liquide ?,La fusion,La sublimation,La liquéfaction,La condensation,2,Sciences exactes,-
+S,,"Quelle infection intestinale, bacillaire ou amibienne, provoque diarrhées sanglantes et fortes douleurs abdominales ?",La dysentrie,La gastro-entérite,La giardiase,La typhoïde,3,Sciences de la vie,-
+S,,Quel président américain a démissionné en 1974 à la suite du scandale du Watergate ?,Richard Nixon,Gerald Ford,Lyndon B. Johnson,Herbert Hoover,2,Économie & Politique,nixon
+S,,Quel est le nom spécifique donné aux excréments de loutre ?,L'épreinte,La moquette,La laissée,La fiente,4,Sciences de la vie,epreintes
+S,95,Quel est le nom de cette race de chien ?,Le beagle,Le teckel,Le foxhound,Le jack russell terrier,2,Sciences de la vie,-
+S,96,Quel est le nom de cette race de chien ?,Le caniche,Le bichon frisé,Le shih tzu,Le yorkshire terrier,2,Sciences de la vie,-
+S,97,Quel est le nom de cette race de chien ?,Le shih tzu,Le pékinois,Le spitz nain,L'épagneul tibétain,2,Sciences de la vie,-
+S,,Quel calendrier a été instauré en France en 1793 pour rompre avec les traditions monarchiques et religieuses ?,Le calendrier républicain,Le calendrier grégorien,Le calendrier julien,Le calendrier hégirien,2,Histoire,republicain | revolutionnaire | calendrier revolutionnaire
+S,,Combien de mois comptait le calendrier républicain ?,12,9,15,18,2,Histoire,douze | 12 mois
+S,,Quel était le nom donné aux jours ajoutés en fin d’année dans le calendrier républicain pour compléter le cycle annuel ?,Les jours sans-culottides,Les épagomènes,Les intercalaires,Les jours fériés,4,Histoire,sans culottides | jour sans culottide | complementaire | jours complementaires
+S,,Quel était le premier mois du calendrier républicain ?,Vendémiaire,Floréal,Thermidor,Nivôse,4,Histoire,-
+S,,"Quel artiste interprète ""Save Your Tears"" (2020) ?",The Weeknd,Bruno Mars,Justin Bieber,Post Malone,2,Musique,abel tesfaye | tesfaye
+S,,"Quel artiste interprète ""good 4 u"" (2021) ?",Olivia Rodrigo,Ariana Grande,Dua Lipa,Billie Eilish,2,Musique,rodrigo
+S,,"Quel artiste interprète ""Kiss Me More"" (2021) ?",Doja Cat,Lizzo,Megan Thee Stallion,H.E.R.,2,Musique,sza | doja cat sza
+S,,"Quel artiste interprète ""Happier Than Ever"" (2021) ?",Billie Eilish,Lana Del Rey,Banks,Lorde,2,Musique,eilish
+S,98,Quel est le nom de cette chanteuse ?,Billie Eilish,Avril Lavigne,Halsey,Lorde,1,Musique,eilish
+S,,"Quel artiste interprète ""Easy on Me"" (2021) ?",Adele,Kelly Clarkson,Alicia Keys,Jessie J,2,Musique,-
+S,,"Quel artiste interprète ""Bad Habits"" (2021) ?",Ed Sheeran,Sam Smith,James Bay,George Ezra,2,Musique,sheeran
+S,99,Quel est le nom de ce chanteur ?,Ed Sheeran,Damien Rice,Hozier,Vance Joy,1,Musique,sheeran
+S,,"Quel rappeur interprète ""Astronaut in the Ocean"" (2019) ?",Masked Wolf,Kid Cudi,Juice WRLD,G-Eazy,2,Musique,harry michael | michael
+S,,"Quelle artiste interprète ""MONEY"" (2021) ?",Lisa,Hwasa,Rosé,Jennie,2,Musique,pranpriya manobal | manobal | lalisa
+S,,"Quel artiste interprète ""INDUSTRY BABY"" (2021) ?",Lil Nas X,Travis Scott,Drake,DaBaby,2,Musique,jack harlow | montero lamar hill
+S,,"Quel DJ a composé ""The Business"" (2020) ?",Tiësto,Steve Aoki,Armin van Buuren,Kygo,3,Musique,tijs michiel verwest
+S,,"Quelle rappeuse interprète ""Up"" (2021) ?",Cardi B,Nicki Minaj,Megan Thee Stallion,Iggy Azalea,2,Musique,belcalis marlenis almànzar | almanzar
+S,100,Quel est le nom de cet album ?,The Dark Side of the Moon,The Wall,Fragile,Wish You Were Here,2,Musique,-
+S,101,Quel est le nom de cet album ?,Nevermind,In Utero,Bleach,Dirt,2,Musique,-
+S,102,Quel est le nom de cet album ?,Abbey Road,Revolver,Let It Be,Pet Sounds,2,Musique,-
+S,103,Quel est le nom de cet album ?,Californication,By the Way,Stadium Arcadium,Superunknown,2,Musique,-
+S,104,Quel groupe de punk rock britannique est à l’origine de cet album ?,The Clash,Sex Pistols,Buzzcocks,The Damned,2,Musique,-
+S,105,Quelle chanteuse américaine est à l'origine de cet album ?,Cyndi Lauper,Madonna,Bonnie Tyler,Debbie Harry,2,Musique,lauper | cynthia lauper
+S,106,Quelle chanteuse américaine est à l'origine de cet album ?,Beyoncé,Rihanna,Alicia Keys,Kelis,2,Musique,beyonce knowles | beyonce carter | knowles | carter
+S,107,Quel groupe de pop-rock britannique est à l'origine de cet album ?,Fleetwood Mac,Supertramp,Led Zeppelin,The Police,3,Musique,-
+S,108,Quel rappeur américain est à l'origine de cet album ?,Eminem,Dr. Dre,Jay-Z,Snoop Dogg,1,Musique,marshall bruce mathers iii | slim shady
+S,109,Quel groupe de metal américain est à l'origine de cet album ?,Pantera,Metallica,Slayer,Machine Head,2,Musique,-
+S,110,Quel rappeur français est à l'origine de cet album ?,Gazo,Koba LaD,Ninho,Damso,2,Musique,ibrahima diakite | diakite
+S,111,Quel groupe de punk rock américain est à l'origine de cet album ?,Green Day,The Offspring,Bad Religion,Blink-182,2,Musique,-
+S,112,Quel artiste est à l'origine de cet album ?,Hozier,James Bay,George Ezra,Rag’n’Bone Man,2,Musique,-
+S,113,Quel chanteur de reaggaeton est à l'origine de cet album ?,Bad Bunny,Daddy Yankee,J Balvin,Ozuna,2,Musique,benito ocasio | ocasio
+S,114,Quel est le nom de ce jeu vidéo ?,Pong,Breakout,Space Invaders,Asteroids,2,Jeux & BD,-
+S,115,Quel est le nom de ce jeu vidéo ?,Space Invaders,Galaxian,Asteroids,Missile Command,2,Jeux & BD,-
+S,116,Quel est le nom de ce jeu vidéo ?,Pac-Man,Dig Dug,Frogger,BurgerTime,1,Jeux & BD,-
+S,117,Quel est le nom de ce jeu vidéo ?,Donkey Kong,Mario Bros.,Jungle Hunt,Popeye,2,Jeux & BD,-
+S,118,Quel est le nom de ce jeu vidéo ?,Tetris,Bubble Bobble,Arkanoid,Columns,1,Jeux & BD,-
+S,119,Quel est le nom de ce jeu vidéo ?,Shovel Knight,Celeste,Braid,Dead Cells,3,Jeux & BD,-
+S,120,Quel est le nom de ce jeu vidéo ?,Celeste,Super Meat Boy,Ori and the Blind Forest,Hollow Knight,3,Jeux & BD,-
+S,121,Quel est le nom de ce jeu vidéo ?,Ori and the Blind Forest,Child of Light,Limbo,Rayman Legends,3,Jeux & BD,-
+S,122,Quel est le nom de ce jeu vidéo ?,Castlevania,Metroid,Kid Icarus,Ninja Gaiden,3,Jeux & BD,-
+S,123,Quel est le nom de ce jeu vidéo ?,Dead Cells,Hades,The Binding of Isaac,Rogue Legacy,3,Jeux & BD,-
+S,124,Quel est le nom de ce jeu vidéo ?,Angry Birds,Cut the Rope,Plants vs. Zombies,Flappy Bird,2,Jeux & BD,-
+S,125,Quel est le nom de ce jeu vidéo ?,The Binding of Isaac,Don’t Starve,Enter the Gungeon,Rogue Legacy,2,Jeux & BD,-
+S,126,Quel est le nom de ce jeu vidéo ?,Super Meat Boy,VVVVVV,Celeste,The End Is Nigh,3,Jeux & BD,-
+S,127,Quel est le nom de ce jeu vidéo ?,Stardew Valley,Harvest Moon,Animal Crossing,Terraria,3,Jeux & BD,-
+S,128,Quel est le nom de ce jeu vidéo ?,Rogue Legacy,Enter the Gungeon,Spelunky,Salt and Sanctuary,3,Jeux & BD,-
+S,129,Quel est le nom de ce jeu vidéo ?,Clash of Clans,Clash Royale,Boom Beach,Rise of Kingdoms,2,Jeux & BD,-
+S,130,Quel est le nom de ce jeu vidéo ?,Fruit Ninja,Doodle Jump,Cut the Rope,Angry Birds,2,Jeux & BD,-
+S,131,Quel est le nom de ce jeu vidéo ?,Temple Run,Subway Surfers,Jetpack Joyride,Crossy Road,2,Jeux & BD,-
+S,132,Quel est le nom de ce jeu vidéo ?,Plants vs. Zombies,Bloons TD,Zombie Tsunami,Fieldrunners,2,Jeux & BD,plants versus zombies | pvz
+S,133,Quel est le nom de ce jeu vidéo ?,Subway Surfers,Temple Run,Jetpack Joyride,Minion Rush,2,Jeux & BD,-
+S,134,Quel est le nom de ce jeu vidéo ?,Slay the Spire,Monster Train,Darkest Dungeon,Into the Breach,3,Jeux & BD,-
+S,135,Quel est le nom de ce jeu vidéo ?,Don't Starve,The Forest,Rust,Terraria,3,Jeux & BD,-
+S,136,Quel est le nom de ce jeu vidéo ?,Doodle Jump,Angry Birds,Flappy Bird,Jetpack Joyride,1,Jeux & BD,-
+S,137,Quel est le nom de ce jeu vidéo ?,Among Us,Fall Guys,Roblox,Minecraft,2,Jeux & BD,-
+S,138,À quel pays appartient ce drapeau ?,L'Italie,L'Irlande,Le Mexique,La Bulgarie,1,Géographie,-
+S,2,À quel pays appartient ce drapeau ?,La France,La Russie,Les Pays-Bas,La Slovaquie,1,Géographie,-
+S,139,À quel pays appartient ce drapeau ?,L'Espagne,Le Portugal,La Colombie,Le Venezuela,1,Géographie,-
+S,140,À quel pays appartient ce drapeau ?,Le Portugal,Le Brésil,Le Mexique,L'Espagne,1,Géographie,-
+S,141,À quel pays appartient ce drapeau ?,L'Ukraine,La Suède,La Roumanie,La Mongolie,2,Géographie,-
+S,142,À quel pays appartient ce drapeau ?,L'Autriche,La Lettonie,La Pologne,Le Danemark,2,Géographie,-
+S,143,À quel pays appartient ce drapeau ?,La Chine,Le Vietnam,La Corée du Sud,Singapour,1,Géographie,-
+S,144,À quel pays appartient ce drapeau ?,L'Inde,L'Iran,Le Niger,L'Irlande,1,Géographie,-
+S,145,À quel pays appartient ce drapeau ?,Le Japon,La Corée du Sud,L'Indonésie,Le Bangladesh,1,Géographie,-
+S,146,À quel pays appartient ce drapeau ?,La Corée du Sud,Le Japon,La Corée du Nord,La Chine,2,Géographie,-
+S,147,À quel pays appartient ce drapeau ?,La Turquie,La Tunisie,L'Algérie,Le Pakistan,2,Géographie,-
+S,148,À quel pays appartient ce drapeau ?,Le Ghana,Le Sénégal,Le Mali,L'Éthiopie,3,Géographie,-
+S,149,À quel pays appartient ce drapeau ?,Le Mali,Le Sénégal,La Guinée,Le Cameroun,3,Géographie,-
+S,150,À quel pays appartient ce drapeau ?,Le Sénégal,Le Mali,Le Burkina Faso,Le Ghana,3,Géographie,-
+S,151,À quel pays appartient ce drapeau ?,Le Suriname,Le Guyana,La Bolivie,L'Éthiopie,3,Géographie,-
+S,152,À quel pays appartient ce drapeau ?,Le Botswana,Le Kenya,La Namibie,La Tanzanie,3,Géographie,-
+S,153,À quel pays appartient ce drapeau ?,Le Malawi,Le Kenya,La Zambie,Le Mozambique,3,Géographie,-
+S,154,À quel pays appartient ce drapeau ?,La Namibie,Le Zimbabwe,L'Eswatini,La Tanzanie,3,Géographie,-
+S,155,À quel pays appartient ce drapeau ?,La Somalie,Djibouti,Israël,La Micronésie,3,Géographie,-
+S,156,À quel pays appartient ce drapeau ?,Le Rwanda,Le Gabon,L'Ouganda,Le Kenya,3,Géographie,-
+S,157,À quel pays appartient ce drapeau ?,L'Ouganda,Le Soudan du Sud,Le Kenya,Le Zimbabwe,3,Géographie,-
+S,158,À quel pays appartient ce drapeau ?,La Russie,La Slovaquie,La Serbie,Les Pays-Bas,1,Géographie,-
+S,159,À quel pays appartient ce drapeau ?,La Syrie,L'Irak,L'Égypte,Le Yémen,3,Géographie,-
+S,160,À quel pays appartient ce drapeau ?,L'Irak,Le Yémen,L'Égypte,La Syrie,3,Géographie,-
+S,161,À quel pays appartient ce drapeau ?,Le Yémen,L'Irak,L'Égypte,La Syrie,3,Géographie,-
+S,162,À quel pays appartient ce drapeau ?,Le Maroc,La Tunisie,L'Algérie,La Turquie,2,Géographie,-
+S,163,À quel pays appartient ce drapeau ?,Le Pakistan,L'Algérie,La Tunisie,L'Arabie saoudite,3,Géographie,-
+S,164,À quel pays appartient ce drapeau ?,La Grèce,Israël,La Finlande,L'Argentine,2,Géographie,-
+S,165,À quel pays appartient ce drapeau ?,La Géorgie,Le Danemark,La Suisse,Le Monténégro,3,Géographie,-
+S,167,À quel pays appartient ce drapeau ?,La Thaïlande,Le Costa Rica,La Serbie,Le Paraguay,3,Géographie,-
+S,168,À quel pays appartient ce drapeau ?,Le Liban,La Syrie,La Jordanie,La Palestine,3,Géographie,-
+S,166,À quel pays appartient ce drapeau ?,Le Laos,Le Cambodge,La Birmanie,Le Bangladesh,3,Géographie,-
+S,169,À quel pays appartient ce drapeau ?,L'Algérie,Le Maroc,La Tunisie,La Turquie,2,Géographie,-
+S,,Quel club de football a remporté la Ligue des champions de l'UEFA 2022 ?,Real Madrid,Liverpool,Manchester City,Paris Saint-Germain,2,Sport,real madrid club futbol | real madrid cf
+S,,Quel club de football a remporté la Ligue des champions de l'UEFA 2023 ?,Manchester City,Real Madrid,Liverpool,Paris Saint-Germain,2,Sport,manchester city football club | manchester city fc | man city | city
+S,,Quel club de football a remporté la Ligue des champions de l'UEFA 2024 ?,Real Madrid,Borussia Dortmund,Paris Saint-Germain,Bayern Munich,2,Sport,real madrid club futbol | real madrid cf
+S,,Quel club de football a remporté la Ligue des champions de l'UEFA 2025 ?,Paris Saint-Germain,Inter Milan,FC Barcelone,Arsenal FC,2,Sport,psg | paris sg | paris saint germain football club
+S,,Dans quel stade évolue l'équipe de football de Manchester City depuis 2003 ?,Etihad Stadium,Old Trafford,Anfield,Emirates Stadium,3,Sport,city of manchester stadium
+S,,Dans quel stade évolue l'équipe de football de Liverpool depuis 1893 ?,Anfield,Goodison Park,Stamford Bridge,Emirates Stadium,2,Sport,stade anfield | anfield road
+S,,Quel club de football a été le premier résident du stade d'Anfield avant Liverpool FC ?,Everton FC,Aston Villa,Preston North End,Blackburn Rovers,4,Sport,everton | everton football club
+S,,Dans quel stade évolue l'équipe de football de Manchester United depuis 1910 ?,Old Trafford,Etihad Stadium,Stamford Bridge,Emirates Stadium,3,Sport,-
+S,,"Quel stade de football est surnommé le ""Théâtre des Rêves"" ?",Old Trafford,San Siro,Santiago Bernabéu,Le Parc des Princes,3,Sport,-
+S,,Dans quel stade évolue l'équipe de football du Paris Saint-Germain depuis 1974 ?,Le Parc des Princes,Le Stade de France,Le Stade Vélodrome,Le Stade Jean-Bouin,2,Sport,-
+S,170,Quel est le nom de ce footballeur français ?,Kylian Mbappé,Ousmane Dembélé,Kingsley Coman,Paul Pogba,1,Sport,mbappe
+S,171,Quel est le nom de ce footballeur argentin ?,Lionel Messi,Diego Maradona,Ángel Di María,Sergio Agüero,1,Sport,leo messi | messi
+S,172,Quel est le nom de ce footballeur portugais ?,Cristiano Ronaldo,Luis Figo,Pepe,Bruno Fernandes,1,Sport,cristiano ronaldo dos santos aveiro | ronaldo | cr7
+S,173,Quel est le nom de ce footballeur brésilien ?,Neymar,Ronaldinho,Kaká,Vinícius Júnior,1,Sport,neymar da silva santos junior | neymar jr
+S,174,Quel est le nom de ce joueur et entraineur de football français ?,Zinédine Zidane,Didier Deschamps,Laurent Blanc,Michel Platini,1,Sport,zidane | zz | zizou
+S,175,Quel est le nom de ce joueur et entraineur de football français ?,Didier Deschamps,Raymond Domenech,Laurent Blanc,Michel Platini,1,Sport,deschamps
+S,176,Quel est le nom de ce joueur et entraineur de football allemand ?,Franz Beckenbauer,Jürgen Klinsmann,Lothar Matthäus,Oliver Kahn,2,Sport,beckenbauer
+S,177,Quel est le nom de ce footballeur brésilien ?,Ronaldinho,Ronaldo,Romário,Neymar,1,Sport,ronaldo de assis moreira | ronaldinho gaucho
+S,178,Quel est le nom de ce footballeur anglais ?,David Beckham,Michael Owen,Steven Gerrard,Wayne Rooney,2,Sport,beckham
+S,179,Quel est le nom de ce footballeur argentin ?,Diego Maradona,Lionel Messi,Gabriel Batistuta,Javier Zanetti,1,Sport,diego armando maradona | maradona
+S,180,Quel est le nom de ce footballeur italien ?,Paolo Maldini,Fabio Cannavaro,Alessandro Nesta,Giorgio Chiellini,2,Sport,maldini
+S,181,Quel est le nom de ce footballeur espagnol ?,Iker Casillas,David de Gea,Víctor Valdés,Pepe Reina,2,Sport,casillas | iker casillas fernandez
+S,182,Quel est le nom de ce footballeur allemand ?,Oliver Kahn,Manuel Neuer,Toni Schumacher,Jens Lehmann,2,Sport,kahn
+S,183,Quel est le nom de ce footballeur français ?,Éric Cantona,Jean-Pierre Papin,David Ginola,Christophe Dugarry,2,Sport,cantona
+S,184,Quel est le nom de ce footballeur français ?,N'Golo Kanté,Paul Pogba,Blaise Matuidi,Claude Makélélé,2,Sport,kante
+S,185,Quel est le nom de ce footballeur français ?,Marcel Desailly,Lilian Thuram,William Gallas,Claude Makélélé,2,Sport,desailly
+S,186,Quel est le nom de ce footballeur français ?,Lilian Thuram,Marcel Desailly,Patrick Vieira,William Gallas,2,Sport,thuram
+S,187,Quel est le nom de ce footballeur espagnol ?,Andrés Iniesta,Xavi Hernández,Cesc Fàbregas,Sergio Busquets,2,Sport,iniesta | andres iniesta lujan
+S,188,Quel est le nom de ce footballeur espagnol ?,Fernando Torres,David Villa,Raúl González,Álvaro Morata,2,Sport,torres
+S,189,Quel est le nom de ce footballeur néerlandais ?,Virgil van Dijk,Matthijs de Ligt,Ruud van Nistelrooy,Robin van Persie,2,Sport,van dijk
+S,190,Quel est le nom de ce footballeur belge ?,Eden Hazard,Kevin De Bruyne,Axel Witsel,Dries Mertens,2,Sport,hazard
+S,191,Quel est le nom de ce footballeur belge ?,Kevin De Bruyne,Marouane Fellaini,Axel Witsel,Eden Hazard,2,Sport,de bruyne | kdb
+S,192,Quel est le nom de ce footballeur belge ?,Vincent Kompany,Jan Vertonghen,Thomas Vermaelen,Romelu Lukaku,3,Sport,kompany
+S,193,Quel est le nom de ce footballeur allemand ?,Manuel Neuer,Marc-André ter Stegen,Oliver Kahn,Jens Lehmann,2,Sport,neuer
+S,194,Quel est le nom de ce footballeur portugais ?,Deco,Ricardo Quaresma,Luís Figo,João Moutinho,3,Sport,anderson luis de souza
+S,,"Résolvez cette équation : 
+3x + 5 = 14",3,2,9,4,2,Sciences exactes,trois
+S,,"Résolvez cette équation : 
+2x - 7 = 9",8,2,7,16,2,Sciences exactes,huit
+S,,"Résolvez cette équation : 
+5x + 2 = 17",3,5,-3,2,2,Sciences exactes,trois
+S,,"Résolvez cette équation : 
+4(x - 3) = 20",8,5,3,4,3,Sciences exactes,huit
+S,,"Résolvez cette équation : 
+(2x + 3) / 5 = 7",16,2,8,4,3,Sciences exactes,seize
+S,,"Quelle anagramme du mot ""chien"" désigne également l'endroit où il dort ?",La niche,Le chenil,Le caniche,La chine,2,Littérature,-
+S,,"Quel conte britannique du XIXe siècle se cache derrière l’anagramme ""Le lièvre au pays des limaces"" ?",Alice au pays des merveilles,Oliver Twist,Le Livre de la Jungle,Les Voyages de Gulliver,3,Littérature,les aventures d'alice au pays des merveilles
+S,,"Quel prénom féminin, anagramme du verbe ""aimer"", est au coeur du récit évangélique ?",Marie,Eve,Martha,Eunice,2,Littérature,-
+S,,Quel terme désigne un mot ou une phrase lisible à l'identique dans les deux sens ?,Un palindrome,Une anagramme,Un oxymore,Un pangramme,2,Littérature,-
+S,,Quel terme désigne un mot qui en devient un autre lorsqu'on le lit en sens inverse ?,Un anacyclique,Un palindrome,Un ambigramme,Un holorime,3,Littérature,-
+S,,Comment désigne-t-on deux vers qui se prononcent de manière identique mais s'écrivent différemment ?,Holorimes,Homophones,Ambigrammes,Anacycliques,4,Littérature,-
+S,195,Quel est le nom de ce monument parisien ?,La tour Eiffel,Le Panthéon,L'Arc de Triomphe,Le Sacré-Coeur,1,Géographie,-
+S,196,Quel est le nom de ce monument londonien ?,Big Ben,Buckingham Palace,Tower Bridge,Tower of London,1,Géographie,clock tower | elizabeth tower | tour de l'horloge | tour elizabeth
+S,197,Quel est le nom de ce monument new yorkais ?,La Statue de la Liberté,Le Christ Rédempteur,La Petite Sirène,Le David de Michel-Ange,1,Géographie,liberté éclairant le monde | statue of liberty
+S,198,Quel est le nom de ce monument indien ?,Le Taj Mahal,Angkor Wat,L'Alhambra de Grenade,Le Temple du Lotus,2,Géographie,-
+S,199,Quel est le nom de cette race de chien ?,Chow-chow,Shiba Inu,Shar-Peï,Samoyède,3,Sciences de la vie,-
+S,200,Quel est le nom de cette race de chien ?,Dalmatien,Border collie,Braque allemand,Setter anglais,2,Sciences de la vie,-
+S,201,Quel est le nom de cette race de chien ?,Golden retriever,Berger australien,Setter irlandais,Labrador retriever,2,Sciences de la vie,golden
+S,202,Quel est le nom de cette race de chien ?,Rottweiler,Dobermann,Boxer,Berger allemand,2,Sciences de la vie,bouvier allemand
+S,203,Quel est le nom de cette race de chien ?,Shiba inu,Chow-chow,Akita inu,Samoyède,2,Sciences de la vie,shiba
+S,204,Quel est le nom de cette race de chien ?,Saint-bernard,Terre-neuve,Dogue allemand,Leonberg,2,Sciences de la vie,-
+S,206,Quel est le nom de cette race de chien ?,Dobermann,Rottweiler,Berger allemand,Boxer,2,Sciences de la vie,dobermann pinscher
+S,207,Quel est le nom de cette race de chien ?,Chihuahua,Yorkshire terrier,Shih tzu,Bichon maltais,1,Sciences de la vie,-
+S,208,Quel est le nom de cette race de chien ?,Carlin,Bouledogue français,Pékinois,Boxer,2,Sciences de la vie,-
+S,209,Quel est le nom de cette race de chien ?,Boxer,Mastiff,Dogue allemand,Bouledogue anglais,2,Sciences de la vie,-
+S,210,Quel est le nom de cette race de chien ?,Berger allemand,Rottweiler,Dobermann,Labrador retriever,2,Sciences de la vie,berger d'alsace | berger alsacien | chien loup d'alsace
+S,211,Quel est le nom de cette race de chien ?,American Staffordshire terrier,Boxer,Bouledogue français,Carlin,2,Sciences de la vie,amstaff | staff
+S,212,Quel est le nom de cette race de chien ?,Berger australien,Border collie,Colley,Berger allemand,2,Sciences de la vie,-
+S,213,Quel est le nom de cette race de chien ?,Colley,Border collie,Berger australien,Braque allemand,2,Sciences de la vie,colley a poil long | berger ecossais
+S,214,Quel est le nom de cette race de chien ?,Teckel,Beagle,Fox-terrier,Basset hound,2,Sciences de la vie,-
+S,215,Quel est le nom de cette race de chien ?,Terre-neuve,Saint-bernard,Dogue allemand,Leonberg,2,Sciences de la vie,retriever de terre-neuve
+S,216,Quel est le nom de cette race de chien ?,Terrier écossais,Jack Russell terrier,Caniche,Yorkshire terrier,2,Sciences de la vie,-
+S,217,Quel est le nom de cette race de chien ?,Yorkshire terrier,Bichon maltais,Caniche,Chihuahua,2,Sciences de la vie,york | yorkshire
+S,218,Quel est le nom de cette race de chien ?,Border collie,Berger australien,Labrador retriever,Berger allemand,2,Sciences de la vie,-
+S,,"Quel personnage interprète Chris Pratt dans le film ""Les Gardiens de la Galaxie"" (2014) ?",Star-Lord,Rocket Raccoon,Groot,Yonda Udonta,3,Cinéma & Séries,peter quill
+S,,Quelle race de chien est utilisée comme emblème de la cryptomonnaie Dogecoin ?,Shiba inu,Corgi,Chow-chow,Samoyède,2,Technologie,-
+S,,Quel karatéka français a été médaillé d'or olympique aux Jeux de Tokyo 2021 ?,Steven Da Costa,Jordan Thomas,Luigi Busà,Michaël Milon,3,Sport,da costa
+S,219,Quel est le nom de ce karatéka français ?,Steven Da Costa,Christophe Pinna,Michaël Milon,Kenji Grillon,3,Sport,da costa
+S,,Quel est le nom donné à un pratiquant de karaté ?,Un karatéka,Un karatiste,Un karatéiste,Un karataïste,1,Sport,-
+S,,Quel est le nom donné à un pratiquant de taekwondo ?,Un taekwondoïste,Un taekwondoka,Un taekwondiste,Un taekwondien,2,Sport,-
+S,,De quel pays le taekwondo est-il originaire ?,La Corée du Sud,Le Japon,Le Vietnam,La Chine,2,Sport,-
+S,220,Quel est le nom de ce taekwondoïste français ?,Pascal Gentil,Mickaël Borot,Cyrian Ravet,Mamédy Doucara,3,Sport,gentil
+S,221,Quel est le nom de ce judoka français ?,David Douillet,Angelo Parisi,Teddy Riner,Stéphane Traineau,2,Sport,douillet
+S,222,Quel est le nom de ce boxeur français ?,Brahim Asloum,Mehdi Sahnoune,Fabrice Tiozzo,Jean-Marc Mormeck,2,Sport,asloum
+S,,"Dans quelle ville de Loire-Atlantique se déroule chaque année le festival de musique ""Hellfest"" ?",Clisson,Cholet,Saint-Nazaire,Nantes,2,Musique,-
+S,223,Quel est le nom de cet homme politique français ?,Jack Lang,Jean-Jacques Aillagon,Frédéric Mitterrand,Lionel Jospin,2,Économie & Politique,lang
+S,,Quel est le nom donné au cri caractéristique de l’âne ?,Le braiement,Le hennissement,Le blatèrement,Le bramement,3,Sciences de la vie,braiment
+S,,Quel est le nom donné au cri caractéristique de la grenouille ?,Le coassement,Le croassement,Le craillement,Le gazouillement,3,Sciences de la vie,-
+S,,"Dans quelle ville bretonne se déroule chaque année le ""festival des Vieilles Charrues"" ?",Carhaix-Plouguer,Saint-Brieuc,Lorient,Loudéac,3,Musique,carhaix
+S,,"Quel jour de l’année célèbre-t-on la ""Fête du Travail"" en France ?",1er mai,15 août,14 juillet,11 novembre,1,Divers,premier mai | 1 mai | 01/05
+S,,"Quel jour de l’année célèbre-t-on la ""Fête nationale"" en France ?",14 juillet,11 novembre,8 mai,15 août,1,Divers,quatorze juillet | 14/07
+S,224,Quel est le nom de ce pont ?,Pont du Golden Gate,Pont de Brooklyn,Pont de la Tour,Pont de Manhattan,2,Géographie,golden gate | golden gate bridge
+S,,"Que signifie l'abréviation ""www"" utilisée dans les adresses de sites web ?",World Wide Web,Wide World Web,World Web Wide,Web World Wide,2,Technologie,-
+S,225,À quel pays appartient ce drapeau ?,La Gambie,Le Cap-Vert,Le Liberia,Le Sierra Leone,3,Géographie,republique de gambie
+S,226,À quel pays appartient ce drapeau ?,Le Vietnam,La Chine,La Corée du Nord,La Mongolie,3,Géographie,republique socialiste du vietnam
+S,227,À quel pays appartient ce drapeau ?,L'Arabie saoudite,L'Iran,L'Afghanistan,L'Irak,3,Géographie,royaume d'arabie saoudite
+S,228,À quel pays appartient ce drapeau ?,Les Maldives,Les Comores,Le Sri Lanka,Brunei,3,Géographie,republique des maldives
+S,229,À quel pays appartient ce drapeau ?,L'Uruguay,L'Argentine,Le Paraguay,Le Chili,2,Géographie,republique orientale de l'uruguay
+S,230,À quel pays appartient ce drapeau ?,La Serbie,La Russie,La Slovaquie,La Slovénie,3,Géographie,republique de serbie
+S,,"Quelle grande île d’Asie du Sud-Est est partagée entre l’Indonésie, la Malaisie et Brunei ?",Bornéo,Sumatra,Java,Sulawesi,3,Géographie,ile de borneo
+S,231,Quel est le nom de ce petit marsupial originaire d’Australie ?,Le diable de Tasmanie,Le wombat,Le bandicoot,L'opposum,3,Sciences de la vie,-
+S,232,"Quel est le nom de ce marsupial australien, éteint en captivité en 1936 ?",La thyalacine,Le dingo,Le wombat,Le diable de Tasmanie,3,Sciences de la vie,loup de tasmanie | tigre de tasmanie | loup marsupial
+S,,"Quel pays enclave presque entièrement la Gambie, à l’exception de sa façade atlantique ?",Le Sénégal,Le Nigeria,Le Ghana,Le Mali,3,Géographie,republique du senegal
+S,,Quel est le plus petit pays d'Afrique continentale par sa superficie ?,La Gambie,Le Burundi,Djibouti,Les Seychelles,4,Géographie,republique de gambie
+S,,Dans quel pays se situe la ville de Tombouctou ?,Le Mali,L'Inde,Le Pérou,Le Mexique,3,Géographie,republique du mali
+S,233,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,New York,Los Angeles,Miami,Boston,2,Sport,-
+S,234,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,Chicago,Dallas,San Antonio,Houston,2,Sport,-
+S,235,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,Boston,Philadelphia,Toronto,Cleveland,2,Sport,-
+S,236,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,San Antonio,Phoenix,Denver,Los Angeles,2,Sport,-
+S,237,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,Toronto,Vancouver,Chicago,Miami,3,Sport,-
+S,238,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,Memphis,Portland,Oklahoma City,Houston,3,Sport,-
+S,239,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,Oklahoma City,Seattle,Denver,San Antonio,3,Sport,-
+S,240,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,Orlando,Charlotte,Atlanta,Miami,3,Sport,-
+S,241,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,Charlotte,Orlando,Memphis,Brooklyn,3,Sport,-
+S,242,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,Sacramento,San Diego,Phoenix,Los Angeles,3,Sport,-
+S,243,Quelle ville nord-américaine est représentée par cette équipe de NBA ?,Cleveland,New York,Detroit,Milwaukee,3,Sport,-
+S,,Dans quel club de football italien Diego Maradona a-t-il évolué entre 1984 et 1992 ?,SSC Napoli,AC Milan,AS Roma,Fiorentina,2,Sport,naples | ssc naples | napoli
+S,,"Donnez la bonne orthographe de ce mot : ""si-roz""",Cirrhose,Cyrose,Sirhose,Syrrose,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""ski-zo-frèn""",Schizophrène,Skizofrène,Skisophrenne,Schisofrenne,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""ro-do-din-dron""",Rhododendron,Roddodendron,Rhoddodindron,Rododindron,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""kri-zan-tèm""",Chrysanthème,Chrizantème,Crisanthème,Cryzanthème,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""ri-no-ré""",Rhinorrhée,Rinoré,Rhynnorré,Rynnorhée,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""si-zi-ji""",Syzygie,Sisygie,Cysigie,Cyzigie,3,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""a-mi-dal""",Amygdale,Amidalle,Amigdale,Amydalle,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""mod-za-rè-la""",Mozzarella,Mozarrella,Mozzarrela,Mozarela,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""kok-sis""",Coccyx,Coxis,Coxys,Coccix,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""vi-nil""",Vinyle,Vynil,Vinyl,Vynile,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""or-ni-to-rink""",Ornithorynque,Hornithorrinque,Ornytorrynque,Hornytorinque,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""gra-fi-ti""",Graffiti,Grafiti,Grafitti,Graffitti,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""i-po-po-tam""",Hippopotame,Hypopothame,Hipopothame,Hyppopotame,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""ka-lé-i-do-scop""",Kaléidoscope,Caléisdauscope,Kaléidauscope,Caléidoscope,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""su-su-ré""",Susurrer,Sussurer,Sussurrer,Susurer,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""plé-tor""",Pléthore,Pléthorre,Plétore,Plétorre,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""di-ti-ran-bik""",Dithyrambique,Dytirembique,Dythyrambique,Ditirembique,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""i-ra-sibl""",Irascible,Irracible,Irrascible,Iracible,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""prés-bi-si""",Presbytie,Presbicie,Presbycie,Presbitie,2,Littérature,-
+S,,"Donnez la bonne orthographe de ce mot : ""pé-pé-ro-ni""",Pepperoni,Peperroni,Pepperroni,Peperoni,2,Littérature,-
+S,,"Quelle saucisse rouge épicée, originaire du Maghreb, est populaire dans les barbecues français ?",La merguez,Le chorizo,La chipolata,Le pepperoni,1,Gastronomie,-
+S,,Quel saucisson rouge est une garniture populaire des pizzas nord-américaines ?,Le pepperoni,Le chorizo,La pancetta,Le salami,2,Gastronomie,-
+S,,Quelle est la capitale du Ghana ?,Accra,Kumasi,Lomé,Lagos,3,Géographie,-
+S,,Quel adjectif désigne aussi bien un animal sans tête qu’un organisme sans dirigeant ?,Acéphale,Décapité,Agnathe,Acraniate,3,Divers,-
+S,,"Quelle affection cutanée, fréquente à l’adolescence, est caractérisée par des boutons et inflammations de la peau ?",L'acné,Le zona,L'eczéma,La rosacée,1,Sciences de la vie,-
+S,,Dans quelle ville fictive se déroulent la plupart des aventures de Batman ?,Gotham City,Metropolis,Smallville,Star City,2,Jeux & BD,gotham
+S,,Quel est le nom scientifique de l’addiction pathologique au sport ?,La bigorexie,L'orthorexie,L'anorexie,L'exerexie,3,Sport,-
+S,,Quelle régate suisse est organisée chaque année sur le lac Léman depuis 1939 ?,Le Bol d'Or,La Regatta Helvetica,La Solitaire du Figaro,La Traversée Lémanique,3,Sport,bol d'or du leman
+S,,"Lors d'une étape cycliste, quelle est la distance à parcourir après le passage de la flamme rouge ?",1 kilomètre,500 mètres,5 kilomètres,10 kilomètres,2,Sport,1 km | 1000 m | un kilomètre | 1000 metres
+S,,"Dans le vocabulaire du cinéma, quel terme est utilisé pour désigner le dernier plan de la journée ?",Le plan Martini,Le plan Mojito,Le plan Tequila,Le plan Daiquiri,4,Cinéma & Séries,martini shot | martini
+S,,"Quel est le nom du soleil figurant sur le drapeau de l’Argentine et de l’Uruguay, symbole de la révolution de 1810 ?",Le Soleil de mai,Le Soleil de juin,Le Soleil de juillet,Le Soleil d'août,4,Géographie,sol de mayo
+S,,"Quel est l’ingrédient principal de la sauce italienne pesto, pilé avec de l’ail, des pignons, du parmesan et de l’huile d’olive ?",Le basilic,Le persil,La coriandre,L'origan,2,Gastronomie,-
+S,,Sous quel pseudonyme l'acteur Donald Glover est-il connu dans sa carrière musicale ?,Childish Gambino,GoldLink,Denzel Curry,Brent Faiyaz,3,Musique,mcdj
+S,,Quel bateau traditionnel chinois est reconnaissable à ses voiles en bambou et en toile ?,La jonque,La felouque,La caravelle,La dhow,3,Technologie,-
+S,,Quel animal compte-t-on traditionnellement pour s’endormir ?,Les moutons,Les vaches,Les chevaux,Les poules,1,Divers,mouton
+S,,"Quel chanteur américain a popularisé la danse du ""moonwalk"" dans les années 1980 ?",Michael Jackson,James Brown,Prince,Elvis Presley,1,Musique,jackson | mj
+S,,"Quel chanteur américain est surnommé le ""Roi de la Pop"" ?",Michael Jackson,Bruno Mars,Justin Timberlake,Elvis Presley,1,Musique,jackson | mj
+S,,Quelle est la première épreuve d’un triathlon ?,La natation,La course à pied,Le cyclisme,L'aviron,2,Sport,-
+S,,Quelle est la céréale la plus produite au monde ?,Le maïs,Le blé,Le riz,L'orge,2,Sciences de la vie,-
+S,,De quel pays la harissa est-elle originaire ?,La Tunisie,Le Maroc,L'Algérie,L'Égypte,2,Gastronomie,republique tunisienne
+S,,Quel terme désigne une personne qui s’abstient totalement de consommer de l’alcool ?,Un abstème,Un abstinent,Un ascète,Un tempérant,4,Croyances,-
+S,,"Complétez cette expression : ""Se faire rouler dans...""",La farine,La semoule,La confiture,Le sel,1,Littérature,-
+S,,"Complétez cette expression : ""Mettre les pieds dans...""",Le plat,La soupe,La casserole,Le seau,1,Littérature,-
+S,,Qui était le président de la République française pendant la Première Guerre mondiale ?,Raymond Poincaré,Georges Clemenceau,Aristide Briand,Armand Fallières,3,Histoire,poincare
+S,244,Quel est le nom de ce site mégalithique anglais ?,Stonehenge,Avebury,Carnac,Skara Brae,2,Géographie,-
+S,,Dans quel comté d’Angleterre se situe le site mégalithique de Stonehenge ?,Wiltshire,Kent,Yorkshire,Devon,4,Géographie,-
+S,,Dans quelle mer se situe l'île de Man ?,La mer d'Irlande,La Manche,La mer du Nord,La mer de Norvège,3,Géographie,d'irlande
+S,,Sur quelle île britannique se déroule chaque année la course motocycliste du Tourist Trophy (TT) ?,L'île de Man,L'île de Wight,Jersey,Anglesey,3,Sport,man
+S,,"Quel mollusque fossile, aujourd’hui disparu, est reconnaissable à sa coquille spiralée ?",L'ammonite,Le trilobite,L'orthocère,Le brachiopode,3,Sciences de la vie,ammonites | ammonoidea
+S,245,"Quel est le surnom du plus grand fossible de Triceratops découvert, vendu aux enchères pour 6,6 millions d'euros en 2021 ?",Big John,Old Bones,Gentle George,Mighty Mary,4,Actualités & Médias,-
+S,,"Quel est le nom de l'IA qui déclenche le Jugement dernier dans la saga ""Terminator"" ?",Skynet,Jarvis,Ultron,HAL 9000,3,Cinéma & Séries,-
+S,246,Quel est le nom de ce dinosaure du Jurassique supérieur ?,Le brachiosaurus,Le stegosaurus,L'ankylosaurus,Le spinosaurus,3,Sciences de la vie,brachiosaure | brachiosaurus altithorax
+S,247,Quel est le nom de ce dinosaure du Crétacé supérieur ?,L'ankylosaurus,L'iguanodon,Le stegosaurus,Le parasaurolophus,3,Sciences de la vie,ankylosaure | ankylosaurus magniventris
+S,,Quel est le nom de l'entraîneur de natation qui a accompagné Michael Phelps durant toute sa carrière olympique ?,Bob Bowman,Mark Spitz,Gregg Troy,Richard Quick,3,Sport,bowman | robert bowman
+S,,Quel acronyme anglais de cinq lettres désigne le Président des États-Unis ?,POTUS,PREUS,USPRE,PRUSA,3,Économie & Politique,-
+S,,"Quel titre de noblesse portait Pierre de Coubertin, fondateur des Jeux olympiques modernes ?",Baron,Comte,Duc,Marquis,3,Sport,-
+S,,"Quel est le nom du monde parallèle dans lequel vivent les monstres de la série ""Stranger Things"" ?",Le Monde à l'Envers,Le Néant,La Vallée des Ombres,La Zone Fantôme,3,Cinéma & Séries,upside down
+S,,Comment appelle-t-on les Français d’Algérie rapatriés en métropole après l’indépendance en 1962 ?,Les pieds-noirs,Les mains-noires,Les visages-noirs,Les cheveux-noirs,2,Histoire,pied noir
+S,,"Quel animal est le personnage principal du film ""Babe"" (1995) ?",Un cochon,Une chèvre,Un canard,Un cheval,3,Cinéma & Séries,porc | porcelet
+S,,"Quel homme politique français a fondé le ""Rassemblement du peuple français"" (RPF) en 1947 ?",Charles de Gaulle,André Malraux,Alain Poher,Michel Debré,3,Économie & Politique,de gaulle
+S,,Combien de fleurs de lys figurent sur le drapeau du Québec ?,4,1,2,3,3,Géographie,quatre
+S,,Quel pont d'une longueur de 7845 mètres relie le Danemark à la Suède ?,Le pont de l’Øresund,Le pont de Storebælt,Le pont d’Älvsborg,Le pont de Sundsvall,4,Géographie,oresund
+S,,Quel dieu de la mythologie égyptienne a été tué par Seth puis ressuscité par Isis ?,Osiris,Anubis,Horus,Thot,2,Croyances,-
+S,,Quel serpent de la mythologie égyptienne personnifie le chaos et attaque chaque nuit la barque solaire de Rê ?,Apophis,Sobek,Sekhmet,Ptah,2,Croyances,apopis | apofis | apep | apepi | aapep | aapef
+S,,Quel est le nom de l'océan primordial qui s'étend autour du monde selon la mythologie égyptienne ?,Le Noun,Le Geb,Le Khépri,Le Ptah,3,Croyances,nouou
+S,,Quel symbole représente un serpent ou un dragon qui se mord la queue et incarne le renouveau éternel ?,L'ouroboros,L'ankh,Le triskel,La caducée,3,Croyances,-
+S,,Quel jeu de cartes de casino consiste à obtenir une main d'une valeur la plus proche possible de 21 sans le dépasser ?,Le blackjack,Le baccarat,La roulette,Le poker,2,Jeux & BD,21 | vingt et un
+S,,Quel phénomène astronomique se produit lors d'un alignement Terre-Lune-Soleil ?,Une éclipse solaire,Une éclipse lunaire,Un solstice,Un équinoxe,2,Sciences exactes,occultation solaire
+S,248,Quel est le nom de ce phénomène astronomique ?,Une éclipse solaire,Un transit de Mercure,Une aurore boréale,Une éclipse lunaire,1,Sciences exactes,occultation solaire
+S,,Quel dirigeant soviétique repose dans un mausolée situé sur la Place Rouge à Moscou ?,Vladimir Lénine,Joseph Staline,Mikhaïl Gorbatchev,Nikita Khrouchtchev,3,Histoire,lenine | vladimir ilitch lenine
+S,,Dans quelle ville se situe la Place Rouge ?,Moscou,Varsovie,Pékin,Saint-Pétersbourg,2,Géographie,-
+S,,Quel est le nom du navire océanographique utilisé par le commandant Jacques-Yves Cousteau ?,La Calypso,Le Nautilus,Le Beagle,La Victoria,3,Histoire,-
+S,,Dans quelle ville se situe le parc Ueno ?,Tokyo,Pékin,Séoul,Hanoï,2,Géographie,-
+S,,Quel mot japonais désigne les cerisiers en fleurs ?,Sakura,Hanami,Kiku,Ume,3,Sciences de la vie,-
+S,,Quel est le terme médical pour la coloration bleue de la peau due à un manque d'oxygène dans le sang ?,La cyanose,Le purpura,L'ictère,L'érythème,3,Sciences de la vie,-
+S,,"Chez certains invertébrés marins, quelle couleur prend le sang grâce à la présence d’hémocyanine ?",Bleu,Noir,Vert,Violet,2,Sciences de la vie,-
+S,,Quel roman de science-fiction écrit par H.G. Wells en 1898 décrit une invasion martienne de la Terre ?,La Guerre des mondes,La Menace rouge,Terre en péril,L'Aube des envahisseurs,3,Littérature,the war of the worlds
+S,,Quel film de science-fiction réalisé en 2015 par Ridley Scott raconte l'histoire d'un astronaute coincé sur Mars ?,Seul sur Mars,Interstellar,Gravity,Apollo 13,2,Cinéma & Séries,the martian
+S,,"Sur quelle planète se trouve Olympus Mons, le plus haut volcan du système solaire ?",Mars,Venus,Mercure,Jupiter,2,Sciences exactes,-
+S,,Quels sont les noms des deux satellites naturels de la planète Mars ?,Phobos et Deimos,Europa et Ganymede,Io et Callisto,Titan et Rhea,3,Sciences exactes,deimos phobos
+S,,"Dans la mythologie nordique, quelle chèvre fournit l’hydromel aux guerriers du Valhalla ?",Heidrun,Arvakr,Hrimfaxi,Tanngrisnir,3,Croyances,-
+S,,"Dans la mythologie nordique, qui désigne les héros dignes d’être accueillis au Valhalla ?",Les Valkyries,Les Nornes,Odin,Les Einherjar,2,Croyances,walkyries
+S,,"Dans la mythologie nordique, quel dieu règne sur le Valhalla ?",Odin,Thor,Freyr,Loki,2,Croyances,-
+S,,"Dans la mythologie nordique, combien de jambes possède Sleipnir, le cheval d'Odin ?",8,4,6,10,2,Croyances,huit
+S,,"Quel personnage se fait amputer d'une main dans la série télévisée ""Prison Break"" ?",T-Bag,John Abruzzi,Fernando Sucre,Michael Scofield,3,Cinéma & Séries,theodore bagwell | bagwell
+S,,"Quel est le nom de la prison fictive dans laquelle se déroule la première saison de ""Prison Break"" ?",Fox River,Rikers Island,Sona,Pelican Bay,3,Cinéma & Séries,fox river state penitentiary
+S,,"Quelle est la profession de Sara Tancredi dans la série télévisée ""Prison Break"" ?",Médecin,Avocate,Journaliste,Policière,3,Cinéma & Séries,-
+S,,"Quel est le nom du personnage principal de la série télévisée ""Prison Break"" ?",Michael Scofield,Lincoln Burrows,John Abruzzi,Fernando Sucre,2,Cinéma & Séries,scofield
+S,,"Quel est le nom du chien robotique qui accompagne le Docteur dans la série télévisée ""Docteur Who"" ?",K-9,B-12,M-1,D-8,3,Cinéma & Séries,-
+S,,"Quelle est la planète d'origine du Docteur dans la série télévisée ""Docteur Who"" ?",Gallifrey,Skaro,Telos,Mondas,3,Cinéma & Séries,-
+S,,"Quel personnage tombe amoureux de l'otage Mónica Gaztambide dans la série télévisée ""La Casa de Papel"" ?",Denver,Le Professeur,Berlin,Moscou,3,Cinéma & Séries,ricardo ramos | ramos
+S,,"Quel personnage féminin est la narratrice de la série télévisée ""La Casa de Papel"" ?",Tokyo,Nairobi,Raquel,Mónica,3,Cinéma & Séries,silene oliveira | oliveira
+S,,"Quel personnage est la narratrice de la série télévisée ""Desperate Housewives"" ?",Mary Alice Young,Lynette Scavo,Susan Mayer,Bree Van de Kamp,3,Cinéma & Séries,mary alice | young
+S,,"Dans quelle rue fictive se déroule l'intrigue principale de la série télévisée ""Desperate Housewives"" ?",Wisteria Lane,Elm Drive,Oak Avenue,Maple Street,3,Cinéma & Séries,-
+S,,"Quelle est la spécialité d'Amy Farrah Fowler dans la série télévisée ""The Big Bang Theory"" ?",La neurobiologie,L'astrophysique,Les mathématiques,L'informatique,4,Cinéma & Séries,neurosciences | biologie
+S,,"Quel personnage travaille comme ingénieur au service de la NASA dans la série télévisée ""The Big Bang Theory"" ?",Howard Wolowitz,Rajesh Koothrappali,Leonard Hofstadter,Sheldon Cooper,3,Cinéma & Séries,howard | wolowitz
+S,,"Quel est le prénom de la voisine de Sheldon et Leonard au début de la série télévisée ""The Big Bang Theory"" ?",Penny,Bernadette,Amy,Priya,3,Cinéma & Séries,-
+S,,"Quel est le nom de cette créature, antagoniste principale de la première saison de ""Stranger Things"" ?",Le Démogorgon,L'Otyugh,Le Tarrasque,Le Balrog,2,Cinéma & Séries,-
+S,,"Dans quelle sitcom américaine retrouve-t-on les personnages Joey, Ross, Rachel et Chandler ?",Friends,How I Met Your Mother,The Big Bang Theory,Scrubs,1,Cinéma & Séries,-
+S,250,Quel est le nom de cette actrice américaine ?,Jennifer Aniston,Julia Roberts,Reese Witherspoon,Sandra Bullock,2,Cinéma & Séries,aniston
+S,251,Quel est le nom de cet acteur britannique ?,Henry Cavill,Ben Aflleck,Liam Hemsworth,Matt Bomer,2,Cinéma & Séries,cavill
+S,252,Quel est le nom de cet acteur américain ?,Johnny Depp,Orlando Bloom,Robert Downey Jr.,Colin Farrell,1,Cinéma & Séries,depp | john christopher depp II
+S,253,Quel est le nom de ce couturier allemand ?,Karl Lagerfeld,Giorgio Armani,Jean-Paul Gaultier,Christian Dior,2,Arts & Culture,lagerfeld
+S,254,Quel est le nom de cet homme politique sud-africain ?,Nelson Mandela,Martin Luther King Jr.,Kofi Annan,Cyril Ramaphosa,1,Économie & Politique,mandela
+S,255,Quel est le nom de cet homme politique chinois ?,Mao Zedong,Xi Jinping,Kim Il-sung,Deng Xiaoping,2,Histoire,mao | zedong
+S,256,Quel est le nom de cet homme politique allemand ?,Adolf Hitler,Heinrich Himmler,Joseph Goebbels,Hermann Göring,1,Histoire,hitler
+S,257,Quel est le nom de cet homme politique français ?,Jacques Chirac,François Mitterrand,Valéry Giscard d'Estaing,Georges Pompidou,1,Économie & Politique,chirac
+S,258,Quel est le nom de ce rappeur français ?,Orelsan,Nekfeu,Jul,Gringe,1,Musique,aurelien cotentin | cotentin
+S,259,Quel est le nom de cette chanteuse française ?,Mylène Farmer,France Gall,Vanessa Paradis,Céline Dion,2,Musique,farmer | mylene gautier
+S,260,Quel est le nom de cet acteur américain ?,Bryan Cranston,Kevin Spacey,Steve Carell,Matthew Perry,2,Cinéma & Séries,cranston
+S,,Quel est le nom de la membrane qui enveloppe et protège le coeur chez l’être humain ?,Le péricarde,Le myocarde,La plèvre,Le médiastin,3,Sciences de la vie,-
+S,,Quel est le nom de la membrane qui enveloppe les poumons et tapisse la cavité thoracique ?,La plèvre,Le péricarde,L'endothélium,Le diaphragme,3,Sciences de la vie,-
+S,,"Quel acteur interprète le rôle du loup-garou dans le film ""Wolf"" (1994) ?",Jack Nicholson,Johnny Depp,Tom Cruise,Mel Gibson,3,Cinéma & Séries,nicholson
+S,,Quel roi de la mythologie grecque est transformé en loup par Zeus après avoir essayé de le tromper ?,Lycaon,Orphée,Prométhée,Icare,3,Croyances,-
+S,,Quel roi de la mythologie grecque a reçu le don de transformer tout ce qu'il touchait en or ?,Midas,Crésus,Minos,Lycaon,2,Croyances,-
+S,,"Quel dieu de la mythologie grecque a accordé le ""don d'or"" au roi Midas ?",Dionysos,Zeus,Hermès,Apollon,3,Croyances,-
+S,,Quelle est la commande Unix utilisée pour afficher le contenu d'un répertoire ?,ls,chmod,mv,cat,3,Technologie,-
+S,,Quel est le langage de requête utilisé pour interroger et manipuler des bases de données relationnelles ?,SQL,HTML,JSON,JavaScript,3,Technologie,structured query language
+S,,Quel est le langage de programmation principalement utilisé pour le développement d'applications iOS ?,Swift,C#,Python,Java,3,Technologie,-
+S,,Quelle est la commande Unix utilisée pour changer les permissions d'un fichier ?,chmod,ls,rm,cp,3,Technologie,-
+S,,Quelle constante fondamentale indique le nombre de particules contenues dans une mole ?,La constante d'Avogadro,La constante de Planck,La constante de Boltzmann,La constante de Faraday,2,Sciences exactes,avogadro | nombre d'avogadro
+S,,Quelle constante physique relie la température d'un système à l'énergie moyenne d'agitation de ses particules ?,La constante de Boltzmann,La constante de Planck,La constante d'Avogadro,La constante de Loschmidt,3,Sciences exactes,boltzmann
+S,,Quel est l'élément chimique le plus abondant dans l'univers ?,L'hydrogène,Le carbone,L'oxygène,L'hélium,1,Sciences exactes,h
+S,,Quelle est la formule chimique du dioxyde de carbone ?,CO₂,CH₄,O₂,H₂O,1,Sciences exactes,-
+S,,Quelle est la formule chimique de l'eau ?,H₂O,CO₂,H₂O₂,O₂,1,Sciences exactes,H2O
+S,,Quelle est la formule chimique du sel de table ?,NaCl,NaOH,CaCl₂,NaNO₃,2,Sciences exactes,-
+S,,Quelle est la formule chimique du glucose ?,C₆H₁₂O₆,C₁₂H₂₂O₁₁,C₅H₁₀O₅,C₂H₅OH,4,Sciences exactes,C6H12O6
+S,,Quel est le sinus de 90° ?,1,0,-1,"0,5",2,Sciences exactes,un
+S,,Quel est le coefficient directeur de la droite d'équation y = 3x - 2 ?,3,0,1,2,2,Sciences exactes,trois
+S,,Quel est le quotient de 45 divisé par 9 ?,5,6,7,8,1,Sciences exactes,cinq
+S,,Quelle est la racine carrée de 144 ?,12,10,14,16,2,Sciences exactes,douze
+S,,Quelle est la valeur de π arrondie à deux décimales ?,"3,14","4,71","2,66","5,89",2,Sciences exactes,-
+S,,Quel est le PGCD (Plus Grand Commun Diviseur) de 18 et 24 ?,6,2,3,4,1,Sciences exactes,six
+S,,Quelle est la somme des angles intérieurs d'un triangle ?,180°,90°,360°,45°,2,Sciences exactes,180 | 180 degrés
+S,,"Si une voiture parcourt 180 km en 3 heures, quelle est sa vitesse moyenne en km/h ?",60 km/h,30 km/h,90 km/h,120 km/h,1,Sciences exactes,60 | soixante
+S,,Quelle est la valeur de l'angle dans un triangle équilatéral ?,60°,45°,90°,120°,2,Sciences exactes,60 | 60 degrés | soixante
+S,,Quel est le périmètre d'un carré dont le côté mesure 5 cm ?,20 cm,10 cm,15 cm,25 cm,1,Sciences exactes,"20 | vingt | 20 centimetres | 0,2 m | 200 mm"
+S,,Quelle fleur est devenue un symbole de la révolution portugaise ?,L'oeillet,La pivoine,La rose,Le lys,3,Histoire,-
+S,,Quel a été le dernier membre des Beatles à rejoindre le groupe ?,Ringo Starr,John Lennon,George Harrison,Paul McCartney,2,Musique,starr | richard starkey | starkey
+S,,Quel fleuve est mentionné dans l'une des oeuvres du compositeur Johann Strauss II ?,Le Danube,La Volga,L'Amour,La Loire,3,Musique,-
+S,,Dans quel pays le Danube prend-il sa source ?,L'Allemagne,L'Autriche,La Roumanie,La Hongrie,2,Géographie,-
+S,,Quelle est la capitale de la Géorgie ?,Tbilissi,Bakou,Astana,Erevan,3,Géographie,-
+S,261,Quel est le nom de cet artiste américain ?,Andy Warhol,Roy Lichtenstein,Keith Haring,Jackson Pollock,2,Arts & Culture,warhol | andrew warhola | warhola
+S,,Quel physicien allemand a formulé le principe d’incertitude en mécanique quantique ?,Werner Heisenberg,Albert Einstein,Niels Bohr,Erwin Schrödinger,3,Sciences exactes,heisenberg
+S,,"Quel artiste britannique interprète le rôle d'Andy Warhol dans le film ""Basquiat"" (1996) ?",David Bowie,Sting,Gary Oldman,Mick Jagger,4,Cinéma & Séries,bowie | david robert jones
+S,262,Quel est le nom de ce musicien britannique ?,David Gilmour,Eric Clapton,Jimmy Page,Syd Barrett,2,Musique,gilmour
+S,,"Quel surnom, issu de son clan xhosa, était utilisé pour désigner Nelson Mandela ?",Madiba,Rolihlahla,Baba,Nkosi,3,Économie & Politique,-
+S,,Quel artiste américain a dessiné l'étiquette de vin du prestigieux Château Mouton Rothschild en 1975 ?,Andy Warhol,Marc Chagall,Keith Haring,Francis Bacon,4,Arts & Culture,warhol | andrew warhola | warhola
+S,263,Quel est le nom de cet acteur américain ?,Denzel Washington,Idris Elba,Forest Whitaker,Samuel L. Jackson,2,Cinéma & Séries,washington
+S,264,Quel est le nom de cet acteur américain ?,Tom Hanks,Robin Williams,Bill Murray,Kevin Costner,1,Cinéma & Séries,hanks
+S,265,Quel est le nom de cet acteur américain ?,Robin Williams,Jim Carrey,Billy Crystal,Tom Hanks,2,Cinéma & Séries,williams
+S,266,Quel est le nom de cet acteur néo-zélandais ?,Russell Crowe,Gerard Butler,Mel Gibson,Clive Owen,3,Cinéma & Séries,crowe
+S,267,Quel est le nom de cet acteur britannique ?,Anthony Hopkins,Ian McKellen,Michael Caine,Sean Connery,2,Cinéma & Séries,hopkins
+S,268,Quel est le nom de cet acteur américain ?,Marlon Brando,James Dean,Paul Newman,Al Pacino,2,Cinéma & Séries,brando | marlon brando jr
+S,269,Quel est le nom de cet acteur australien ?,Heath Ledger,Christian Bale,River Phoenix,Colin Farrell,2,Cinéma & Séries,ledger
+S,270,Quel est le nom de cet acteur britannique ?,Ben Kingsley,Naveen Andrews,Alec Guinness,Irrfan Khan,3,Cinéma & Séries,kingsley | krishna pandit bhanji
+S,271,Quel est le nom de cet acteur américain ?,Will Smith,Chris Rock,Jamie Foxx,Eddie Murphy,1,Cinéma & Séries,smith
+S,,"Quel économiste est l'auteur de ""La Richesse des nations"" (1776) ?",Adam Smith,Karl Marx,John Locke,Thomas Malthus,2,Économie & Politique,smith
+S,,"Quel voile, couvrant les cheveux mais pas le visage, est porté par certaines femmes musulmanes ?",Le hijab,La burqa,Le niqab,L'abaya,2,Croyances,hidjab
+S,,Quel est le nom de famille le plus courant en France ?,Martin,Durand,Richard,Petit,3,Divers,-
+S,,Quel est le nom de famille le plus courant en Espagne ?,García,López,Fernández,Sánchez,3,Divers,-
+S,,Quel est le nom de famille le plus courant en Italie ?,Rossi,Ferrari,Romano,Bianchi,3,Divers,-
+S,,Quel est le nom de famille le plus courant en Allemagne ?,Müller,Weber,Wagner,Schmidt,3,Divers,-
+S,,Quel est le nom de famille le plus courant au Royaume-Uni ?,Smith,Taylor,Jones,Williams,2,Divers,-
+S,,Quel est le nom de famille le plus courant en Chine ?,Wang,Zhang,Li,Chen,3,Divers,-
+S,,Quel est le nom de famille le plus courant en Russie ?,Ivanov,Petrov,Volkov,Popov,4,Divers,-
+S,,Quel est le nom de famille le plus courant au Brésil ?,Silva,Santos,Oliveira,Pereira,3,Divers,-
+S,,Quelle avenue emblématique de Barcelone relie la place de Catalogne au port ?,La Rambla,Le Paseo del Prado,La calle de Alcalá,La Via Laietana,3,Géographie,ramblas | rambles
+S,,"Sur quel territoire national se situe Macao, ancienne colonie portugaise ?",La Chine,L'Indonésie,La Malaisie,La Thaïlande,3,Géographie,-
+S,,Dans quel pays se situe le Grand désert de Victoria ?,L'Australie,Les États-Unis,Le Mexique,La Namibie,3,Géographie,commonwealth d'australie
+S,,Quel monarque détient le record du plus long règne de l’Histoire ?,Louis XIV,Élisabeth II,Ramsès II,Pierre le Grand,2,Histoire,louis 14
+S,,Quel est le nom du premier homme à avoir marché sur la Lune ?,Neil Armstrong,Buzz Aldrin,Michael Collins,Alan Shepard,1,Histoire,armstrong
+S,,Quel est le nom du seul tableau que Vincent van Gogh ait vendu de son vivant ?,La Vigne rouge,La Nuit étoilée,Les Iris,Les Mangeurs de pommes de terre,3,Arts & Culture,la vigne rouge a montmajour
+S,,Quel organe du corps humain est principalement étudié en néphrologie ?,Les reins,Le foie,Les poumons,Le pancréas,3,Sciences de la vie,-
+S,,"Quelle chanteuse française interprète ""Ma philosophie"" (2004) ?",Amel Bent,Diam's,Jenifer,Shy'm,2,Musique,bent
+S,272,Quel est le nom de cette actrice australienne ?,Cate Blanchett,Toni Collette,Nicole Kidman,Naomi Watts,2,Cinéma & Séries,blanchett
+S,273,Quel est le nom de cette actrice américaine ?,Julianne Moore,Marcia Cross,Jessica Chastain,Amy Adams,2,Cinéma & Séries,moore | julie anne smith
+S,274,Quel est le nom de cette actrice britannique ?,Emily Blunt,Felicity Jones,Anne Hathaway,Lily James,3,Cinéma & Séries,blunt
+S,275,Quel est le nom de cette actrice américaine ?,Jessica Chastain,Bryce Dallas Howard,Julianne Moore,Sophie Turner,3,Cinéma & Séries,chastain
+S,276,Quel est le nom de cette actrice américaine ?,Sandra Bullock,Julia Roberts,Demi Moore,Cameron Diaz,3,Cinéma & Séries,bullock
+S,277,Quel est le nom de cette actrice américaine ?,Sharon Stone,Kim Basinger,Michelle Pfeiffer,Demi Moore,2,Cinéma & Séries,stone
+S,278,Quel est le nom de cette actrice américaine ?,Uma Thurman,Gwyneth Paltrow,Cameron Diaz,Daryl Hannah,2,Cinéma & Séries,thurman
+S,279,Quel est le nom de cette actrice américaine ?,Angelina Jolie,Megan Fox,Jennifer Aniston,Catherine Zeta-Jones,1,Cinéma & Séries,jolie
+S,280,Quel est le nom de cette actrice américaine ?,Emma Stone,Rachel McAdams,Kirsten Dunst,Amy Adams,3,Cinéma & Séries,stone
+S,,Lors de quel Grand Prix de Formule 1 Pierre Gasly a-t-il remporté sa première victoire en 2020 ?,Grand Prix d’Italie,Grand Prix de France,Grand Prix de Belgique,Grand Prix de Monaco,3,Sport,italie | monza
+S,,"Quel dessert à base de banane, glace et chantilly donne son titre à une chanson de Lio ?",Le banana split,Le banoffee pie,La banane flambée,Le pain aux bananes,2,Gastronomie,-
+S,,"Quelle spécialiste japonaise en organisation est l'auteur de ""La Magie du rangement"" (2010) ?",Marie Kondō,Naomi Osaka,Sayaka Murata,Yoko Ono,3,Actualités & Médias,kondo
+S,,"Qui est l'auteur du conte ""Le Vilain Petit Canard"" (1843) ?",Hans Christian Andersen,Charles Perrault,Les frères Grimm,Lewis Carroll,2,Littérature,andersen
+S,,"Qui est l'auteur du conte ""La Petite Sirène"" (1837) ?",Hans Christian Andersen,J.M. Barrie,Charles Perrault,Oscar Wilde,2,Littérature,andersen
+S,,"Qui est l'auteur du conte ""La Reine des neiges"" (1844) ?",Hans Christian Andersen,E.T.A. Hoffmann,Wilhelm Hauff,Les frères Grimm,2,Littérature,andersen
+S,,"Qui est l'auteur du conte ""La Princesse au petit pois"" (1835) ?",Hans Christian Andersen,Oscar Wilde,Charles Perrault,Madame d'Aulnoy,3,Littérature,andersen
+S,,"Qui est l'auteur du conte ""La Barbe bleue"" (1697) ?",Charles Perrault,Voltaire,Molière,Jean de La Fontaine,2,Littérature,perrault
+S,,"Dans quel conte le personnage de soeur Anne ne voit que ""le soleil qui poudroie et l'herbe qui verdoie"" ?",La Barbe bleue,Peau d’Âne,Le Chat botté,Le Petit Chaperon rouge,3,Littérature,-
+S,281,Quel est le nom de cette actrice suèdoise ?,Alicia Vikander,Noomi Rapace,Rebecca Ferguson,Saoirse Ronan,3,Cinéma & Séries,vikander
+S,282,Quel est le nom de cette actrice française ?,Eva Green,Charlotte Gainsbourg,Marion Cotillard,Rachel Weisz,3,Cinéma & Séries,green
+S,283,Quel est le nom de cette actrice française ?,Léa Seydoux,Adèle Exarchopoulos,Virginie Efira,Charlotte Gainsbourg,3,Cinéma & Séries,seydoux
+S,284,Quel est le nom de cette actrice américaine ?,Milla Jovovich,Kate Beckinsale,Angelina Jolie,Megan Fox,3,Cinéma & Séries,jovovich
+S,285,Quel est le nom de cette actrice américaine ?,Faye Dunaway,Jane Fonda,Diane Keaton,Ali MacGraw,4,Cinéma & Séries,dunaway
+S,286,Quel est le nom de cette actrice britannique ?,Rosamund Pike,Keira Knightley,Naomie Harris,Carey Mulligan,3,Cinéma & Séries,pike
+S,287,Quel est le nom de cette actrice américaine ?,Anna Kendrick,Brie Larson,Zooey Deschanel,Hailee Steinfeld,3,Cinéma & Séries,kendrick
+S,288,Quel est le nom de cette actrice américaine ?,Diane Keaton,Jane Fonda,Faye Dunaway,Meryl Streep,4,Cinéma & Séries,keaton | hall | diane hall 
+S,289,Quel est le nom de cette actrice britannique ?,Felicity Jones,Keira Knightley,Daisy Ridley,Lily James,3,Cinéma & Séries,jones
+S,290,Quel est le nom de cette actrice américaine ?,Grace Kelly,Audrey Hepburn,Elizabeth Taylor,Ingrid Bergman,3,Cinéma & Séries,kelly
+S,291,Quel est le nom de cette actrice américaine ?,Carrie Fisher,Sigourney Weaver,Linda Hamilton,Daisy Ridley,3,Cinéma & Séries,fisher
+S,292,Quel est le nom de cette actrice américaine ?,Kim Basinger,Sharon Stone,Michelle Pfeiffer,Daryl Hannah,3,Cinéma & Séries,basinger
+S,293,Quel est le nom de cette actrice américaine ?,Blake Lively,Leighton Meester,Amber Heard,Kate Hudson,3,Cinéma & Séries,lively
+S,294,Quel est le nom de cette actrice américaine ?,Michelle Pfeiffer,Kim Basinger,Kathleen Turner,Sharon Stone,3,Cinéma & Séries,pfeiffer
+S,295,Quel est le nom de cette actrice canadienne ?,Katheryn Winnick,Emilia Clarke,Anna Torv,Charlize Theron,3,Cinéma & Séries,winnick | vinitska | katerena anna vinitska
+S,296,Quel est le nom de cette actrice canadienne ?,Evangeline Lilly,Kate Beckinsale,Elizabeth Olsen,Liv Tyler,3,Cinéma & Séries,lilly
+S,297,Quel est le nom de cette actrice américaine ?,Jennifer Love Hewitt,Alyssa Milano,Shannen Doherty,Jessica Alba,3,Cinéma & Séries,hewitt
+S,,Quelle est la capitale de l'État américain du Colorado ?,Denver,Cheyenne,Aspen,Fort Collins,3,Géographie,-
+S,,Quelle est la capitale de l'État américain du Tennessee ?,Nashville,Memphis,Jackson,Atlanta,3,Géographie,-
+S,,Quelle est la capitale de l'État américain du Texas ?,Austin,Houston,Dallas,San Antonio,3,Géographie,-
+S,,Quelle est la capitale de l'État américain de Louisiane ?,Bâton-Rouge,Monroe,Lafayette,Jackson,3,Géographie,-
+S,,Quelle est la capitale de l'État américain de Hawaï ?,Honolulu,Maui,Hilo,Lahaina,3,Géographie,-
+S,,Quelle est la capitale de l'État américain d'Arizona ?,Phoenix,Las Vegas,Mesa,Tucson,3,Géographie,-
+S,,Quel est l'État américain qui compte la plus grande population ?,La Californie,New York,Le Texas,La Floride,2,Géographie,-
+S,298,Quel est le nom de cette actrice américaine ?,Kristen Bell,Anna Kendrick,Hayden Panettiere,Sarah Michelle Gellar,3,Cinéma & Séries,-
+S,299,Quel est le nom de cette actrice américaine ?,Eva Mendes,Michelle Rodriguez,Jennifer Lopez,Salma Hayek,3,Cinéma & Séries,mendes | mendez | Eva de la Caridad Méndez
+S,300,Quel est le nom de cette actrice américaine ?,Whoopi Goldberg,Viola Davis,Octavia Spencer,Oprah Winfrey,3,Cinéma & Séries,goldberg | caryn elaine johnson
+S,,"Quelle forêt située au pied du mont Fuji est surnommée la ""forêt des suicides"" ?",La forêt d'Aokigahara,La forêt de Yakushima,La forêt de Nachi,La forêt de Kasugayama,3,Géographie,aokigahara
+S,,Quel est le plus long fleuve d'Italie ?,Le Pô,L'Arno,L'Adige,Le Tibre,3,Géographie,-
+S,,Avec quel pays l’Italie partage-t-elle sa plus longue frontière terrestre ?,La Suisse,La France,L'Autriche,La Slovénie,2,Géographie,-
+S,,Avec quel pays la Chine partage-t-elle sa plus longue frontière terrestre ?,La Mongolie,La Russie,L'inde,Le Kazakhstan,3,Géographie,-
+S,,Avec quel pays le Brésil partage-t-il sa plus longue frontière terrestre ?,La Bolivie,L'Argentine,Le Pérou,La France,3,Géographie,-
+S,,Avec quel pays le Vietnam partage-t-il sa plus longue frontière terrestre ?,Le Laos,La Chine,Le Cambodge,La Thaïlande,4,Géographie,-
+S,,"Quel est le nom du vaste golfe de l’océan Indien bordant l’Inde, le Bangladesh, le Myanmar et le Sri Lanka ?",Le Golfe du Bengale,Le Golfe Persique,Le Golfe d'Aden,Le Golfe de Guinée,3,Géographie,bengale
+S,,"Quelle stratégie militaire, basée sur la rapidité et la surprise, a été employée par l’Allemagne nazie au début de la Seconde Guerre mondiale ?",Le Blitzkrieg,Le plan Schlieffen,Le Drang nach Osten,Le Panzerfaust,2,Histoire,-
+S,,Quelle ligne fortifiée française a été érigée dans les années 1930 pour se protéger d’une invasion allemande ?,La ligne Maginot,Le mur de l’Atlantique,La ligne Siegfried,Le mur de Berlin,2,Histoire,maginot
+S,301,À quelle chaîne de restauration appartient ce logo ?,McDonald's,Burger King,Wendy's,Subway,1,Économie & Politique,mcdonalds corporation
+S,302,À quel constructeur automobile appartient ce logo ?,Mercedes-Benz,Audi,BMW,Volkswagen,1,Économie & Politique,mercedes | mercedes benz ag
+S,303,À quel constructeur automobile appartient ce logo ?,BMW,Mercedes-Benz,Audi,Porsche,1,Économie & Politique,bayerische motoren werke
+S,304,À quel constructeur automobile appartient ce logo ?,Ferrari,Porsche,Lamborghini,Bugatti,2,Économie & Politique,ferrari spa
+S,305,À quel constructeur automobile appartient ce logo ?,Volkswagen,BMW,Audi,Mercedes-Benz,2,Économie & Politique,-
+S,306,À quel constructeur automobile appartient ce logo ?,Renault,Citroën,Peugeot,Dacia,1,Économie & Politique,-
+S,307,À quel constructeur automobile appartient ce logo ?,Peugeot,Renault,Citroën,Jaguar,1,Économie & Politique,-
+S,308,À quel constructeur automobile appartient ce logo ?,Alfa Romeo,Saab,Abarth,Fiat,2,Économie & Politique,-
+S,309,À quel constructeur automobile appartient ce logo ?,Seat,Saab,Skoda,Subaru,2,Économie & Politique,seat sa
+S,310,À quel constructeur automobile appartient ce logo ?,Aston Martin,Bentley,Mini,Lotus,2,Économie & Politique,-
+S,311,À quel constructeur automobile appartient ce logo ?,Toyota,Volvo,Kia,Honda,2,Économie & Politique,toyota motor corporation
+S,312,À quel constructeur automobile appartient ce logo ?,Mitsubishi,Suzuki,Nissan,Kia,2,Économie & Politique,mitsubishi motors corporation | mmc
+S,313,À quel constructeur automobile appartient ce logo ?,Citroën,Renault,Peugeot,Toyota,1,Économie & Politique,automobiles citroen sa
+S,314,À quel constructeur automobile appartient ce logo ?,Audi,Mercedes-Benz,BMW,Volkswagen,1,Économie & Politique,audi ag
+S,315,À quel constructeur automobile appartient ce logo ?,Alpine,Aston Martin,Abarth,Alfa Romeo,2,Économie & Politique,societe des automobiles alpine sas
+S,316,À quel constructeur automobile appartient ce logo ?,Abarth,Alfa Romeo,Seat,Saab,3,Économie & Politique,abarth & c spa
+S,317,À quel constructeur automobile appartient ce logo ?,Bentley,Bugatti,BYD,BMW,2,Économie & Politique,bentley motors
+S,318,À quel constructeur automobile appartient ce logo ?,Chevrolet,Fiat,Chrysler,Jeep,2,Économie & Politique,-
+S,319,À quel constructeur automobile appartient ce logo ?,Cadillac,Koenigsegg,Rolls Royce,Porsche,3,Économie & Politique,cadillac motor car division
+S,320,À quel constructeur automobile appartient ce logo ?,Honda,Hyundai,Toyota,Mazda,2,Économie & Politique,honda motor co ltd
+S,321,À quel constructeur automobile appartient ce logo ?,Hyundai,Honda,Toyota,Mazda,2,Économie & Politique,hyundai motor company
+S,322,À quel constructeur automobile appartient ce logo ?,Jaguar,Peugeot,Lamborghini,Aston Martin,2,Économie & Politique,jaguar cars ltd
+S,323,À quel constructeur automobile appartient ce logo ?,Koenigsegg,Cadillac,Rolls Royce,Porsche,3,Économie & Politique,koenigsegg automotive ab
+S,324,À quel constructeur automobile appartient ce logo ?,Lamborghini,Porsche,Bentley,Ferrari,2,Économie & Politique,-
+S,325,À quel constructeur automobile appartient ce logo ?,Maserati,Volkswagen,Bugatti,Lotus,2,Économie & Politique,-
+S,326,À quel constructeur automobile appartient ce logo ?,Mazda,Lexus,VinFast,Skoda,2,Économie & Politique,mazda motor corporation
+S,327,À quel constructeur automobile appartient ce logo ?,Opel,Mini,Mazda,Lexus,2,Économie & Politique,-
+S,328,À quel constructeur automobile appartient ce logo ?,Porsche,Lamborghini,Ferrari,Maserati,2,Économie & Politique,dr ing hc f porsche ag
+S,,"Quel est le nom de la croix décentrée utilisée sur les drapeaux de la Suède, du Danemark et de la Norvège ?",La croix scandinave,La croix celtique,La croix de Saint-André,La croix de Saint-Georges,2,Géographie,scandinave
+S,,Quelle force apparente semble repousser un objet vers l'extérieur lorsqu'il est en mouvement circulaire ?,La force centrifuge,La force centripète,La force de portance,La force de Lorentz,3,Sciences exactes,centrifuge | effet centrifuge
+S,,"Quel théorème établit que si une droite parallèle à un côté d'un triangle coupe les deux autres côtés, alors les segments obtenus sont proportionnels ?",Le théorème de Thalès,Le théorème de Pythagore,Le théorème de Descartes,Le théorème de Pascal,2,Sciences exactes,thales
+S,,Quel outil mathématique permet de calculer l’aire située sous la courbe d’une fonction sur un intervalle donné ?,L'intégrale,La dérivée,Le produit scalaire,La limite,2,Sciences exactes,integration
+S,,Quel terme mathématique désigne le résultat de l'addition de plusieurs nombres ?,La somme,Le produit,La différence,Le quotient,1,Sciences exactes,-
+S,,Quel terme mathématique désigne le résultat de la multiplication de plusieurs nombres ?,Le produit,La somme,La différence,Le quotient,1,Sciences exactes,-
+S,,Quel terme mathématique désigne le résultat de la soustraction d'un nombre à un autre ?,La différence,La somme,Le produit,Le quotient,1,Sciences exactes,-
+S,,Quel terme mathématique désigne le résultat de la division d'un nombre par un autre ?,Le quotient,La somme,Le produit,La différence,1,Sciences exactes,-
+S,,"Quelle est la couleur de peau de la plupart des personnages de la série ""Les Simpson"" ?",Jaune,Bleu,Rouge,Vert,1,Cinéma & Séries,-
+S,,"Qui est le propriétaire de la centrale nucléaire dans la série ""Les Simpson"" ?",Charles Montgomery Burns,Waylon Smithers,Kent Brockman,Carl Carlson,2,Cinéma & Séries,burns | montgomery burns | monsieur burns
+S,,"De quel instrument de musique joue Lisa dans la série ""Les Simpson"" ?",Le saxophone,La flûte,Le violon,Le piano,2,Cinéma & Séries,-
+S,,"Dans quelle ville fictive se déroule l'intrigue de la série ""Stranger Things"" ?",Hawkins,Sunnydale,Derry,Castle Rock,2,Cinéma & Séries,-
+S,,"Quel personnage est doté de pouvoirs télékinésiques dans la série ""Stranger Things"" ?",Onze,Dustin,Mike,Will,2,Cinéma & Séries,elfe | eleven | jane ives | jane hopper
+S,,"Qui est le chef de la police de Hawkins dans la série ""Stranger Things"" ?",Jim Hopper,Sam Owens,Scott Clarke,Calvin Powell,2,Cinéma & Séries,hopper
+S,,"Dans quel café les personnages de la série ""Friends"" se retrouvent-ils fréquemment ?",Central Perk,Coffee Break,Central Cafe,Perk Palace,3,Cinéma & Séries,-
+S,,"Comment s'appelle la sœur jumelle de Phoebe dans la série ""Friends"" ?",Ursula,Janice,Carol,Susan,3,Cinéma & Séries,ursula buffay
+S,,"Quel personnage, interprété par Lisa Kudrow, apparaît à la fois dans les séries ""Mad About You"" et ""Friends"" ?",Ursula Buffay,Carol Willick,Susan Bunch,Lisa Stemple,3,Cinéma & Séries,ursula
+S,,"Comment s'appelle le fils de Ross dans la série ""Friends"" ?",Ben,Matthew,Tyler,Max,3,Cinéma & Séries,ben geller
+S,,"Quel acteur interprète le rôle de Joey Tribbiani dans la série ""Friends"" ?",Matt LeBlanc,Matthew Perry,David Schwimmer,Paul Rudd,2,Cinéma & Séries,leblanc
+S,,Combien de secondes y a-t-il dans une heure ?,3600,6000,600,1800,2,Sciences exactes,3600 s | 3600 secondes
+S,,Quelle est la nationalité de la joueuse de tennis Aryna Sabalenka ?,Biélorusse,Tchèque,Américaine,Ukrainienne,2,Sport,bielorussie | belarussienne | belarus
+S,329,Qui est cette joueuse de tennis ?,Aryna Sabalenka,Amélie Mauresmo,Maria Sharapova,Iga Swiatek,2,Sport,sabalenka
+S,,Quelle est la nationalité de la joueuse de tennis Steffi Graf ?,Allemande,Espagnole,Américaine,Suisse,2,Sport,allemagne
+S,,"Quelle est la seule joueuse de tennis à avoir réalisé le ""Golden Slam"" ?",Steffi Graf,Serena Williams,Margaret Court,Martina Navrátilová,2,Sport,graf
+S,330,Qui est cette joueuse de tennis ?,Steffi Graf,Monica Seles,Martina Navrátilová,Chris Evert,2,Sport,graf
+S,331,Qui est cette joueuse de tennis ?,Serena Williams,Coco Gauff,Venus Williams,Steffi Graf,2,Sport,williams
+S,332,Qui est cette joueuse de tennis ?,Naomi Osaka,Emma Raducanu,Serena Williams,Li Na,3,Sport,osaka
+S,333,Qui est cette joueuse de tennis ?,Maria Sharapova,Dinara Safina,Svetlana Kuznetsova,Elena Dementieva,2,Sport,sharapova
+S,,"Qui est la première joueuse de tennis asiatique à remporter un tournoi du Grand Chelem, en s’imposant à Roland-Garros en 2011 ?",Li Na,Naomi Osaka,Zheng Jie,Peng Shuai,3,Sport,-
+S,,Quelle joueuse de tennis belge est restée 117 semaines à la tête du classement WTA entre 2003 et 2008 ?,Justine Henin,Kim Clijsters,Amélie Mauresmo,Martina Hingis,3,Sport,henin
+S,,Quelle joueuse de tennis australienne est restée 121 semaines à la tête du classement WTA entre 2019 et 2022 ?,Ashleigh Barty,Samantha Stosur,Naomi Osaka,Angelique Kerber,3,Sport,barty
+S,,Quelle joueuse de tennis américaine est restée 98 semaines à la tête du classement WTA entre 1998 et 2006 ?,Lindsay Davenport,Serena Williams,Mary Pierce,Jennifer Capriati,3,Sport,davenport
+S,,Quelle joueuse de tennis suisse est restée 209 semaines à la tête du classement WTA entre 1997 et 2001 ?,Martina Hingis,Patty Schnyder,Steffi Graf,Justine Henin,3,Sport,hingis
+S,,Quelle joueuse de tennis allemande est restée 34 semaines à la tête du classement WTA entre 2016 et 2017 ?,Angelique Kerber,Simona Halep,Andrea Petković,Caroline Wozniacki,3,Sport,kerber
+S,,Quelle joueuse de tennis française a atteint les demi-finales du tournoi de Roland-Garros en 2025 ?,Loïs Boisson,Caroline Garcia,Alizé Cornet,Kristina Mladenovic,3,Sport,boisson
+S,,Quelle joueuse de tennis a remporté le tournoi de Roland-Garros en 2025 ?,Coco Gauff,Iga Swiatek,Aryna Sabalenka,Loïs Boisson,3,Sport,gauff
+S,,"Quelle joueuse de tennis a remporté le tournoi de Roland-Garros en 2022, 2023 et 2024 ?",Iga Swiatek,Coco Gauff,Aryna Sabalenka,Mirra Andreeva,3,Sport,Świątek | swiatek
+S,,Quelle joueuse de tennis a remporté le tournoi de l'US Open en 2024 et 2025 ?,Aryna Sabalenka,Coco Gauff,Karolina Muchova,Jessica Pegula,3,Sport,sabalenka
+S,,Quelle joueuse de tennis a remporté le tournoi de l'US Open en 2023 ?,Coco Gauff,Karolina Muchova,Aryna Sabalenka,Madison Keys,3,Sport,gauff
+S,,Quelle joueuse de tennis a remporté le tournoi de l'US Open en 2022 ?,Iga Swiatek,Caroline Garcia,Aryna Sabalenka,Ons Jabeur,3,Sport,Świątek | swiatek
+S,,Quelle est la nationalité de la joueuse de tennis Ons Jabeur ?,Tunisienne,Néerlandaise,Australienne,Française,3,Sport,tunisie
+S,,Quelle joueuse de tennis a remporté le tournoi de Wimbledon en 2025 ?,Iga Swiatek,Aryna Sabalenka,Amanda Anisimova,Belinda Bencic,3,Sport,Świątek | swiatek
+S,,Quelle joueuse de tennis a remporté le tournoi de Wimbledon en 2024 ?,Barbora Krejcikova,Jasmine Paolini,Elena Rybakina,Donna Vekic,4,Sport,krejcikova
+S,,Quelle est la nationalité de la joueuse de tennis Iga Swiatek ?,Polonaise,Tchèque,Russe,Roumaine,3,Sport,pologne
+S,334,Qui est ce joueur de tennis ?,Rafael Nadal,Roger Federer,Novak Djokovic,Carlos Alcaraz,1,Sport,nadal | rafa nadal
+S,335,Qui est ce joueur de tennis ?,Roger Federer,Stan Wawrinka,Pete Sampras,Rafael Nadal,1,Sport,federer
+S,336,Qui est ce joueur de tennis ?,Novak Djokovic,Andy Murray,Roger Federer,Rafael Nadal,1,Sport,djokovic
+S,,Quel joueur de tennis a remporté le tournoi de Roland-Garros en 2024 et 2025 ?,Carlos Alcaraz,Jannik Sinner,Novak Djokovic,Alexander Zverev,2,Sport,alcaraz
+S,,Quelle est la nationalité du joueur de tennis Jannik Sinner ?,Italienne,Serbe,Autrichienne,Croate,2,Sport,italien | italie
+S,,Au cours de quel mois débute traditionnellement le tournoi de tennis de Roland-Garros ?,Mai,Juin,Juillet,Avril,2,Sport,-
+S,,Au cours de quel mois débute traditionnellement le tournoi de tennis de l'US Open ?,Août,Juin,Juillet,Septembre,3,Sport,-
+S,,Dans quelle ville se déroule chaque année le tournoi de tennis de l'US Open ?,New York,Miami,Los Angeles,Indian Wells,2,Sport,new york city | ny | nyc
+S,,"Quel est le nom du court principal du tournoi de tennis de l’US Open, inauguré en 1997 ?",Arthur Ashe,Louis Armstrong,Suzanne Lenglen,John Cain,4,Sport,court arthur ashe | stade arthur ashe | arthur ashe stadium
+S,,En quelle année Rafael Nadal a-t-il remporté son dernier tournoi de Roland-Garros ?,2022,2020,2018,2024,2,Sport,-
+S,,Quel trophée est remis chaque année au vainqueur du tournoi masculin de Roland-Garros ?,La Coupe des Mousquetaires,Le Saladier d'argent,La Coupe Suzanne-Lenglen,La Coupe Norman Brookes,3,Sport,-
+S,337,Qui est ce joueur de tennis ?,Andy Murray,Novak Djokovic,Cameron Norrie,Stan Wawrinka,2,Sport,murray
+S,,Quel joueur de tennis a été sacré champion olympique en simple en 2012 et 2016 ?,Andy Murray,Stan Wawrinka,Juan Martín del Potro,Novak Djokovic,2,Sport,murray
+S,338,Qui est cette joueuse de tennis ?,Coco Gauff,Madison Keys,Venus Williams,Sloane Stephens,2,Sport,gauff
+S,,"Au tennis, quel terme désigne un service gagnant qui n'est pas touché par l'adversaire ?",Un ace,Un smash,Un break,Un let,1,Sport,as
+S,339,Qui est ce joueur de tennis ?,Alexander Zverev,Dominic Thiem,Stefanos Tsitsipas,Daniil Medvedev,2,Sport,zverev | sascha zverev
+S,340,Qui est ce joueur de tennis ?,Carlos Alcaraz,Rafael Nadal,Casper Ruud,Stefanos Tsitsipas,1,Sport,alcaraz
+S,,Quel joueur de tennis américain est resté 286 semaines en tête du classement ATP entre 1993 et 2000 ?,Pete Sampras,Andre Agassi,John McEnroe,Jim Courier,3,Sport,sampras | petros sampras
+S,341,Qui est ce joueur de tennis ?,Pete Sampras,Boris Becker,Andre Agassi,Jim Courier,3,Sport,sampras | petros sampras
+S,,Quel joueur de tennis tchécoslovaque est resté 270 semaines en tête du classement ATP entre 1983 et 1990 ?,Ivan Lendl,Mats Wilander,Stefan Edberg,Boris Becker,3,Sport,lendl
+S,342,Qui est ce joueur de tennis ?,Ivan Lendl,Mats Wilander,Stefan Edberg,Boris Becker,3,Sport,lendl

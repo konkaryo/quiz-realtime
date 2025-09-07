@@ -1,0 +1,36 @@
+Redémarrer le serveur Visual Studio
+-> CTRL + SHIFT + P
+-> TypeScript: Restart TS server
+
+Appliquer les modifications de schéma de base de données
+-> npx prisma format
+-> npx prisma migrate dev --create-only --name [nom_de_la_migration]
+-> npx prisma generate
+
+Réinitialiser la base de données
+-> npx prisma migrate reset
+
+Démarrer le serveur
+-> npm run dev
+
+Taille de la base de données
+-> SELECT pg_size_pretty(pg_database_size(current_database())) AS db_size;
+
+Relancer la seed
+-> npx prisma db seed
+
+Connexion au serveur Ubuntu
+-> ssh root@49.13.120.63
+
+PostgreSQL en production
+-> USER: quizuser
+-> PASSWORD: 05g6uFV>B#~t&t{5
+-> DB: quizdb
+-> DATABASE_URL="postgresql://quizuser:05g6uFV>B#~t&t{5@localhost:5432/quizdb?schema=public"
+
+PostgreSQL en dev
+-> USER: dev
+-> PASSWORD: dev
+-> DB: quiz
+
+

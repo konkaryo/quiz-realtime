@@ -1,71 +1,229 @@
 import fastify from "fastify";
 import cors from "@fastify/cors";
-import * as dotenv from "dotenv";
+import fastifyStatic from "@fastify/static";
+import path from "path";
 import { Server } from "socket.io";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";  
+import type { Client, GameState, RoundQuestion, RoundChoice } from "./types";
+import * as helpers from "./helpers";
 
-dotenv.config();
 const prisma = new PrismaClient();
+
 const PORT = Number(process.env.PORT || 3000);
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+const IMG_DIR = process.env.IMG_DIR || path.join(process.cwd(), "img");
 
-type Client = { id: string; name: string; playerId: string; gameId: string };
+const clients = new Map<string, Client>();
+const gameStates = new Map<string, GameState>();
 
+
+/* ---------------------- server ---------------------- */
 async function main() {
   const app = fastify({ logger: true });
+
   await app.register(cors, { origin: CLIENT_URL, credentials: true });
+  await app.register(fastifyStatic, { root: path.resolve(IMG_DIR), prefix: "/img/", decorateReply: false });
+
   app.get("/health", async () => ({ ok: true }));
 
-  const io = new Server(app.server, {
-    cors: { origin: CLIENT_URL, methods: ["GET","POST"], credentials: true },
+  app.post("/rooms", async (req, reply) => {
+    const code = helpers.genCode();
+    const result = await prisma.$transaction(async (tx) => {
+      const room = await tx.room.create({ data: { code } });
+      await tx.game.create({ data: { roomId: room.id, state: "lobby" } });
+      return { id: room.id };
+    });
+    return reply.code(201).send({ result });
   });
 
-  const clientMap = new Map<string, Client>();
+  app.get("/rooms/:id", async (req, reply) => {
+    const id = (req.params as any).id as string;
+    const room = await prisma.room.findUnique({ where: { id } , select: { id:true, code:true }});
+    if (!room) return reply.code(404).send({ error: "Room not found" });
+    return { room };
+  });
+
+  app.get("/rooms", async () => {
+    const rooms = await prisma.room.findMany({
+      orderBy: { createdAt: "desc" },
+      select: { id: true, createdAt: true },
+    });
+    return { rooms };
+  });
+
+  const io = new Server(app.server, {
+    cors: { origin: CLIENT_URL, methods: ["GET", "POST"], credentials: true },
+  });
 
   io.on("connection", (socket) => {
     socket.emit("welcome", { id: socket.id });
 
     socket.on("join_game", async (p: { code: string; name: string }) => {
-      const game = await prisma.game.findUnique({ where: { code: p.code.toUpperCase() }});
-      if (!game) return socket.emit("error_msg", "Game not found");
+      const roomCode = (p.code || "").trim().toUpperCase();
+      const name = (p.name || "").trim();
+      if (!roomCode || !name) return socket.emit("error_msg", "Missing code or name.");
 
-      const player = await prisma.player.create({
-        data: { name: p.name, gameId: game.id }
+      const room = await prisma.room.findUnique({where: { code: roomCode }});
+      if (!room) return socket.emit("error_msg", "Room not found.");
+
+      const game = await helpers.getOrCreateCurrentGame(prisma, room.id);
+
+      const player = await prisma.player.create({ data: { name } });
+
+      const pg = await prisma.playerGame.create({
+        data: { gameId: game.id, playerId: player.id, score: 0 },
       });
 
-      clientMap.set(socket.id, { id: socket.id, name: p.name, playerId: player.id, gameId: game.id });
-      socket.join(game.code);
-      io.to(game.code).emit("lobby_update");
+      clients.set(socket.id, {
+        socketId: socket.id,
+        playerId: player.id,
+        playerGameId: pg.id,
+        gameId: game.id,
+        roomId: room.id,
+        name
+      });
+
+      socket.data.roomId = room.id;
+      socket.data.gameId = game.id;
+
+      socket.join(room.id);
+      io.to(room.id).emit("lobby_update");
+      socket.emit("joined", { playerGameId: pg.id, name, roomId: room.id});
     });
 
-    socket.on("start_game", async (code: string) => {
-      const game = await prisma.game.update({ where: { code }, data: { state: "running" }});
-      const questions = await prisma.question.findMany({
-        where: { gameId: game.id },
-        orderBy: { order: "asc" },
-        include: { choices: true }
-      });
-      io.to(code).emit("round_begin", { index: 0, question: maskCorrect(questions[0]) });
+    socket.on("start_game", async () => {
+      const roomId = socket.data.roomId;
+      if (!roomId) return socket.emit("error_msg", "Not in a room");
+      try {
+        await helpers.startGameForRoom(clients, gameStates, io, prisma, roomId);
+        socket.emit("info_msg", "Game started");
+      } catch (e) {
+        console.error("[start_game error]", e);
+        socket.emit("error_msg", "Server error");
+      }      
     });
 
-    socket.on("submit_answer", async (p: { code: string; questionId: string; choiceId: string }) => {
-      const client = clientMap.get(socket.id);
-      if (!client) return;
+    // ---- SUBMIT ANSWER ----
+    socket.on("submit_answer", async (p: { code: string; choiceId: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const client = clients.get(socket.id);
+      if (!client) return ack?.({ ok: false, reason: "no-client" });
 
-      await prisma.answer.create({
-        data: { playerId: client.playerId, questionId: p.questionId, choiceId: p.choiceId }
-      });
-
-      const q = await prisma.question.findUnique({ where: { id: p.questionId }});
-      if (q && q.correctId === p.choiceId) {
-        await prisma.player.update({ where: { id: client.playerId }, data: { score: { increment: 1 } }});
+      const st = gameStates.get(client.roomId);
+      if (!st) return ack?.({ ok: false, reason: "no-state" });
+      if (!st.endsAt || Date.now() > st.endsAt) {
+        console.log("[submit_answer] late", { socket: socket.id, pg: client.playerGameId });
+        return ack?.({ ok: false, reason: "too-late" });
+      }
+      if (st.answeredThisRound.has(client.playerGameId)) {
+        console.log("[submit_answer] already-answered", { socket: socket.id, pg: client.playerGameId });
+        return ack?.({ ok: false, reason: "already-answered" });
       }
 
-      io.to(p.code).emit("answer_received");
+      const q = st.questions[st.index];
+      if (!q) return ack?.({ ok: false, reason: "no-question" });
+
+      const choice = q.choices.find((c) => c.id === p.choiceId);
+      if (!choice) return ack?.({ ok: false, reason: "bad-choice" });
+
+      st.answeredThisRound.add(client.playerGameId);
+
+      await prisma.$transaction(async (tx) => {
+        await tx.answer.create({
+          data: { playerGameId: client.playerGameId, text: choice.label, correct: choice.isCorrect },
+        });
+        if (choice.isCorrect) {
+          await tx.playerGame.update({
+            where: { id: client.playerGameId },
+            data: { score: { increment: 1 } },
+          });
+        }
+      });
+
+      const lb = await helpers.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
+      io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
+
+      // ✅ ack immédiat
+      ack?.({ ok: true });
+
+      // 🔔 feedback immédiat pour CE joueur
+      const correctChoice = q.choices.find((c) => c.isCorrect) || null;
+      socket.emit("answer_feedback", {
+        correct: !!choice.isCorrect,
+        correctChoiceId: correctChoice ? correctChoice.id : null,
+        correctLabel: correctChoice ? correctChoice.label : null,
+      });
+
+      io.to(client.roomId).emit("answer_received");
+    });
+
+    socket.on("submit_answer_text", async (p: { text: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const client = clients.get(socket.id);
+      if (!client) return ack?.({ ok: false, reason: "no-client" });
+
+      const st = gameStates.get(client.roomId);
+      if (!st) return ack?.({ ok: false, reason: "no-state" });
+      if (!st.endsAt || Date.now() > st.endsAt) {
+        console.log("[submit_answer_text] late", { socket: socket.id, pg: client.playerGameId });
+        return ack?.({ ok: false, reason: "too-late" });
+      }
+      if (st.answeredThisRound.has(client.playerGameId)) {
+        console.log("[submit_answer_text] already-answered", { socket: socket.id, pg: client.playerGameId });
+        return ack?.({ ok: false, reason: "already-answered" });
+      }
+
+      const q = st.questions[st.index];
+      if (!q) return ack?.({ ok: false, reason: "no-question" });
+
+      const raw = (p.text || "").trim();
+      const userNorm = helpers.norm(raw);
+      if (!userNorm) return ack?.({ ok:false, reason:"empty" });
+
+      const isCorrect = helpers.isFuzzyMatch(userNorm, q.acceptedNorms);
+
+      st.answeredThisRound.add(client.playerGameId);
+
+      await prisma.$transaction(async (tx) => {
+        await tx.answer.create({
+          data: { playerGameId: client.playerGameId, text: p.text, correct: isCorrect },
+        });
+        if (isCorrect) {
+          await tx.playerGame.update({
+            where: { id: client.playerGameId },
+            data: { score: { increment: 1 } },
+          });
+        }
+      });
+
+      const lb = await helpers.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
+      io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
+
+      // ✅ accusé de réception immédiat
+      ack?.({ ok: true });
+
+      // 🔔 feedback immédiat uniquement au joueur qui a répondu
+      const correct = q.choices.find(c => c.isCorrect) || null;
+      socket.emit("answer_feedback", {
+        correct: isCorrect,
+        correctChoiceId: correct ? correct.id : null,
+        correctLabel: correct ? correct.label : null,
+      });
+
+      io.to(client.roomId).emit("answer_received");
+    });
+
+    socket.on("request_choices", () => {
+      const roomId = socket.data.roomId;
+      if (!roomId) return;
+
+      const st = gameStates.get(roomId);
+      if (!st || !st.endsAt || Date.now() > st.endsAt) return;
+
+      const choices = helpers.getShuffledChoicesForSocket(st, socket.id);
+      socket.emit("multiple_choice", { choices });
     });
 
     socket.on("disconnect", () => {
-      clientMap.delete(socket.id);
+      clients.delete(socket.id);
     });
   });
 
@@ -73,10 +231,10 @@ async function main() {
   app.log.info(`HTTP + WS on http://localhost:${PORT}`);
 }
 
-function maskCorrect(q: any) {
-  if (!q) return q;
-  const { correctId, ...rest } = q;
-  return rest;
-}
+/* ---------------- Helpers rounds ---------------- */
 
-main();
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
