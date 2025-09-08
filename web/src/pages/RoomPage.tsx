@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 
-const API_BASE   = import.meta.env.VITE_API_BASE   || window.location.origin;
+const API_BASE = import.meta.env.VITE_API_BASE ?? (typeof window !== "undefined" ? `${window.location.origin}/api` : "");
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
 
 type ChoiceLite = { id: string; label: string };

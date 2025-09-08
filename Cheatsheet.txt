@@ -38,6 +38,8 @@ Commandes Git
 -> Ajouter tous les fichiers: git add .
 -> Faire le commit: git commit -m "Message"
 -> Envoyer vers dépôt distant: git push origin main
+-> Déplacement vers répertoire serveur: cd /var/www/quiz-realtime
+-> Copier le répertoire: git pull
 
 Hetzner
 -> konkaryo@hotmail.fr
