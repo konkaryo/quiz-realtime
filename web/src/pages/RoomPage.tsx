@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+const API_BASE   = import.meta.env.VITE_API_BASE   || window.location.origin;
+
 type ChoiceLite = { id: string; label: string };
 type QuestionLite = { id: string; text: string; img?: string|null };
 type Phase = "idle" | "playing" | "reveal" | "between";
@@ -61,7 +64,7 @@ export default function RoomPage() {
 
   useEffect(() => {
     if (!roomId) return;
-    const s = io("http://localhost:3000", { transports: ["websocket"] });
+    const s = io(SOCKET_URL, { transports: ["websocket"], withCredentials: true });
     setSocket(s);
 
     s.on("error_msg", (m: string) => setMsg(m));
@@ -117,7 +120,7 @@ export default function RoomPage() {
 
     // Deep-link join
     (async () => {
-      const res = await fetch(`http://localhost:3000/rooms/${roomId}`);
+      const res = await fetch(`${API_BASE}/rooms/${roomId}`);
       if (res.ok) {
         const { room } = (await res.json()) as { room: { id: string; code: string } };
         const saved = JSON.parse(localStorage.getItem("rq.player") || "{}");

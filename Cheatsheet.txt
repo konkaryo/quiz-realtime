@@ -39,6 +39,16 @@ Commandes Git
 -> Faire le commit: git commit -m "Message"
 -> Envoyer vers dépôt distant
 
+Hetzner
+-> konkaryo@hotmail.fr
+-> Clipor29900!
+
+Domaine
+-> konkaryo
+-> d8F82DQN
+-> synapz.online
+-> 49.13.120.63
+
 
 git remote add origin git@github.com:konkaryo/quiz-realtime.git
 PORT=3000

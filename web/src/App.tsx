@@ -11,6 +11,8 @@ type QuestionLite = {
 
 type Phase = "idle" | "playing" | "reveal" | "between";
 
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+
 export default function App() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [code, setCode] = useState("");
@@ -30,7 +32,7 @@ export default function App() {
   }, [endsAt, question, phase]);
 
   useEffect(() => {
-    const s = io("http://localhost:3000", { transports: ["websocket"] });
+    const s = io(SOCKET_URL, { path: "/socket.io", transports: ["websocket"], withCredentials: true });
     setSocket(s);
 
     s.on("welcome", () => {});
