@@ -8,9 +8,10 @@ export default function Home() {
   const [code, setCode] = useState("");
   const [name, setName] = useState("Yoann");
   const navigate = useNavigate();
+  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
 
   useEffect(() => {
-    const s = io({ withCredentials: true, transports: ["websocket", "polling"] });
+    const s = io(SOCKET_URL, { transports: ["websocket"] });
     setSocket(s);
 
     s.on("joined", (p: { playerGameId: string; name: string; roomId: string; code: string }) => {

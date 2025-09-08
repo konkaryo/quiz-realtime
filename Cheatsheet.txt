@@ -37,7 +37,7 @@ PostgreSQL en dev
 Commandes Git
 -> Ajouter tous les fichiers: git add .
 -> Faire le commit: git commit -m "Message"
--> Envoyer vers dépôt distant
+-> Envoyer vers dépôt distant: git push origin main
 
 Hetzner
 -> konkaryo@hotmail.fr

@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 
 const API_BASE   = import.meta.env.VITE_API_BASE   || window.location.origin;
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
 
 type ChoiceLite = { id: string; label: string };
 type QuestionLite = { id: string; text: string; img?: string|null };
@@ -63,7 +64,8 @@ export default function RoomPage() {
 
   useEffect(() => {
     if (!roomId) return;
-    const s = io({ withCredentials: true, transports: ["websocket", "polling"] });
+
+    const s = io(SOCKET_URL, { transports: ["websocket"] });
     setSocket(s);
 
     s.on("error_msg", (m: string) => setMsg(m));
