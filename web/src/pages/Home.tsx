@@ -10,9 +10,7 @@ export default function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // URL configurable via Vite env, fallback = same origin
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
-    const s = io(SOCKET_URL, { transports: ["websocket"], path: "/socket.io" });
+    const s = io({ withCredentials: true, transports: ["websocket", "polling"] });
     setSocket(s);
 
     s.on("joined", (p: { playerGameId: string; name: string; roomId: string; code: string }) => {

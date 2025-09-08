@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
 const API_BASE   = import.meta.env.VITE_API_BASE   || window.location.origin;
 
 type ChoiceLite = { id: string; label: string };
@@ -64,7 +63,7 @@ export default function RoomPage() {
 
   useEffect(() => {
     if (!roomId) return;
-    const s = io(SOCKET_URL, { transports: ["websocket"], withCredentials: true });
+    const s = io({ withCredentials: true, transports: ["websocket", "polling"] });
     setSocket(s);
 
     s.on("error_msg", (m: string) => setMsg(m));
