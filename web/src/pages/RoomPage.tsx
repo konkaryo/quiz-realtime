@@ -262,7 +262,7 @@ export default function RoomPage() {
               <div style={{ opacity: 0.6 }}>—</div>
             ) : (
               <ol style={{ margin: 0, paddingLeft: 18 }}>
-                {leaderboard.map((r, i) => (
+                {leaderboard.map((r) => (
                   <li key={r.id} style={{ margin: "6px 0" }}>
                     <span style={{ fontWeight: 600 }}>{r.name}</span>
                     <span style={{ float: "right" }}>{r.score}</span>

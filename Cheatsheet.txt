@@ -27,10 +27,21 @@ PostgreSQL en production
 -> PASSWORD: 05g6uFV>B#~t&t{5
 -> DB: quizdb
 -> DATABASE_URL="postgresql://quizuser:05g6uFV>B#~t&t{5@localhost:5432/quizdb?schema=public"
+-> ssh key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINW208ZcOqRqWUldALQfBlOxSC3j/nJxDMoivU1di3yo hetzner-quiz-server
 
 PostgreSQL en dev
 -> USER: dev
 -> PASSWORD: dev
 -> DB: quiz
 
+Commandes Git
+-> Ajouter tous les fichiers: git add .
+-> Faire le commit: git commit -m "Message"
+-> Envoyer vers dépôt distant
 
+
+git remote add origin git@github.com:konkaryo/quiz-realtime.git
+PORT=3000
+CLIENT_URL=http://localhost:5173
+DATABASE_URL=postgresql://quizuser:05g6uFV%3EB%23~t%26t%7B5@localhost:5432/quizdb?schema=public
+node -p "encodeURIComponent('05g6uFV>B#~t&t{5')"
