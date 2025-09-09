@@ -133,7 +133,7 @@ export async function loadQuestionCSV(filePath: string) {
   const data = await parseCsv(filePath);
 
   for (const q of data) {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.question.create({
         data: {
           text: q.text,

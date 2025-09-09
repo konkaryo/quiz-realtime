@@ -3,7 +3,7 @@ import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import path from "path";
 import { Server } from "socket.io";
-import { PrismaClient } from "@prisma/client";  
+import { PrismaClient, Prisma } from "@prisma/client";  
 import type { Client, GameState, RoundQuestion, RoundChoice } from "./types";
 import * as helpers from "./helpers";
 
@@ -28,7 +28,7 @@ async function main() {
 
   app.post("/rooms", async (req, reply) => {
     const code = helpers.genCode();
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const room = await tx.room.create({ data: { code } });
       await tx.game.create({ data: { roomId: room.id, state: "lobby" } });
       return { id: room.id };
@@ -127,7 +127,7 @@ async function main() {
 
       st.answeredThisRound.add(client.playerGameId);
 
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.answer.create({
           data: { playerGameId: client.playerGameId, text: choice.label, correct: choice.isCorrect },
         });
@@ -182,7 +182,7 @@ async function main() {
 
       st.answeredThisRound.add(client.playerGameId);
 
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.answer.create({
           data: { playerGameId: client.playerGameId, text: p.text, correct: isCorrect },
         });

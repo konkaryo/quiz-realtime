@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client"; 
+import { PrismaClient, Prisma } from "@prisma/client"; 
 import type { Client, RoundQuestion, GameState } from "./types";
 import { Server } from "socket.io";
 
@@ -77,7 +77,8 @@ export async function ensurePlayerGamesForRoom(clients: Map<string, Client>, gam
   const members = clientsInRoom(clients, roomId);
   if (members.length === 0) return [];
 
-  await prisma.$transaction(async (tx) => {
+  // 👇 typer le client de transaction
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const m of members) {
       await tx.playerGame.upsert({
         where: { gameId_playerId: { gameId, playerId: m.playerId } },
@@ -88,16 +89,20 @@ export async function ensurePlayerGamesForRoom(clients: Map<string, Client>, gam
   });
 
   const pgs = await prisma.playerGame.findMany({
-    where: { gameId, playerId: { in: members.map(m => m.playerId) } },
+    where: { gameId, playerId: { in: members.map((m) => m.playerId) } },
     select: { id: true, playerId: true },
   });
 
-  const mapByPlayer = new Map(pgs.map(x => [x.playerId, x.id]));
+  // 👇 typer le Map pour éviter '{}' et permettre l’assignation string
+  const mapByPlayer = new Map<string, string>(
+    pgs.map((x: { id: string; playerId: string }) => [x.playerId, x.id])
+  );
+
   for (const [sid, c] of clients) {
     if (c.roomId !== roomId) continue;
-    const newPgId = mapByPlayer.get(c.playerId);
+    const newPgId = mapByPlayer.get(c.playerId); // string | undefined
     if (newPgId) {
-      c.playerGameId = newPgId;
+      c.playerGameId = newPgId; // OK: string
       c.gameId = gameId;
       const s = io.sockets.sockets.get(sid);
       if (s) s.data.gameId = gameId;
@@ -125,19 +130,18 @@ export async function startGameForRoom(clients: Map<string, Client>, gameStates:
     return;
   }
 
-  const qIds = picked.map((r) => r.id);
+  const qIds: string[] = picked.map((r: Row) => r.id);
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const pg of pgs) {
       await tx.playerGame.update({ where: { id: pg.id }, data: { questions: { set: [] } } });
       await tx.playerGame.update({
         where: { id: pg.id },
-        data: { questions: { connect: qIds.map((id) => ({ id })) } },
+        data: { questions: { connect: qIds.map((id: string) => ({ id })) } },
       });
     }
     await tx.game.update({ where: { id: game.id }, data: { state: "running" } });
   });
-
   const raw = await prisma.question.findMany({
     where: { id: { in: qIds } },
     select: {
@@ -147,21 +151,21 @@ export async function startGameForRoom(clients: Map<string, Client>, gameStates:
     },
   });
 
-  const full: RoundQuestion[] = raw.map((q) => {
-    const correct = q.choices.find(c => c.isCorrect);
+  const full: RoundQuestion[] = raw.map((q: typeof raw[number]) => {
+    const correct = q.choices.find((c: typeof q.choices[number]) => c.isCorrect);
     return {
-        id: q.id,
-        text: q.text,
-        theme: q.theme ?? null,
-        difficulty: q.difficulty ?? null,
-        img: toImgUrl(q.img),
-        choices: q.choices,
-        acceptedNorms: q.acceptedAnswers.map(a => a.norm),
-        correctLabel: correct ? correct.label : "",
+      id: q.id,
+      text: q.text,
+      theme: q.theme ?? null,
+      difficulty: q.difficulty ?? null,
+      img: toImgUrl(q.img),
+      choices: q.choices,
+      acceptedNorms: q.acceptedAnswers.map((a: typeof q.acceptedAnswers[number]) => a.norm),
+      correctLabel: correct ? correct.label : "",
     };
   });
   const byId = new Map(full.map((q) => [q.id, q]));
-  const ordered: RoundQuestion[] = qIds.map((id) => byId.get(id)!).filter(Boolean) as RoundQuestion[];
+  const ordered: RoundQuestion[] = qIds.map((id: string) => byId.get(id)!).filter(Boolean) as RoundQuestion[];
 
   // reset état mémoire pour la room
   const prev = gameStates.get(room.id);
@@ -173,7 +177,7 @@ export async function startGameForRoom(clients: Map<string, Client>, gameStates:
     questions: ordered,
     index: 0,
     answeredThisRound: new Set(),
-    pgIds: new Set(pgs.map(p => p.id))
+    pgIds: new Set(pgs.map((p: { id: string }) => p.id))
   };
   gameStates.set(room.id, st);
   await startRound(clients, gameStates, io, prisma, st);
@@ -445,6 +449,10 @@ export async function buildLeaderboard(prisma: PrismaClient, gameId: string, onl
     select: { id: true, score: true, player: { select: { name: true } } },
   });
 
-  return rows.map(r => ({ id: r.id, name: r.player.name, score: r.score }));
+  return rows.map((r: { id: string; score: number; player: { name: string } }) => ({
+    id: r.id,
+    name: r.player.name,
+    score: r.score,
+  }));
 }
 /* ---------------------------------------------------------------------------------------- */
