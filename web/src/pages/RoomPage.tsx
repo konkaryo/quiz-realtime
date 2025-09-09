@@ -179,7 +179,10 @@ export default function RoomPage() {
               </div>
 
               <h3>{question.text}</h3>
-              {question.img && <img src={question.img} alt="" style={{ maxWidth:"100%", borderRadius: 8 }} />}
+              {question.img && (() => {
+                const imgSrc = question.img.startsWith('http') || question.img.startsWith('/') ? question.img : '/' + question.img.replace(/^\.?\//, '');
+                return ( <img src={imgSrc} alt="" style={{ maxWidth: "100%", borderRadius: 8 }} /> );
+              })()}
 
               {mcChoices ? (
                 // --- Mode Multiple-choice ---
