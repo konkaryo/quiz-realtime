@@ -5,9 +5,14 @@ import { Server } from "socket.io";
 /* ---------------------------------------------------------------------------------------- */
 export function toImgUrl(name?: string | null): string | null {
   if (!name) return null;
-  const file = `${name}.avif`;
-  const BASE_URL = process.env.SERVER_PUBLIC_URL;
-  return `${BASE_URL}/img/${encodeURIComponent(file)}`;
+
+  if (/^https?:\/\//i.test(name) || name.startsWith("/")) { return name; }
+
+  const cleaned = name
+    .replace(/^\.?\/?img\//i, "")
+    .replace(/\.(avif|webp|png|jpg|jpeg)$/i, "");
+
+  return `/img/${encodeURIComponent(cleaned)}.avif`;
 }
 /* ---------------------------------------------------------------------------------------- */
 
