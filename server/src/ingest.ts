@@ -132,8 +132,8 @@ async function upsertAcceptedAnswers(
 export async function loadQuestionCSV(filePath: string) {
   const data = await parseCsv(filePath);
 
-  await prisma.$transaction(async (tx) => {
-    for (const q of data) {
+  for (const q of data) {
+    await prisma.$transaction(async (tx) => {
       const created = await tx.question.create({
         data: {
           text: q.text,
@@ -142,7 +142,7 @@ export async function loadQuestionCSV(filePath: string) {
           img: q.img ?? undefined,
           choices: {
             create: [
-              { label: q.correct,   isCorrect: true  },
+              { label: q.correct,   isCorrect: true },
               { label: q.wrongs[0], isCorrect: false },
               { label: q.wrongs[1], isCorrect: false },
               { label: q.wrongs[2], isCorrect: false },
@@ -152,10 +152,9 @@ export async function loadQuestionCSV(filePath: string) {
         select: { id: true },
       });
 
-      // enregistre les variantes (y compris la réponse correcte)
       await upsertAcceptedAnswers(tx, created.id, q.correct, q.fuzzy);
-    }
-  });
+    });
+}
 }
 
 /** Watcher : traite chaque .csv déposé dans IMPORT_DIR */

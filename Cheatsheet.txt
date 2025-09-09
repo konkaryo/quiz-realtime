@@ -34,6 +34,12 @@ PostgreSQL en dev
 -> PASSWORD: dev
 -> DB: quiz
 
+PostgreSQL en prod
+-> (local) ssh -N -L 5555:127.0.0.1:5555 root@49.13.120.63
+-> (serveur) cd /var/www/quiz-realtime/server
+-> (serveur) npx prisma studio --port 5555 --hostname 127.0.0.1 --browser none
+-> (local) http://localhost:5555
+
 Commandes Git
 -> Ajouter tous les fichiers: git add .
 -> Faire le commit: git commit -m "Message"
