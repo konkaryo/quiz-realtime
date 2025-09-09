@@ -11,7 +11,7 @@ export default function Home() {
   const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
 
   useEffect(() => {
-    const s = io(SOCKET_URL, { transports: ["websocket"] });
+    const s = io(SOCKET_URL, {path: "/socket.io", withCredentials: true, transports: ["websocket", "polling"]});
     setSocket(s);
 
     s.on("joined", (p: { playerGameId: string; name: string; roomId: string; code: string }) => {

@@ -52,7 +52,12 @@ async function main() {
   });
 
   const io = new Server(app.server, {
-    cors: { origin: CLIENT_URL, methods: ["GET", "POST"], credentials: true },
+    path: "/socket.io",
+    cors: {
+      origin: CLIENT_URL,
+      methods: ["GET", "POST"],
+      credentials: true,
+    }
   });
 
   io.on("connection", (socket) => {

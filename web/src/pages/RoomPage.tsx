@@ -65,7 +65,7 @@ export default function RoomPage() {
   useEffect(() => {
     if (!roomId) return;
 
-    const s = io(SOCKET_URL, { transports: ["websocket"] });
+    const s = io(SOCKET_URL, {path: "/socket.io", withCredentials: true, transports: ["websocket", "polling"] });
     setSocket(s);
 
     s.on("error_msg", (m: string) => setMsg(m));
