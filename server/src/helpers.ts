@@ -38,7 +38,7 @@ export async function createNextGameFrom(prisma: PrismaClient, gameId: string): 
   const oldGame = await prisma.game.findUnique({ where: { id: gameId } });
   if (!oldGame) throw new Error("Old game not found");
 
-  const pgs = await prisma.playerGame.findMany({
+  const pgs: { playerId: string }[] = await prisma.playerGame.findMany({
     where: { gameId: oldGame.id },
     select: { playerId: true },
   });
@@ -48,9 +48,9 @@ export async function createNextGameFrom(prisma: PrismaClient, gameId: string): 
       roomId: oldGame.roomId,
       state: "lobby",
       playerGames: {
-        create: pgs.map((p) => ({ playerId: p.playerId, score: 0 })),
-      },
-    },
+        create: pgs.map(p => ({ playerId: p.playerId, score: 0 })),
+      }
+    }
   });
 
   return { gameId: next.id };
