@@ -1297,3 +1297,96 @@ S,,Quel joueur de tennis américain est resté 286 semaines en tête du classeme
 S,341,Qui est ce joueur de tennis ?,Pete Sampras,Boris Becker,Andre Agassi,Jim Courier,3,Sport,sampras | petros sampras
 S,,Quel joueur de tennis tchécoslovaque est resté 270 semaines en tête du classement ATP entre 1983 et 1990 ?,Ivan Lendl,Mats Wilander,Stefan Edberg,Boris Becker,3,Sport,lendl
 S,342,Qui est ce joueur de tennis ?,Ivan Lendl,Mats Wilander,Stefan Edberg,Boris Becker,3,Sport,lendl
+S,343,Qui est ce pilote de Formule 1 ?,Fernando Alonso,Sebastian Vettel,Charles Leclerc,Carlos Sainz Jr.,2,Sport,alonso | fernando alonso diaz
+S,344,Qui est ce pilote de Formule 1 ?,Max Verstappen,Lando Norris,Sergio Pérez,Sebastian Vettel,2,Sport,verstappen
+S,345,Qui est ce pilote de Formule 1 ?,Charles Leclerc,Carlos Sainz Jr.,Pierre Gasly,Esteban Ocon,2,Sport,leclerc
+S,,"Qui interprète le titre ""Against All Odds"" (1984) ?",Phil Collins,Elton John,Lionel Richie,Sting,2,Musique,collins
+S,346,Qui est ce pilote de Formule 1 ?,Lewis Hamilton,George Russell,Jenson Button,Felipe Massa,2,Sport,hamilton
+S,347,Qui est ce pilote de Formule 1 ?,Pierre Gasly,Esteban Ocon,Charles Leclerc,Daniel Ricciardo,2,Sport,gasly
+S,348,Qui est ce pilote de Formule 1 ?,Lando Norris,Charles Leclerc,Oscar Piastri,George Russell,2,Sport,norris
+S,349,Qui est ce pilote de Formule 1 ?,Oscar Piastri,Daniel Ricciardo,Sergio Pérez,Esteban Ocon,3,Sport,piastri
+S,350,Qui est ce pilote de Formule 1 ?,Carlos Sainz Jr.,Sergio Pérez,Fernando Alonso,Juan Pablo Montoya,3,Sport,carlos sainz | sainz | sainz jr
+S,351,Qui est ce pilote de Formule 1 ?,George Russell,Jenson Button,David Coulthard,Lando Norris,3,Sport,russell
+S,352,Qui est ce pilote de Formule 1 ?,Sergio Pérez,Fernando Alonso,Carlos Sainz Jr.,Daniel Ricciardo,3,Sport,perez
+S,353,Qui est ce pilote de Formule 1 ?,Esteban Ocon,Romain Grosjean,Pierre Gasly,Charles Leclerc,3,Sport,ocon | esteban ocon khelfane
+S,354,Qui est ce pilote de Formule 1 ?,Valtteri Bottas,Nico Rosberg,Jarno Trulli,Oscar Piastri,3,Sport,bottas
+S,355,Qui est ce pilote de Formule 1 ?,Daniel Ricciardo,Oscar Piastri,Max Verstappen,Mark Webber,3,Sport,ricciardo
+S,356,Qui est ce pilote de Formule 1 ?,Sebastian Vettel,Lewis Hamilton,Jenson Button,Mark Webber,2,Sport,vettel
+S,357,Qui est ce pilote de Formule 1 ?,Kimi Räikkönen,Mika Häkkinen,Nico Hülkenberg,Valtteri Bottas,3,Sport,raikkonen | kimi matias raikkonen
+S,358,Qui est ce pilote de Formule 1 ?,Nico Hülkenberg,Ralf Schumacher,Nick Heidfeld,Valtteri Bottas,3,Sport,hulkenberg | nicolas hulkenberg
+S,359,Qui est ce pilote de Formule 1 ?,Nico Rosberg,Michael Schumacher,Rubens Barrichello,Mark Webber,3,Sport,rosberg
+S,360,Qui est ce pilote de Formule 1 ?,Felipe Massa,Rubens Barrichello,Ayrton Senna,Juan Pablo Montoya,3,Sport,massa
+S,361,Qui est ce pilote de Formule 1 ?,Mark Webber,Daniel Ricciardo,Nico Rosberg,Sebastian Vettel,3,Sport,webber
+S,362,Qui est ce pilote de Formule 1 ?,Romain Grosjean,Jules Bianchi,Pierre Gasly,Kevin Magnussen,3,Sport,grosjean
+S,363,Qui est ce pilote de Formule 1 ?,Jenson Button,David Coulthard,Damon Hill,George Russell,3,Sport,button
+S,364,Qui est ce pilote de Formule 1 ?,Rubens Barrichello,Ayrton Senna,Felipe Massa,Nelson Piquet,3,Sport,barrichello
+S,365,Qui est ce pilote de Formule 1 ?,Michael Schumacher,Fernando Alonso,Kimi Räikkönen,Nico Rosberg,1,Sport,schumacher
+S,366,Qui est ce pilote de Formule 1 ?,Jarno Trulli,Giancarlo Fisichella,Rubens Barrichello,Nick Heidfeld,3,Sport,trulli
+S,367,Qui est ce pilote de Formule 1 ?,Juan Pablo Montoya,Felipe Massa,Rubens Barrichello,Fernando Alonso,3,Sport,montoya
+S,368,Qui est ce pilote de Formule 1 ?,David Coulthard,Damon Hill,Nigel Mansell,Jenson Button,3,Sport,coulthard
+S,369,Qui est ce pilote de Formule 1 ?,Mika Häkkinen,Kimi Räikkönen,Valtteri Bottas,David Coulthard,3,Sport,hakkinen
+S,370,Qui est ce pilote de Formule 1 ?,Jean Alesi,Alain Prost,René Arnoux,Gerhard Berger,3,Sport,alesi | giovanni alesi
+S,371,Qui est ce pilote de Formule 1 ?,Jacques Villeneuve,Heinz-Harald Frentzen,David Coulthard,Damon Hill,3,Sport,villeneuve
+S,372,Qui est ce pilote de Formule 1 ?,Eddie Irvine,Nigel Mansell,Johnny Herbert,Damon Hill,3,Sport,irvine | edmund irvine
+S,373,Qui est ce pilote de Formule 1 ?,Ralf Schumacher,Sebastian Vettel,Nico Rosberg,Nick Heidfeld,3,Sport,schumacher
+S,374,Qui est ce pilote de Formule 1 ?,Olivier Panis,Alain Prost,Jacques Villeneuve,Jean Alesi,3,Sport,panis
+S,375,Qui est ce pilote de Formule 1 ?,Heinz-Harald Frentzen,Ralf Schumacher,Michael Schumacher,Nick Heidfeld,3,Sport,frentzen
+S,,"Qui interprète le titre ""Imagine"" (1971) ?",John Lennon,David Bowie,Bob Dylan,Cat Stevens,1,Musique,lennon
+S,,"Qui interprète le titre ""As It Was"" (2022) ?",Harry Styles,Ed Sheeran,Justin Bieber,Shawn Mendes,1,Musique,styles
+S,,"Qui interprète le titre ""Time After Time"" (1983) ?",Cyndi Lauper,Madonna,Whitney Houston,Kim Wilde,2,Musique,lauper | cynthia lauper
+S,,"Qui interprète le titre ""Where Is My Mind?"" (1988) ?",The Pixies,Nirvana,R.E.M.,The Cranberries,2,Musique,-
+S,,"Qui interprète le titre ""Stronger"" (2007) ?",Kanye West,Jay-Z,Eminem,Drake,2,Musique,west
+S,,"Qui interprète le titre ""Tití Me Preguntó"" (2022) ?",Bad Bunny,Daddy Yankee,Karol G,J Balvin,1,Musique,benito ocasio | ocasio
+S,,"Qui interprète le titre ""Old Town Road"" (2018) ?",Lil Nas X,Travis Scott,Kanye West,Post Malone,1,Musique,hill | montero lamar hill
+S,,"Qui interprète le titre ""Cannonball"" (1993) ?",The Breeders,The Pixies,Sonic Youth,Hole,3,Musique,-
+S,,"Qui interprète le titre ""A Milli"" (2009) ?",Lil Wayne,50 Cent,Rick Ross,Drake,3,Musique,dwayne michael carter jr
+S,,"Qui interprète le titre ""Buddy Holly"" (1994) ?",Weezer,Green Day,Red Hot Chili Peppers,Nirvana,3,Musique,-
+S,,"Qui interprète le titre ""Bad Romance"" (2009) ?",Lady Gaga,Britney Spears,Adele,Katy Perry,1,Musique,gaga | stefani germanotta | germanotta
+S,,"Qui interprète le titre ""Just a Friend"" (1989) ?",Biz Markie,Coolio,LL Cool J,MC Hammer,3,Musique,marcel theo hall | hall
+S,,"Qui interprète le titre ""Oye Como Va"" (1970) ?",Carlos Santana,Los Lobos,Chicago,Osibisa,3,Musique,santana | carlos santana barragan
+S,,"Qui interprète le titre ""Move On Up"" (1970) ?",Curtis Mayfield,Marvin Gaye,Stevie Wonder,Al Green,3,Musique,mayfield
+S,,"Qui interprète le titre ""Solsbury Hill"" (1977) ?",Peter Gabriel,Robert Plant,Bryan Ferry,Sting,3,Musique,gabriel
+S,,"Qui interprète le titre ""The House of the Rising Sun"" (1964) ?",The Animals,The Rolling Stones,The Doors,Creedence Clearwater Revival,2,Musique,-
+S,,"Qui interprète le titre ""Fade Into You"" (1993) ?",Mazzy Star,Cocteau Twins,PJ Harvey,Portishead,3,Musique,-
+S,,"Qui interprète le titre ""Come as You Are"" (1991) ?",Nirvana,Alice in Chains,Soundgarden,Pearl Jam,1,Musique,-
+S,,"Qui interprète le titre ""No Ordinary Love"" (1992) ?",Sade,Enya,Annie Lennox,Lisa Stansfield,2,Musique,-
+S,,"Qui interprète le titre ""Loser"" (1993) ?",Beck,Radiohead,Beastie Boys,Weezer,2,Musique,beck hansen | beck david campbell
+S,,"Qui interprète le titre ""Livin’ on a Prayer"" (1986) ?",Bon Jovi,Def Leppard,Aerosmith,Journey,2,Musique,-
+S,,"Qui interprète le titre ""Africa"" (1982) ?",Toto,Foreigner,Journey,Chicago,2,Musique,-
+S,,"Qui interprète le titre ""Bad and Boujee"" (2016) ?",Migos,21 Savage,Young Thug,Future,2,Musique,migos feat lil uzi vert
+S,,"Qui interprète le titre ""(Don’t Fear) The Reaper"" (1976) ?",Blue Öyster Cult,Kansas,Rush,Cheap Trick,3,Musique,-
+S,,"Qui interprète le titre ""In Da Club"" (2003) ?",50 Cent,Ludacris,Snoop Dogg,The Game,1,Musique,curtis jackson | fifty cent | jackson
+S,,"Qui interprète le titre ""Ace of Spades"" (1980) ?",Motörhead,Black Sabbath,Judas Priest,Iron Maiden,3,Musique,-
+S,,"Qui interprète le titre ""If I Ain’t Got You"" (2003) ?",Alicia Keys,Ashanti,Mariah Carey,Beyoncé,2,Musique,keys | alicia augello cook
+S,,"Qui interprète le titre ""Call Me Maybe"" (2012) ?",Carly Rae Jepsen,Avril Lavigne,Ellie Goulding,Taylor Swift,2,Musique,jepsen
+S,,"Qui interprète le titre ""Super Bass"" (2010) ?",Nicki Minaj,Iggy Azalea,Kesha,Missy Elliott,2,Musique,minaj | onika maraj
+S,,"Qui interprète le titre ""How Soon Is Now?"" (1984) ?",The Smiths,Echo & the Bunnymen,Depeche Mode,Joy Division,3,Musique,-
+S,,"Qui interprète le titre ""Alive"" (1991) ?",Pearl Jam,Soundgarden,Stone Temple Pilots,Alice in Chains,3,Musique,-
+S,,"Qui interprète le titre ""Enjoy the Silence"" (1990) ?",Depeche Mode,Pet Shop Boys,A-ha,New Order,2,Musique,-
+S,,"Qui interprète le titre ""Everlong"" (1997) ?",Foo Fighters,Red Hot Chili Peppers,Smashing Pumpkins,Green Day,2,Musique,-
+S,,"Qui interprète le titre ""Free Bird"" (1973) ?",Lynyrd Skynyrd,ZZ Top,The Allman Brothers Band,The Eagles,3,Musique,-
+S,,"Qui interprète le titre ""Amor Prohibido"" (1994) ?",Selena,Shakira,Gloria Estefan,Thalía,3,Musique,selena quintanilla perez
+S,,"Qui interprète le titre ""Go Your Own Way"" (1977) ?",Fleetwood Mac,The Doobie Brothers,Supertramp,Boston,3,Musique,-
+S,,"Qui interprète le titre ""Fix You"" (2005) ?",Coldplay,Keane,Snow Patrol,U2,2,Musique,-
+S,,"Qui interprète le titre ""Enter Sandman"" (1991) ?",Metallica,Iron Maiden,Slayer,Pantera,2,Musique,-
+S,,"Qui interprète le titre ""Mr. Brightside"" (2003) ?",The Killers,Franz Ferdinand,The Strokes,Kings of Leon,2,Musique,-
+S,,"Qui interprète le titre ""drivers license"" (2021) ?",Olivia Rodrigo,Billie Eilish,Lorde,Tate McRae,2,Musique,rodrigo
+S,,"Qui interprète le titre ""Hotline Bling"" (2015) ?",Drake,Chris Brown,The Weeknd,Childish Gambino,1,Musique,drake aubrey graham
+S,,"Qui interprète le titre ""Black Hole Sun"" (1994) ?",Soundgarden,Alice in Chains,Pearl Jam,The Smashing Pumpkins,2,Musique,-
+S,,"Qui interprète le titre ""Sweet Dreams (Are Made of This)"" (1983) ?",Eurythmics,Erasure,Soft Cell,Depeche Mode,2,Musique,-
+S,,"Qui interprète le titre ""It Was A Good Day"" (1992) ?",Ice Cube,Snoop Dogg,Eazy-E,2Pac,2,Musique,o shea jackson sr
+S,,"Qui interprète le titre ""Dynamite"" (2020) ?",BTS,Blackpink,EXO,BigBang,2,Musique,-
+S,,"Qui interprète le titre ""Everybody Wants to Rule the World"" (1985) ?",Tears for Fears,Duran Duran,Simple Minds,The Human League,2,Musique,-
+S,,"Qui interprète le titre ""Hotel California"" (1976) ?",The Eagles,Fleetwood Mac,The Doobie Brothers,Led Zeppelin,2,Musique,-
+S,,"Qui interprète le titre ""Ain’t No Sunshine"" (1971) ?",Bill Withers,Otis Redding,Sam Cooke,Marvin Gaye,3,Musique,withers | william harrison withers
+S,,"Qui interprète le titre ""Every Breath You Take"" (1983) ?",The Police,Genesis,U2,Dire Straits,1,Musique,-
+S,,"Qui interprète le titre ""No Scrubs"" (1999) ?",TLC,Destiny’s Child,En Vogue,All Saints,2,Musique,-
+S,,"Qui interprète le titre ""Wish You Were Here"" (1975) ?",Pink Floyd,Led Zeppelin,The Doors,The Rolling Stones,2,Musique,-
+S,,"Qui interprète le titre ""In the Air Tonight"" (1981) ?",Phil Collins,Eric Clapton,Sting,Elton John,2,Musique,collins
+S,,"Qui interprète le titre ""Dancing Queen"" (1976) ?",ABBA,Bee Gees,Donna Summer,Boney M.,2,Musique,-
+S,,"Qui interprète le titre ""Say My Name"" (1999) ?",Destiny’s Child,Aaliyah,Mary J. Blige,TLC,2,Musique,-
+S,,"Qui interprète le titre ""Georgia on My Mind"" (1960) ?",Ray Charles,Louis Armstrong,Frank Sinatra,Tony Bennett,3,Musique,charles
+S,,"Qui interprète le titre ""Karma Police"" (1997) ?",Radiohead,Muse,Placebo,Blur,3,Musique,-
+S,,"Qui interprète le titre ""Let's Get It On"" (1973) ?",Marvin Gaye,Barry White,Isaac Hayes,Stevie Wonder,3,Musique,gaye
+S,,"Qui interprète le titre ""I Want It That Way"" (1999) ?",Backstreet Boys,NSYNC,Boyz II Men,Take That,1,Musique,-
+S,,"Qui interprète le titre ""Blue Monday"" (1983) ?",New Order,Depeche Mode,Joy Division,Soft Cell,2,Musique,-
