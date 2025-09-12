@@ -58,6 +58,25 @@ Domaine
 -> 49.13.120.63
 
 
+Reset de la prod
+-> cd /var/www/quiz-realtime
+-> cd server
+-> npm ci
+-> npx prisma generate
+-> npx prisma migrate deploy
+-> npm run build
+-> pm2 restart quiz-server --update-env
+-> pm2 save
+-> cd ../web
+-> npm ci
+-> npm run build
+-> sudo caddy reload --config /etc/caddy/Caddyfile
+-> curl -i https://synapz.online/health
+-> curl -I "https://synapz.online/socket.io/?EIO=4&transport=polling"
+
+
+
+
 git remote add origin git@github.com:konkaryo/quiz-realtime.git
 PORT=3000
 CLIENT_URL=http://localhost:5173

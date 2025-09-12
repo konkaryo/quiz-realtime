@@ -193,6 +193,9 @@ async function main() {
 
       st.answeredThisRound.add(client.playerGameId);
 
+      const playerEnergy = await helpers.getEnergy(prisma, client);
+      if (!playerEnergy.ok) return ack?.({ ok: false, reason: "no-energy" });
+
       const AUTO_ENERGY_GAIN = Number(process.env.AUTO_ENERGY_GAIN || 5);
       const TXT_ANSWER_ENERGY_GAIN = Number(process.env.TXT_ANSWER_ENERGY_GAIN || 5);
       const TXT_ANSWER_POINTS_GAIN = Number(process.env.TXT_ANSWER_POINTS_GAIN || 100);
@@ -207,7 +210,7 @@ async function main() {
         });
         await tx.playerGame.update({
           where: { id: client.playerGameId },
-          data: { energy: res.energy, score: { increment: isCorrect ? TXT_ANSWER_POINTS_GAIN : 0 } }
+          data: { energy: res.energy, score: { increment: isCorrect ? helpers.scoreMultiplier(playerEnergy.energy) * TXT_ANSWER_POINTS_GAIN : 0 } }
         });
       });
 

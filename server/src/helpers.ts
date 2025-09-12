@@ -501,3 +501,12 @@
         return { ok: true, energy: newEnergy };
     }
     /* ---------------------------------------------------------------------------------------- */
+
+    /* ---------------------------------------------------------------------------------------- */
+    export async function getEnergy(prisma: PrismaClient, client: Client) : Promise<EnergyCheck> {
+        const pg = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { energy: true } });
+        if (!pg) return { ok: false };
+
+        return { ok: true, energy: pg.energy };
+    }
+    /* ---------------------------------------------------------------------------------------- */
