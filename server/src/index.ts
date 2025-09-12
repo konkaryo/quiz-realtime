@@ -4,12 +4,12 @@ import fastifyStatic from "@fastify/static";
 import path from "path";
 import { Server } from "socket.io";
 import { PrismaClient, Prisma } from "@prisma/client";  
-import type { Client, GameState, RoundQuestion, RoundChoice } from "./types";
+import type { Client, GameState, RoundQuestion, RoundChoice, EnergyCheck } from "./types";
 import * as helpers from "./helpers";
 
 const prisma = new PrismaClient();
 
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT || 3001);
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 const IMG_DIR = process.env.IMG_DIR || path.join(process.cwd(), "img");
 
@@ -132,25 +132,31 @@ async function main() {
 
       st.answeredThisRound.add(client.playerGameId);
 
+      const AUTO_ENERGY_GAIN = Number(process.env.AUTO_ENERGY_GAIN || 5);
+      const MC_ANSWER_ENERGY_GAIN = Number(process.env.MC_ANSWER_ENERGY_GAIN || 5);
+      const MC_ANSWER_POINTS_GAIN = Number(process.env.MC_ANSWER_POINTS_GAIN || 100);
+      let gain = AUTO_ENERGY_GAIN + (choice.isCorrect ? MC_ANSWER_ENERGY_GAIN : 0);
+        
+      const res = await helpers.addEnergy(prisma, client, gain);
+      if (!res.ok) return ack?.({ ok: false, reason: "no-player" });
+
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.answer.create({
-          data: { playerGameId: client.playerGameId, text: choice.label, correct: choice.isCorrect },
+          data: { playerGameId: client.playerGameId, text: choice.label, correct: choice.isCorrect }
         });
-        if (choice.isCorrect) {
-          await tx.playerGame.update({
-            where: { id: client.playerGameId },
-            data: { score: { increment: 1 } },
-          });
-        }
+        await tx.playerGame.update({
+          where: { id: client.playerGameId },
+          data: { energy: res.energy, score: { increment: choice.isCorrect ? MC_ANSWER_POINTS_GAIN : 0 } }
+        });
       });
+
+      socket.emit("energy_update", { energy: res.energy, multiplier: helpers.scoreMultiplier(res.energy) });
 
       const lb = await helpers.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
       io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
 
-      // ✅ ack immédiat
       ack?.({ ok: true });
 
-      // 🔔 feedback immédiat pour CE joueur
       const correctChoice = q.choices.find((c) => c.isCorrect) || null;
       socket.emit("answer_feedback", {
         correct: !!choice.isCorrect,
@@ -187,17 +193,25 @@ async function main() {
 
       st.answeredThisRound.add(client.playerGameId);
 
+      const AUTO_ENERGY_GAIN = Number(process.env.AUTO_ENERGY_GAIN || 5);
+      const TXT_ANSWER_ENERGY_GAIN = Number(process.env.TXT_ANSWER_ENERGY_GAIN || 5);
+      const TXT_ANSWER_POINTS_GAIN = Number(process.env.TXT_ANSWER_POINTS_GAIN || 100);
+      let gain = AUTO_ENERGY_GAIN + (isCorrect ? TXT_ANSWER_ENERGY_GAIN : 0);
+        
+      const res = await helpers.addEnergy(prisma, client, gain);
+      if (!res.ok) return ack?.({ ok: false, reason: "no-player" });
+
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.answer.create({
-          data: { playerGameId: client.playerGameId, text: p.text, correct: isCorrect },
+          data: { playerGameId: client.playerGameId, text: p.text, correct: isCorrect }
         });
-        if (isCorrect) {
-          await tx.playerGame.update({
-            where: { id: client.playerGameId },
-            data: { score: { increment: 1 } },
-          });
-        }
+        await tx.playerGame.update({
+          where: { id: client.playerGameId },
+          data: { energy: res.energy, score: { increment: isCorrect ? TXT_ANSWER_POINTS_GAIN : 0 } }
+        });
       });
+
+      socket.emit("energy_update", { energy: res.energy, multiplier: helpers.scoreMultiplier(res.energy) });
 
       const lb = await helpers.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
       io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
@@ -216,12 +230,21 @@ async function main() {
       io.to(client.roomId).emit("answer_received");
     });
 
-    socket.on("request_choices", () => {
+    socket.on("request_choices", async () => {
       const roomId = socket.data.roomId;
       if (!roomId) return;
 
       const st = gameStates.get(roomId);
       if (!st || !st.endsAt || Date.now() > st.endsAt) return;
+
+      const client = clients.get(socket.id);
+      if (!client) return;
+
+      const MC_COST = Number(process.env.MC_COST || 5);
+
+      const res = await helpers.spendEnergy(prisma, client, MC_COST);
+      if (!res.ok) { return socket.emit("not_enough_energy"); };
+      socket.emit("energy_update", { energy: res.energy, multiplier: helpers.scoreMultiplier(res.energy) });
 
       const choices = helpers.getShuffledChoicesForSocket(st, socket.id);
       socket.emit("multiple_choice", { choices });
@@ -232,8 +255,8 @@ async function main() {
     });
   });
 
-  await app.listen({ port: PORT, host: "0.0.0.0" });
-  app.log.info(`HTTP + WS on http://localhost:${PORT}`);
+  await app.listen({ port: PORT, host: "127.0.0.1" });
+  app.log.info(`HTTP + WS on http://127.0.0.1:${PORT}`);
 }
 
 /* ---------------- Helpers rounds ---------------- */

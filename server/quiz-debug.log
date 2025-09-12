@@ -1,0 +1,4621 @@
+{
+  "ts": "2025-09-11T14:52:16.859Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivj400ot7k2o4dif8mud",
+    "text": "Quelle lettre marque le pluriel des noms en espéranto ?",
+    "theme": "Littérature",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivj400ou7k2ob1m9w7eg",
+        "label": "j",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivj400ov7k2ouk558jau",
+        "label": "x",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivj400ow7k2ocg2j23eg",
+        "label": "k",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivj400ox7k2oejjt5z3h",
+        "label": "n",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "j"
+    ],
+    "correctLabel": "j"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:16.861Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivtk022l7k2o8bacov46",
+    "text": "Combien de vers compte un sonnet classique en langue française ?",
+    "theme": "Littérature",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivtk022m7k2ohsmcf4ge",
+        "label": "14",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivtk022n7k2oryqo0jzd",
+        "label": "10",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivtk022o7k2oh7qidi0l",
+        "label": "12",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivtk022p7k2om7ou0f81",
+        "label": "16",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "14",
+      "quatorze",
+      "14 vers"
+    ],
+    "correctLabel": "14"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:16.862Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivwv02jq7k2ootno1rfp",
+    "text": "Quel animal terrifie l'aventurier Indiana Jones ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivwv02jr7k2oz0ynnsrr",
+        "label": "Les serpents",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivwv02js7k2omidmxrn9",
+        "label": "Les araignées",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivwv02jt7k2obczntju2",
+        "label": "Les rats",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivwv02ju7k2ogqvfdnqq",
+        "label": "Les scorpions",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "serpents",
+      "serpent"
+    ],
+    "correctLabel": "Les serpents"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:16.862Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw0q033n7k2ov4jw81if",
+    "text": "Quel homme politique français a été maire de Paris de 2001 à 2014 ?",
+    "theme": "Économie & Politique",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw0q033o7k2otawcurjp",
+        "label": "Bertrand Delanoë",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw0q033p7k2onowraie5",
+        "label": "Jacques Chirac",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw0q033q7k2ovtvps8wp",
+        "label": "Jean Tiberi",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw0q033r7k2oh45l76ko",
+        "label": "Anne Hidalgo",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "bertrand delanoe",
+      "delanoe"
+    ],
+    "correctLabel": "Bertrand Delanoë"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:16.863Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw4603kz7k2ozsk2i5nm",
+    "text": "Quelle matière brillante et irisée tapisse l’intérieur de certaines coquilles comme l’ormeau ou l'huître perlière ?",
+    "theme": "Sciences de la vie",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw4603l07k2of22ghwc4",
+        "label": "La nacre",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw4603l17k2o3eidrkz9",
+        "label": "Le mica",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw4603l27k2o4i1eqib9",
+        "label": "La chitine",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw4603l37k2ov93rn15n",
+        "label": "Le corail",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "nacre"
+    ],
+    "correctLabel": "La nacre"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:16.863Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwdw04xs7k2oa3b1f4rw",
+    "text": "Quel est le nom de cette actrice ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "2",
+    "img": "/img/91.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwdw04xt7k2om3v8ykuw",
+        "label": "Meryl Streep",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwdw04xu7k2oku7avf4g",
+        "label": "Sigourney Weaver",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwdw04xv7k2ory6wpohe",
+        "label": "Susan Sarandon",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwdw04xw7k2oij7vpbcp",
+        "label": "Jessica Lange",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "meryl streep",
+      "streep"
+    ],
+    "correctLabel": "Meryl Streep"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:16.864Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwmh066j7k2ofzfx403k",
+    "text": "Quel est le nom de ce taekwondoïste français ?",
+    "theme": "Sport",
+    "difficulty": "3",
+    "img": "/img/220.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwmh066k7k2ozlv1rn9s",
+        "label": "Pascal Gentil",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwmh066l7k2ohurkswdp",
+        "label": "Mickaël Borot",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwmh066m7k2ofrbwikba",
+        "label": "Cyrian Ravet",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwmh066n7k2ovtosrhcl",
+        "label": "Mamédy Doucara",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "pascal gentil",
+      "gentil"
+    ],
+    "correctLabel": "Pascal Gentil"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:16.864Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwoc06gi7k2o0emb4jdd",
+    "text": "Donnez la bonne orthographe de ce mot : \"mod-za-rè-la\"",
+    "theme": "Littérature",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwoc06gj7k2oq00x0d1k",
+        "label": "Mozzarella",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwoc06gk7k2ok5kbxasp",
+        "label": "Mozarrella",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwoc06gl7k2oygfvingv",
+        "label": "Mozzarrela",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwoc06gm7k2o1kk1o7jv",
+        "label": "Mozarela",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "mozzarella"
+    ],
+    "correctLabel": "Mozzarella"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:16.865Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwun07bt7k2o9lbdrp5v",
+    "text": "Quel a été le dernier membre des Beatles à rejoindre le groupe ?",
+    "theme": "Musique",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwun07bu7k2ob4lmr7op",
+        "label": "Ringo Starr",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwun07bv7k2oib22b0xr",
+        "label": "John Lennon",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwun07bw7k2okpwgqazn",
+        "label": "George Harrison",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwun07bx7k2odpglmpfn",
+        "label": "Paul McCartney",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "ringo starr",
+      "starr",
+      "richard starkey",
+      "starkey"
+    ],
+    "correctLabel": "Ringo Starr"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:16.865Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ix1y08av7k2o37a4hrm1",
+    "text": "Qui est cette joueuse de tennis ?",
+    "theme": "Sport",
+    "difficulty": "2",
+    "img": "/img/331.avif",
+    "choices": [
+      {
+        "id": "cmfa4ix1y08aw7k2okjry3v7q",
+        "label": "Serena Williams",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ix1y08ax7k2oqmt123eg",
+        "label": "Coco Gauff",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix1y08ay7k2ok322dgnt",
+        "label": "Venus Williams",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix1y08az7k2op3mj5uy4",
+        "label": "Steffi Graf",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "serena williams",
+      "williams"
+    ],
+    "correctLabel": "Serena Williams"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:20.684Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivew003l7k2orqao26jn",
+    "text": "Quel dieu égyptien est représenté avec une tête de chacal et est associé à la mort ?",
+    "theme": "Croyances",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivew003m7k2ovx5t3zc1",
+        "label": "Anubis",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivew003n7k2odx7z23rf",
+        "label": "Osiris",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivew003o7k2o684fq1fe",
+        "label": "Seth",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivew003p7k2o55pd7pzm",
+        "label": "Horus",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "anubis"
+    ],
+    "correctLabel": "Anubis"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:20.684Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivp101h07k2ow1796tpm",
+    "text": "Comment appelle-t-on la capacité à reconnaître les notes musicales sans repère externe ?",
+    "theme": "Musique",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivp101h17k2oiav3kf16",
+        "label": "L'oreille absolue",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivp101h27k2ozugkaujx",
+        "label": "La mémoire tonale",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivp101h37k2oousjl646",
+        "label": "L'intonation naturelle",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivp101h47k2obi7t2c6e",
+        "label": "La synesthésie auditive",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "oreille absolue"
+    ],
+    "correctLabel": "L'oreille absolue"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:20.684Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivwk02i57k2oimupajf2",
+    "text": "Quel est le nom donné aux membres du crime organisé au Japon ?",
+    "theme": "Divers",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivwk02i67k2oqvssu01b",
+        "label": "Yakuza",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivwk02i77k2osujnuh7p",
+        "label": "Keimusho",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivwk02i87k2ostsw8b9n",
+        "label": "Ashigaru",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivwk02i97k2oriedhenu",
+        "label": "Shinigami",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "yakuza",
+      "yakuzas"
+    ],
+    "correctLabel": "Yakuza"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:20.684Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivy502q77k2o766v19ec",
+    "text": "Quel trophée est décerné à l’équipe victorieuse du Top 14 ?",
+    "theme": "Sport",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivy502q87k2o1v4fwhci",
+        "label": "Le bouclier de Brennus",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivy502q97k2ov4910a8t",
+        "label": "La coupe Webb Ellis",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivy502qa7k2o2r4d94y8",
+        "label": "Le trophée Jean Prat",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivy502qb7k2o60h3duo7",
+        "label": "L'ovale d'or",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "bouclier brennus"
+    ],
+    "correctLabel": "Le bouclier de Brennus"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:20.685Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw4b03lo7k2okey74nea",
+    "text": "Quelle région du Proche-Orient antique signifie littéralement \"pays entre les fleuves\" ?",
+    "theme": "Géographie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw4b03lp7k2opliem3aa",
+        "label": "La Mésopotamie",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw4b03lq7k2o5cksna4x",
+        "label": "La Phénicie",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw4b03lr7k2ocl9hj3ty",
+        "label": "L'Anatolie",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw4b03ls7k2obi7x5o1e",
+        "label": "La Babylonie",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "mesopotamie"
+    ],
+    "correctLabel": "La Mésopotamie"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:20.685Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwo106el7k2o1k7zkq7c",
+    "text": "Quelle ville nord-américaine est représentée par cette équipe de NBA ?",
+    "theme": "Sport",
+    "difficulty": "3",
+    "img": "/img/243.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwo106em7k2o63hua4mi",
+        "label": "Cleveland",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwo106en7k2oex7h9o4u",
+        "label": "New York",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwo106eo7k2o44ykysyt",
+        "label": "Detroit",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwo106ep7k2o0pwljfkx",
+        "label": "Milwaukee",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "cleveland"
+    ],
+    "correctLabel": "Cleveland"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:20.685Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwqo06sl7k2onja6bxyd",
+    "text": "Combien de fleurs de lys figurent sur le drapeau du Québec ?",
+    "theme": "Géographie",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwqo06sm7k2o04zad3zg",
+        "label": "4",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwqo06sn7k2oolsenq69",
+        "label": "1",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwqo06so7k2ofr18nfec",
+        "label": "2",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwqo06sp7k2oguvu8mv9",
+        "label": "3",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "4",
+      "quatre"
+    ],
+    "correctLabel": "4"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:20.685Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwr306uk7k2oxhsub4my",
+    "text": "Quel phénomène astronomique se produit lors d'un alignement Terre-Lune-Soleil ?",
+    "theme": "Sciences exactes",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwr406ul7k2okiqqoc8t",
+        "label": "Une éclipse solaire",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwr406um7k2o8arwbs08",
+        "label": "Une éclipse lunaire",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwr406un7k2oizngz6ta",
+        "label": "Un solstice",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwr406uo7k2olfz95i5g",
+        "label": "Un équinoxe",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "eclipse solaire",
+      "occultation solaire"
+    ],
+    "correctLabel": "Une éclipse solaire"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:20.685Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwu3078z7k2or7gnkfpo",
+    "text": "Quel est le coefficient directeur de la droite d'équation y = 3x - 2 ?",
+    "theme": "Sciences exactes",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwu307907k2og94p3gh3",
+        "label": "3",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwu307917k2ocvqkzh1t",
+        "label": "0",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwu307927k2ogxzuufts",
+        "label": "1",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwu307937k2ox2x7rqwy",
+        "label": "2",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "3",
+      "trois"
+    ],
+    "correctLabel": "3"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:20.685Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ix2208b47k2o4gym2gml",
+    "text": "Qui est cette joueuse de tennis ?",
+    "theme": "Sport",
+    "difficulty": "3",
+    "img": "/img/332.avif",
+    "choices": [
+      {
+        "id": "cmfa4ix2208b57k2o4xhzs1dg",
+        "label": "Naomi Osaka",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ix2208b67k2ohd1s70y8",
+        "label": "Emma Raducanu",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix2208b77k2oygsmqrt1",
+        "label": "Serena Williams",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix2208b87k2ookjijsae",
+        "label": "Li Na",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "naomi osaka",
+      "osaka"
+    ],
+    "correctLabel": "Naomi Osaka"
+  }
+}
+{
+  "ts": "2025-09-11T14:52:29.682Z",
+  "type": "FUZZY_COMPARE",
+  "userNorm": "oreilel absolu",
+  "acc": "oreille absolue",
+  "d": 2,
+  "maxEdits": 3
+}
+{
+  "ts": "2025-09-11T14:54:31.034Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivjs00rt7k2o23de3jm1",
+    "text": "Dans quelle ville américaine est situé le Madison Square Garden ?",
+    "theme": "Géographie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivjs00ru7k2ol351s10q",
+        "label": "New York",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivjs00rv7k2ont44yc3d",
+        "label": "Los Angeles",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivjs00rw7k2oklti5stl",
+        "label": "Chicago",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivjs00rx7k2o40yb3wrr",
+        "label": "Dallas",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "new york"
+    ],
+    "correctLabel": "New York"
+  }
+}
+{
+  "ts": "2025-09-11T14:54:31.037Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw0g03287k2o7qpsrnpi",
+    "text": "Quel artiste interprète \"Perfect\" (2018) ?",
+    "theme": "Musique",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw0g03297k2olivu1vuq",
+        "label": "Ed Sheeran",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw0g032a7k2oj2tw10s0",
+        "label": "Sam Smith",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw0g032b7k2ofy2zru8k",
+        "label": "James Blunt",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw0g032c7k2orzai1z0z",
+        "label": "Lewis Capaldi",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "ed sheeran",
+      "edward christopher sheeran",
+      "sheeran"
+    ],
+    "correctLabel": "Ed Sheeran"
+  }
+}
+{
+  "ts": "2025-09-11T14:54:31.037Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw2u03e97k2op8bx3sg0",
+    "text": "Quel rugbyman français était surnommé \"Casque d'or\" ?",
+    "theme": "Sport",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw2u03ea7k2o36lzg81w",
+        "label": "Jean-Pierre Rives",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw2u03eb7k2oam2zzpbj",
+        "label": "Serge Blanco",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw2u03ec7k2odq81p3s8",
+        "label": "Philippe Sella",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw2u03ed7k2oqp6g43gl",
+        "label": "Fabien Galthié",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "jean pierre rives",
+      "rives"
+    ],
+    "correctLabel": "Jean-Pierre Rives"
+  }
+}
+{
+  "ts": "2025-09-11T14:54:31.038Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw4p03nr7k2ory1t5x5o",
+    "text": "Qui est l'auteur du roman épistolaire français \"Les Liaisons dangereuses\" (1782) ?",
+    "theme": "Littérature",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw4p03ns7k2o55ngv3bn",
+        "label": "Pierre Choderlos de Laclos",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw4p03nt7k2o651jlvy3",
+        "label": "Madame de Staël",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw4p03nu7k2ofchmaswv",
+        "label": "Le Marquis de Sade",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw4p03nv7k2o5433o1ts",
+        "label": "Beaumarchais",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "choderlos laclos",
+      "pierre choderlos laclos"
+    ],
+    "correctLabel": "Pierre Choderlos de Laclos"
+  }
+}
+{
+  "ts": "2025-09-11T14:54:31.038Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw7a040c7k2o71el772s",
+    "text": "Quel pays possède la plus grande zone économique exclusive ?",
+    "theme": "Économie & Politique",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw7a040d7k2oaocann92",
+        "label": "Les États-Unis",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw7a040e7k2ordvvbnd0",
+        "label": "La France",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw7a040f7k2ohy4pllmw",
+        "label": "L'Australie",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw7a040g7k2osichsg0o",
+        "label": "La Russie",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "etats unis",
+      "etats unis amerique",
+      "usa"
+    ],
+    "correctLabel": "Les États-Unis"
+  }
+}
+{
+  "ts": "2025-09-11T14:54:31.039Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw9b04a07k2oozn5eg9x",
+    "text": "Quel est le nom de cet acteur ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "2",
+    "img": "/img/60.avif",
+    "choices": [
+      {
+        "id": "cmfa4iw9b04a17k2ojtaruesf",
+        "label": "Bradley Cooper",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw9b04a27k2odl99a8bk",
+        "label": "Ryan Gosling",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw9b04a37k2oms78ilca",
+        "label": "Chris Pratt",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw9b04a47k2okvlnjw6q",
+        "label": "Jeremy Renner",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "bradley charles cooper",
+      "bradley cooper",
+      "cooper"
+    ],
+    "correctLabel": "Bradley Cooper"
+  }
+}
+{
+  "ts": "2025-09-11T14:54:31.039Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwcn04ri7k2owbpd3t6j",
+    "text": "Quel est le nom de cette actrice ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "2",
+    "img": "/img/81.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwcn04rj7k2o3u69z4s3",
+        "label": "Zoe Saldaña",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwcn04rk7k2ojqmn3lim",
+        "label": "Rosario Dawson",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwcn04rl7k2om5856dp6",
+        "label": "Zendaya",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwcn04rm7k2oidooqtjf",
+        "label": "Halle Berry",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "saldana",
+      "zoe saldana"
+    ],
+    "correctLabel": "Zoe Saldaña"
+  }
+}
+{
+  "ts": "2025-09-11T14:54:31.039Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwhy05jd7k2ox6xhdvv9",
+    "text": "À quel pays appartient ce drapeau ?",
+    "theme": "Géographie",
+    "difficulty": "3",
+    "img": "/img/150.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwhy05je7k2og2h9foy2",
+        "label": "Le Sénégal",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwhy05jf7k2o0ycw53mk",
+        "label": "Le Mali",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwhy05jg7k2on278vb6v",
+        "label": "Le Burkina Faso",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwhy05jh7k2opp1ktme0",
+        "label": "Le Ghana",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "senegal"
+    ],
+    "correctLabel": "Le Sénégal"
+  }
+}
+{
+  "ts": "2025-09-11T14:54:31.040Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwl906017k2otyagf1ix",
+    "text": "Quel est le nom de ce monument new yorkais ?",
+    "theme": "Géographie",
+    "difficulty": "1",
+    "img": "/img/197.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwl906027k2owg13appm",
+        "label": "La Statue de la Liberté",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwl906037k2orzn4wnw7",
+        "label": "Le Christ Rédempteur",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwl906047k2o4744xcav",
+        "label": "La Petite Sirène",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwl906057k2odam9dnrk",
+        "label": "Le David de Michel-Ange",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "liberte eclairant monde",
+      "statue liberte",
+      "statue liberty"
+    ],
+    "correctLabel": "La Statue de la Liberté"
+  }
+}
+{
+  "ts": "2025-09-11T14:54:31.040Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwwg07ku7k2ofawweytj",
+    "text": "Quel est le nom de cette actrice australienne ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "2",
+    "img": "/img/272.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwwg07kv7k2oq4haeztd",
+        "label": "Cate Blanchett",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwwg07kw7k2o6l53137s",
+        "label": "Toni Collette",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwwg07kx7k2ofw2krqp1",
+        "label": "Nicole Kidman",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwwg07ky7k2o8zm1uh06",
+        "label": "Naomi Watts",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "blanchett",
+      "cate blanchett"
+    ],
+    "correctLabel": "Cate Blanchett"
+  }
+}
+{
+  "ts": "2025-09-11T14:55:30.352Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivgr00cr7k2oozzdb1v9",
+    "text": "Quelle petite pastille noire, à base de réglisse, est connue pour parfumer l’haleine ?",
+    "theme": "Gastronomie",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivgs00cs7k2oyyocfokx",
+        "label": "Le cachou",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivgs00ct7k2o79b5fetf",
+        "label": "Le salmiakki",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivgs00cu7k2ob22khi3v",
+        "label": "La pastille de Vichy",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivgs00cv7k2o0imyq5c1",
+        "label": "La gomme arabique",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "cachou",
+      "cachous"
+    ],
+    "correctLabel": "Le cachou"
+  }
+}
+{
+  "ts": "2025-09-11T14:55:30.352Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivk100td7k2o69gl28fm",
+    "text": "Quelle monnaie virtuelle est utilisée dans le jeu \"Animal Crossing\" ?",
+    "theme": "Jeux & BD",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivk100te7k2o8u8qzds3",
+        "label": "Les clochettes",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivk100tf7k2oy4ts2u57",
+        "label": "Les rubis",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivk100tg7k2o51t2o8s4",
+        "label": "Les étoiles",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivk100th7k2owm3cza6v",
+        "label": "Les baies",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "clochette",
+      "clochettes"
+    ],
+    "correctLabel": "Les clochettes"
+  }
+}
+{
+  "ts": "2025-09-11T14:55:30.352Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivvy02ew7k2o1kseq2hy",
+    "text": "Quel sport pratiquait René Lacoste, le fondateur de la marque au crocodile ?",
+    "theme": "Sport",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivvy02ex7k2ovvrx624j",
+        "label": "Le tennis",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivvy02ey7k2o6fjg51ds",
+        "label": "Le golf",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivvy02ez7k2onee0obqf",
+        "label": "Le rugby",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivvy02f07k2oec6iknft",
+        "label": "L'équitation",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "tennis"
+    ],
+    "correctLabel": "Le tennis"
+  }
+}
+{
+  "ts": "2025-09-11T14:55:30.352Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivzt02z37k2o90fl7ojb",
+    "text": "Quel peintre est l'auteur de \"Printemps\" (1872) ?",
+    "theme": "Arts & Culture",
+    "difficulty": "3",
+    "img": "/img/23.avif",
+    "choices": [
+      {
+        "id": "cmfa4ivzt02z47k2o423grq12",
+        "label": "Claude Monet",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivzt02z57k2oquamcc4t",
+        "label": "Élisabeth Vigée Le Brun",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivzt02z67k2o6t7xzsin",
+        "label": "Édouard Manet",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivzt02z77k2o7mw2pq7l",
+        "label": "Berthe Morisot",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "claude monet",
+      "monet"
+    ],
+    "correctLabel": "Claude Monet"
+  }
+}
+{
+  "ts": "2025-09-11T14:55:30.352Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw1o038g7k2ofwz4ze52",
+    "text": "Quel est le nom du premier navire de l’équipage de Luffy dans le manga \"One Piece\" ?",
+    "theme": "Jeux & BD",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw1p038h7k2odl0lpu2f",
+        "label": "Le Vogue Merry",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw1p038i7k2oi1wvo62y",
+        "label": "Le Thousand Sunny",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw1p038j7k2on9aetsqe",
+        "label": "Le Oro Jackson",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw1p038k7k2osi8wudoq",
+        "label": "Le Red Force",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "going merry",
+      "vogue merry"
+    ],
+    "correctLabel": "Le Vogue Merry"
+  }
+}
+{
+  "ts": "2025-09-11T14:55:30.352Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw4903ld7k2onfh04suz",
+    "text": "Quel youtubeur retrace son ascension de l'Everest dans le documentaire \"Kaizen\" ?",
+    "theme": "Actualités & Médias",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw4903le7k2o1uw52js2",
+        "label": "Inoxtag",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw4903lf7k2oikep1yxp",
+        "label": "Squeezie",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw4903lg7k2oubk4dwvb",
+        "label": "Tibo InShape",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw4903lh7k2ol2kxkk2v",
+        "label": "Mastu",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "benazzouz",
+      "ines benazzouz",
+      "inoxtag"
+    ],
+    "correctLabel": "Inoxtag"
+  }
+}
+{
+  "ts": "2025-09-11T14:55:30.352Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwpa06lo7k2o430ig8k6",
+    "text": "Quel est l’ingrédient principal de la sauce italienne pesto, pilé avec de l’ail, des pignons, du parmesan et de l’huile d’olive ?",
+    "theme": "Gastronomie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwpa06lp7k2oklrkfak1",
+        "label": "Le basilic",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwpa06lq7k2ovnypj1s8",
+        "label": "Le persil",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwpa06lr7k2oehasmae8",
+        "label": "La coriandre",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwpa06ls7k2o6v2llgd4",
+        "label": "L'origan",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "basilic"
+    ],
+    "correctLabel": "Le basilic"
+  }
+}
+{
+  "ts": "2025-09-11T14:55:30.353Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwsa070v7k2o8vdkp0jg",
+    "text": "Quelle est la spécialité d'Amy Farrah Fowler dans la série télévisée \"The Big Bang Theory\" ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "4",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwsa070w7k2o2gvp46jc",
+        "label": "La neurobiologie",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwsa070x7k2okci720bo",
+        "label": "L'astrophysique",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwsa070y7k2oxtonms9q",
+        "label": "Les mathématiques",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwsa070z7k2oep2izs6g",
+        "label": "L'informatique",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "biologie",
+      "neurobiologie",
+      "neurosciences"
+    ],
+    "correctLabel": "La neurobiologie"
+  }
+}
+{
+  "ts": "2025-09-11T14:55:30.353Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwwc07k57k2ojzvakvlz",
+    "text": "Quel est le nom du seul tableau que Vincent van Gogh ait vendu de son vivant ?",
+    "theme": "Arts & Culture",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwwc07k67k2os1velxut",
+        "label": "La Vigne rouge",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwwc07k77k2oj3l7m0t0",
+        "label": "La Nuit étoilée",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwwc07k87k2oiqlfq69k",
+        "label": "Les Iris",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwwc07k97k2oxuboxfrn",
+        "label": "Les Mangeurs de pommes de terre",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "vigne rouge",
+      "vigne rouge montmajour"
+    ],
+    "correctLabel": "La Vigne rouge"
+  }
+}
+{
+  "ts": "2025-09-11T14:55:30.353Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ix3m08g17k2o72nuqvdg",
+    "text": "Qui est ce joueur de tennis ?",
+    "theme": "Sport",
+    "difficulty": "1",
+    "img": "/img/335.avif",
+    "choices": [
+      {
+        "id": "cmfa4ix3m08g27k2oajzdb4hw",
+        "label": "Roger Federer",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ix3m08g37k2oj14gafjz",
+        "label": "Stan Wawrinka",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix3m08g47k2oaj0lr5ep",
+        "label": "Pete Sampras",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix3m08g57k2ogx1ksuws",
+        "label": "Rafael Nadal",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "federer",
+      "roger federer"
+    ],
+    "correctLabel": "Roger Federer"
+  }
+}
+{
+  "ts": "2025-09-11T14:56:00.167Z",
+  "type": "FUZZY_COMPARE",
+  "userNorm": "michou",
+  "acc": "inoxtag",
+  "d": 2,
+  "maxEdits": 2
+}
+{
+  "ts": "2025-09-11T14:57:40.659Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivjd00pk7k2omc9km9py",
+    "text": "Qui est le créateur original du jeu \"The Binding of Isaac\" ?",
+    "theme": "Jeux & BD",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivjd00pl7k2o9qfgozv4",
+        "label": "Edmund McMillen",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivjd00pm7k2oa2n9zdn5",
+        "label": "Markus Persson",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivjd00pn7k2ogjrudv84",
+        "label": "Tommy Refenes",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivjd00po7k2of2pbtbes",
+        "label": "Eric Barone",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "edmund mcmillen",
+      "mcmillen"
+    ],
+    "correctLabel": "Edmund McMillen"
+  }
+}
+{
+  "ts": "2025-09-11T14:57:40.662Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivpb01ij7k2om8jfnili",
+    "text": "Quelle lettre se trouve entre le I et le P sur un clavier AZERTY ?",
+    "theme": "Technologie",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivpb01ik7k2oa3h3guhz",
+        "label": "O",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivpb01il7k2oaexxzosl",
+        "label": "L",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivpb01im7k2o6j6rjfok",
+        "label": "U",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivpb01in7k2o9v6d7yux",
+        "label": "Aucune",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "o"
+    ],
+    "correctLabel": "O"
+  }
+}
+{
+  "ts": "2025-09-11T14:57:40.663Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivsw01zu7k2ojtsz0llz",
+    "text": "Quel peintre a traversé une phase artistique surnommée \"la période bleue\" ?",
+    "theme": "Arts & Culture",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivsw01zv7k2obvp3c9p1",
+        "label": "Pablo Picasso",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivsw01zw7k2o4m2zjyul",
+        "label": "Salvador Dalí",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivsw01zx7k2o1wz6wzd9",
+        "label": "Joan Miró",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivsw01zy7k2okrmiwfr8",
+        "label": "Georges Braque",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "pablo picasso",
+      "picasso"
+    ],
+    "correctLabel": "Pablo Picasso"
+  }
+}
+{
+  "ts": "2025-09-11T14:57:40.665Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivtx02497k2o1sryjewr",
+    "text": "Quel pigeon voyageur a sauvé des soldats américains encerclés en 1918 ?",
+    "theme": "Histoire",
+    "difficulty": "4",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivtx024a7k2o92ikkf0z",
+        "label": "Cher Ami",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivtx024b7k2oou9scv18",
+        "label": "Bel Amant",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivtx024c7k2oo00eyray",
+        "label": "Bon Copain",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivtx024d7k2oelx7arlt",
+        "label": "Joli Coeur",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "cher ami"
+    ],
+    "correctLabel": "Cher Ami"
+  }
+}
+{
+  "ts": "2025-09-11T14:57:40.666Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivw402fq7k2olkygz5fe",
+    "text": "Quel événement sportif majeur détermine le champion de la NFL ?",
+    "theme": "Sport",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivw402fr7k2o5gpjjjs2",
+        "label": "Le Super Bowl",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivw402fs7k2ozpcgw2lb",
+        "label": "Le Big Bowl",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivw402ft7k2o4l6n9ufn",
+        "label": "Le Mega Bowl",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivw402fu7k2oa5y1dbe4",
+        "label": "Le Grand Bowl",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "super bowl"
+    ],
+    "correctLabel": "Le Super Bowl"
+  }
+}
+{
+  "ts": "2025-09-11T14:57:40.666Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivxx02pe7k2o9p19ukd2",
+    "text": "Quel acteur interprète le rôle de Clarence Worley dans le film \"True Romance\" (1993) ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivxx02pf7k2ole8d77kg",
+        "label": "Christian Slater",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivxx02pg7k2o7c5yi755",
+        "label": "Val Kilmer",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivxx02ph7k2o3ps79x22",
+        "label": "Gary Oldman",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivxx02pi7k2omdn9lis7",
+        "label": "Nicolas Cage",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "christian slater",
+      "slater"
+    ],
+    "correctLabel": "Christian Slater"
+  }
+}
+{
+  "ts": "2025-09-11T14:57:40.667Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivyw02ub7k2ovf08kzud",
+    "text": "Quel animal est le plus cité dans les titres des fables de La Fontaine ?",
+    "theme": "Littérature",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivyw02uc7k2oub7jfn4c",
+        "label": "Le renard",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivyw02ud7k2oahqaqthp",
+        "label": "Le rat",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivyw02ue7k2oycoxf6gj",
+        "label": "Le lion",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivyw02uf7k2op4penapi",
+        "label": "Le loup",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "renard"
+    ],
+    "correctLabel": "Le renard"
+  }
+}
+{
+  "ts": "2025-09-11T14:57:40.668Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw8904517k2oynd5jmhb",
+    "text": "Quel est le nom de cette actrice ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "1",
+    "img": "/img/43.avif",
+    "choices": [
+      {
+        "id": "cmfa4iw8904527k2okmfjh023",
+        "label": "Scarlett Johansson",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw8904537k2o8xd1v76m",
+        "label": "Charlize Theron",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw8904547k2oimgiue12",
+        "label": "Natalie Portman",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw8904557k2o93ya7lui",
+        "label": "Emily Blunt",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "johansson",
+      "scarlett johansson"
+    ],
+    "correctLabel": "Scarlett Johansson"
+  }
+}
+{
+  "ts": "2025-09-11T14:57:40.668Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwbo04m47k2omb39lf90",
+    "text": "Dans quel pays se situe la ville de Dubaï ?",
+    "theme": "Géographie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwbo04m57k2o06jmfndi",
+        "label": "Les Émirats arabes unis",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwbo04m67k2oz5hhi05u",
+        "label": "L'Arabie saoudite",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwbo04m77k2o9wlsjgsu",
+        "label": "Le Qatar",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwbo04m87k2o0y0atk8l",
+        "label": "Le Bahreïn",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "eau",
+      "emirats arabes unis"
+    ],
+    "correctLabel": "Les Émirats arabes unis"
+  }
+}
+{
+  "ts": "2025-09-11T14:57:40.669Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwbz04nn7k2od27yjzp2",
+    "text": "Qui a fondé la communauté Emmaüs pour venir en aide aux plus démunis ?",
+    "theme": "Divers",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwbz04no7k2o8gphkkoi",
+        "label": "L'abbé Pierre",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwbz04np7k2owbjbxmsp",
+        "label": "Mère Teresa",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwbz04nq7k2ogb58eykw",
+        "label": "Coluche",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwbz04nr7k2o8cj5ddfn",
+        "label": "Jean Vanier",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "abbe pierre",
+      "groues",
+      "henry groues"
+    ],
+    "correctLabel": "L'abbé Pierre"
+  }
+}
+{
+  "ts": "2025-09-11T14:59:50.936Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivn0018h7k2o3uu9dl46",
+    "text": "Comment appelle-t-on l’habitude involontaire de serrer ou grincer des dents ?",
+    "theme": "Sciences de la vie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivn0018i7k2olxri6ymz",
+        "label": "Le bruxisme",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivn0018j7k2oy5sz2uv2",
+        "label": "L'halitose",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivn0018k7k2ogugaddpe",
+        "label": "La malocclusion",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivn0018l7k2odmgrswpm",
+        "label": "La dysphagie",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "bruxisme"
+    ],
+    "correctLabel": "Le bruxisme"
+  }
+}
+{
+  "ts": "2025-09-11T14:59:50.937Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivs501wg7k2o573f6e2d",
+    "text": "Quel est le nom de la chèvre dans le conte \"La Chèvre de monsieur Seguin\" ?",
+    "theme": "Littérature",
+    "difficulty": "4",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivs501wh7k2ovuzfnb2b",
+        "label": "Blanquette",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivs501wi7k2oo3gjfhdv",
+        "label": "Suzette",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivs501wj7k2o7smr90qp",
+        "label": "Coquette",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivs501wk7k2o6oxn395d",
+        "label": "Clochette",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "blanquette"
+    ],
+    "correctLabel": "Blanquette"
+  }
+}
+{
+  "ts": "2025-09-11T14:59:50.937Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivs601wn7k2oaecbhhiu",
+    "text": "À quel pays appartiennent les îles Féroé ?",
+    "theme": "Géographie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivs601wo7k2oi0fppouc",
+        "label": "Le Danemark",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivs601wp7k2ow0mbsrhq",
+        "label": "La Norvège",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivs601wq7k2ohg216ga2",
+        "label": "Le Royaume-Uni",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivs601wr7k2oxf80xzy2",
+        "label": "La Finlande",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "danemark"
+    ],
+    "correctLabel": "Le Danemark"
+  }
+}
+{
+  "ts": "2025-09-11T14:59:50.938Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw0s033w7k2ocdkbtyn1",
+    "text": "Quel homme politique français a été maire de Bordeaux de 1995 à 2004 puis de 2006 à 2019 ?",
+    "theme": "Économie & Politique",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw0s033x7k2o5aezrtsr",
+        "label": "Alain Juppé",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw0s033y7k2ou0rw0dd6",
+        "label": "François Bayrou",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw0s033z7k2ozb0imgvy",
+        "label": "Dominique de Villepin",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw0s03407k2o778ey5ta",
+        "label": "Jacques Chaban-Delmas",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "alain juppe",
+      "juppe"
+    ],
+    "correctLabel": "Alain Juppé"
+  }
+}
+{
+  "ts": "2025-09-11T14:59:50.938Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw7p042c7k2o656wcg41",
+    "text": "Quel est le nom de cette actrice ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "1",
+    "img": "/img/34.avif",
+    "choices": [
+      {
+        "id": "cmfa4iw7p042d7k2o7nbted4s",
+        "label": "Natalie Portman",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw7p042e7k2ojrcg73c8",
+        "label": "Keira Knightley",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw7p042f7k2o7s00716r",
+        "label": "Scarlett Johansson",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw7p042g7k2o0m91i9ze",
+        "label": "Anne Hathaway",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "hershlag",
+      "natalie hershlag",
+      "natalie portman",
+      "portman"
+    ],
+    "correctLabel": "Natalie Portman"
+  }
+}
+{
+  "ts": "2025-09-11T14:59:50.939Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwbe04kg7k2oqjha5qsz",
+    "text": "En médecine, quel terme désigne la perte complète du sens olfactif ?",
+    "theme": "Sciences de la vie",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwbe04kh7k2oto5t0ci8",
+        "label": "L'anosmie",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwbe04ki7k2oq2vupgot",
+        "label": "La nasotomie",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwbe04kj7k2odr3lofse",
+        "label": "L'ablairose",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwbe04kk7k2on3avgnf4",
+        "label": "La phantosmie",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "anosmie"
+    ],
+    "correctLabel": "L'anosmie"
+  }
+}
+{
+  "ts": "2025-09-11T14:59:50.939Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwe704zc7k2owcc556jo",
+    "text": "Quel système d’exploitation développé par Microsoft est le plus répandu sur les ordinateurs personnels ?",
+    "theme": "Technologie",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwe704zd7k2o09h3wew0",
+        "label": "Windows",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwe704ze7k2opwgc04ar",
+        "label": "Linux",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwe704zf7k2o61se7hyk",
+        "label": "Solaris",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwe704zg7k2os18nz0qb",
+        "label": "macOS",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "windows"
+    ],
+    "correctLabel": "Windows"
+  }
+}
+{
+  "ts": "2025-09-11T14:59:50.940Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwef050j7k2o1k1kr6y7",
+    "text": "Quel nom est donné à un entier naturel dont la somme des diviseurs propres est supérieure à lui-même ?",
+    "theme": "Sciences exactes",
+    "difficulty": "4",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwef050k7k2o5prp9qgy",
+        "label": "Un nombre abondant",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwef050l7k2oaj19un5y",
+        "label": "Un nombre premier",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwef050m7k2oyvrlrirm",
+        "label": "Un nombre transcendant",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwef050n7k2o54qtz310",
+        "label": "Un nombre déficient",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "nombre abondant"
+    ],
+    "correctLabel": "Un nombre abondant"
+  }
+}
+{
+  "ts": "2025-09-11T14:59:50.940Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwi605kq7k2o7dxfw2l8",
+    "text": "À quel pays appartient ce drapeau ?",
+    "theme": "Géographie",
+    "difficulty": "3",
+    "img": "/img/157.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwi605kr7k2opiv4iu6z",
+        "label": "L'Ouganda",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwi605ks7k2oz4fncpis",
+        "label": "Le Soudan du Sud",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwi605kt7k2os6hs8mz8",
+        "label": "Le Kenya",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwi605ku7k2o9juz230r",
+        "label": "Le Zimbabwe",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "ouganda"
+    ],
+    "correctLabel": "L'Ouganda"
+  }
+}
+{
+  "ts": "2025-09-11T14:59:50.941Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwox06jt7k2oxfq812b3",
+    "text": "Quelle affection cutanée, fréquente à l’adolescence, est caractérisée par des boutons et inflammations de la peau ?",
+    "theme": "Sciences de la vie",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwox06ju7k2o178jj9t8",
+        "label": "L'acné",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwox06jv7k2ompgecrux",
+        "label": "Le zona",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwox06jw7k2ocjuxnh81",
+        "label": "L'eczéma",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwox06jx7k2o8dpkchuo",
+        "label": "La rosacée",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "acne"
+    ],
+    "correctLabel": "L'acné"
+  }
+}
+{
+  "ts": "2025-09-11T15:02:01.198Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivke00v47k2olwoid2wo",
+    "text": "Quel homme politique français a fondé le \"Front national\" en 1972 ?",
+    "theme": "Économie & Politique",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivke00v57k2o7oy9d2o5",
+        "label": "Jean-Marie Le Pen",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivke00v67k2olxnqpb4a",
+        "label": "Carl Lang",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivke00v77k2ofgyisi4l",
+        "label": "Gilbert Collard",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivke00v87k2of63l2z43",
+        "label": "Bruno Mégret",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "jean marie pen",
+      "pen"
+    ],
+    "correctLabel": "Jean-Marie Le Pen"
+  }
+}
+{
+  "ts": "2025-09-11T15:02:01.201Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivqp01pl7k2ol1z4n8f6",
+    "text": "Quelle ville allemande a été divisée par un mur pendant la guerre froide ?",
+    "theme": "Histoire",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivqp01pm7k2oe4lw9qrl",
+        "label": "Berlin",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivqp01pn7k2om0na29qw",
+        "label": "Munich",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivqp01po7k2oolq4qcn2",
+        "label": "Hambourg",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivqp01pp7k2o9im84aoz",
+        "label": "Francfort",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "berlin"
+    ],
+    "correctLabel": "Berlin"
+  }
+}
+{
+  "ts": "2025-09-11T15:02:01.203Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivrv01v97k2ok2f4holk",
+    "text": "Quel membre de la famille royale danoise accède au trône en janvier 2024 ?",
+    "theme": "Économie & Politique",
+    "difficulty": "4",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivrv01va7k2o5sa51i3s",
+        "label": "Frederik X",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivrv01vb7k2oscw6oghj",
+        "label": "Margrethe II",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivrv01vc7k2onur5m5if",
+        "label": "Harald V",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivrv01vd7k2on6ksyyad",
+        "label": "Willem-Alexander",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "frederik x",
+      "frederic x",
+      "frederik andre henrik christian",
+      "frederik 10"
+    ],
+    "correctLabel": "Frederik X"
+  }
+}
+{
+  "ts": "2025-09-11T15:02:01.205Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivtx02497k2o1sryjewr",
+    "text": "Quel pigeon voyageur a sauvé des soldats américains encerclés en 1918 ?",
+    "theme": "Histoire",
+    "difficulty": "4",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivtx024a7k2o92ikkf0z",
+        "label": "Cher Ami",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivtx024b7k2oou9scv18",
+        "label": "Bel Amant",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivtx024c7k2oo00eyray",
+        "label": "Bon Copain",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivtx024d7k2oelx7arlt",
+        "label": "Joli Coeur",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "cher ami"
+    ],
+    "correctLabel": "Cher Ami"
+  }
+}
+{
+  "ts": "2025-09-11T15:02:01.207Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivxo02oa7k2ouzdx031l",
+    "text": "Qui est l'adversaire de Rocky lors du combat final du film \"Rocky\" (1976) ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivxo02ob7k2owlgvxo5o",
+        "label": "Apollo Creed",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivxo02oc7k2oqgw51te6",
+        "label": "Ivan Drago",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivxo02od7k2o8ggtabuz",
+        "label": "Tommy Gunn",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivxo02oe7k2o0n9bweo1",
+        "label": "Clubber Lang",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "apollo creed",
+      "apollo",
+      "creed"
+    ],
+    "correctLabel": "Apollo Creed"
+  }
+}
+{
+  "ts": "2025-09-11T15:02:01.208Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw1u03977k2opv69vkui",
+    "text": "Quel studio de développement a créé le jeu vidéo \"Red Dead Redemption 2\" (2018) ?",
+    "theme": "Jeux & BD",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw1u03987k2oljlfkj6r",
+        "label": "Rockstar Studios",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw1u03997k2oxr1u2my4",
+        "label": "CD Projekt Red",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw1u039a7k2o15vi1f6u",
+        "label": "Naughty Dog",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw1u039b7k2oigh5pr5o",
+        "label": "FromSoftware",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "rockstar studios",
+      "rockstar",
+      "rockstar games"
+    ],
+    "correctLabel": "Rockstar Studios"
+  }
+}
+{
+  "ts": "2025-09-11T15:02:01.209Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw3803g97k2ov37xmlhc",
+    "text": "Qui est l’auteur du roman \"L’Ombre du vent\" (2001) ?",
+    "theme": "Littérature",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw3803ga7k2oaiahajlj",
+        "label": "Carlos Ruiz Zafón",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw3803gb7k2o92vc3ufm",
+        "label": "Paulo Coelho",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw3803gc7k2ohtt8m25r",
+        "label": "Arturo Pérez-Reverte",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw3803gd7k2on40tlv4n",
+        "label": "Ildefonso Falcones",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "carlos ruiz zafon",
+      "zafon"
+    ],
+    "correctLabel": "Carlos Ruiz Zafón"
+  }
+}
+{
+  "ts": "2025-09-11T15:02:01.210Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw3y03ka7k2ofydu81yr",
+    "text": "Quelle commune espagnole constitue une enclave au sein du département français des Pyrénées-Orientales ?",
+    "theme": "Géographie",
+    "difficulty": "4",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw3y03kb7k2oqgtstai9",
+        "label": "Llivia",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw3y03kc7k2o059p3b69",
+        "label": "Andorre",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw3y03kd7k2o5p4t9uol",
+        "label": "Olivenza",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw3y03ke7k2o84rcrepy",
+        "label": "Portbou",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "llivia"
+    ],
+    "correctLabel": "Llivia"
+  }
+}
+{
+  "ts": "2025-09-11T15:02:01.211Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw6303ub7k2odhmdvw5n",
+    "text": "Qui était le roi de France lors de la Révolution française ?",
+    "theme": "Histoire",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw6303uc7k2oecrhk2zi",
+        "label": "Louis XVI",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw6303ud7k2o02gvq2sg",
+        "label": "Louis XIV",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw6303ue7k2of8dznf5y",
+        "label": "Charles X",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw6303uf7k2og0fadvkg",
+        "label": "François Ier",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "louis xvi",
+      "louis 16",
+      "louis capet",
+      "louis auguste france"
+    ],
+    "correctLabel": "Louis XVI"
+  }
+}
+{
+  "ts": "2025-09-11T15:02:01.212Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwuz07dd7k2o9bxpj8m7",
+    "text": "Quel artiste britannique interprète le rôle d'Andy Warhol dans le film \"Basquiat\" (1996) ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "4",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwuz07de7k2ohicy4uni",
+        "label": "David Bowie",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwuz07df7k2omsom27pw",
+        "label": "Sting",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwuz07dg7k2o3np0qvqi",
+        "label": "Gary Oldman",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwuz07dh7k2oq3ef9ssq",
+        "label": "Mick Jagger",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "david bowie",
+      "bowie",
+      "david robert jones"
+    ],
+    "correctLabel": "David Bowie"
+  }
+}
+{
+  "ts": "2025-09-11T15:04:11.454Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivfe005h7k2o70o442iw",
+    "text": "Dans quel pays africain le Lesotho est-il enclavé ?",
+    "theme": "Géographie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivfe005i7k2o59ty749a",
+        "label": "Afrique du Sud",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivfe005j7k2oswg507rb",
+        "label": "Mozambique",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivfe005k7k2o1o4cmbk4",
+        "label": "Zimbabwe",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivfe005l7k2oo4frgi7u",
+        "label": "Congo",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "afrique sud"
+    ],
+    "correctLabel": "Afrique du Sud"
+  }
+}
+{
+  "ts": "2025-09-11T15:04:11.454Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivnd01ad7k2ofu50udoo",
+    "text": "Quelle épice coûteuse extrait-on des fleurs de crocus ?",
+    "theme": "Sciences de la vie",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivnd01ae7k2oe7ehm4xw",
+        "label": "Le safran",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivnd01af7k2oavi05vq8",
+        "label": "Le paprika",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivnd01ag7k2o47scu7lv",
+        "label": "La cannelle",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivnd01ah7k2ocn9u80n8",
+        "label": "Le curcuma",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "safran"
+    ],
+    "correctLabel": "Le safran"
+  }
+}
+{
+  "ts": "2025-09-11T15:04:11.455Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivpp01kd7k2onquxvev5",
+    "text": "Quel humoriste français a envisagé d’être candidat aux élections présidentielles de 1981 ?",
+    "theme": "Actualités & Médias",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivpp01ke7k2oflz5br12",
+        "label": "Coluche",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivpp01kf7k2otnpt4kx6",
+        "label": "Thierry Le Luron",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivpp01kg7k2ocdpg6w3x",
+        "label": "Pierre Desproges",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivpp01kh7k2ovlider6m",
+        "label": "Guy Bedos",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "colucci",
+      "coluche",
+      "michel colucci"
+    ],
+    "correctLabel": "Coluche"
+  }
+}
+{
+  "ts": "2025-09-11T15:04:11.455Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivth022a7k2owgsqggo9",
+    "text": "Combien de syllabes un alexandrin compte-t-il traditionnellement ?",
+    "theme": "Littérature",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivth022b7k2oawbza245",
+        "label": "12",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivth022c7k2ot2pun8cr",
+        "label": "8",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivth022d7k2o71hfcx6m",
+        "label": "10",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivth022e7k2o3ccudtyx",
+        "label": "14",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "12",
+      "12 syllabes",
+      "douze"
+    ],
+    "correctLabel": "12"
+  }
+}
+{
+  "ts": "2025-09-11T15:04:11.455Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwg405927k2o8v9wzfg9",
+    "text": "Quel est le nom de cet album ?",
+    "theme": "Musique",
+    "difficulty": "2",
+    "img": "/img/102.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwg405937k2o3kb6c3ya",
+        "label": "Abbey Road",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwg405947k2olxafhf6c",
+        "label": "Revolver",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwg405957k2omy4ny53s",
+        "label": "Let It Be",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwg405967k2on3340xqw",
+        "label": "Pet Sounds",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "abbey road"
+    ],
+    "correctLabel": "Abbey Road"
+  }
+}
+{
+  "ts": "2025-09-11T15:04:11.456Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwum07bm7k2oz6t7nats",
+    "text": "Quelle fleur est devenue un symbole de la révolution portugaise ?",
+    "theme": "Histoire",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwum07bn7k2o176zlzea",
+        "label": "L'oeillet",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwum07bo7k2oatc8jg7m",
+        "label": "La pivoine",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwum07bp7k2on6i2hkpu",
+        "label": "La rose",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwum07bq7k2o7bluvqnt",
+        "label": "Le lys",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "oeillet"
+    ],
+    "correctLabel": "L'oeillet"
+  }
+}
+{
+  "ts": "2025-09-11T15:04:11.456Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwyd07ul7k2ofykcx371",
+    "text": "Quelle est la capitale de l'État américain de Hawaï ?",
+    "theme": "Géographie",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwyd07um7k2ofx08nzf7",
+        "label": "Honolulu",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwyd07un7k2oyvbkialq",
+        "label": "Maui",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwyd07uo7k2oaozzhfhg",
+        "label": "Hilo",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwyd07up7k2oywopnxe2",
+        "label": "Lahaina",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "honolulu"
+    ],
+    "correctLabel": "Honolulu"
+  }
+}
+{
+  "ts": "2025-09-11T15:04:11.457Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwz007xy7k2oucx17wkn",
+    "text": "À quelle chaîne de restauration appartient ce logo ?",
+    "theme": "Économie & Politique",
+    "difficulty": "1",
+    "img": "/img/301.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwz007xz7k2o8xqivx62",
+        "label": "McDonald's",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwz007y07k2oy59asoi5",
+        "label": "Burger King",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwz007y17k2o9zdk5x9m",
+        "label": "Wendy's",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwz007y27k2ooybh99u5",
+        "label": "Subway",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "mcdonald s",
+      "mcdonalds corporation"
+    ],
+    "correctLabel": "McDonald's"
+  }
+}
+{
+  "ts": "2025-09-11T15:04:11.457Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ix1w08am7k2owo777r0n",
+    "text": "Qui est cette joueuse de tennis ?",
+    "theme": "Sport",
+    "difficulty": "2",
+    "img": "/img/330.avif",
+    "choices": [
+      {
+        "id": "cmfa4ix1w08an7k2oz4icbfga",
+        "label": "Steffi Graf",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ix1w08ao7k2ogx2q0ok4",
+        "label": "Monica Seles",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix1w08ap7k2oioq08zcp",
+        "label": "Martina Navrátilová",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix1w08aq7k2otw8xs53m",
+        "label": "Chris Evert",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "graf",
+      "steffi graf"
+    ],
+    "correctLabel": "Steffi Graf"
+  }
+}
+{
+  "ts": "2025-09-11T15:04:11.457Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ix2y08e47k2o6bb8fw7d",
+    "text": "Quelle joueuse de tennis a remporté le tournoi de l'US Open en 2023 ?",
+    "theme": "Sport",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ix2y08e57k2owvzv139n",
+        "label": "Coco Gauff",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ix2y08e67k2oiq65e7yk",
+        "label": "Karolina Muchova",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix2y08e77k2ogfstseba",
+        "label": "Aryna Sabalenka",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix2y08e87k2o2v39mqfi",
+        "label": "Madison Keys",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "coco gauff",
+      "gauff"
+    ],
+    "correctLabel": "Coco Gauff"
+  }
+}
+{
+  "ts": "2025-09-11T15:06:21.680Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivh500ep7k2on9szjwdb",
+    "text": "Comment désigne-t-on la tendance naturelle de certains animaux à former des groupes ?",
+    "theme": "Sciences de la vie",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivh500eq7k2ooz8kg1h2",
+        "label": "Le grégarisme",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivh500er7k2oei5tz74x",
+        "label": "Le mimétisme",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivh500es7k2ol53138nd",
+        "label": "Le nomadisme",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivh500et7k2opikyxohj",
+        "label": "Le mutualisme",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "gregarisme",
+      "gregaire"
+    ],
+    "correctLabel": "Le grégarisme"
+  }
+}
+{
+  "ts": "2025-09-11T15:06:21.682Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivs201w27k2ofi3cpkt8",
+    "text": "À quel genre musical est associé le courant appelé \"bebop\" ?",
+    "theme": "Musique",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivs201w37k2oislwey9r",
+        "label": "Le jazz",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivs201w47k2ozfd0jkxl",
+        "label": "Le rock",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivs201w57k2ox2b34smg",
+        "label": "Le blues",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivs201w67k2o5ol47l1s",
+        "label": "Le reggae",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "jazz"
+    ],
+    "correctLabel": "Le jazz"
+  }
+}
+{
+  "ts": "2025-09-11T15:06:21.683Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivvn02dc7k2ov0lfvtx9",
+    "text": "Quel nom donne-t-on à une personne qui écrit et dessine des mangas ?",
+    "theme": "Jeux & BD",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivvn02dd7k2os431uxyo",
+        "label": "Mangaka",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivvn02de7k2oa4e2brm2",
+        "label": "Sakuhaka",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivvn02df7k2oq2vw1ol6",
+        "label": "Komakka",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivvn02dg7k2ojpt5fdn8",
+        "label": "Kakika",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "mangaka",
+      "mangakas"
+    ],
+    "correctLabel": "Mangaka"
+  }
+}
+{
+  "ts": "2025-09-11T15:06:21.684Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivxv02p37k2o3qd11i1s",
+    "text": "Quel chanteur conseille à Clarence de tuer le proxénète Drexl dans le film \"True Romance\" (1993) ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivxv02p47k2o4h4kblit",
+        "label": "Elvis Presley",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivxv02p57k2oi5vh79fq",
+        "label": "Frank Sinatra",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivxv02p67k2ohd0rc0wj",
+        "label": "John Lennon",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivxv02p77k2o113j8e9y",
+        "label": "Bob Dylan",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "elvis presley",
+      "elvis",
+      "presley"
+    ],
+    "correctLabel": "Elvis Presley"
+  }
+}
+{
+  "ts": "2025-09-11T15:06:21.685Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivyu02u47k2onwj87v8u",
+    "text": "Dans la Bible, comment s'appelle le troisième fils d'Adam et Ève ?",
+    "theme": "Croyances",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivyu02u57k2osxeu6zcf",
+        "label": "Seth",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivyu02u67k2oz474n9y4",
+        "label": "Caïn",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivyu02u77k2ote3rwnlf",
+        "label": "Abel",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivyu02u87k2oanab1xo6",
+        "label": "Noé",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "seth"
+    ],
+    "correctLabel": "Seth"
+  }
+}
+{
+  "ts": "2025-09-11T15:06:21.686Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw10034w7k2oyzq1rh3z",
+    "text": "Quel homme politique français a été maire de Nantes de 1989 à 2012 ?",
+    "theme": "Économie & Politique",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw10034x7k2ovv27mjqc",
+        "label": "Jean-Marc Ayrault",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw10034y7k2o0cdgpvmf",
+        "label": "François Fillon",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw10034z7k2ovctpgggt",
+        "label": "Édouard Philippe",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw1003507k2o8c96oh48",
+        "label": "Alain Juppé",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "jean marc ayrault",
+      "ayrault"
+    ],
+    "correctLabel": "Jean-Marc Ayrault"
+  }
+}
+{
+  "ts": "2025-09-11T15:06:21.687Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwau04hk7k2o4kttc8d7",
+    "text": "Quel homme politique a occupé le poste de Chancelier fédéral allemand de 1998 à 2005 ?",
+    "theme": "Économie & Politique",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwau04hl7k2o9cddd15e",
+        "label": "Gerhard Schröder",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwau04hm7k2opj13r53o",
+        "label": "Helmut Kohl",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwau04hn7k2ohevf345v",
+        "label": "Olaf Scholz",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwau04ho7k2oe7hpvorv",
+        "label": "Angela Merkel",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "gerhard schroder",
+      "schroder"
+    ],
+    "correctLabel": "Gerhard Schröder"
+  }
+}
+{
+  "ts": "2025-09-11T15:06:21.688Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iweo051s7k2ojttlhdej",
+    "text": "Quelle femme d’origine russe a été la muse et le grand amour de Salvador Dalí ?",
+    "theme": "Arts & Culture",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iweo051t7k2ogcczby78",
+        "label": "Gala",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iweo051u7k2omwojcltr",
+        "label": "Dora",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iweo051v7k2ovmqdvc0z",
+        "label": "Lou",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iweo051w7k2o60wdzfhu",
+        "label": "Kiki",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "gala",
+      "gala dali",
+      "elena ivanovna diakonova",
+      "diakonova"
+    ],
+    "correctLabel": "Gala"
+  }
+}
+{
+  "ts": "2025-09-11T15:06:21.689Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwpg06mk7k2od6r35ur9",
+    "text": "Quel chanteur américain a popularisé la danse du \"moonwalk\" dans les années 1980 ?",
+    "theme": "Musique",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwpg06ml7k2ofumrudra",
+        "label": "Michael Jackson",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwpg06mm7k2owoquz9qo",
+        "label": "James Brown",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwpg06mn7k2o93zd8gke",
+        "label": "Prince",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwpg06mo7k2omtjlwg0u",
+        "label": "Elvis Presley",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "michael jackson",
+      "jackson",
+      "mj"
+    ],
+    "correctLabel": "Michael Jackson"
+  }
+}
+{
+  "ts": "2025-09-11T15:06:21.689Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ix2s08dk7k2okfmgzsai",
+    "text": "Quelle joueuse de tennis a remporté le tournoi de Roland-Garros en 2022, 2023 et 2024 ?",
+    "theme": "Sport",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ix2s08dl7k2o47y7mit0",
+        "label": "Iga Swiatek",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ix2s08dm7k2oufaoa02w",
+        "label": "Coco Gauff",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix2s08dn7k2o6wlp69gw",
+        "label": "Aryna Sabalenka",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix2s08do7k2odx7yzi3u",
+        "label": "Mirra Andreeva",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "iga swiatek",
+      "swiatek"
+    ],
+    "correctLabel": "Iga Swiatek"
+  }
+}
+{
+  "ts": "2025-09-11T15:07:50.542Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iviz00nw7k2oi8q27zkp",
+    "text": "Complétez cette expression : \"L'habit ne fait pas...\"",
+    "theme": "Littérature",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iviz00nx7k2orzydeuyo",
+        "label": "Le moine",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iviz00ny7k2oh5kj24ms",
+        "label": "Le roi",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iviz00nz7k2on55cna5i",
+        "label": "Le héros",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iviz00o07k2ochis2t70",
+        "label": "L'homme",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "moine"
+    ],
+    "correctLabel": "Le moine"
+  }
+}
+{
+  "ts": "2025-09-11T15:07:50.542Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivob01ef7k2osb6116ul",
+    "text": "Quel os long et horizontal forme une courbe entre le cou et l’épaule chez l'humain ?",
+    "theme": "Sciences de la vie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivob01eg7k2o9nq0qi1b",
+        "label": "La clavicule",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivob01eh7k2oyhib4fn7",
+        "label": "L'omoplate",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivob01ei7k2o2h7tkus3",
+        "label": "Le sternum",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivob01ej7k2o62x142cr",
+        "label": "Le radius",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "clavicule"
+    ],
+    "correctLabel": "La clavicule"
+  }
+}
+{
+  "ts": "2025-09-11T15:07:50.542Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivsf01xu7k2off2p3yl3",
+    "text": "Quelle est la monnaie officielle utilisée en Suisse ?",
+    "theme": "Économie & Politique",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivsf01xv7k2oarmoxb22",
+        "label": "Le franc suisse",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivsf01xw7k2og1y2tgxj",
+        "label": "L'euro",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivsf01xx7k2o0mew19eo",
+        "label": "Le florin",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivsf01xy7k2ou6su80py",
+        "label": "Le mark suisse",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "franc suisse"
+    ],
+    "correctLabel": "Le franc suisse"
+  }
+}
+{
+  "ts": "2025-09-11T15:07:50.543Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivyx02ui7k2ona0a8iwk",
+    "text": "Quelle échelle sert à exprimer la force des piments ?",
+    "theme": "Gastronomie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivyx02uj7k2okwu8ft1g",
+        "label": "L'échelle de Scoville",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivyx02uk7k2otvlg8dwd",
+        "label": "L'échelle de Brinell",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivyx02ul7k2oma59h5th",
+        "label": "L'échelle de Weber",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivyx02um7k2o785jna8l",
+        "label": "L'échelle de Piquance",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "echelle scoville",
+      "scoville"
+    ],
+    "correctLabel": "L'échelle de Scoville"
+  }
+}
+{
+  "ts": "2025-09-11T15:07:50.543Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw6803v47k2ozvqad7ga",
+    "text": "Qui a écrit : \"Science sans conscience n'est que ruine de l'âme.\" ?",
+    "theme": "Littérature",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw6903v57k2ofixmtlne",
+        "label": "Rabelais",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw6903v67k2or6jaus80",
+        "label": "Descartes",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw6903v77k2o2aiqd45r",
+        "label": "Pascal",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw6903v87k2oqcljsgvq",
+        "label": "Montaigne",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "francois rabelais",
+      "rabelais"
+    ],
+    "correctLabel": "Rabelais"
+  }
+}
+{
+  "ts": "2025-09-11T15:07:50.543Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwkz05yn7k2o5rybf7rv",
+    "text": "Quel prénom féminin, anagramme du verbe \"aimer\", est au coeur du récit évangélique ?",
+    "theme": "Littérature",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwkz05yo7k2o7o9z4prg",
+        "label": "Marie",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwkz05yp7k2oxb6bcphn",
+        "label": "Eve",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwkz05yq7k2oc7z7ugh6",
+        "label": "Martha",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwkz05yr7k2oovihhzma",
+        "label": "Eunice",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "marie"
+    ],
+    "correctLabel": "Marie"
+  }
+}
+{
+  "ts": "2025-09-11T15:07:50.543Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwln06247k2olhmymlus",
+    "text": "Quel est le nom de cette race de chien ?",
+    "theme": "Sciences de la vie",
+    "difficulty": "1",
+    "img": "/img/207.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwln06257k2o3buugbg0",
+        "label": "Chihuahua",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwln06267k2ohykpbs2o",
+        "label": "Yorkshire terrier",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwln06277k2opklfdhud",
+        "label": "Shih tzu",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwln06287k2o67mf10yz",
+        "label": "Bichon maltais",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "chihuahua"
+    ],
+    "correctLabel": "Chihuahua"
+  }
+}
+{
+  "ts": "2025-09-11T15:07:50.544Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwm3064i7k2o5pjuyfrp",
+    "text": "Quel est le nom de cette race de chien ?",
+    "theme": "Sciences de la vie",
+    "difficulty": "2",
+    "img": "/img/217.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwm3064j7k2okmakc15w",
+        "label": "Yorkshire terrier",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwm3064k7k2oe1wape0e",
+        "label": "Bichon maltais",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwm3064l7k2o6559xwr1",
+        "label": "Caniche",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwm3064m7k2o6gmw0cs9",
+        "label": "Chihuahua",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "york",
+      "yorkshire",
+      "yorkshire terrier"
+    ],
+    "correctLabel": "Yorkshire terrier"
+  }
+}
+{
+  "ts": "2025-09-11T15:07:50.544Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwtu077n7k2ok2a81iff",
+    "text": "Quel est l'élément chimique le plus abondant dans l'univers ?",
+    "theme": "Sciences exactes",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwtu077o7k2oykvq3rpe",
+        "label": "L'hydrogène",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwtu077p7k2ot42f6l4v",
+        "label": "Le carbone",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwtu077q7k2othrkks7h",
+        "label": "L'oxygène",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwtu077r7k2obrdjqm44",
+        "label": "L'hélium",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "h",
+      "hydrogene"
+    ],
+    "correctLabel": "L'hydrogène"
+  }
+}
+{
+  "ts": "2025-09-11T15:07:50.544Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ix2f08cb7k2odxoj8u87",
+    "text": "Quelle joueuse de tennis américaine est restée 98 semaines à la tête du classement WTA entre 1998 et 2006 ?",
+    "theme": "Sport",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ix2f08cc7k2oywdkrqjx",
+        "label": "Lindsay Davenport",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ix2f08cd7k2o51dzft5h",
+        "label": "Serena Williams",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix2f08ce7k2ozn08u9ca",
+        "label": "Mary Pierce",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix2f08cf7k2ob0x52s5n",
+        "label": "Jennifer Capriati",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "davenport",
+      "lindsay davenport"
+    ],
+    "correctLabel": "Lindsay Davenport"
+  }
+}
+{
+  "ts": "2025-09-11T15:09:00.516Z",
+  "type": "FUZZY_COMPARE",
+  "userNorm": "williams",
+  "acc": "davenport",
+  "d": 3,
+  "maxEdits": 2
+}
+{
+  "ts": "2025-09-11T15:09:27.007Z",
+  "type": "FUZZY_COMPARE",
+  "userNorm": "mare",
+  "acc": "marie",
+  "d": 1,
+  "maxEdits": 1
+}
+{
+  "ts": "2025-09-11T15:09:38.794Z",
+  "type": "FUZZY_COMPARE",
+  "userNorm": "voltaire",
+  "acc": "rabelais",
+  "d": 3,
+  "maxEdits": 2
+}
+{
+  "ts": "2025-09-11T15:10:00.814Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivf900517k2ovn1zzpi8",
+    "text": "Pour quel film Leonardo DiCaprio a-t-il remporté l'Oscar du meilleur acteur ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivf900527k2ou2q6z4ob",
+        "label": "The Revenant",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivf900537k2o5k6eylav",
+        "label": "Titanic",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivf900547k2or4ohiadt",
+        "label": "Inception",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivf900557k2o096oends",
+        "label": "Le Loup de Wall Street",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "revenant"
+    ],
+    "correctLabel": "The Revenant"
+  }
+}
+{
+  "ts": "2025-09-11T15:10:00.815Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivit00n47k2o67bnx8px",
+    "text": "Complétez cette expression : \"Il n'y a pas de fumée...\"",
+    "theme": "Littérature",
+    "difficulty": "1",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivit00n57k2o3o08cmbc",
+        "label": "Sans feu",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivit00n67k2ottem2d7n",
+        "label": "Sans chaleur",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivit00n77k2o9gf058ux",
+        "label": "Sans flamme",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivit00n87k2ofmrd2e84",
+        "label": "Sans braise",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "sans feu"
+    ],
+    "correctLabel": "Sans feu"
+  }
+}
+{
+  "ts": "2025-09-11T15:10:00.815Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivl600z37k2ogbkciv8h",
+    "text": "Quelle enseigne de fast-food a pour slogan emblématique \"Have it your way\" ?",
+    "theme": "Économie & Politique",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivl600z47k2oe2zurf0z",
+        "label": "Burger King",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivl600z57k2odzvbcg68",
+        "label": "Subway",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivl600z67k2owa1oqgd6",
+        "label": "McDonald's",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivl600z77k2o9kws9ifd",
+        "label": "Taco Bell",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "burger king"
+    ],
+    "correctLabel": "Burger King"
+  }
+}
+{
+  "ts": "2025-09-11T15:10:00.816Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivr001rd7k2oiqcmoivc",
+    "text": "Quel président américain a donné son nom à l’aéroport international principal de New York ?",
+    "theme": "Économie & Politique",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivr001re7k2oztpn9f26",
+        "label": "John Fitzgerald Kennedy",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivr001rf7k2o11o45y1q",
+        "label": "Franklin D. Roosevelt",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivr001rg7k2otlu1hiqd",
+        "label": "George Washington",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivr101rh7k2o2ddn4f7y",
+        "label": "Abraham Lincoln",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "jfk",
+      "john fitzgerald kennedy",
+      "john kennedy",
+      "kennedy"
+    ],
+    "correctLabel": "John Fitzgerald Kennedy"
+  }
+}
+{
+  "ts": "2025-09-11T15:10:00.817Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwc904p87k2o1joijlo2",
+    "text": "Quel footballeur autrichien des années 1930 était surnommé le \"Mozart du football\" ?",
+    "theme": "Sport",
+    "difficulty": "4",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwc904p97k2os2bg5cyj",
+        "label": "Matthias Sindelar",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwc904pa7k2oooy3po1b",
+        "label": "Josef Bican",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwc904pb7k2osfa0iifi",
+        "label": "Ernst Happel",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwc904pc7k2ojyo34wzx",
+        "label": "Herbert Prohaska",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "matthias sindelar",
+      "sindelar"
+    ],
+    "correctLabel": "Matthias Sindelar"
+  }
+}
+{
+  "ts": "2025-09-11T15:10:00.817Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwgr05c97k2ok3dns9ff",
+    "text": "Quel est le nom de ce jeu vidéo ?",
+    "theme": "Jeux & BD",
+    "difficulty": "2",
+    "img": "/img/115.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwgr05ca7k2orhq84wc3",
+        "label": "Space Invaders",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwgr05cb7k2oq1xa489w",
+        "label": "Galaxian",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwgr05cc7k2o61vmqr64",
+        "label": "Asteroids",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwgr05cd7k2opxphzftf",
+        "label": "Missile Command",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "space invaders"
+    ],
+    "correctLabel": "Space Invaders"
+  }
+}
+{
+  "ts": "2025-09-11T15:10:00.818Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwur07cd7k2oey6cg14o",
+    "text": "Dans quel pays le Danube prend-il sa source ?",
+    "theme": "Géographie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwur07ce7k2og06gr8w9",
+        "label": "L'Allemagne",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwur07cf7k2oin5fdjkz",
+        "label": "L'Autriche",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwur07cg7k2ojgqepau0",
+        "label": "La Roumanie",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwur07ch7k2oqazzbvi9",
+        "label": "La Hongrie",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "allemagne"
+    ],
+    "correctLabel": "L'Allemagne"
+  }
+}
+{
+  "ts": "2025-09-11T15:10:00.819Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwwt07mn7k2om7mtedha",
+    "text": "Quel est le nom de cette actrice américaine ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "1",
+    "img": "/img/279.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwwt07mo7k2os7m0saf8",
+        "label": "Angelina Jolie",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwwt07mp7k2o5x96zjos",
+        "label": "Megan Fox",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwwt07mq7k2o3usimjwp",
+        "label": "Jennifer Aniston",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwwt07mr7k2oaj5xmx2r",
+        "label": "Catherine Zeta-Jones",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "angelina jolie",
+      "jolie"
+    ],
+    "correctLabel": "Angelina Jolie"
+  }
+}
+{
+  "ts": "2025-09-11T15:10:00.820Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwyv07x97k2ocoqvuv8b",
+    "text": "Quel est le nom du vaste golfe de l’océan Indien bordant l’Inde, le Bangladesh, le Myanmar et le Sri Lanka ?",
+    "theme": "Géographie",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwyv07xa7k2o9vrc7s9n",
+        "label": "Le Golfe du Bengale",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwyv07xb7k2ojm2eir56",
+        "label": "Le Golfe Persique",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwyv07xc7k2oat51r4ou",
+        "label": "Le Golfe d'Aden",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwyv07xd7k2olv9m6dd3",
+        "label": "Le Golfe de Guinée",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "bengale",
+      "golfe bengale"
+    ],
+    "correctLabel": "Le Golfe du Bengale"
+  }
+}
+{
+  "ts": "2025-09-11T15:10:00.821Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwz407yi7k2oaalubdut",
+    "text": "À quel constructeur automobile appartient ce logo ?",
+    "theme": "Économie & Politique",
+    "difficulty": "1",
+    "img": "/img/303.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwz407yj7k2o9qq863xy",
+        "label": "BMW",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwz407yk7k2op2rwi8b7",
+        "label": "Mercedes-Benz",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwz407yl7k2oe4v71e3l",
+        "label": "Audi",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwz407ym7k2opev0asvq",
+        "label": "Porsche",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "bayerische motoren werke",
+      "bmw"
+    ],
+    "correctLabel": "BMW"
+  }
+}
+{
+  "ts": "2025-09-11T15:11:52.655Z",
+  "type": "FUZZY_COMPARE",
+  "userNorm": "buger kng",
+  "acc": "burger king",
+  "d": 2,
+  "maxEdits": 3
+}
+{
+  "ts": "2025-09-11T15:12:03.938Z",
+  "type": "FUZZY_COMPARE",
+  "userNorm": "revnat",
+  "acc": "revenant",
+  "d": 2,
+  "maxEdits": 2
+}
+{
+  "ts": "2025-09-11T15:12:11.121Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ivs201w27k2ofi3cpkt8",
+    "text": "À quel genre musical est associé le courant appelé \"bebop\" ?",
+    "theme": "Musique",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ivs201w37k2oislwey9r",
+        "label": "Le jazz",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ivs201w47k2ozfd0jkxl",
+        "label": "Le rock",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivs201w57k2ox2b34smg",
+        "label": "Le blues",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ivs201w67k2o5ol47l1s",
+        "label": "Le reggae",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "jazz"
+    ],
+    "correctLabel": "Le jazz"
+  }
+}
+{
+  "ts": "2025-09-11T15:12:11.123Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iw3q03j17k2ofxaekq56",
+    "text": "De quelle région française est originaire le fromage camembert ?",
+    "theme": "Gastronomie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iw3q03j27k2o8738mzo4",
+        "label": "La Normandie",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iw3q03j37k2ovetoavl8",
+        "label": "La Savoie",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw3q03j47k2ohq1ckrgn",
+        "label": "L'Auvergne",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iw3q03j57k2o5lm7um2u",
+        "label": "La Bourgogne",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "normandie"
+    ],
+    "correctLabel": "La Normandie"
+  }
+}
+{
+  "ts": "2025-09-11T15:12:11.125Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwbb04k27k2oou964g9i",
+    "text": "Quel État européen a intégré la zone euro le 1er janvier 2023 ?",
+    "theme": "Économie & Politique",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwbb04k37k2osa3wxe5x",
+        "label": "La Croatie",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwbb04k47k2o84lec913",
+        "label": "La Pologne",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwbb04k57k2on5p8c3f0",
+        "label": "Malte",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwbb04k67k2o9p8hsq2d",
+        "label": "La Hongrie",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "croatie"
+    ],
+    "correctLabel": "La Croatie"
+  }
+}
+{
+  "ts": "2025-09-11T15:12:11.127Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwcg04qd7k2ozshu6nfa",
+    "text": "Dans quel pays se situe la ville de Manaus (~ 2,2 millions hab.) ?",
+    "theme": "Géographie",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwcg04qe7k2oc6ccrozs",
+        "label": "Le Brésil",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwcg04qf7k2owlbtwxf9",
+        "label": "La Colombie",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwcg04qg7k2ovw7h9drt",
+        "label": "Le Venezuela",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwcg04qh7k2oicv46bam",
+        "label": "Le Suriname",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "bresil"
+    ],
+    "correctLabel": "Le Brésil"
+  }
+}
+{
+  "ts": "2025-09-11T15:12:11.128Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwew052q7k2o3tin0g1z",
+    "text": "Quel président américain a démissionné en 1974 à la suite du scandale du Watergate ?",
+    "theme": "Économie & Politique",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwew052r7k2o8lmazi0g",
+        "label": "Richard Nixon",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwew052s7k2o5mvkxy7q",
+        "label": "Gerald Ford",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwew052t7k2oxpamtvyz",
+        "label": "Lyndon B. Johnson",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwew052u7k2oypwbhozg",
+        "label": "Herbert Hoover",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "nixon",
+      "richard nixon"
+    ],
+    "correctLabel": "Richard Nixon"
+  }
+}
+{
+  "ts": "2025-09-11T15:12:11.130Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwjk05ro7k2obqpejfyr",
+    "text": "Quel est le nom de ce joueur et entraineur de football français ?",
+    "theme": "Sport",
+    "difficulty": "1",
+    "img": "/img/175.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwjk05rp7k2ojz4bq562",
+        "label": "Didier Deschamps",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwjk05rq7k2ox4py6870",
+        "label": "Raymond Domenech",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwjk05rr7k2o5yhnlcz1",
+        "label": "Laurent Blanc",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwjk05rs7k2o29i1cu09",
+        "label": "Michel Platini",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "deschamps",
+      "didier deschamps"
+    ],
+    "correctLabel": "Didier Deschamps"
+  }
+}
+{
+  "ts": "2025-09-11T15:12:11.133Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwrr06y47k2o4fabebcp",
+    "text": "Dans la mythologie nordique, combien de jambes possède Sleipnir, le cheval d'Odin ?",
+    "theme": "Croyances",
+    "difficulty": "2",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4iwrr06y57k2ofiozplvy",
+        "label": "8",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwrr06y67k2ogt4s7ogh",
+        "label": "4",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwrr06y77k2ozgw1eikv",
+        "label": "6",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwrr06y87k2o1mcu5zfp",
+        "label": "10",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "8",
+      "huit"
+    ],
+    "correctLabel": "8"
+  }
+}
+{
+  "ts": "2025-09-11T15:12:11.137Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwv107do7k2olzvlfpos",
+    "text": "Quel est le nom de ce musicien britannique ?",
+    "theme": "Musique",
+    "difficulty": "2",
+    "img": "/img/262.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwv107dp7k2ou8tsavvz",
+        "label": "David Gilmour",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwv107dq7k2o54iqqu96",
+        "label": "Eric Clapton",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwv107dr7k2o3q8xe7tv",
+        "label": "Jimmy Page",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwv107ds7k2owkrlsumk",
+        "label": "Syd Barrett",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "david gilmour",
+      "gilmour"
+    ],
+    "correctLabel": "David Gilmour"
+  }
+}
+{
+  "ts": "2025-09-11T15:12:11.144Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4iwy407tb7k2od1ncclds",
+    "text": "Quel est le nom de cette actrice canadienne ?",
+    "theme": "Cinéma & Séries",
+    "difficulty": "3",
+    "img": "/img/296.avif",
+    "choices": [
+      {
+        "id": "cmfa4iwy407tc7k2ofpntrg1x",
+        "label": "Evangeline Lilly",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4iwy407td7k2ol2ujvkw5",
+        "label": "Kate Beckinsale",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwy407te7k2ola62eki7",
+        "label": "Elizabeth Olsen",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4iwy407tf7k2ol5ba970q",
+        "label": "Liv Tyler",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "evangeline lilly",
+      "lilly"
+    ],
+    "correctLabel": "Evangeline Lilly"
+  }
+}
+{
+  "ts": "2025-09-11T15:12:11.145Z",
+  "type": "ROUND_QUESTION",
+  "data": {
+    "id": "cmfa4ix4s08k57k2oai1mkc68",
+    "text": "Quel joueur de tennis américain est resté 286 semaines en tête du classement ATP entre 1993 et 2000 ?",
+    "theme": "Sport",
+    "difficulty": "3",
+    "img": null,
+    "choices": [
+      {
+        "id": "cmfa4ix4s08k67k2owq8wdboj",
+        "label": "Pete Sampras",
+        "isCorrect": true
+      },
+      {
+        "id": "cmfa4ix4s08k77k2ob9ln4fjq",
+        "label": "Andre Agassi",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix4s08k87k2o4yti7e15",
+        "label": "John McEnroe",
+        "isCorrect": false
+      },
+      {
+        "id": "cmfa4ix4s08k97k2ouankw147",
+        "label": "Jim Courier",
+        "isCorrect": false
+      }
+    ],
+    "acceptedNorms": [
+      "pete sampras",
+      "petros sampras",
+      "sampras"
+    ],
+    "correctLabel": "Pete Sampras"
+  }
+}
+{
+  "ts": "2025-09-11T15:12:20.115Z",
+  "type": "FUZZY_COMPARE",
+  "userNorm": "bormade",
+  "acc": "normandie",
+  "d": 3,
+  "maxEdits": 2
+}
+{
+  "ts": "2025-09-11T15:12:30.025Z",
+  "type": "FUZZY_COMPARE",
+  "userNorm": "xixon",
+  "acc": "nixon",
+  "d": 1,
+  "maxEdits": 1
+}
+{
+  "ts": "2025-09-11T15:12:52.544Z",
+  "type": "FUZZY_COMPARE",
+  "userNorm": "kfbskdjfbsmkdjg",
+  "acc": "evangeline lilly",
+  "d": 3,
+  "maxEdits": 2
+}

@@ -28,3 +28,6 @@ export type Client = {
   roomId: string;
   name: string;
 };
+export type EnergyCheck =
+  | { ok: true; energy: number; }
+  | { ok: false; };

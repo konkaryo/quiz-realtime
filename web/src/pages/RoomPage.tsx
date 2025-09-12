@@ -3,13 +3,39 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? (typeof window !== "undefined" ? window.location.origin : "");
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
+const API_BASE   = import.meta.env.VITE_API_BASE    ?? (typeof window !== "undefined" ? window.location.origin : "");
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL  ?? (typeof window !== "undefined" ? window.location.origin : "");
+// coût local (UX) de l’ouverture du QCM : le serveur reste source de vérité
+const MC_COST = Number(import.meta.env.VITE_MC_COST ?? 5);
+const ENERGY_MAX = Number(import.meta.env.VITE_ENERGY_MAX ?? 100);
 
-type ChoiceLite = { id: string; label: string };
+type ChoiceLite   = { id: string; label: string };
 type QuestionLite = { id: string; text: string; img?: string|null };
-type Phase = "idle" | "playing" | "reveal" | "between";
-type LeaderRow = { id: string; name: string; score: number };
+type Phase        = "idle" | "playing" | "reveal" | "between";
+type LeaderRow    = { id: string; name: string; score: number };
+
+// — Petite jauge d’énergie ---------------------------------------------------
+function EnergyBar({ energy, max, mult }: { energy: number; max: number; mult: number }) {
+  const pct = Math.max(0, Math.min(100, Math.round((energy / max) * 100)));
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap: 10, margin: "8px 0 12px" }}>
+      <div style={{ minWidth: 90, fontWeight: 600 }}>Énergie</div>
+      <div style={{ position:"relative", flex: 1, height: 10, background:"#eee", borderRadius: 999 }}>
+        <div style={{
+          position:"absolute", inset:0, width: `${pct}%`,
+          background: "linear-gradient(90deg,#6dd,#5b8cff)", borderRadius: 999,
+          transition: "width .25s ease"
+        }}/>
+      </div>
+      <div style={{ minWidth: 80, textAlign:"right", fontVariantNumeric:"tabular-nums" }}>
+        {energy}/{max}
+      </div>
+      <div style={{ minWidth: 70, textAlign:"right", fontWeight: 700 }}>
+        ×{mult.toFixed(1)}
+      </div>
+    </div>
+  );
+}
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -22,6 +48,8 @@ export default function RoomPage() {
   const [index, setIndex] = useState(0);
   const [total, setTotal] = useState(0);
   const [msg, setMsg] = useState("");
+
+  // MC / saisie libre
   const [mcChoices, setMcChoices] = useState<ChoiceLite[] | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
   const [feedback, setFeedback] = useState<{ ok: boolean; correctLabel: string | null } | null>(null);
@@ -29,7 +57,12 @@ export default function RoomPage() {
   const [pending, setPending] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // 🆕 leaderboard live
+  // ⚡ énergie / multiplicateur
+  const [energy, setEnergy] = useState(10);
+  const [mult, setMult]     = useState(1);
+  const [energyErr, setEnergyErr] = useState<string | null>(null);
+
+  // 🏆 leaderboard live
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
 
   // ticking clock
@@ -37,39 +70,56 @@ export default function RoomPage() {
   useEffect(() => {
     if (!endsAt) return;
     const id = setInterval(() => setNow(Date.now()), 250);
-    return () => { clearInterval(id); };
+    return () => clearInterval(id);
   }, [endsAt]);
   const remaining = useMemo(
     () => (endsAt ? Math.max(0, Math.ceil((endsAt - now) / 1000)) : null),
     [endsAt, now]
   );
 
+  // focus auto de la barre de saisie en phase "playing"
   useEffect(() => {
-    if (phase === "playing" && inputRef.current) {
-      inputRef.current.focus();
-    }
+    if (phase === "playing" && inputRef.current) inputRef.current.focus();
   }, [phase, question]);
 
+  // focus permanent (clics)
   useEffect(() => {
     function handleClick() {
-      if (phase === "playing" && inputRef.current) {
-        inputRef.current.focus();
-      }
+      if (phase === "playing" && inputRef.current) inputRef.current.focus();
     }
     document.addEventListener("click", handleClick);
-    return () => {
-      document.removeEventListener("click", handleClick);
-    };
+    return () => document.removeEventListener("click", handleClick);
   }, [phase]);
 
+  // listeners énergie
+  useEffect(() => {
+    if (!socket) return;
+    const onEnergy = (p: { energy: number; multiplier: number }) => {
+      setEnergy(p.energy);
+      setMult(Number(p.multiplier.toFixed(1)));
+      setEnergyErr(null);
+    };
+    const onNotEnough = (p: { need: number; have: number }) => {
+      setEnergyErr(`Pas assez d’énergie (${p.have}/${p.need})`);
+      setTimeout(() => setEnergyErr(null), 2500);
+    };
+    socket.on("energy_update", onEnergy);
+    socket.on("not_enough_energy", onNotEnough);
+    return () => {
+      socket.off("energy_update", onEnergy);
+      socket.off("not_enough_energy", onNotEnough);
+    };
+  }, [socket]);
+
+  // connexion + flux trivia
   useEffect(() => {
     if (!roomId) return;
 
-    const s = io(SOCKET_URL, {path: "/socket.io", withCredentials: true, transports: ["websocket", "polling"] });
+    const s = io(SOCKET_URL, { path: "/socket.io", withCredentials: true, transports: ["websocket", "polling"] });
     setSocket(s);
 
     s.on("error_msg", (m: string) => setMsg(m));
-    s.on("info_msg", (m: string) => setMsg(m));
+    s.on("info_msg",  (m: string) => setMsg(m));
 
     s.on("round_begin", (p: { index:number; total:number; endsAt:number; question: QuestionLite }) => {
       setPhase("playing");
@@ -78,8 +128,8 @@ export default function RoomPage() {
       setSelected(null); setCorrectId(null);
       setMcChoices(null); setTextAnswer("");
       setFeedback(null);
+      setEnergyErr(null);
       hasFeedbackRef.current = false;
-      // on garde le leaderboard existant; il sera mis à jour par leaderboard_update
     });
 
     s.on("multiple_choice", (p: { choices: ChoiceLite[] }) => {
@@ -87,7 +137,6 @@ export default function RoomPage() {
       setTextAnswer("");
     });
 
-    // 🔔 feedback immédiat après soumission
     s.on("answer_feedback", (p: { correct: boolean; correctChoiceId: string | null; correctLabel: string | null }) => {
       hasFeedbackRef.current = true;
       setFeedback({ ok: p.correct, correctLabel: p.correctLabel ?? null });
@@ -95,12 +144,10 @@ export default function RoomPage() {
       setPending(false);
     });
 
-    // 🆕 leaderboard live pendant le round
     s.on("leaderboard_update", (p: { leaderboard: LeaderRow[] }) => {
       setLeaderboard(p.leaderboard ?? []);
     });
 
-    // Fin de round (peut aussi contenir le leaderboard)
     s.on("round_end", (p: { index:number; correctChoiceId:string|null; correctLabel?: string | null; leaderboard?: LeaderRow[] }) => {
       setPhase("reveal");
       setCorrectId(p.correctChoiceId);
@@ -116,7 +163,6 @@ export default function RoomPage() {
       setQuestion(null); setSelected(null); setCorrectId(null); setEndsAt(null);
       setMcChoices(null); setTextAnswer(""); setFeedback(null);
       setMsg("Next game starting…");
-      // on peut conserver le leaderboard final si tu veux le voir entre 2 parties
     });
 
     // Deep-link join
@@ -152,7 +198,12 @@ export default function RoomPage() {
 
   const showMultipleChoice = () => {
     if (!socket || phase !== "playing") return;
-    socket.emit("request_choices");
+    // UX : si insuffisant côté client, on affiche un hint immédiat.
+    if (energy < MC_COST) {
+      setEnergyErr(`Pas assez d’énergie (${energy}/${MC_COST})`);
+      setTimeout(() => setEnergyErr(null), 2000);
+    }
+    socket.emit("request_choices"); // le serveur re-validera / débitera l’énergie
   };
 
   const answerByChoice = (choiceId: string) => {
@@ -166,22 +217,30 @@ export default function RoomPage() {
     <div style={{ maxWidth: 980, margin: "40px auto", fontFamily: "system-ui, sans-serif" }}>
       <h2>Room {roomId}</h2>
       <p style={{ opacity: 0.8 }}>{msg}</p>
-      <button onMouseDown={(e) => e.preventDefault()} onClick={start} style={{ padding: "6px 12px" }}>Start (host)</button>
+      <button onMouseDown={(e) => e.preventDefault()} onClick={start} style={{ padding: "6px 12px" }}>
+        Start (host)
+      </button>
 
       <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap: 16, alignItems: "start" }}>
         {/* Colonne principale */}
         <div>
           {question ? (
             <div style={{ border: "1px solid #eee", padding: 16, borderRadius: 12, marginTop: 16 }}>
-              <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <div>Question {index + 1}/{total}</div>
                 <div>{remaining !== null ? `${remaining}s` : ""}</div>
               </div>
 
+              {/* ⚡ HUD Énergie */}
+              <EnergyBar energy={energy} max={ENERGY_MAX} mult={mult} />
+              {energyErr && <div style={{ color:"#b00", marginBottom: 8 }}>{energyErr}</div>}
+
               <h3>{question.text}</h3>
               {question.img && (() => {
-                const imgSrc = question.img.startsWith('http') || question.img.startsWith('/') ? question.img : '/' + question.img.replace(/^\.?\//, '');
-                return ( <img src={imgSrc} alt="" style={{ maxWidth: "100%", borderRadius: 8 }} /> );
+                const imgSrc = question.img.startsWith("http") || question.img.startsWith("/")
+                  ? question.img
+                  : "/" + question.img.replace(/^\.?\//, "");
+                return <img src={imgSrc} alt="" style={{ maxWidth: "100%", borderRadius: 8 }} />;
               })()}
 
               {mcChoices ? (
@@ -210,7 +269,7 @@ export default function RoomPage() {
               ) : (
                 // --- Mode Saisie libre ---
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems:"center" }}>
                     <input
                       ref={inputRef}
                       placeholder="Tape ta réponse..."
@@ -229,15 +288,25 @@ export default function RoomPage() {
                       disabled={phase !== "playing" || !!selected}
                       style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
                     />
-                    <button onMouseDown={(e) => e.preventDefault()} onClick={sendText} disabled={phase !== "playing"} style={{ padding: "10px 12px" }}>
+                    <button
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={sendText}
+                      disabled={phase !== "playing"}
+                      style={{ padding: "10px 12px" }}
+                    >
                       Envoyer
                     </button>
-                    <button onClick={showMultipleChoice} disabled={phase !== "playing"} style={{ padding: "10px 12px" }}>
+                    <button
+                      onClick={showMultipleChoice}
+                      disabled={phase !== "playing" || energy < MC_COST}
+                      title={`Coût : ${MC_COST} énergie`}
+                      style={{ padding: "10px 12px", opacity: energy < MC_COST ? 0.6 : 1 }}
+                    >
                       Multiple-choice
                     </button>
                   </div>
 
-                  {/* 🔔 Feedback juste sous la barre */}
+                  {/* 🔔 Feedback */}
                   {pending && !feedback && (
                     <div style={{ marginTop: 8, opacity: 0.7 }}>Réponse envoyée…</div>
                   )}
@@ -255,13 +324,13 @@ export default function RoomPage() {
           ) : (
             <div style={{ opacity: 0.7, padding: 8, marginTop: 16 }}>
               {phase === "between" ? "Next game starting…" :
-              phase === "idle" ? "Waiting for host…" :
-              "Preparing next round…"}
+               phase === "idle"    ? "Waiting for host…" :
+                                      "Preparing next round…"}
             </div>
           )}
         </div>
 
-        {/* 🆕 Colonne leaderboard */}
+        {/* 🏆 Colonne leaderboard */}
         <aside style={{ marginTop: 16 }}>
           <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
             <div style={{ fontWeight: 700, marginBottom: 8 }}>Leaderboard</div>

@@ -1,6 +1,19 @@
     import { PrismaClient, Prisma } from "@prisma/client"; 
-    import type { Client, RoundQuestion, GameState, EnergyCheck } from "./types";
+    import type { Client, RoundQuestion, GameState } from "./types";
     import { Server } from "socket.io";
+    
+    /* ---------------------------------------------------------------------------------------- */
+    // fonction de debuggage
+    import fs from "fs";
+    import path from "path";
+
+    const LOG_FILE = path.join(process.cwd(), "quiz-debug.log");
+
+    function logToFile(obj: any) {
+        const line = JSON.stringify(obj, null, 2) + "\n";
+        fs.appendFileSync(LOG_FILE, line, "utf8");
+    }
+    /* ---------------------------------------------------------------------------------------- */
 
     /* ---------------------------------------------------------------------------------------- */
     export function toImgUrl(name?: string | null): string | null {
@@ -114,15 +127,6 @@
     /* ---------------------------------------------------------------------------------------- */
 
     /* ---------------------------------------------------------------------------------------- */
-    export function scoreMultiplier(energy: number) {
-      const MAX_ENERGY  = Number(process.env.MAX_ENERGY || 100);
-      const steps       = Math.floor(Math.max(0, Math.min(MAX_ENERGY, energy)) / 10);
-      return 1 + steps * 0.1;
-    }
-    /* ---------------------------------------------------------------------------------------- */
-
-
-    /* ---------------------------------------------------------------------------------------- */
     export async function startGameForRoom(clients: Map<string, Client>, gameStates: Map<string, GameState>, io: Server, prisma: PrismaClient, roomId: string) {
     const room = await prisma.room.findUnique({ where: { id: roomId } });
     if (!room) return;
@@ -140,20 +144,15 @@
     }
 
     const qIds: string[] = picked.map((r: Row) => r.id);
-    const INIT_ENERGY = Number(process.env.INIT_ENERGY || 10);
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         for (const pg of pgs) {
-            await tx.playerGame.update({ where: { id: pg.id }, data: { questions: { set: [] } } });
-            await tx.playerGame.update({
-                where: { id: pg.id },
-                data: { questions: { connect: qIds.map((id: string) => ({ id })) } }
-            });
-        }
-        await tx.playerGame.updateMany({
-            where: { gameId: game.id, id: { in: pgs.map(p => p.id) } },
-            data: { energy: INIT_ENERGY, score: 0 }
+        await tx.playerGame.update({ where: { id: pg.id }, data: { questions: { set: [] } } });
+        await tx.playerGame.update({
+            where: { id: pg.id },
+            data: { questions: { connect: qIds.map((id: string) => ({ id })) } },
         });
+        }
         await tx.game.update({ where: { id: game.id }, data: { state: "running" } });
     });
     const raw = await prisma.question.findMany({
@@ -167,7 +166,8 @@
 
     const full: RoundQuestion[] = raw.map((q: typeof raw[number]) => {
         const correct = q.choices.find((c: typeof q.choices[number]) => c.isCorrect);
-        return {
+
+        const data = {
             id: q.id,
             text: q.text,
             theme: q.theme ?? null,
@@ -177,10 +177,20 @@
             acceptedNorms: q.acceptedAnswers.map((a: typeof q.acceptedAnswers[number]) => a.norm),
             correctLabel: correct ? correct.label : "",
         };
+
+        // 🔴 écrire dans le fichier de log
+        logToFile({
+            ts: new Date().toISOString(),
+            type: "ROUND_QUESTION",
+            data,
+        });
+
+        return data;
     });
     const byId = new Map(full.map((q) => [q.id, q]));
     const ordered: RoundQuestion[] = qIds.map((id: string) => byId.get(id)!).filter(Boolean) as RoundQuestion[];
 
+    // reset état mémoire pour la room
     const prev = gameStates.get(room.id);
     if (prev?.timer) clearTimeout(prev.timer);
 
@@ -193,18 +203,6 @@
         pgIds: new Set(pgs.map((p: { id: string }) => p.id))
     };
     gameStates.set(room.id, st);
-
-    const gameRoom = `game:${st.gameId}`;
-
-    for (const [sid, c] of clients) {
-      if (c.roomId !== room.id) continue;
-      if (!st.pgIds.has(c.playerGameId)) continue;
-      io.sockets.sockets.get(sid)?.join(gameRoom); // penser à leave gameRoom à la fin de partie
-    }
-
-    const mult = scoreMultiplier(INIT_ENERGY);
-    io.to(gameRoom).emit("energy_update", { energy: INIT_ENERGY, multiplier: mult });
-
     await startRound(clients, gameStates, io, prisma, st);
     }
     /* ---------------------------------------------------------------------------------------- */
@@ -283,7 +281,7 @@
         nextGameReady: true,
         });
 
-        const GAP_MS = Number(process.env.GAP_MS || 3001);
+        const GAP_MS = Number(process.env.GAP_MS || 3000);
 
         setTimeout(async () => {
         // Assigne les PlayerGame pour la nouvelle game aux joueurs connectés
@@ -299,7 +297,7 @@
         return;
     }
 
-    const GAP_MS = Number(process.env.GAP_MS || 3001);
+    const GAP_MS = Number(process.env.GAP_MS || 3000);
     st.index += 1;
     st.timer = setTimeout(() => {
         startRound(clients, gameStates, io, prisma, st).catch((err) => {
@@ -450,6 +448,7 @@
         if (Math.abs(userNorm.length - refLen) > maxEdits) continue;
         if (userNorm === acc) return true;
         const d = damerauLevenshteinWithCutoff(userNorm, acc, maxEdits);
+        logToFile({ts: new Date().toISOString(), type: "FUZZY_COMPARE", userNorm, acc, d, maxEdits});
         if (d <= maxEdits) return true;
     }
     return false;
@@ -473,31 +472,5 @@
         name: r.player.name,
         score: r.score,
     }));
-    }
-    /* ---------------------------------------------------------------------------------------- */
-
-    /* ---------------------------------------------------------------------------------------- */
-    export async function spendEnergy(prisma: PrismaClient, client: Client, cost: number) : Promise<EnergyCheck> {
-        const pg = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { energy: true } });
-        if (!pg) return { ok: false };
-
-        if (pg.energy < cost) { return { ok: false }; }
-
-        const newEnergy = pg.energy - cost;
-
-        await prisma.playerGame.update({ where: { id: client.playerGameId }, data: { energy: newEnergy } });
-        return { ok: true, energy: newEnergy };
-    }
-    /* ---------------------------------------------------------------------------------------- */
-
-    /* ---------------------------------------------------------------------------------------- */
-    export async function addEnergy(prisma: PrismaClient, client: Client, gain: number) : Promise<EnergyCheck> {
-        const pg = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { energy: true } });
-        if (!pg) { return { ok: false }; };
-
-        const MAX_ENERGY = Number(process.env.MAX_ENERGY || 100);
-        const newEnergy = Math.max(0, Math.min(MAX_ENERGY, pg.energy + gain))
-        
-        return { ok: true, energy: newEnergy };
     }
     /* ---------------------------------------------------------------------------------------- */
