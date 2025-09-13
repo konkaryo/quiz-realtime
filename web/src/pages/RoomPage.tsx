@@ -81,6 +81,9 @@ export default function RoomPage() {
   // 🆕 vies (local UX; le serveur contrôle sa propre limite)
   const [lives, setLives] = useState<number>(TEXT_LIVES);
 
+  // 🆕 contrôle explicite du moment où on révèle la bonne réponse
+  const [revealAnswer, setRevealAnswer] = useState<boolean>(false);
+
   // 🏆 leaderboard live
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
 
@@ -149,8 +152,9 @@ export default function RoomPage() {
       setFeedback(null);
       setEnergyErr(null);
       hasFeedbackRef.current = false;
-      // 🆕 reset vies
+      // 🆕 reset vies & révélation
       setLives(TEXT_LIVES);
+      setRevealAnswer(false);
     });
 
     s.on("multiple_choice", (p: { choices: ChoiceLite[] }) => {
@@ -160,19 +164,31 @@ export default function RoomPage() {
 
     s.on("answer_feedback", (p: { correct: boolean; correctChoiceId: string | null; correctLabel: string | null }) => {
       hasFeedbackRef.current = true;
+
+      // on stocke toujours la bonne réponse côté état; l’affichage est piloté par revealAnswer
       setFeedback({ ok: p.correct, correctLabel: p.correctLabel ?? null });
       if (p.correctChoiceId) setCorrectId(p.correctChoiceId);
       setPending(false);
 
-      // 🆕 Gestion des vies côté client :
-      // - On ne touche aux vies que pour le mode "saisie texte" (mcChoices === null)
+      // 🆕 Vies & révélation (saisie texte uniquement)
       if (mcChoices === null) {
         if (p.correct) {
-          // Bonne réponse => plus de tentatives
+          // bonne réponse → fin de la question pour ce joueur, on révèle
           setLives(0);
+          setRevealAnswer(true);
         } else {
-          // Mauvaise réponse texte => perd 1 vie
-          setLives((v) => Math.max(0, v - 1));
+          // mauvaise → décrémente; si 0, on révèle; sinon on reset l'input
+          setLives((prev) => {
+            const next = Math.max(0, prev - 1);
+            if (next > 0) {
+              setTextAnswer("");
+              requestAnimationFrame(() => inputRef.current?.focus());
+              // ne pas révéler tant qu’il reste des vies
+            } else {
+              setRevealAnswer(true);
+            }
+            return next;
+          });
         }
       }
     });
@@ -185,9 +201,14 @@ export default function RoomPage() {
       setPhase("reveal");
       setCorrectId(p.correctChoiceId);
       if (Array.isArray(p.leaderboard)) setLeaderboard(p.leaderboard);
-      if (!hasFeedbackRef.current) {
-        setFeedback({ ok: false, correctLabel: p.correctLabel ?? null });
-      }
+
+      // 🆕 Toujours révéler la bonne réponse au timeout (fin de round)
+      setFeedback(prev => ({
+        ok: prev?.ok ?? false,
+        correctLabel: p.correctLabel ?? prev?.correctLabel ?? null,
+      }));
+      setRevealAnswer(true);
+
       setEndsAt(null);
     });
 
@@ -196,6 +217,7 @@ export default function RoomPage() {
       setQuestion(null); setSelected(null); setCorrectId(null); setEndsAt(null);
       setMcChoices(null); setTextAnswer(""); setFeedback(null);
       setMsg("Next game starting…");
+      setRevealAnswer(false);
     });
 
     // Deep-link join
@@ -224,22 +246,20 @@ export default function RoomPage() {
     setPending(true);
     socket.emit("submit_answer_text", { text: t }, (res: { ok: boolean; reason?: string }) => {
       setPending(false);
-      // Si le serveur refuse parce qu’il n’y a plus de vies (vérif côté serveur),
-      // on fige aussi localement.
       if (!res?.ok && res?.reason === "no-lives") {
         setLives(0);
+        setRevealAnswer(true);
       }
     });
   };
 
   const showMultipleChoice = () => {
     if (!socket || phase !== "playing") return;
-    // UX : si insuffisant côté client, on affiche un hint immédiat.
     if (energy < MC_COST) {
       setEnergyErr(`Pas assez d’énergie (${energy}/${MC_COST})`);
       setTimeout(() => setEnergyErr(null), 2000);
     }
-    socket.emit("request_choices"); // le serveur re-validera / débitera l’énergie
+    socket.emit("request_choices");
   };
 
   const answerByChoice = (choiceId: string) => {
@@ -271,7 +291,7 @@ export default function RoomPage() {
               <EnergyBar energy={energy} max={ENERGY_MAX} mult={mult} />
               {energyErr && <div style={{ color:"#b00", marginBottom: 8 }}>{energyErr}</div>}
 
-              {/* 🆕 HUD Vies (saisie texte) */}
+              {/* HUD Vies (saisie texte) */}
               {mcChoices === null && <Lives lives={lives} total={TEXT_LIVES} />}
 
               <h3>{question.text}</h3>
@@ -351,8 +371,8 @@ export default function RoomPage() {
                   )}
                   {feedback && (
                     <div style={{ marginTop: 8, fontWeight: 600 }}>
-                      {feedback.ok ? "Bonne réponse" : "Mauvaise réponse"}
-                      {typeof feedback.correctLabel === "string" && (
+                      {feedback.ok ? "✔" : "✘"}
+                      {revealAnswer && typeof feedback.correctLabel === "string" && (
                         <> — <span style={{ opacity: 0.8 }}>Réponse : {feedback.correctLabel}</span></>
                       )}
                     </div>

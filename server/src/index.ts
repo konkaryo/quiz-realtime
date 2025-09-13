@@ -203,6 +203,8 @@ async function main() {
 
         // Gestion des tentatives
         let attemptsNow = prevAttempts + 1;
+        const livesLeftAfter = TEXT_LIVES - attemptsNow; // vies restantes après cette tentative
+
         if (isCorrect || attemptsNow >= TEXT_LIVES) {
           // Bonne réponse OU plus de vies => on clôt pour ce joueur
           st.answeredThisRound.add(client.playerGameId);
@@ -236,29 +238,29 @@ async function main() {
                 score: { increment: helpers.scoreMultiplier(playerEnergy.energy) * TXT_ANSWER_POINTS_GAIN },
               },
             });
-          } else {
-            await tx.playerGame.update({
-              where: { id: client.playerGameId },
-              data: { energy: res.energy },
-            });
-          }
-        });
+            socket.emit("energy_update", { energy: res.energy, multiplier: helpers.scoreMultiplier(res.energy) });
+          } 
+        });        
 
-        socket.emit("energy_update", { energy: res.energy, multiplier: helpers.scoreMultiplier(res.energy) });
-
+        // Leaderboard live
         const lb = await helpers.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
         io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
 
         // ack
         ack?.({ ok: true });
 
-        // feedback perso
-        const correct = q.choices.find((c) => c.isCorrect) || null;
-        socket.emit("answer_feedback", {
-          correct: isCorrect,
-          correctChoiceId: correct ? correct.id : null,
-          correctLabel: correct ? correct.label : null,
-        });
+        // feedback perso — NE PAS divulguer la solution tant qu’il reste des vies
+        if (isCorrect || livesLeftAfter <= 0) {
+          const correct = q.choices.find((c) => c.isCorrect) || null;
+          socket.emit("answer_feedback", {
+            correct: isCorrect,
+            correctChoiceId: correct ? correct.id : null,
+            correctLabel: correct ? correct.label : null,
+          });
+        } else {
+          // encore des vies -> on n’envoie que correct=false sans solution
+          socket.emit("answer_feedback", { correct: false });
+        }
 
         io.to(client.roomId).emit("answer_received");
       }
