@@ -8,6 +8,8 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL  ?? (typeof window !== "undef
 // coût local (UX) de l’ouverture du QCM : le serveur reste source de vérité
 const MC_COST = Number(import.meta.env.VITE_MC_COST ?? 5);
 const ENERGY_MAX = Number(import.meta.env.VITE_ENERGY_MAX ?? 100);
+// 🆕 nb de vies pour la saisie texte (UX local — le serveur garde la vérité)
+const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
 
 type ChoiceLite   = { id: string; label: string };
 type QuestionLite = { id: string; text: string; img?: string|null };
@@ -37,6 +39,20 @@ function EnergyBar({ energy, max, mult }: { energy: number; max: number; mult: n
   );
 }
 
+// — Affichage des cœurs ------------------------------------------------------
+function Lives({ lives, total }: { lives: number; total: number }) {
+  const full = Array.from({ length: lives }).map((_, i) => <span key={`f${i}`}>❤️</span>);
+  const empty = Array.from({ length: Math.max(0, total - lives) }).map((_, i) => (
+    <span key={`e${i}`} style={{ opacity: 0.25 }}>❤️</span>
+  ));
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap: 8, margin: "4px 0 10px" }}>
+      <div style={{ minWidth: 90, fontWeight: 600 }}>Vies</div>
+      <div style={{ fontSize: 18 }}>{full}{empty}</div>
+    </div>
+  );
+}
+
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -61,6 +77,9 @@ export default function RoomPage() {
   const [energy, setEnergy] = useState(10);
   const [mult, setMult]     = useState(1);
   const [energyErr, setEnergyErr] = useState<string | null>(null);
+
+  // 🆕 vies (local UX; le serveur contrôle sa propre limite)
+  const [lives, setLives] = useState<number>(TEXT_LIVES);
 
   // 🏆 leaderboard live
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
@@ -130,6 +149,8 @@ export default function RoomPage() {
       setFeedback(null);
       setEnergyErr(null);
       hasFeedbackRef.current = false;
+      // 🆕 reset vies
+      setLives(TEXT_LIVES);
     });
 
     s.on("multiple_choice", (p: { choices: ChoiceLite[] }) => {
@@ -142,6 +163,18 @@ export default function RoomPage() {
       setFeedback({ ok: p.correct, correctLabel: p.correctLabel ?? null });
       if (p.correctChoiceId) setCorrectId(p.correctChoiceId);
       setPending(false);
+
+      // 🆕 Gestion des vies côté client :
+      // - On ne touche aux vies que pour le mode "saisie texte" (mcChoices === null)
+      if (mcChoices === null) {
+        if (p.correct) {
+          // Bonne réponse => plus de tentatives
+          setLives(0);
+        } else {
+          // Mauvaise réponse texte => perd 1 vie
+          setLives((v) => Math.max(0, v - 1));
+        }
+      }
     });
 
     s.on("leaderboard_update", (p: { leaderboard: LeaderRow[] }) => {
@@ -185,13 +218,16 @@ export default function RoomPage() {
 
   const sendText = () => {
     if (!socket || phase !== "playing" || !question) return;
+    if (lives <= 0) return; // plus de tentatives côté UX
     const t = (textAnswer || "").trim();
     if (!t) return;
     setPending(true);
-    socket.emit("submit_answer_text", { text: t }, (res: { ok: boolean }) => {
+    socket.emit("submit_answer_text", { text: t }, (res: { ok: boolean; reason?: string }) => {
       setPending(false);
-      if (!res?.ok) {
-        // message d'erreur si besoin
+      // Si le serveur refuse parce qu’il n’y a plus de vies (vérif côté serveur),
+      // on fige aussi localement.
+      if (!res?.ok && res?.reason === "no-lives") {
+        setLives(0);
       }
     });
   };
@@ -234,6 +270,9 @@ export default function RoomPage() {
               {/* ⚡ HUD Énergie */}
               <EnergyBar energy={energy} max={ENERGY_MAX} mult={mult} />
               {energyErr && <div style={{ color:"#b00", marginBottom: 8 }}>{energyErr}</div>}
+
+              {/* 🆕 HUD Vies (saisie texte) */}
+              {mcChoices === null && <Lives lives={lives} total={TEXT_LIVES} />}
 
               <h3>{question.text}</h3>
               {question.img && (() => {
@@ -285,13 +324,13 @@ export default function RoomPage() {
                           showMultipleChoice();
                         }
                       }}
-                      disabled={phase !== "playing" || !!selected}
+                      disabled={phase !== "playing" || !!selected || lives <= 0}
                       style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
                     />
                     <button
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={sendText}
-                      disabled={phase !== "playing"}
+                      disabled={phase !== "playing" || lives <= 0}
                       style={{ padding: "10px 12px" }}
                     >
                       Envoyer

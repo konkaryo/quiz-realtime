@@ -3,8 +3,8 @@ import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import path from "path";
 import { Server } from "socket.io";
-import { PrismaClient, Prisma } from "@prisma/client";  
-import type { Client, GameState, RoundQuestion, RoundChoice, EnergyCheck } from "./types";
+import { PrismaClient, Prisma } from "@prisma/client";
+import type { Client, GameState } from "./types";
 import * as helpers from "./helpers";
 
 const prisma = new PrismaClient();
@@ -16,13 +16,16 @@ const IMG_DIR = process.env.IMG_DIR || path.join(process.cwd(), "img");
 const clients = new Map<string, Client>();
 const gameStates = new Map<string, GameState>();
 
-
 /* ---------------------- server ---------------------- */
 async function main() {
   const app = fastify({ logger: true });
 
   await app.register(cors, { origin: CLIENT_URL, credentials: true });
-  await app.register(fastifyStatic, { root: path.resolve(IMG_DIR), prefix: "/img/", decorateReply: false });
+  await app.register(fastifyStatic, {
+    root: path.resolve(IMG_DIR),
+    prefix: "/img/",
+    decorateReply: false,
+  });
 
   app.get("/health", async () => ({ ok: true }));
 
@@ -38,7 +41,7 @@ async function main() {
 
   app.get("/rooms/:id", async (req, reply) => {
     const id = (req.params as any).id as string;
-    const room = await prisma.room.findUnique({ where: { id } , select: { id:true, code:true }});
+    const room = await prisma.room.findUnique({ where: { id }, select: { id: true, code: true } });
     if (!room) return reply.code(404).send({ error: "Room not found" });
     return { room };
   });
@@ -53,11 +56,7 @@ async function main() {
 
   const io = new Server(app.server, {
     path: "/socket.io",
-    cors: {
-      origin: CLIENT_URL,
-      methods: ["GET", "POST"],
-      credentials: true,
-    }
+    cors: { origin: CLIENT_URL, methods: ["GET", "POST"], credentials: true },
   });
 
   io.on("connection", (socket) => {
@@ -68,13 +67,12 @@ async function main() {
       const name = (p.name || "").trim();
       if (!roomCode || !name) return socket.emit("error_msg", "Missing code or name.");
 
-      const room = await prisma.room.findUnique({where: { code: roomCode }});
+      const room = await prisma.room.findUnique({ where: { code: roomCode } });
       if (!room) return socket.emit("error_msg", "Room not found.");
 
       const game = await helpers.getOrCreateCurrentGame(prisma, room.id);
 
       const player = await prisma.player.create({ data: { name } });
-
       const pg = await prisma.playerGame.create({
         data: { gameId: game.id, playerId: player.id, score: 0 },
       });
@@ -85,7 +83,7 @@ async function main() {
         playerGameId: pg.id,
         gameId: game.id,
         roomId: room.id,
-        name
+        name,
       });
 
       socket.data.roomId = room.id;
@@ -93,7 +91,7 @@ async function main() {
 
       socket.join(room.id);
       io.to(room.id).emit("lobby_update");
-      socket.emit("joined", { playerGameId: pg.id, name, roomId: room.id});
+      socket.emit("joined", { playerGameId: pg.id, name, roomId: room.id });
     });
 
     socket.on("start_game", async () => {
@@ -105,134 +103,168 @@ async function main() {
       } catch (e) {
         console.error("[start_game error]", e);
         socket.emit("error_msg", "Server error");
-      }      
+      }
     });
 
-    // ---- SUBMIT ANSWER ----
-    socket.on("submit_answer", async (p: { code: string; choiceId: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
-      const client = clients.get(socket.id);
-      if (!client) return ack?.({ ok: false, reason: "no-client" });
+    // ---- SUBMIT ANSWER (MC) ----
+    socket.on(
+      "submit_answer",
+      async (p: { code: string; choiceId: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+        const client = clients.get(socket.id);
+        if (!client) return ack?.({ ok: false, reason: "no-client" });
 
-      const st = gameStates.get(client.roomId);
-      if (!st) return ack?.({ ok: false, reason: "no-state" });
-      if (!st.endsAt || Date.now() > st.endsAt) {
-        console.log("[submit_answer] late", { socket: socket.id, pg: client.playerGameId });
-        return ack?.({ ok: false, reason: "too-late" });
-      }
-      if (st.answeredThisRound.has(client.playerGameId)) {
-        console.log("[submit_answer] already-answered", { socket: socket.id, pg: client.playerGameId });
-        return ack?.({ ok: false, reason: "already-answered" });
-      }
+        const st = gameStates.get(client.roomId);
+        if (!st) return ack?.({ ok: false, reason: "no-state" });
+        if (!st.endsAt || Date.now() > st.endsAt) {
+          console.log("[submit_answer] late", { socket: socket.id, pg: client.playerGameId });
+          return ack?.({ ok: false, reason: "too-late" });
+        }
+        if (st.answeredThisRound.has(client.playerGameId)) {
+          console.log("[submit_answer] already-answered", { socket: socket.id, pg: client.playerGameId });
+          return ack?.({ ok: false, reason: "already-answered" });
+        }
 
-      const q = st.questions[st.index];
-      if (!q) return ack?.({ ok: false, reason: "no-question" });
+        const q = st.questions[st.index];
+        if (!q) return ack?.({ ok: false, reason: "no-question" });
 
-      const choice = q.choices.find((c) => c.id === p.choiceId);
-      if (!choice) return ack?.({ ok: false, reason: "bad-choice" });
+        const choice = q.choices.find((c) => c.id === p.choiceId);
+        if (!choice) return ack?.({ ok: false, reason: "bad-choice" });
 
-      st.answeredThisRound.add(client.playerGameId);
+        st.answeredThisRound.add(client.playerGameId);
 
-      const AUTO_ENERGY_GAIN = Number(process.env.AUTO_ENERGY_GAIN || 5);
-      const MC_ANSWER_ENERGY_GAIN = Number(process.env.MC_ANSWER_ENERGY_GAIN || 5);
-      const MC_ANSWER_POINTS_GAIN = Number(process.env.MC_ANSWER_POINTS_GAIN || 100);
-      let gain = AUTO_ENERGY_GAIN + (choice.isCorrect ? MC_ANSWER_ENERGY_GAIN : 0);
-        
-      const res = await helpers.addEnergy(prisma, client, gain);
-      if (!res.ok) return ack?.({ ok: false, reason: "no-player" });
+        const AUTO_ENERGY_GAIN = Number(process.env.AUTO_ENERGY_GAIN || 5);
+        const MC_ANSWER_ENERGY_GAIN = Number(process.env.MC_ANSWER_ENERGY_GAIN || 5);
+        const MC_ANSWER_POINTS_GAIN = Number(process.env.MC_ANSWER_POINTS_GAIN || 100);
+        const gain = AUTO_ENERGY_GAIN + (choice.isCorrect ? MC_ANSWER_ENERGY_GAIN : 0);
 
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        await tx.answer.create({
-          data: { playerGameId: client.playerGameId, text: choice.label, correct: choice.isCorrect }
+        const res = await helpers.addEnergy(prisma, client, gain);
+        if (!res.ok) return ack?.({ ok: false, reason: "no-player" });
+
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+          await tx.answer.create({
+            data: { playerGameId: client.playerGameId, text: choice.label, correct: choice.isCorrect },
+          });
+          await tx.playerGame.update({
+            where: { id: client.playerGameId },
+            data: { energy: res.energy, score: { increment: choice.isCorrect ? MC_ANSWER_POINTS_GAIN : 0 } },
+          });
         });
-        await tx.playerGame.update({
-          where: { id: client.playerGameId },
-          data: { energy: res.energy, score: { increment: choice.isCorrect ? MC_ANSWER_POINTS_GAIN : 0 } }
+
+        socket.emit("energy_update", { energy: res.energy, multiplier: helpers.scoreMultiplier(res.energy) });
+
+        const lb = await helpers.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
+        io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
+
+        ack?.({ ok: true });
+
+        const correctChoice = q.choices.find((c) => c.isCorrect) || null;
+        socket.emit("answer_feedback", {
+          correct: !!choice.isCorrect,
+          correctChoiceId: correctChoice ? correctChoice.id : null,
+          correctLabel: correctChoice ? correctChoice.label : null,
         });
-      });
 
-      socket.emit("energy_update", { energy: res.energy, multiplier: helpers.scoreMultiplier(res.energy) });
-
-      const lb = await helpers.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
-      io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
-
-      ack?.({ ok: true });
-
-      const correctChoice = q.choices.find((c) => c.isCorrect) || null;
-      socket.emit("answer_feedback", {
-        correct: !!choice.isCorrect,
-        correctChoiceId: correctChoice ? correctChoice.id : null,
-        correctLabel: correctChoice ? correctChoice.label : null,
-      });
-
-      io.to(client.roomId).emit("answer_received");
-    });
-
-    socket.on("submit_answer_text", async (p: { text: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
-      const client = clients.get(socket.id);
-      if (!client) return ack?.({ ok: false, reason: "no-client" });
-
-      const st = gameStates.get(client.roomId);
-      if (!st) return ack?.({ ok: false, reason: "no-state" });
-      if (!st.endsAt || Date.now() > st.endsAt) {
-        console.log("[submit_answer_text] late", { socket: socket.id, pg: client.playerGameId });
-        return ack?.({ ok: false, reason: "too-late" });
+        io.to(client.roomId).emit("answer_received");
       }
-      if (st.answeredThisRound.has(client.playerGameId)) {
-        console.log("[submit_answer_text] already-answered", { socket: socket.id, pg: client.playerGameId });
-        return ack?.({ ok: false, reason: "already-answered" });
+    );
+
+    // ---- SUBMIT ANSWER (TEXT + vies) ----
+    socket.on(
+      "submit_answer_text",
+      async (p: { text: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+        const client = clients.get(socket.id);
+        if (!client) return ack?.({ ok: false, reason: "no-client" });
+
+        const st = gameStates.get(client.roomId);
+        if (!st) return ack?.({ ok: false, reason: "no-state" });
+        if (!st.endsAt || Date.now() > st.endsAt) {
+          console.log("[submit_answer_text] late", { socket: socket.id, pg: client.playerGameId });
+          return ack?.({ ok: false, reason: "too-late" });
+        }
+        if (st.answeredThisRound.has(client.playerGameId)) {
+          console.log("[submit_answer_text] already-answered", { socket: socket.id, pg: client.playerGameId });
+          return ack?.({ ok: false, reason: "already-answered" });
+        }
+
+        const q = st.questions[st.index];
+        if (!q) return ack?.({ ok: false, reason: "no-question" });
+
+        const TEXT_LIVES = Number(process.env.TEXT_LIVES || 3);
+        const prevAttempts = st.attemptsThisRound.get(client.playerGameId) || 0;
+        if (prevAttempts >= TEXT_LIVES) {
+          return ack?.({ ok: false, reason: "no-lives" });
+        }
+
+        const raw = (p.text || "").trim();
+        const userNorm = helpers.norm(raw);
+        if (!userNorm) return ack?.({ ok: false, reason: "empty" });
+
+        const isCorrect = helpers.isFuzzyMatch(userNorm, q.acceptedNorms);
+
+        // Gestion des tentatives
+        let attemptsNow = prevAttempts + 1;
+        if (isCorrect || attemptsNow >= TEXT_LIVES) {
+          // Bonne réponse OU plus de vies => on clôt pour ce joueur
+          st.answeredThisRound.add(client.playerGameId);
+        } else {
+          // Mauvaise réponse et il reste des vies
+          st.attemptsThisRound.set(client.playerGameId, attemptsNow);
+        }
+
+        // Énergie & score
+        const playerEnergy = await helpers.getEnergy(prisma, client);
+        if (!playerEnergy.ok) return ack?.({ ok: false, reason: "no-energy" });
+
+        const AUTO_ENERGY_GAIN = Number(process.env.AUTO_ENERGY_GAIN || 5);
+        const TXT_ANSWER_ENERGY_GAIN = Number(process.env.TXT_ANSWER_ENERGY_GAIN || 5);
+        const TXT_ANSWER_POINTS_GAIN = Number(process.env.TXT_ANSWER_POINTS_GAIN || 100);
+
+        const gain = AUTO_ENERGY_GAIN + (isCorrect ? TXT_ANSWER_ENERGY_GAIN : 0);
+
+        const res = await helpers.addEnergy(prisma, client, gain);
+        if (!res.ok) return ack?.({ ok: false, reason: "no-player" });
+
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+          await tx.answer.create({
+            data: { playerGameId: client.playerGameId, text: p.text, correct: isCorrect },
+          });
+          if (isCorrect) {
+            await tx.playerGame.update({
+              where: { id: client.playerGameId },
+              data: {
+                energy: res.energy,
+                score: { increment: helpers.scoreMultiplier(playerEnergy.energy) * TXT_ANSWER_POINTS_GAIN },
+              },
+            });
+          } else {
+            await tx.playerGame.update({
+              where: { id: client.playerGameId },
+              data: { energy: res.energy },
+            });
+          }
+        });
+
+        socket.emit("energy_update", { energy: res.energy, multiplier: helpers.scoreMultiplier(res.energy) });
+
+        const lb = await helpers.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
+        io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
+
+        // ack
+        ack?.({ ok: true });
+
+        // feedback perso
+        const correct = q.choices.find((c) => c.isCorrect) || null;
+        socket.emit("answer_feedback", {
+          correct: isCorrect,
+          correctChoiceId: correct ? correct.id : null,
+          correctLabel: correct ? correct.label : null,
+        });
+
+        io.to(client.roomId).emit("answer_received");
       }
+    );
 
-      const q = st.questions[st.index];
-      if (!q) return ack?.({ ok: false, reason: "no-question" });
-
-      const raw = (p.text || "").trim();
-      const userNorm = helpers.norm(raw);
-      if (!userNorm) return ack?.({ ok:false, reason:"empty" });
-
-      const isCorrect = helpers.isFuzzyMatch(userNorm, q.acceptedNorms);
-
-      st.answeredThisRound.add(client.playerGameId);
-
-      const playerEnergy = await helpers.getEnergy(prisma, client);
-      if (!playerEnergy.ok) return ack?.({ ok: false, reason: "no-energy" });
-
-      const AUTO_ENERGY_GAIN = Number(process.env.AUTO_ENERGY_GAIN || 5);
-      const TXT_ANSWER_ENERGY_GAIN = Number(process.env.TXT_ANSWER_ENERGY_GAIN || 5);
-      const TXT_ANSWER_POINTS_GAIN = Number(process.env.TXT_ANSWER_POINTS_GAIN || 100);
-      let gain = AUTO_ENERGY_GAIN + (isCorrect ? TXT_ANSWER_ENERGY_GAIN : 0);
-        
-      const res = await helpers.addEnergy(prisma, client, gain);
-      if (!res.ok) return ack?.({ ok: false, reason: "no-player" });
-
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        await tx.answer.create({
-          data: { playerGameId: client.playerGameId, text: p.text, correct: isCorrect }
-        });
-        await tx.playerGame.update({
-          where: { id: client.playerGameId },
-          data: { energy: res.energy, score: { increment: isCorrect ? helpers.scoreMultiplier(playerEnergy.energy) * TXT_ANSWER_POINTS_GAIN : 0 } }
-        });
-      });
-
-      socket.emit("energy_update", { energy: res.energy, multiplier: helpers.scoreMultiplier(res.energy) });
-
-      const lb = await helpers.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
-      io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
-
-      // ✅ accusé de réception immédiat
-      ack?.({ ok: true });
-
-      // 🔔 feedback immédiat uniquement au joueur qui a répondu
-      const correct = q.choices.find(c => c.isCorrect) || null;
-      socket.emit("answer_feedback", {
-        correct: isCorrect,
-        correctChoiceId: correct ? correct.id : null,
-        correctLabel: correct ? correct.label : null,
-      });
-
-      io.to(client.roomId).emit("answer_received");
-    });
-
+    // ---- REQUEST CHOICES (coût en énergie) ----
     socket.on("request_choices", async () => {
       const roomId = socket.data.roomId;
       if (!roomId) return;
@@ -246,7 +278,9 @@ async function main() {
       const MC_COST = Number(process.env.MC_COST || 5);
 
       const res = await helpers.spendEnergy(prisma, client, MC_COST);
-      if (!res.ok) { return socket.emit("not_enough_energy"); };
+      if (!res.ok) {
+        return socket.emit("not_enough_energy");
+      }
       socket.emit("energy_update", { energy: res.energy, multiplier: helpers.scoreMultiplier(res.energy) });
 
       const choices = helpers.getShuffledChoicesForSocket(st, socket.id);
@@ -263,7 +297,6 @@ async function main() {
 }
 
 /* ---------------- Helpers rounds ---------------- */
-
 
 main().catch((e) => {
   console.error(e);

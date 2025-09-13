@@ -190,7 +190,8 @@
         questions: ordered,
         index: 0,
         answeredThisRound: new Set(),
-        pgIds: new Set(pgs.map((p: { id: string }) => p.id))
+        pgIds: new Set(pgs.map((p: { id: string }) => p.id)),
+        attemptsThisRound: new Map<string, number>(),
     };
     gameStates.set(room.id, st);
 
@@ -220,8 +221,11 @@
     const q = st.questions[st.index];
     if (!q) return;
 
-    const ROUND_MS = Number(process.env.ROUND_MS || 10000); // Variable d'environnement inexistante ?
-
+    const ROUND_MS = Number(process.env.ROUND_MS || 10000);
+    const TEXT_LIVES = Number(process.env.TEXT_LIVES || 3);
+    
+    st.answeredThisRound.clear();
+    st.attemptsThisRound = new Map(); 
     st.answeredThisRound.clear();
     st.roundStartMs = Date.now();
     st.endsAt = st.roundStartMs + ROUND_MS;
@@ -235,7 +239,8 @@
         index: st.index,
         total: st.questions.length,
         endsAt: st.endsAt,
-        question: masked, // pas de .choices ici
+        question: masked,
+        textLives: TEXT_LIVES
     });
 
     buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds))
