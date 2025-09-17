@@ -60,6 +60,7 @@ Domaine
 
 Reset de la prod
 -> cd /var/www/quiz-realtime
+-> git pull
 -> cd server
 -> npm ci
 -> npx prisma generate
@@ -74,6 +75,8 @@ Reset de la prod
 -> curl -i https://synapz.online/health
 -> curl -I "https://synapz.online/socket.io/?EIO=4&transport=polling"
 
+Créer un user
+-> curl -i -H "Content-Type: application/json" -d "{\"email\":\"test@example.com\",\"password\":\"secret123\",\"displayName\":\"Test\"}" http://127.0.0.1:3001/auth/register
 
 
 

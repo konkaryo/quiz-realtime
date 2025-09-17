@@ -6,6 +6,8 @@ import { Server } from "socket.io";
 import { PrismaClient, Prisma } from "@prisma/client";
 import type { Client, GameState } from "./types";
 import * as helpers from "./helpers";
+import fastifyCookie from "@fastify/cookie";
+import { authRoutes } from "./routes/auth";
 
 const prisma = new PrismaClient();
 
@@ -26,6 +28,11 @@ async function main() {
     prefix: "/img/",
     decorateReply: false,
   });
+  await app.register(fastifyCookie, {
+    secret: process.env.COOKIE_SECRET || "dev-secret",
+    hook: "onRequest"
+  });
+  await app.register(authRoutes({ prisma }), { prefix: "/auth" });
 
   app.get("/health", async () => ({ ok: true }));
 
@@ -59,39 +66,72 @@ async function main() {
     cors: { origin: CLIENT_URL, methods: ["GET", "POST"], credentials: true },
   });
 
+  io.use(async (socket, next) => {
+    try {
+      const sid = helpers.getCookie("sid", socket.handshake.headers.cookie);
+      if (!sid) return next(new Error("unauthorized"));
+
+      const session = await prisma.session.findUnique({ where: { token: sid }, select: { userId: true, expiresAt: true } });
+      if (!session || session.expiresAt.getTime() < Date.now()) { return next(new Error("unauthorized")); }
+
+      socket.data.userId = session.userId;
+
+      return next();
+    } catch (e) { return next(new Error("unauthorized")); }
+  });
+
   io.on("connection", (socket) => {
     socket.emit("welcome", { id: socket.id });
 
-    socket.on("join_game", async (p: { code: string; name: string }) => {
-      const roomCode = (p.code || "").trim().toUpperCase();
-      const name = (p.name || "").trim();
-      if (!roomCode || !name) return socket.emit("error_msg", "Missing code or name.");
+    socket.on("join_game", async (p: { code: string; }) => {
+      try {
+        const roomCode = (p.code || "").trim().toUpperCase();
+        if (!roomCode) return socket.emit("error_msg", "Missing room code");
 
-      const room = await prisma.room.findUnique({ where: { code: roomCode } });
-      if (!room) return socket.emit("error_msg", "Room not found.");
+        const userId = socket.data.userId as string | undefined;
+        if (!userId) return socket.emit("error_msg", "Not authenticated");
+        
+        const room = await prisma.room.findUnique({ where: { code: roomCode } });
+        if (!room) return socket.emit("error_msg", "Room not found.");
 
-      const game = await helpers.getOrCreateCurrentGame(prisma, room.id);
+        const game = await helpers.getOrCreateCurrentGame(prisma, room.id);
 
-      const player = await prisma.player.create({ data: { name } });
-      const pg = await prisma.playerGame.create({
-        data: { gameId: game.id, playerId: player.id, score: 0 },
-      });
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, displayName: true, email: true } });
+        if (!user) return socket.emit("error_msg", "User not found.");
 
-      clients.set(socket.id, {
-        socketId: socket.id,
-        playerId: player.id,
-        playerGameId: pg.id,
-        gameId: game.id,
-        roomId: room.id,
-        name,
-      });
+        const playerName = user.displayName.trim();
 
-      socket.data.roomId = room.id;
-      socket.data.gameId = game.id;
+        const player = await prisma.player.upsert({
+          where: { userId: user.id },
+          update: { name: playerName },
+          create: { userId: user.id, name: playerName }
+        });
 
-      socket.join(room.id);
-      io.to(room.id).emit("lobby_update");
-      socket.emit("joined", { playerGameId: pg.id, name, roomId: room.id });
+        const pg = await prisma.playerGame.upsert({
+          where: { gameId_playerId: { gameId: game.id, playerId: player.id } },
+          update: {},
+          create: { gameId: game.id, playerId: player.id, score: 0 }
+        });
+
+        clients.set(socket.id, {
+          socketId: socket.id,
+          playerId: player.id,
+          playerGameId: pg.id,
+          gameId: game.id,
+          roomId: room.id,
+          name: player.name
+        });
+
+        socket.data.roomId = room.id;
+        socket.data.gameId = game.id;
+
+        socket.join(room.id);
+        io.to(room.id).emit("lobby_update");
+        socket.emit("joined", { playerGameId: pg.id, name: player.name, roomId: room.id });
+      } catch (err) {
+        console.error("[join_game] error", err);
+        socket.emit("error_msg", "Server error.");
+      }
     });
 
     socket.on("start_game", async () => {
@@ -294,8 +334,8 @@ async function main() {
     });
   });
 
-  await app.listen({ port: PORT, host: "127.0.0.1" });
-  app.log.info(`HTTP + WS on http://127.0.0.1:${PORT}`);
+  await app.listen({ port: PORT, host: "localhost" });
+  app.log.info(`HTTP + WS on http://localhost:${PORT}`);
 }
 
 /* ---------------- Helpers rounds ---------------- */

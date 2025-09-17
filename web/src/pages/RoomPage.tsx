@@ -227,7 +227,7 @@ export default function RoomPage() {
         const { room } = (await res.json()) as { room: { id: string; code: string } };
         const saved = JSON.parse(localStorage.getItem("rq.player") || "{}");
         const name = saved?.name || "Guest";
-        s.emit("join_game", { code: room.code, name });
+        s.emit("join_game", { code: room.code });
       } else {
         setMsg("Room not found");
       }
