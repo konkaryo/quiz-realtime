@@ -5,14 +5,12 @@ import { io, Socket } from "socket.io-client";
 
 const API_BASE   = import.meta.env.VITE_API_BASE    ?? (typeof window !== "undefined" ? window.location.origin : "");
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL  ?? (typeof window !== "undefined" ? window.location.origin : "");
-// coût local (UX) de l’ouverture du QCM : le serveur reste source de vérité
-const MC_COST = Number(import.meta.env.VITE_MC_COST ?? 5);
+const MC_COST    = Number(import.meta.env.VITE_MC_COST ?? 5);
 const ENERGY_MAX = Number(import.meta.env.VITE_ENERGY_MAX ?? 100);
-// 🆕 nb de vies pour la saisie texte (UX local — le serveur garde la vérité)
 const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
 
 type ChoiceLite   = { id: string; label: string };
-type QuestionLite = { id: string; text: string; img?: string|null };
+type QuestionLite = { id: string; text: string; img?: string | null };
 type Phase        = "idle" | "playing" | "reveal" | "between";
 type LeaderRow    = { id: string; name: string; score: number };
 
@@ -78,10 +76,10 @@ export default function RoomPage() {
   const [mult, setMult]     = useState(1);
   const [energyErr, setEnergyErr] = useState<string | null>(null);
 
-  // 🆕 vies (local UX; le serveur contrôle sa propre limite)
+  // 🆕 vies (UX locale)
   const [lives, setLives] = useState<number>(TEXT_LIVES);
 
-  // 🆕 contrôle explicite du moment où on révèle la bonne réponse
+  // 🆕 contrôle de la révélation
   const [revealAnswer, setRevealAnswer] = useState<boolean>(false);
 
   // 🏆 leaderboard live
@@ -99,7 +97,7 @@ export default function RoomPage() {
     [endsAt, now]
   );
 
-  // focus auto de la barre de saisie en phase "playing"
+  // focus auto en phase "playing"
   useEffect(() => {
     if (phase === "playing" && inputRef.current) inputRef.current.focus();
   }, [phase, question]);
@@ -133,7 +131,7 @@ export default function RoomPage() {
     };
   }, [socket]);
 
-  // connexion + flux trivia
+  // connexion + flux trivia + deep-link join
   useEffect(() => {
     if (!roomId) return;
 
@@ -152,7 +150,6 @@ export default function RoomPage() {
       setFeedback(null);
       setEnergyErr(null);
       hasFeedbackRef.current = false;
-      // 🆕 reset vies & révélation
       setLives(TEXT_LIVES);
       setRevealAnswer(false);
     });
@@ -164,26 +161,20 @@ export default function RoomPage() {
 
     s.on("answer_feedback", (p: { correct: boolean; correctChoiceId: string | null; correctLabel: string | null }) => {
       hasFeedbackRef.current = true;
-
-      // on stocke toujours la bonne réponse côté état; l’affichage est piloté par revealAnswer
       setFeedback({ ok: p.correct, correctLabel: p.correctLabel ?? null });
       if (p.correctChoiceId) setCorrectId(p.correctChoiceId);
       setPending(false);
 
-      // 🆕 Vies & révélation (saisie texte uniquement)
       if (mcChoices === null) {
         if (p.correct) {
-          // bonne réponse → fin de la question pour ce joueur, on révèle
           setLives(0);
           setRevealAnswer(true);
         } else {
-          // mauvaise → décrémente; si 0, on révèle; sinon on reset l'input
           setLives((prev) => {
             const next = Math.max(0, prev - 1);
             if (next > 0) {
               setTextAnswer("");
               requestAnimationFrame(() => inputRef.current?.focus());
-              // ne pas révéler tant qu’il reste des vies
             } else {
               setRevealAnswer(true);
             }
@@ -201,14 +192,11 @@ export default function RoomPage() {
       setPhase("reveal");
       setCorrectId(p.correctChoiceId);
       if (Array.isArray(p.leaderboard)) setLeaderboard(p.leaderboard);
-
-      // 🆕 Toujours révéler la bonne réponse au timeout (fin de round)
       setFeedback(prev => ({
         ok: prev?.ok ?? false,
         correctLabel: p.correctLabel ?? prev?.correctLabel ?? null,
       }));
       setRevealAnswer(true);
-
       setEndsAt(null);
     });
 
@@ -220,14 +208,11 @@ export default function RoomPage() {
       setRevealAnswer(false);
     });
 
-    // Deep-link join
     (async () => {
       const res = await fetch(`${API_BASE}/rooms/${roomId}`);
       if (res.ok) {
         const { room } = (await res.json()) as { room: { id: string; code: string } };
-        // const saved = JSON.parse(localStorage.getItem("rq.player") || "{}");
-        // const name = saved?.name || "Guest";
-        s.emit("join_game", { code: room.code });
+        s.emit("join_game", { code: room.code }); // auto-start côté serveur si nécessaire
       } else {
         setMsg("Room not found");
       }
@@ -236,11 +221,9 @@ export default function RoomPage() {
     return () => { s.close(); };
   }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const start = () => socket?.emit("start_game");
-
   const sendText = () => {
     if (!socket || phase !== "playing" || !question) return;
-    if (lives <= 0) return; // plus de tentatives côté UX
+    if (lives <= 0) return;
     const t = (textAnswer || "").trim();
     if (!t) return;
     setPending(true);
@@ -273,9 +256,6 @@ export default function RoomPage() {
     <div style={{ maxWidth: 980, margin: "40px auto", fontFamily: "system-ui, sans-serif" }}>
       <h2>Room {roomId}</h2>
       <p style={{ opacity: 0.8 }}>{msg}</p>
-      <button onMouseDown={(e) => e.preventDefault()} onClick={start} style={{ padding: "6px 12px" }}>
-        Start (host)
-      </button>
 
       <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap: 16, alignItems: "start" }}>
         {/* Colonne principale */}
@@ -287,11 +267,8 @@ export default function RoomPage() {
                 <div>{remaining !== null ? `${remaining}s` : ""}</div>
               </div>
 
-              {/* ⚡ HUD Énergie */}
               <EnergyBar energy={energy} max={ENERGY_MAX} mult={mult} />
               {energyErr && <div style={{ color:"#b00", marginBottom: 8 }}>{energyErr}</div>}
-
-              {/* HUD Vies (saisie texte) */}
               {mcChoices === null && <Lives lives={lives} total={TEXT_LIVES} />}
 
               <h3>{question.text}</h3>
@@ -303,7 +280,6 @@ export default function RoomPage() {
               })()}
 
               {mcChoices ? (
-                // --- Mode Multiple-choice ---
                 <div style={{ display:"grid", gap: 12, gridTemplateColumns:"1fr 1fr", marginTop: 12 }}>
                   {mcChoices.map((c) => {
                     const isSel = selected === c.id;
@@ -326,7 +302,6 @@ export default function RoomPage() {
                   })}
                 </div>
               ) : (
-                // --- Mode Saisie libre ---
                 <div style={{ marginTop: 12 }}>
                   <div style={{ display: "flex", gap: 8, alignItems:"center" }}>
                     <input
@@ -335,14 +310,8 @@ export default function RoomPage() {
                       value={textAnswer}
                       onChange={(e) => setTextAnswer(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          sendText();
-                        }
-                        if (e.key === "Tab") {
-                          e.preventDefault();
-                          showMultipleChoice();
-                        }
+                        if (e.key === "Enter") { e.preventDefault(); sendText(); }
+                        if (e.key === "Tab")   { e.preventDefault(); showMultipleChoice(); }
                       }}
                       disabled={phase !== "playing" || !!selected || lives <= 0}
                       style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
@@ -365,7 +334,6 @@ export default function RoomPage() {
                     </button>
                   </div>
 
-                  {/* 🔔 Feedback */}
                   {pending && !feedback && (
                     <div style={{ marginTop: 8, opacity: 0.7 }}>Réponse envoyée…</div>
                   )}
@@ -383,8 +351,8 @@ export default function RoomPage() {
           ) : (
             <div style={{ opacity: 0.7, padding: 8, marginTop: 16 }}>
               {phase === "between" ? "Next game starting…" :
-               phase === "idle"    ? "Waiting for host…" :
-                                      "Preparing next round…"}
+               phase === "idle"    ? "En attente des joueurs…" :
+                                      "Préparation du prochain round…"}
             </div>
           )}
         </div>

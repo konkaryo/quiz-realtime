@@ -17,18 +17,16 @@
     /* ---------------------------------------------------------------------------------------- */
 
     /* ---------------------------------------------------------------------------------------- */
-    // game "courante" d'une room: dernier createdAt non "ended", sinon null
     export async function getOrCreateCurrentGame(prisma: PrismaClient, roomId: string) {
-    let game = await prisma.game.findFirst({
-        where: { roomId, state: { in: ["lobby", "running"] } },
-        orderBy: { createdAt: "desc" },
-    });
-    if (!game) {
-        game = await prisma.game.create({
-        data: { roomId, state: "lobby" },
-        });
-    }
-    return game;
+        // Si une partie est en cours, on la garde.
+        const running = await prisma.game.findFirst({ where: { roomId, state: "running" }, orderBy: { createdAt: "desc" } });
+        if (running) return running;
+
+        await prisma.game.updateMany({ where: { roomId, state: { in: ["lobby", "ended"] } }, data: { state: "ended" } });
+
+        // Crée une nouvelle partie prête à démarrer
+        const fresh = await prisma.game.create({ data: { roomId, state: "lobby" } });
+        return fresh;
     }
     /* ---------------------------------------------------------------------------------------- */
 
@@ -207,6 +205,23 @@
     io.to(gameRoom).emit("energy_update", { energy: INIT_ENERGY, multiplier: mult });
 
     await startRound(clients, gameStates, io, prisma, st);
+    }
+    /* ---------------------------------------------------------------------------------------- */
+
+    /* ---------------------------------------------------------------------------------------- */
+    export async function stopGameForRoom(clients: Map<string, Client>, gameStates: Map<string, GameState>, io: Server, prisma: PrismaClient, roomId: string) {
+        const st = gameStates.get(roomId);
+        if (st?.timer) clearTimeout(st.timer);
+
+        gameStates.delete(roomId);
+
+        if (st?.gameId) {
+            try {
+                await prisma.game.update({ where: { id: st.gameId }, data: { state: "ended" } });
+            } catch {}
+        }
+
+        io.to(roomId).emit("game_stopped");
     }
     /* ---------------------------------------------------------------------------------------- */
 

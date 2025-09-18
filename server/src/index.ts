@@ -128,6 +128,16 @@ async function main() {
         socket.join(room.id);
         io.to(room.id).emit("lobby_update");
         socket.emit("joined", { playerGameId: pg.id, name: player.name, roomId: room.id });
+
+        if (game.state !== "running") {
+          try {
+            await helpers.startGameForRoom(clients, gameStates, io, prisma, room.id);
+          } catch (e) {
+            console.error("[auto start_game on join] error", e);
+            socket.emit("error_msg", "Unable to auto start the game.");
+          }
+        }
+
       } catch (err) {
         console.error("[join_game] error", err);
         socket.emit("error_msg", "Server error.");
@@ -329,8 +339,28 @@ async function main() {
       socket.emit("multiple_choice", { choices });
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
+      const c = clients.get(socket.id);
+      if (!c) return;
+
+      const { roomId, gameId } = c;
       clients.delete(socket.id);
+
+      // Combien de joueurs restent dans la room ?
+      const left = Array.from(clients.values()).filter(x => x.roomId === roomId).length;
+
+      if (left === 0) {
+        // repasser la game en lobby (ou finished), et nettoyer l'état mémoire
+        try {
+          await prisma.game.update({ where: { id: gameId }, data: { state: "lobby" } });
+        } catch (e) { console.warn("[disconnect] can't set game state:", e); }
+
+        const st = gameStates.get(roomId);
+        if (st?.timer) clearTimeout(st.timer);
+        gameStates.delete(roomId);
+
+        io.to(roomId).emit("info_msg", "Tous les joueurs ont quitté. La partie est arrêtée.");
+      }
     });
   });
 
