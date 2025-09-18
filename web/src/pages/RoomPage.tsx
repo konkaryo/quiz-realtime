@@ -238,6 +238,7 @@ export default function RoomPage() {
 
   const showMultipleChoice = () => {
     if (!socket || phase !== "playing") return;
+    if (lives <= 0 || feedback?.ok) return;
     if (energy < MC_COST) {
       setEnergyErr(`Pas assez d’énergie (${energy}/${MC_COST})`);
       setTimeout(() => setEnergyErr(null), 2000);
@@ -326,9 +327,9 @@ export default function RoomPage() {
                     </button>
                     <button
                       onClick={showMultipleChoice}
-                      disabled={phase !== "playing" || energy < MC_COST}
+                      disabled={phase !== "playing" || energy < MC_COST || lives <= 0 || feedback?.ok}
                       title={`Coût : ${MC_COST} énergie`}
-                      style={{ padding: "10px 12px", opacity: energy < MC_COST ? 0.6 : 1 }}
+                      style={{ padding: "10px 12px", opacity: energy < MC_COST || lives <= 0 || !!feedback?.ok ? 0.6 : 1 }}
                     >
                       Multiple-choice
                     </button>

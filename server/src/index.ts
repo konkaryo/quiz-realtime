@@ -53,12 +53,11 @@ async function main() {
     return { room };
   });
 
-  app.get("/rooms", async () => {
-    const rooms = await prisma.room.findMany({
-      orderBy: { createdAt: "desc" },
-      select: { id: true, createdAt: true },
-    });
-    return { rooms };
+  app.get("/rooms", async (_req, reply) => {
+    const rows = await prisma.room.findMany({ orderBy: { createdAt: "desc" }, select: { id: true, createdAt: true } });
+    const countPlayers = (roomId: string) => Array.from(clients.values()).filter(c => c.roomId === roomId).length;
+    const rooms = rows.map(r => ({ ...r, playerCount: countPlayers(r.id) }));
+    reply.send({ rooms });
   });
 
   const io = new Server(app.server, {
