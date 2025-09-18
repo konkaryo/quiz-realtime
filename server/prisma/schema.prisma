@@ -17,6 +17,7 @@ model User {
   updatedAt       DateTime  @updatedAt
   sessions        Session[]
   player          Player?
+  ownedRooms      Room[]    @relation("UserOwnedRooms")
 }
 
 model Session {
@@ -41,10 +42,15 @@ model Player {
 }
 
 model Room {
-  id        String   @id @default(cuid())
-  code      String   @unique
-  createdAt DateTime @default(now())
-  games     Game[]
+  id          String   @id @default(cuid())
+  ownerId     String?
+  owner       User?    @relation("UserOwnedRooms", fields: [ownerId], references: [id], onDelete: SetNull)
+  difficulty  Int      @default(5)
+  code        String   @unique
+  createdAt   DateTime @default(now())
+  games       Game[]
+
+  @@index([ownerId])
 }
 
 model Game {

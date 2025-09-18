@@ -3,6 +3,52 @@
     import { Server } from "socket.io";
 
     /* ---------------------------------------------------------------------------------------- */
+    // --- Difficulty distribution (room 1..10 -> P(difficulty 1..4)) -----------------
+    const QUESTION_DISTRIBUTION: Record<number, [number, number, number, number]> = {
+        1: [1,    0,    0,    0   ],
+        2: [0.8,  0.2,  0,    0   ],
+        3: [0.5,  0.5,  0,    0   ],
+        4: [0.25, 0.5,  0.25, 0   ],
+        5: [0.2,  0.4,  0.4,  0   ],
+        6 :[0,    0.4,  0.4,  0.2 ],
+        7: [0,    0.25, 0.5,  0.25],
+        8: [0,    0,    0.5,  0.5 ],
+        9: [0,    0,    0.2,  0.8 ],
+        10:[0,    0,    0,    1   ]
+    };
+    /* ---------------------------------------------------------------------------------------- */
+
+    /* ---------------------------------------------------------------------------------------- */
+    /*
+    * Calcule des quotas entiers (n1..n4) qui somment à `count` à partir d’un vecteur de
+    * probabilités (p1..p4). On arrondit intelligemment (méthode des parties fractionnaires).
+    */
+    function quotasFromDistribution(probs: [number, number, number, number], count: number): [number, number, number, number] {
+        const raw = probs.map(p => p * count);
+        const floor = raw.map(Math.floor) as [number, number, number, number];
+        let taken = floor.reduce((a, b) => a + b, 0);
+        const deficit = count - taken;
+
+        if (deficit > 0) {
+            const frac = raw.map((x, i) => ({ i, f: x - Math.floor(x) }));
+            frac.sort((a, b) => b.f - a.f);
+            for (let k = 0; k < deficit && k < frac.length; k++) { floor[frac[k].i as 0|1|2|3] += 1; }
+        }
+  
+        // Sécurité: si surplus (très rare), on retire aux plus petites fractions
+        if (deficit < 0) {
+            const frac = raw.map((x, i) => ({ i, f: x - Math.floor(x) }));
+            frac.sort((a, b) => a.f - b.f);
+            for (let k = 0; k < -deficit && k < frac.length; k++) {
+                const idx = frac[k].i as 0|1|2|3;
+                if (floor[idx] > 0) floor[idx] -= 1;
+            }
+        }
+        return floor;
+    }
+    /* ---------------------------------------------------------------------------------------- */
+
+    /* ---------------------------------------------------------------------------------------- */
     export function toImgUrl(name?: string | null): string | null {
     if (!name) return null;
 
@@ -130,14 +176,46 @@
 
     type Row = { id: string };
     const QUESTION_COUNT = Number(process.env.QUESTION_COUNT || 10);
-    const picked = await prisma.$queryRaw<Row[]>`SELECT "id" FROM "Question" ORDER BY random() LIMIT ${QUESTION_COUNT};`;
 
-    if (picked.length === 0) {
+    // 1) Quotas par difficulté selon la room
+    const probs = QUESTION_DISTRIBUTION[Math.max(1, Math.min(10, room.difficulty ?? 5))];
+    const [n1, n2, n3, n4] = quotasFromDistribution(probs, QUESTION_COUNT);
+
+    // 2) On tire par difficulté (le champ Question.difficulty est actuellement String? -> "1".."4")
+    const byDiff: Record<string, number> = {"1": n1, "2": n2, "3": n3, "4": n4};
+
+    let qIds: string[] = [];
+
+    // 2a) premiers tirages par buckets
+    for (const [diff, need] of Object.entries(byDiff)) {
+        if (need <= 0) continue;
+        const rows = await prisma.$queryRaw<Row[]>`
+        SELECT "id" FROM "Question"
+        WHERE "difficulty" = ${diff}
+        AND ("id" NOT IN (${Prisma.join(qIds.length ? qIds : [""])}) OR ${qIds.length === 0})
+        ORDER BY random()
+        LIMIT ${need};
+        `;
+        qIds.push(...rows.map(r => r.id));
+    }
+
+    // 2b) s'il manque des questions (ex: pas assez dans une diff), on complète avec « any »
+    if (qIds.length < QUESTION_COUNT) {
+        const remaining = QUESTION_COUNT - qIds.length;
+        const fill = await prisma.$queryRaw<Row[]>`
+        SELECT "id" FROM "Question"
+        WHERE ("id" NOT IN (${Prisma.join(qIds.length ? qIds : [""])} ) OR ${qIds.length === 0})
+        ORDER BY random()
+        LIMIT ${remaining};
+        `;
+        qIds.push(...fill.map(r => r.id));
+    }
+
+    if (qIds.length === 0) {
         io.to(room.id).emit("error_msg", "No questions in database.");
         return;
     }
-
-    const qIds: string[] = picked.map((r: Row) => r.id);
+    
     const INIT_ENERGY = Number(process.env.INIT_ENERGY || 10);
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {

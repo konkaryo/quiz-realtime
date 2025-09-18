@@ -54,7 +54,10 @@ async function main() {
   });
 
   app.get("/rooms", async (_req, reply) => {
-    const rows = await prisma.room.findMany({ orderBy: { createdAt: "desc" }, select: { id: true, createdAt: true } });
+    const rows = await prisma.room.findMany({ 
+      orderBy: { createdAt: "desc" }, 
+      select: { id: true, createdAt: true, difficulty: true, owner: { select: { id: true, displayName: true } } } 
+    });
     const countPlayers = (roomId: string) => Array.from(clients.values()).filter(c => c.roomId === roomId).length;
     const rooms = rows.map(r => ({ ...r, playerCount: countPlayers(r.id) }));
     reply.send({ rooms });
