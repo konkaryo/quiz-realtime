@@ -1,18 +1,24 @@
 // web/src/main.tsx
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+
+import AppShell from "./AppShell";         // ⬅️ le layout
 import Home from "./pages/Home";
 import RoomPage from "./pages/RoomPage";
 
-// 👉 pages publiques (à créer si pas déjà en place)
-const LoginPage   = React.lazy(() => import("./pages/LoginPage"));
-//const RegisterPage = React.lazy(() => import("./pages/RegisterPage"));
+// pages publiques
+const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 
-// URL API pour /auth/me
-const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? (typeof window !== "undefined" ? window.location.origin : "");
+const API_BASE =
+  (import.meta as any).env?.VITE_API_BASE ??
+  (typeof window !== "undefined" ? window.location.origin : "");
 
-// Petit helper pour vérifier la session
 async function fetchMe() {
   try {
     const res = await fetch(`${API_BASE}/auth/me`, {
@@ -26,7 +32,7 @@ async function fetchMe() {
   }
 }
 
-// Garde d'auth pour les routes protégées
+// ----- Auth Guard ------------------------------------------------------------
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"pending" | "authed" | "guest">("pending");
   const location = useLocation();
@@ -37,7 +43,9 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
       if (!mounted) return;
       setStatus(user ? "authed" : "guest");
     });
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (status === "pending") {
@@ -45,44 +53,42 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   }
 
   if (status === "guest") {
-    // On garde la destination demandée dans state pour un redirect après login
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;
 }
+// ---------------------------------------------------------------------------
+
+// Router avec layout persistant pour les routes protégées
+const router = createBrowserRouter([
+  // Route publique (hors AppShell)
+  {
+    path: "/login",
+    element: (
+      <React.Suspense fallback={<div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>}>
+        <LoginPage />
+      </React.Suspense>
+    ),
+  },
+
+  // Regroupe toutes les routes protégées sous AppShell
+  {
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
+    children: [
+      { path: "/", element: <Home /> },
+      { path: "/room/:roomId", element: <RoomPage /> },
+      { path: "*", element: <Navigate to="/" replace /> },
+    ],
+  },
+]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <React.Suspense fallback={<div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>}>
-        <Routes>
-          {/* Routes publiques */}
-          <Route path="/login" element={<LoginPage />} />
-          {/* <Route path="/register" element={<RegisterPage />} /> */ }
-
-          {/* Routes protégées */}
-          <Route
-            path="/"
-            element={
-              <RequireAuth>
-                <Home />
-              </RequireAuth>
-            } 
-          />
-          <Route
-            path="/room/:roomId"
-            element={
-              <RequireAuth>
-                <RoomPage />
-              </RequireAuth>
-            }
-          />
-
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </React.Suspense>
-    </BrowserRouter>
+    <RouterProvider router={router} />
   </React.StrictMode>
 );
