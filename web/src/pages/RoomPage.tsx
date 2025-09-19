@@ -11,7 +11,7 @@ const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
 
 type ChoiceLite   = { id: string; label: string };
 type QuestionLite = { id: string; text: string; img?: string | null };
-type Phase        = "idle" | "playing" | "reveal" | "between";
+type Phase        = "idle" | "playing" | "reveal" | "between" | "final";
 type LeaderRow    = { id: string; name: string; score: number };
 
 // — Petite jauge d’énergie ---------------------------------------------------
@@ -200,6 +200,22 @@ export default function RoomPage() {
       setEndsAt(null);
     });
 
+    // 🏁 Nouvelle phase : leaderboard final (remplace tout l’affichage)
+    s.on("final_leaderboard", (p: { leaderboard: LeaderRow[]; displayMs?: number }) => {
+      setPhase("final");
+      setQuestion(null);
+      setSelected(null);
+      setCorrectId(null);
+      setEndsAt(null);
+      setMcChoices(null);
+      setTextAnswer("");
+      setFeedback(null);
+      setRevealAnswer(false);
+      setLeaderboard(Array.isArray(p.leaderboard) ? p.leaderboard : []);
+      setMsg("Fin de partie — nouveau départ imminent…");
+    });
+
+    // Fallback legacy (si jamais émis)
     s.on("game_over", () => {
       setPhase("between");
       setQuestion(null); setSelected(null); setCorrectId(null); setEndsAt(null);
@@ -238,7 +254,7 @@ export default function RoomPage() {
 
   const showMultipleChoice = () => {
     if (!socket || phase !== "playing") return;
-    if (lives <= 0 || feedback?.ok) return;
+    if (lives <= 0 || feedback?.ok) return; // ✅ désactivé après bonne réponse
     if (energy < MC_COST) {
       setEnergyErr(`Pas assez d’énergie (${energy}/${MC_COST})`);
       setTimeout(() => setEnergyErr(null), 2000);
@@ -258,125 +274,148 @@ export default function RoomPage() {
       <h2>Room {roomId}</h2>
       <p style={{ opacity: 0.8 }}>{msg}</p>
 
-      <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap: 16, alignItems: "start" }}>
-        {/* Colonne principale */}
-        <div>
-          {question ? (
-            <div style={{ border: "1px solid #eee", padding: 16, borderRadius: 12, marginTop: 16 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <div>Question {index + 1}/{total}</div>
-                <div>{remaining !== null ? `${remaining}s` : ""}</div>
-              </div>
-
-              <EnergyBar energy={energy} max={ENERGY_MAX} mult={mult} />
-              {energyErr && <div style={{ color:"#b00", marginBottom: 8 }}>{energyErr}</div>}
-              {mcChoices === null && <Lives lives={lives} total={TEXT_LIVES} />}
-
-              <h3>{question.text}</h3>
-              {question.img && (() => {
-                const imgSrc = question.img.startsWith("http") || question.img.startsWith("/")
-                  ? question.img
-                  : "/" + question.img.replace(/^\.?\//, "");
-                return <img src={imgSrc} alt="" style={{ maxWidth: "100%", borderRadius: 8 }} />;
-              })()}
-
-              {mcChoices ? (
-                <div style={{ display:"grid", gap: 12, gridTemplateColumns:"1fr 1fr", marginTop: 12 }}>
-                  {mcChoices.map((c) => {
-                    const isSel = selected === c.id;
-                    const isOk = !!correctId && c.id === correctId;
-                    const disabled = phase !== "playing";
-                    return (
-                      <button
-                        key={c.id}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => answerByChoice(c.id)}
-                        disabled={disabled}
-                        style={{
-                          padding:"12px 16px", borderRadius:12, border:"1px solid #ddd",
-                          background: isOk ? "#dff6dd" : isSel ? "#e8f0fe" : "#f8f8f8"
-                        }}
-                      >
-                        {c.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div style={{ marginTop: 12 }}>
-                  <div style={{ display: "flex", gap: 8, alignItems:"center" }}>
-                    <input
-                      ref={inputRef}
-                      placeholder="Tape ta réponse..."
-                      value={textAnswer}
-                      onChange={(e) => setTextAnswer(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") { e.preventDefault(); sendText(); }
-                        if (e.key === "Tab")   { e.preventDefault(); showMultipleChoice(); }
-                      }}
-                      disabled={phase !== "playing" || !!selected || lives <= 0}
-                      style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
-                    />
-                    <button
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={sendText}
-                      disabled={phase !== "playing" || lives <= 0}
-                      style={{ padding: "10px 12px" }}
-                    >
-                      Envoyer
-                    </button>
-                    <button
-                      onClick={showMultipleChoice}
-                      disabled={phase !== "playing" || energy < MC_COST || lives <= 0 || feedback?.ok}
-                      title={`Coût : ${MC_COST} énergie`}
-                      style={{ padding: "10px 12px", opacity: energy < MC_COST || lives <= 0 || !!feedback?.ok ? 0.6 : 1 }}
-                    >
-                      Multiple-choice
-                    </button>
-                  </div>
-
-                  {pending && !feedback && (
-                    <div style={{ marginTop: 8, opacity: 0.7 }}>Réponse envoyée…</div>
-                  )}
-                  {feedback && (
-                    <div style={{ marginTop: 8, fontWeight: 600 }}>
-                      {feedback.ok ? "✔" : "✘"}
-                      {revealAnswer && typeof feedback.correctLabel === "string" && (
-                        <> — <span style={{ opacity: 0.8 }}>Réponse : {feedback.correctLabel}</span></>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+      {/* Phase finale : on remplace tout par l’écran de classement */}
+      {phase === "final" ? (
+        <div style={{ border: "1px solid #eee", padding: 16, borderRadius: 12, marginTop: 16, textAlign: "center", background:"#fff" }}>
+          <h3 style={{ marginTop: 0 }}>🏁 Classement final</h3>
+          {leaderboard.length === 0 ? (
+            <div style={{ opacity: 0.7 }}>Aucun score.</div>
           ) : (
-            <div style={{ opacity: 0.7, padding: 8, marginTop: 16 }}>
-              {phase === "between" ? "Next game starting…" :
-               phase === "idle"    ? "En attente des joueurs…" :
-                                      "Préparation du prochain round…"}
-            </div>
+            <ol style={{ margin: "12px auto 0", paddingLeft: 18, maxWidth: 460, textAlign: "left" }}>
+              {leaderboard.map((r, i) => (
+                <li key={r.id} style={{ margin: "6px 0", display: "flex", gap: 8 }}>
+                  <span style={{ width: 22, textAlign: "right", opacity: 0.6 }}>{i + 1}.</span>
+                  <span style={{ fontWeight: 600, flex: 1 }}>{r.name}</span>
+                  <span style={{ fontVariantNumeric: "tabular-nums" }}>{r.score}</span>
+                </li>
+              ))}
+            </ol>
           )}
+          <div style={{ marginTop: 12, opacity: 0.7, fontSize: 14 }}>
+            Nouvelle partie dans un instant…
+          </div>
         </div>
+      ) : (
+        <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap: 16, alignItems: "start" }}>
+          {/* Colonne principale */}
+          <div>
+            {question ? (
+              <div style={{ border: "1px solid #eee", padding: 16, borderRadius: 12, marginTop: 16 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>Question {index + 1}/{total}</div>
+                  <div>{remaining !== null ? `${remaining}s` : ""}</div>
+                </div>
 
-        {/* 🏆 Colonne leaderboard */}
-        <aside style={{ marginTop: 16 }}>
-          <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Leaderboard</div>
-            {leaderboard.length === 0 ? (
-              <div style={{ opacity: 0.6 }}>—</div>
+                <EnergyBar energy={energy} max={ENERGY_MAX} mult={mult} />
+                {energyErr && <div style={{ color:"#b00", marginBottom: 8 }}>{energyErr}</div>}
+                {mcChoices === null && <Lives lives={lives} total={TEXT_LIVES} />}
+
+                <h3>{question.text}</h3>
+                {question.img && (() => {
+                  const imgSrc = question.img.startsWith("http") || question.img.startsWith("/")
+                    ? question.img
+                    : "/" + question.img.replace(/^\.?\//, "");
+                  return <img src={imgSrc} alt="" style={{ maxWidth: "100%", borderRadius: 8 }} />;
+                })()}
+
+                {mcChoices ? (
+                  <div style={{ display:"grid", gap: 12, gridTemplateColumns:"1fr 1fr", marginTop: 12 }}>
+                    {mcChoices.map((c) => {
+                      const isSel = selected === c.id;
+                      const isOk = !!correctId && c.id === correctId;
+                      const disabled = phase !== "playing";
+                      return (
+                        <button
+                          key={c.id}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => answerByChoice(c.id)}
+                          disabled={disabled}
+                          style={{
+                            padding:"12px 16px", borderRadius:12, border:"1px solid #ddd",
+                            background: isOk ? "#dff6dd" : isSel ? "#e8f0fe" : "#f8f8f8"
+                          }}
+                        >
+                          {c.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems:"center" }}>
+                      <input
+                        ref={inputRef}
+                        placeholder="Tape ta réponse..."
+                        value={textAnswer}
+                        onChange={(e) => setTextAnswer(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") { e.preventDefault(); sendText(); }
+                          if (e.key === "Tab")   { e.preventDefault(); showMultipleChoice(); }
+                        }}
+                        disabled={phase !== "playing" || !!selected || lives <= 0}
+                        style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+                      />
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={sendText}
+                        disabled={phase !== "playing" || lives <= 0}
+                        style={{ padding: "10px 12px" }}
+                      >
+                        Envoyer
+                      </button>
+                      <button
+                        onClick={showMultipleChoice}
+                        disabled={phase !== "playing" || energy < MC_COST || lives <= 0 || !!feedback?.ok}
+                        title={`Coût : ${MC_COST} énergie`}
+                        style={{ padding: "10px 12px", opacity: energy < MC_COST || lives <= 0 || !!feedback?.ok ? 0.6 : 1 }}
+                      >
+                        Multiple-choice
+                      </button>
+                    </div>
+
+                    {pending && !feedback && (
+                      <div style={{ marginTop: 8, opacity: 0.7 }}>Réponse envoyée…</div>
+                    )}
+                    {feedback && (
+                      <div style={{ marginTop: 8, fontWeight: 600 }}>
+                        {feedback.ok ? "✔" : "✘"}
+                        {revealAnswer && typeof feedback.correctLabel === "string" && (
+                          <> — <span style={{ opacity: 0.8 }}>Réponse : {feedback.correctLabel}</span></>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ) : (
-              <ol style={{ margin: 0, paddingLeft: 18 }}>
-                {leaderboard.map((r) => (
-                  <li key={r.id} style={{ margin: "6px 0" }}>
-                    <span style={{ fontWeight: 600 }}>{r.name}</span>
-                    <span style={{ float: "right" }}>{r.score}</span>
-                  </li>
-                ))}
-              </ol>
+              <div style={{ opacity: 0.7, padding: 8, marginTop: 16 }}>
+                {phase === "between" ? "Next game starting…" :
+                 phase === "idle"    ? "En attente des joueurs…" :
+                                        "Préparation du prochain round…"}
+              </div>
             )}
           </div>
-        </aside>
-      </div>
+
+          {/* 🏆 Colonne leaderboard */}
+          <aside style={{ marginTop: 16 }}>
+            <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>Leaderboard</div>
+              {leaderboard.length === 0 ? (
+                <div style={{ opacity: 0.6 }}>—</div>
+              ) : (
+                <ol style={{ margin: 0, paddingLeft: 18 }}>
+                  {leaderboard.map((r) => (
+                    <li key={r.id} style={{ margin: "6px 0" }}>
+                      <span style={{ fontWeight: 600 }}>{r.name}</span>
+                      <span style={{ float: "right" }}>{r.score}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

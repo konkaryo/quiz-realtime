@@ -1,0 +1,18 @@
+export const CFG = {
+  PORT: Number(process.env.PORT || 3001),
+  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
+  IMG_DIR: process.env.IMG_DIR || "img",
+  QUESTION_COUNT: Number(process.env.QUESTION_COUNT || 10),
+  INIT_ENERGY: Number(process.env.INIT_ENERGY || 10),
+  MC_COST: Number(process.env.MC_COST || 5),
+  MAX_ENERGY: Number(process.env.MAX_ENERGY || 100),
+  ROUND_MS: Number(process.env.ROUND_MS || 10000),
+  GAP_MS: Number(process.env.GAP_MS || 3001),
+  FINAL_LB_MS: Number(process.env.FINAL_LB_MS || 10000),
+  TEXT_LIVES: Number(process.env.TEXT_LIVES || 3),
+  AUTO_ENERGY_GAIN: Number(process.env.AUTO_ENERGY_GAIN || 5),
+  MC_ANSWER_ENERGY_GAIN: Number(process.env.MC_ANSWER_ENERGY_GAIN || 5),
+  MC_ANSWER_POINTS_GAIN: Number(process.env.MC_ANSWER_POINTS_GAIN || 100),
+  TXT_ANSWER_ENERGY_GAIN: Number(process.env.TXT_ANSWER_ENERGY_GAIN || 5),
+  TXT_ANSWER_POINTS_GAIN: Number(process.env.TXT_ANSWER_POINTS_GAIN || 100),
+};
