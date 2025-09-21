@@ -121,23 +121,47 @@ export default function Home() {
 
                 {/* Badges droite */}
                 <div
-                    title="Joueurs connectés"
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      padding: "4px 8px",
-                      borderRadius: 999,
-                      border: "1px solid #d1d5db",
-                      background: "#f8fafc",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {pc !== undefined ? `${pc} joueur${pc > 1 ? "s" : ""}` : "—"}
+                  title="Joueurs connectés"
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: "4px 8px",
+                    borderRadius: 999,
+                    border: "1px solid #d1d5db",
+                    background: "#f8fafc",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {pc !== undefined ? `${pc} joueur${pc > 1 ? "s" : ""}` : "—"}
                 </div>
               </button>
             </li>
           );
         })}
+
+        {/* 👇 Bouton d'ajout sous la liste */}
+        <li>
+          <button
+            onClick={() => nav("/rooms/new")}
+            style={{
+              width: "100%",
+              padding: 20,
+              borderRadius: 12,
+              border: "2px dashed #d1d5db",
+              background: "#f9fafb",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+            title="Créer une nouvelle room"
+          >
+            <span style={{ fontSize: 18, lineHeight: 1 }}>＋</span>
+            <span>Nouvelle room</span>
+          </button>
+        </li>
       </ul>
     </div>
   );

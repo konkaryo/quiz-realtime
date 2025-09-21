@@ -8,9 +8,10 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import AppShell from "./AppShell";         // ⬅️ le layout
+import AppShell from "./AppShell";         // ⬅️ layout persistant
 import Home from "./pages/Home";
 import RoomPage from "./pages/RoomPage";
+import CreateRoomPage from "./pages/CreateRoomPage"; // ⬅️ NOUVELLE PAGE
 
 // pages publiques
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
@@ -81,6 +82,7 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: "/", element: <Home /> },
+      { path: "/rooms/new", element: <CreateRoomPage /> }, // ⬅️ NOUVELLE ROUTE
       { path: "/room/:roomId", element: <RoomPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],

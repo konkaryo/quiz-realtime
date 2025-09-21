@@ -34,18 +34,51 @@ async function main() {
   app.get("/health", async () => ({ ok: true }));
 
   // ---------- HTTP: Rooms ----------
-  app.post("/rooms", async (_req, reply) => {
-    const code = [..."ABCDEFGHJKLMNPQRSTUVWXYZ23456789"]
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 4)
-      .join("");
+  app.post("/rooms", async (req, reply) => {
+    try {
+      // 1) Auth via cookie "sid"
+      const sid = (req.cookies as any)?.sid as string | undefined;
+      if (!sid) return reply.code(401).send({ error: "Unauthorized" });
 
-    const result = await prisma.$transaction(async (tx) => {
-      const room = await tx.room.create({ data: { code } });
-      await tx.game.create({ data: { roomId: room.id, state: "lobby" } });
-      return { id: room.id };
-    });
-    return reply.code(201).send({ result });
+      const session = await prisma.session.findUnique({
+        where: { token: sid },
+        select: { userId: true, expiresAt: true },
+      });
+      if (!session || session.expiresAt.getTime() < Date.now()) {
+        return reply.code(401).send({ error: "Unauthorized" });
+      }
+
+      const body = (req.body as any) ?? {};
+      const raw = Number(body?.difficulty);
+      const difficulty = Number.isFinite(raw) ? Math.min(10, Math.max(1, Math.round(raw))) : 5;
+
+      // 2) Génération code room (4 chars non ambigus)
+      const code = [..."ABCDEFGHJKLMNPQRSTUVWXYZ23456789"]
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 4)
+        .join("");
+
+      // 3) Création room + game (owner = session.userId)
+      const result = await prisma.$transaction(async (tx) => {
+        const room = await tx.room.create({
+          data: {
+            code,
+            ownerId: session.userId,
+            difficulty
+          },
+          select: { id: true },
+        });
+
+        await tx.game.create({ data: { roomId: room.id, state: "lobby" } });
+
+        return { id: room.id };
+      });
+
+      return reply.code(201).send({ result });
+    } catch (e) {
+      req.log.error(e, "POST /rooms failed");
+      return reply.code(500).send({ error: "Server error" });
+    }
   });
 
   app.get("/rooms/:id", async (req, reply) => {

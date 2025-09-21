@@ -71,6 +71,7 @@ model Question {
   img             String?
   playerGames     PlayerGame[]
   acceptedAnswers AcceptedAnswer[]
+  answers         Answer[]
 }
 
 model PlayerGame {
@@ -99,9 +100,12 @@ model Answer {
   id           String     @id @default(cuid())
   playerGame   PlayerGame @relation(fields: [playerGameId], references: [id])
   playerGameId String
+  question     Question?  @relation(fields: [questionId], references: [id])
+  questionId   String?
   text         String
   correct      Boolean
   createdAt    DateTime   @default(now())
+  responseMs   Int        @default(-1)
 }
 
 model AcceptedAnswer {

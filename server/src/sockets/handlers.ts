@@ -124,10 +124,12 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         const choice = q.choices.find((c) => c.id === p.choiceId);
         if (!choice) return ack?.({ ok: false, reason: "bad-choice" });
 
+        const start = st.roundStartMs ?? Date.now();
+        const responseMs = Math.max(0, Date.now() - start);
+
         st.answeredThisRound.add(client.playerGameId);
 
-        const gain =
-          CFG.AUTO_ENERGY_GAIN + (choice.isCorrect ? CFG.MC_ANSWER_ENERGY_GAIN : 0);
+        const gain = CFG.AUTO_ENERGY_GAIN + (choice.isCorrect ? CFG.MC_ANSWER_ENERGY_GAIN : 0);
 
         const res = await addEnergy(prisma, client, gain);
         if (!res.ok) return ack?.({ ok: false, reason: "no-player" });
@@ -136,8 +138,10 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           await tx.answer.create({
             data: {
               playerGameId: client.playerGameId,
+              questionId: q.id,
               text: choice.label,
               correct: choice.isCorrect,
+              responseMs
             },
           });
           await tx.playerGame.update({
@@ -164,6 +168,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           correct: !!choice.isCorrect,
           correctChoiceId: correctChoice ? correctChoice.id : null,
           correctLabel: correctChoice ? correctChoice.label : null,
+          responseMs
         });
 
         io.to(client.roomId).emit("answer_received");
@@ -191,6 +196,9 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
         const q = st.questions[st.index];
         if (!q) return ack?.({ ok: false, reason: "no-question" });
+
+        const start = st.roundStartMs ?? Date.now();
+        const responseMs = Math.max(0, Date.now() - start);
 
         const prevAttempts = st.attemptsThisRound.get(client.playerGameId) || 0;
         if (prevAttempts >= CFG.TEXT_LIVES) {
@@ -225,8 +233,10 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           await tx.answer.create({
             data: {
               playerGameId: client.playerGameId,
+              questionId:   q.id, 
               text: raw,
               correct,
+              responseMs
             },
           });
           if (correct) {
@@ -258,6 +268,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
             correct,
             correctChoiceId: corr ? corr.id : null,
             correctLabel: corr ? corr.label : null,
+            responseMs
           });
         } else {
           socket.emit("answer_feedback", { correct: false });

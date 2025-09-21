@@ -14,6 +14,9 @@ type QuestionLite = { id: string; text: string; img?: string | null };
 type Phase        = "idle" | "playing" | "reveal" | "between" | "final";
 type LeaderRow    = { id: string; name: string; score: number };
 
+// 🆕 Feedback étendu pour inclure le temps de réponse
+type Feedback = { ok: boolean; correctLabel: string | null; responseMs?: number };
+
 // — Petite jauge d’énergie ---------------------------------------------------
 function EnergyBar({ energy, max, mult }: { energy: number; max: number; mult: number }) {
   const pct = Math.max(0, Math.min(100, Math.round((energy / max) * 100)));
@@ -66,7 +69,7 @@ export default function RoomPage() {
   // MC / saisie libre
   const [mcChoices, setMcChoices] = useState<ChoiceLite[] | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
-  const [feedback, setFeedback] = useState<{ ok: boolean; correctLabel: string | null } | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const hasFeedbackRef = useRef(false);
   const [pending, setPending] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -159,9 +162,14 @@ export default function RoomPage() {
       setTextAnswer("");
     });
 
-    s.on("answer_feedback", (p: { correct: boolean; correctChoiceId: string | null; correctLabel: string | null }) => {
+    // 🆕 récupère responseMs
+    s.on("answer_feedback", (p: { correct: boolean; correctChoiceId: string | null; correctLabel: string | null; responseMs?: number }) => {
       hasFeedbackRef.current = true;
-      setFeedback({ ok: p.correct, correctLabel: p.correctLabel ?? null });
+      setFeedback({
+        ok: p.correct,
+        correctLabel: p.correctLabel ?? null,
+        responseMs: typeof p.responseMs === "number" ? p.responseMs : undefined,
+      });
       if (p.correctChoiceId) setCorrectId(p.correctChoiceId);
       setPending(false);
 
@@ -195,12 +203,13 @@ export default function RoomPage() {
       setFeedback(prev => ({
         ok: prev?.ok ?? false,
         correctLabel: p.correctLabel ?? prev?.correctLabel ?? null,
+        responseMs: prev?.responseMs, // on garde le temps affiché
       }));
       setRevealAnswer(true);
       setEndsAt(null);
     });
 
-    // 🏁 Nouvelle phase : leaderboard final (remplace tout l’affichage)
+    // 🏁 Leaderboard final
     s.on("final_leaderboard", (p: { leaderboard: LeaderRow[]; displayMs?: number }) => {
       setPhase("final");
       setQuestion(null);
@@ -215,7 +224,7 @@ export default function RoomPage() {
       setMsg("Fin de partie — nouveau départ imminent…");
     });
 
-    // Fallback legacy (si jamais émis)
+    // Compat
     s.on("game_over", () => {
       setPhase("between");
       setQuestion(null); setSelected(null); setCorrectId(null); setEndsAt(null);
@@ -228,7 +237,7 @@ export default function RoomPage() {
       const res = await fetch(`${API_BASE}/rooms/${roomId}`);
       if (res.ok) {
         const { room } = (await res.json()) as { room: { id: string; code: string } };
-        s.emit("join_game", { code: room.code }); // auto-start côté serveur si nécessaire
+        s.emit("join_game", { code: room.code });
       } else {
         setMsg("Room not found");
       }
@@ -254,7 +263,7 @@ export default function RoomPage() {
 
   const showMultipleChoice = () => {
     if (!socket || phase !== "playing") return;
-    if (lives <= 0 || feedback?.ok) return; // ✅ désactivé après bonne réponse
+    if (lives <= 0 || feedback?.ok) return;
     if (energy < MC_COST) {
       setEnergyErr(`Pas assez d’énergie (${energy}/${MC_COST})`);
       setTimeout(() => setEnergyErr(null), 2000);
@@ -274,7 +283,6 @@ export default function RoomPage() {
       <h2>Room {roomId}</h2>
       <p style={{ opacity: 0.8 }}>{msg}</p>
 
-      {/* Phase finale : on remplace tout par l’écran de classement */}
       {phase === "final" ? (
         <div style={{ border: "1px solid #eee", padding: 16, borderRadius: 12, marginTop: 16, textAlign: "center", background:"#fff" }}>
           <h3 style={{ marginTop: 0 }}>🏁 Classement final</h3>
@@ -319,27 +327,35 @@ export default function RoomPage() {
                 })()}
 
                 {mcChoices ? (
-                  <div style={{ display:"grid", gap: 12, gridTemplateColumns:"1fr 1fr", marginTop: 12 }}>
-                    {mcChoices.map((c) => {
-                      const isSel = selected === c.id;
-                      const isOk = !!correctId && c.id === correctId;
-                      const disabled = phase !== "playing";
-                      return (
-                        <button
-                          key={c.id}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => answerByChoice(c.id)}
-                          disabled={disabled}
-                          style={{
-                            padding:"12px 16px", borderRadius:12, border:"1px solid #ddd",
-                            background: isOk ? "#dff6dd" : isSel ? "#e8f0fe" : "#f8f8f8"
-                          }}
-                        >
-                          {c.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <>
+                    <div style={{ display:"grid", gap: 12, gridTemplateColumns:"1fr 1fr", marginTop: 12 }}>
+                      {mcChoices.map((c) => {
+                        const isSel = selected === c.id;
+                        const isOk = !!correctId && c.id === correctId;
+                        const disabled = phase !== "playing";
+                        return (
+                          <button
+                            key={c.id}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => answerByChoice(c.id)}
+                            disabled={disabled}
+                            style={{
+                              padding:"12px 16px", borderRadius:12, border:"1px solid #ddd",
+                              background: isOk ? "#dff6dd" : isSel ? "#e8f0fe" : "#f8f8f8"
+                            }}
+                          >
+                            {c.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* 🆕 Badge temps pour QCM (sous la grille, à droite) */}
+                    {typeof feedback?.responseMs === "number" && (
+                      <div style={{ marginTop: 6, textAlign: "right", fontVariantNumeric: "tabular-nums", opacity: 0.8 }}>
+                        {feedback.responseMs} ms
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div style={{ marginTop: 12 }}>
                     <div style={{ display: "flex", gap: 8, alignItems:"center" }}>
@@ -377,10 +393,26 @@ export default function RoomPage() {
                       <div style={{ marginTop: 8, opacity: 0.7 }}>Réponse envoyée…</div>
                     )}
                     {feedback && (
-                      <div style={{ marginTop: 8, fontWeight: 600 }}>
-                        {feedback.ok ? "✔" : "✘"}
+                      <div style={{ marginTop: 8, fontWeight: 600, position: "relative" }}>
+                        {/* Feedback gauche */}
+                        <span>{feedback.ok ? "✔" : "✘"}</span>
                         {revealAnswer && typeof feedback.correctLabel === "string" && (
                           <> — <span style={{ opacity: 0.8 }}>Réponse : {feedback.correctLabel}</span></>
+                        )}
+                        {/* 🆕 Temps à droite */}
+                        {typeof feedback.responseMs === "number" && (
+                          <span
+                            style={{
+                              position: "absolute",
+                              right: 0,
+                              top: 0,
+                              fontVariantNumeric: "tabular-nums",
+                              opacity: 0.8
+                            }}
+                            title="Temps de réponse"
+                          >
+                            {feedback.responseMs} ms
+                          </span>
                         )}
                       </div>
                     )}
