@@ -1,6 +1,6 @@
 // web/src/pages/RoomPage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 
 const API_BASE   = import.meta.env.VITE_API_BASE    ?? (typeof window !== "undefined" ? window.location.origin : "");
@@ -13,11 +13,8 @@ type ChoiceLite   = { id: string; label: string };
 type QuestionLite = { id: string; text: string; img?: string | null };
 type Phase        = "idle" | "playing" | "reveal" | "between" | "final";
 type LeaderRow    = { id: string; name: string; score: number };
+type Feedback     = { ok: boolean; correctLabel: string | null; responseMs?: number };
 
-// 🆕 Feedback étendu pour inclure le temps de réponse
-type Feedback = { ok: boolean; correctLabel: string | null; responseMs?: number };
-
-// — Petite jauge d’énergie ---------------------------------------------------
 function EnergyBar({ energy, max, mult }: { energy: number; max: number; mult: number }) {
   const pct = Math.max(0, Math.min(100, Math.round((energy / max) * 100)));
   return (
@@ -40,7 +37,6 @@ function EnergyBar({ energy, max, mult }: { energy: number; max: number; mult: n
   );
 }
 
-// — Affichage des cœurs ------------------------------------------------------
 function Lives({ lives, total }: { lives: number; total: number }) {
   const full = Array.from({ length: lives }).map((_, i) => <span key={`f${i}`}>❤️</span>);
   const empty = Array.from({ length: Math.max(0, total - lives) }).map((_, i) => (
@@ -55,6 +51,7 @@ function Lives({ lives, total }: { lives: number; total: number }) {
 }
 
 export default function RoomPage() {
+  const nav = useNavigate(); // 👈 NEW
   const { roomId } = useParams<{ roomId: string }>();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -66,7 +63,6 @@ export default function RoomPage() {
   const [total, setTotal] = useState(0);
   const [msg, setMsg] = useState("");
 
-  // MC / saisie libre
   const [mcChoices, setMcChoices] = useState<ChoiceLite[] | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -74,21 +70,14 @@ export default function RoomPage() {
   const [pending, setPending] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // ⚡ énergie / multiplicateur
   const [energy, setEnergy] = useState(10);
   const [mult, setMult]     = useState(1);
   const [energyErr, setEnergyErr] = useState<string | null>(null);
 
-  // 🆕 vies (UX locale)
   const [lives, setLives] = useState<number>(TEXT_LIVES);
-
-  // 🆕 contrôle de la révélation
   const [revealAnswer, setRevealAnswer] = useState<boolean>(false);
-
-  // 🏆 leaderboard live
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
 
-  // ticking clock
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     if (!endsAt) return;
@@ -100,12 +89,10 @@ export default function RoomPage() {
     [endsAt, now]
   );
 
-  // focus auto en phase "playing"
   useEffect(() => {
     if (phase === "playing" && inputRef.current) inputRef.current.focus();
   }, [phase, question]);
 
-  // focus permanent (clics)
   useEffect(() => {
     function handleClick() {
       if (phase === "playing" && inputRef.current) inputRef.current.focus();
@@ -114,7 +101,6 @@ export default function RoomPage() {
     return () => document.removeEventListener("click", handleClick);
   }, [phase]);
 
-  // listeners énergie
   useEffect(() => {
     if (!socket) return;
     const onEnergy = (p: { energy: number; multiplier: number }) => {
@@ -134,7 +120,7 @@ export default function RoomPage() {
     };
   }, [socket]);
 
-  // connexion + flux trivia + deep-link join
+  // ⚠️ Connexion + contrôle "room fermée" + écoute de fermeture en temps réel
   useEffect(() => {
     if (!roomId) return;
 
@@ -143,6 +129,18 @@ export default function RoomPage() {
 
     s.on("error_msg", (m: string) => setMsg(m));
     s.on("info_msg",  (m: string) => setMsg(m));
+
+    // 🔔 si la room est fermée côté serveur
+    const onClosed = ({ roomId: closedId }: { roomId: string }) => {
+      if (closedId !== roomId) return;
+      alert("La room a été fermée.");
+      setMsg("Room fermée.");
+      s.close();
+      nav("/");
+    };
+    s.on("room_closed", onClosed);
+    // compat si tu avais "room_deleted" avant
+    s.on("room_deleted", onClosed);
 
     s.on("round_begin", (p: { index:number; total:number; endsAt:number; question: QuestionLite }) => {
       setPhase("playing");
@@ -162,7 +160,6 @@ export default function RoomPage() {
       setTextAnswer("");
     });
 
-    // 🆕 récupère responseMs
     s.on("answer_feedback", (p: { correct: boolean; correctChoiceId: string | null; correctLabel: string | null; responseMs?: number }) => {
       hasFeedbackRef.current = true;
       setFeedback({
@@ -203,13 +200,12 @@ export default function RoomPage() {
       setFeedback(prev => ({
         ok: prev?.ok ?? false,
         correctLabel: p.correctLabel ?? prev?.correctLabel ?? null,
-        responseMs: prev?.responseMs, // on garde le temps affiché
+        responseMs: prev?.responseMs,
       }));
       setRevealAnswer(true);
       setEndsAt(null);
     });
 
-    // 🏁 Leaderboard final
     s.on("final_leaderboard", (p: { leaderboard: LeaderRow[]; displayMs?: number }) => {
       setPhase("final");
       setQuestion(null);
@@ -224,7 +220,6 @@ export default function RoomPage() {
       setMsg("Fin de partie — nouveau départ imminent…");
     });
 
-    // Compat
     s.on("game_over", () => {
       setPhase("between");
       setQuestion(null); setSelected(null); setCorrectId(null); setEndsAt(null);
@@ -233,18 +228,38 @@ export default function RoomPage() {
       setRevealAnswer(false);
     });
 
+    // 👉 Vérifie l'état de la room avant le join
     (async () => {
-      const res = await fetch(`${API_BASE}/rooms/${roomId}`);
-      if (res.ok) {
-        const { room } = (await res.json()) as { room: { id: string; code: string } };
-        s.emit("join_game", { code: room.code });
-      } else {
-        setMsg("Room not found");
+      try {
+        const res = await fetch(`${API_BASE}/rooms/${roomId}`, { credentials: "include" });
+        if (res.status === 410) {
+          setMsg("Cette room est fermée.");
+          s.close();
+          nav("/");
+          return;
+        }
+        if (res.ok) {
+          const { room } = (await res.json()) as { room: { id: string; code: string } };
+          s.emit("join_game", { code: room.code });
+        } else if (res.status === 404) {
+          setMsg("Room introuvable.");
+          s.close();
+        } else {
+          setMsg(`Erreur: ${res.status}`);
+          s.close();
+        }
+      } catch (e) {
+        setMsg("Impossible de charger la room.");
+        s.close();
       }
     })();
 
-    return () => { s.close(); };
-  }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      s.off("room_closed", onClosed);
+      s.off("room_deleted", onClosed);
+      s.close();
+    };
+  }, [roomId, nav]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sendText = () => {
     if (!socket || phase !== "playing" || !question) return;
@@ -349,7 +364,6 @@ export default function RoomPage() {
                         );
                       })}
                     </div>
-                    {/* 🆕 Badge temps pour QCM (sous la grille, à droite) */}
                     {typeof feedback?.responseMs === "number" && (
                       <div style={{ marginTop: 6, textAlign: "right", fontVariantNumeric: "tabular-nums", opacity: 0.8 }}>
                         {feedback.responseMs} ms
@@ -394,12 +408,10 @@ export default function RoomPage() {
                     )}
                     {feedback && (
                       <div style={{ marginTop: 8, fontWeight: 600, position: "relative" }}>
-                        {/* Feedback gauche */}
                         <span>{feedback.ok ? "✔" : "✘"}</span>
                         {revealAnswer && typeof feedback.correctLabel === "string" && (
                           <> — <span style={{ opacity: 0.8 }}>Réponse : {feedback.correctLabel}</span></>
                         )}
-                        {/* 🆕 Temps à droite */}
                         {typeof feedback.responseMs === "number" && (
                           <span
                             style={{
@@ -428,7 +440,6 @@ export default function RoomPage() {
             )}
           </div>
 
-          {/* 🏆 Colonne leaderboard */}
           <aside style={{ marginTop: 16 }}>
             <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>Leaderboard</div>
