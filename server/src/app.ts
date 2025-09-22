@@ -103,9 +103,32 @@ async function main() {
     return { room };
   });
 
-  app.get("/rooms", async (_req, reply) => {
+  app.get("/rooms", async (req, reply) => {
+    // 1) Qui est connecté ? (optionnel : si pas de cookie => userId=null)
+    const sid = (req.cookies as any)?.sid as string | undefined;
+    let userId: string | null = null;
+    let userRole: "USER" | "ADMIN" | null = null;
+    if (sid) {
+      const session = await prisma.session.findUnique({
+        where: { token: sid },
+        select: { userId: true, expiresAt: true },
+      });
+      if (session && session.expiresAt.getTime() > Date.now()) {
+        const u = await prisma.user.findUnique({
+          where: { id: session.userId },
+          select: { id: true, role: true },
+        });
+        if (u) {
+          userId = u.id;
+          // @ts-ignore enum Prisma
+          userRole = (u.role as any) ?? "USER";
+        }
+      }
+    }
+
+    // 2) Liste des rooms ouvertes
     const rows = await prisma.room.findMany({
-      where: { status: "OPEN" },
+      where: { status: "OPEN" }, // si tu as ajouté le soft close
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -114,10 +137,16 @@ async function main() {
         owner: { select: { id: true, displayName: true } },
       },
     });
+
+    // 3) Ajoute canClose selon user courant (owner ou ADMIN)
     const rooms = rows.map((r) => ({
       ...r,
       playerCount: clientsInRoom(clients, r.id).length,
+      canClose:
+        (!!userId && r.owner?.id === userId) ||
+        userRole === "ADMIN",
     }));
+
     reply.send({ rooms });
   });
 
