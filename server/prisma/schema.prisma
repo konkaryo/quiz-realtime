@@ -18,6 +18,25 @@ enum RoomStatus {
   CLOSED
 }
 
+enum Theme {
+  CINEMA_SERIES
+  ARTS_CULTURE
+  JEUX_BD
+  GEOGRAPHIE
+  LITTERATURE
+  ECONOMIE_POLITIQUE
+  GASTRONOMIE
+  CROYANCES
+  SPORT
+  HISTOIRE
+  DIVERS
+  SCIENCES_VIE
+  SCIENCES_EXACTES
+  MUSIQUE
+  ACTUALITES_MEDIAS
+  TECHNOLOGIE
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -54,15 +73,16 @@ model Player {
 }
 
 model Room {
-  id          String       @id @default(cuid())
-  ownerId     String?
-  owner       User?        @relation("UserOwnedRooms", fields: [ownerId], references: [id], onDelete: SetNull)
-  difficulty  Int          @default(5)
-  code        String       @unique
-  createdAt   DateTime     @default(now())
-  games       Game[]
-  status      RoomStatus   @default(OPEN)
-  closedAt    DateTime?
+  id            String       @id @default(cuid())
+  ownerId       String?
+  owner         User?        @relation("UserOwnedRooms", fields: [ownerId], references: [id], onDelete: SetNull)
+  difficulty    Int          @default(5)
+  code          String       @unique
+  createdAt     DateTime     @default(now())
+  games         Game[]
+  status        RoomStatus   @default(OPEN)
+  closedAt      DateTime?
+  bannedThemes  Theme[]
 
   @@index([ownerId])
   @@index([status, createdAt])
@@ -81,7 +101,7 @@ model Question {
   id              String           @id @default(cuid())
   text            String
   choices         Choice[]
-  theme           String?
+  theme           Theme? 
   difficulty      String?
   img             String?
   playerGames     PlayerGame[]

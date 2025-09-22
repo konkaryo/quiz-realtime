@@ -14,6 +14,7 @@ import type { Client, GameState } from "./types";
 import { authRoutes } from "./routes/auth";
 import { registerSocketHandlers } from "./sockets/handlers";
 import { clientsInRoom } from "./domain/room/room.service";
+import { Theme } from "@prisma/client";
 
 /* ---------------- runtime maps ---------------- */
 const clients = new Map<string, Client>();
@@ -59,9 +60,10 @@ async function main() {
         return reply.code(401).send({ error: "Unauthorized" });
       }
 
-      const body = (req.body as any) ?? {};
-      const raw = Number(body?.difficulty);
-      const difficulty = Number.isFinite(raw) ? Math.min(10, Math.max(1, Math.round(raw))) : 5;
+      const body = (req.body ?? {}) as { difficulty?: number; bannedThemes?: string[] };
+      const difficulty = typeof body.difficulty === "number" ? Math.min(10, Math.max(1, Math.round(body.difficulty))) : 5;
+      const banned: Theme[] = Array.isArray(body.bannedThemes) ? body.bannedThemes
+        .map(String).filter((x): x is Theme => (Object.values(Theme) as string[]).includes(x)) : [];
 
       // 2) Génération code room (4 chars non ambigus)
       const code = [..."ABCDEFGHJKLMNPQRSTUVWXYZ23456789"]
@@ -75,7 +77,8 @@ async function main() {
           data: {
             code,
             ownerId: session.userId,
-            difficulty
+            difficulty,
+            bannedThemes: banned
           },
           select: { id: true },
         });
