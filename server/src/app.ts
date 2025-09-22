@@ -5,7 +5,7 @@ import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import fastifyCookie from "@fastify/cookie";
 import { Server } from "socket.io";
-
+import { z } from "zod";
 import { CFG } from "./config";
 import { prisma } from "./infra/prisma";
 import { getCookie } from "./infra/cookies";
@@ -60,10 +60,17 @@ async function main() {
         return reply.code(401).send({ error: "Unauthorized" });
       }
 
-      const body = (req.body ?? {}) as { difficulty?: number; bannedThemes?: string[] };
-      const difficulty = typeof body.difficulty === "number" ? Math.min(10, Math.max(1, Math.round(body.difficulty))) : 5;
-      const banned: Theme[] = Array.isArray(body.bannedThemes) ? body.bannedThemes
-        .map(String).filter((x): x is Theme => (Object.values(Theme) as string[]).includes(x)) : [];
+      const Body = z.object({
+        difficulty:    z.number().int().min(1).max(10).optional(),
+        bannedThemes:  z.array(z.nativeEnum(Theme)).optional(),
+        questionCount: z.number().int().min(10).max(30).optional(),
+        roundSeconds:  z.number().int().min(10).max(30).optional()
+      });
+      const parsed = Body.safeParse(req.body);
+      if (!parsed.success) { return reply.code(400).send({ error: parsed.error.message }); }
+      const { difficulty = 5, bannedThemes = [], questionCount = 10, roundSeconds = 10 } = parsed.data;
+
+      const roundMs = roundSeconds * 1000;
 
       // 2) Génération code room (4 chars non ambigus)
       const code = [..."ABCDEFGHJKLMNPQRSTUVWXYZ23456789"]
@@ -78,7 +85,9 @@ async function main() {
             code,
             ownerId: session.userId,
             difficulty,
-            bannedThemes: banned
+            bannedThemes,
+            questionCount,
+            roundMs
           },
           select: { id: true },
         });
@@ -90,7 +99,7 @@ async function main() {
 
       return reply.code(201).send({ result });
     } catch (e) {
-      req.log.error(e, "POST /rooms failed");
+      req.log.error(e, "[POST /rooms] failed");
       return reply.code(500).send({ error: "Server error" });
     }
   });

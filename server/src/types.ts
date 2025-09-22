@@ -20,6 +20,7 @@ export type GameState = {
   answeredThisRound: Set<string>;
   pgIds: Set<string>;  
   attemptsThisRound: Map<string, number>;
+  roundMs: number;  
 };
 export type Client = {
   socketId: string;

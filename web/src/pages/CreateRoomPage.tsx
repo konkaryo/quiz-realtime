@@ -17,8 +17,7 @@ async function fetchJSON(path: string, init?: RequestInit) {
   return data;
 }
 
-// Enum keys côté backend (@prisma/client Theme)
-// Garder les clés EXACTEMENT identiques à celles du schema.prisma
+// mêmes clés que l'enum Prisma Theme
 const THEME_OPTIONS = [
   { key: "CINEMA_SERIES",       label: "Cinéma & Séries" },
   { key: "ARTS_CULTURE",        label: "Arts & Culture" },
@@ -44,11 +43,13 @@ export default function CreateRoomPage() {
   const nav = useNavigate();
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [difficulty, setDifficulty] = useState<number>(5); // default
 
-  // Tous les thèmes sélectionnés par défaut
+  const [difficulty, setDifficulty] = useState<number>(5);
+  const [questionCount, setQuestionCount] = useState<number>(10); // 10–30
+  const [roundSeconds, setRoundSeconds] = useState<number>(10);   // 10–30
+
   const [selectedThemes, setSelectedThemes] = useState<ThemeKey[]>(
-    THEME_OPTIONS.map(t => t.key)
+    THEME_OPTIONS.map(t => t.key) // tous sélectionnés par défaut
   );
 
   const toggleTheme = (k: ThemeKey) => {
@@ -56,7 +57,6 @@ export default function CreateRoomPage() {
       prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k]
     );
   };
-
   const selectAll = () => setSelectedThemes(THEME_OPTIONS.map(t => t.key));
   const selectNone = () => setSelectedThemes([]);
 
@@ -64,12 +64,11 @@ export default function CreateRoomPage() {
     setLoading(true);
     setErr(null);
     try {
-      // Les thèmes bannis = ceux qui NE sont PAS sélectionnés
       const bannedThemes = THEME_OPTIONS
         .filter(t => !selectedThemes.includes(t.key))
         .map(t => t.key);
 
-      const payload = { difficulty, bannedThemes };
+      const payload = { difficulty, questionCount, roundSeconds, bannedThemes };
       const data = await fetchJSON("/rooms", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -85,13 +84,13 @@ export default function CreateRoomPage() {
   }
 
   return (
-    <div style={{ maxWidth: 640, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ maxWidth: 820, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
       <h1 style={{ marginTop: 0 }}>Créer une room</h1>
       <p style={{ opacity: 0.8, marginBottom: 16 }}>
-        Choisissez une difficulté et les thèmes autorisés, puis créez la room (vous en serez le propriétaire).
+        Choisissez la difficulté, le nombre de questions, la durée des questions et les thèmes autorisés, puis créez la room (vous en serez le propriétaire).
       </p>
 
-      {/* Difficulty slider */}
+      {/* Difficulté */}
       <div style={{ marginBottom: 24 }}>
         <label htmlFor="difficulty" style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
           Difficulté : <span style={{ fontVariantNumeric: "tabular-nums" }}>{difficulty}</span> / 10
@@ -105,10 +104,49 @@ export default function CreateRoomPage() {
           value={difficulty}
           onChange={(e) => setDifficulty(Number(e.target.value))}
           style={{ width: "100%" }}
-          aria-label="Sélectionner la difficulté entre 1 et 10"
         />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.7 }}>
           <span>1</span><span>5</span><span>10</span>
+        </div>
+      </div>
+
+      {/* Nombre de questions */}
+      <div style={{ marginBottom: 24 }}>
+        <label htmlFor="qcount" style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
+          Nombre de questions : <span style={{ fontVariantNumeric: "tabular-nums" }}>{questionCount}</span>
+        </label>
+        <input
+          id="qcount"
+          type="range"
+          min={10}
+          max={30}
+          step={1}
+          value={questionCount}
+          onChange={(e) => setQuestionCount(Number(e.target.value))}
+          style={{ width: "100%" }}
+        />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.7 }}>
+          <span>10</span><span>20</span><span>30</span>
+        </div>
+      </div>
+
+      {/* Durée d'une question */}
+      <div style={{ marginBottom: 24 }}>
+        <label htmlFor="roundsecs" style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
+          Durée d’une question : <span style={{ fontVariantNumeric: "tabular-nums" }}>{roundSeconds}</span>s
+        </label>
+        <input
+          id="roundsecs"
+          type="range"
+          min={10}
+          max={30}
+          step={1}
+          value={roundSeconds}
+          onChange={(e) => setRoundSeconds(Number(e.target.value))}
+          style={{ width: "100%" }}
+        />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.7 }}>
+          <span>10s</span><span>20s</span><span>30s</span>
         </div>
       </div>
 
@@ -126,7 +164,7 @@ export default function CreateRoomPage() {
           style={{
             marginTop: 10,
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
             gap: 8,
           }}
         >
@@ -141,7 +179,7 @@ export default function CreateRoomPage() {
                 title={active ? "Sélectionné (inclus)" : "Désélectionné (banni)"}
                 style={{
                   textAlign: "left",
-                  padding: "8px 10px",
+                  padding: "10px 12px",
                   borderRadius: 999,
                   border: active ? "1px solid #c7d2fe" : "1px solid #e5e7eb",
                   background: active ? "#eef2ff" : "#fff",

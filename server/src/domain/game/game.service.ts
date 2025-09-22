@@ -16,7 +16,9 @@ export async function startGameForRoom(clients: Map<string, Client>, gameStates:
     const pgs = await room_service.ensurePlayerGamesForRoom(clients, game.id, io, prisma, room.id);
 
     type Row = { id: string };
-    const QUESTION_COUNT = Number(process.env.QUESTION_COUNT || 10);
+    const QUESTION_COUNT = typeof room.questionCount === "number" && Number.isFinite(room.questionCount)
+      ? room.questionCount
+      : Number(process.env.QUESTION_COUNT || 10);
 
     // 1) Quotas par difficulté selon la room
     const probs = QUESTION_DISTRIBUTION[Math.max(1, Math.min(10, room.difficulty ?? 5))];
@@ -124,6 +126,7 @@ export async function startGameForRoom(clients: Map<string, Client>, gameStates:
         answeredThisRound: new Set(),
         pgIds: new Set(pgs.map((p: { id: string }) => p.id)),
         attemptsThisRound: new Map<string, number>(),
+        roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000)
     };
     gameStates.set(room.id, st);
 
@@ -163,7 +166,7 @@ async function startRound(clients: Map<string, Client>, gameStates: Map<string, 
     const q = st.questions[st.index];
     if (!q) return;
 
-    const ROUND_MS = Number(process.env.ROUND_MS || 10000);
+    const ROUND_MS = st.roundMs ?? Number(process.env.ROUND_MS || 10000);
     const TEXT_LIVES = Number(process.env.TEXT_LIVES || 3);
     
     st.answeredThisRound.clear();
