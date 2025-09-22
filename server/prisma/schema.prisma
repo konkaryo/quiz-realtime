@@ -7,6 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  MODERATOR
+  USER
+}
+
+enum RoomStatus {
+  OPEN
+  CLOSED
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -18,6 +29,7 @@ model User {
   sessions        Session[]
   player          Player?
   ownedRooms      Room[]    @relation("UserOwnedRooms")
+  role            Role      @default(USER)
 }
 
 model Session {
@@ -42,15 +54,18 @@ model Player {
 }
 
 model Room {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   ownerId     String?
-  owner       User?    @relation("UserOwnedRooms", fields: [ownerId], references: [id], onDelete: SetNull)
-  difficulty  Int      @default(5)
-  code        String   @unique
-  createdAt   DateTime @default(now())
+  owner       User?        @relation("UserOwnedRooms", fields: [ownerId], references: [id], onDelete: SetNull)
+  difficulty  Int          @default(5)
+  code        String       @unique
+  createdAt   DateTime     @default(now())
   games       Game[]
+  status      RoomStatus   @default(OPEN)
+  closedAt    DateTime?
 
   @@index([ownerId])
+  @@index([status, createdAt])
 }
 
 model Game {
