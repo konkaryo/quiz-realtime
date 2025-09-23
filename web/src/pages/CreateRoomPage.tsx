@@ -1,5 +1,5 @@
 // web/src/pages/CreateRoomPage.tsx
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
@@ -13,7 +13,13 @@ async function fetchJSON(path: string, init?: RequestInit) {
   const ct = res.headers.get("content-type") || "";
   const isJson = ct.includes("application/json");
   const data = isJson ? await res.json() : undefined;
-  if (!res.ok) throw new Error((data as any)?.error || (data as any)?.message || `HTTP ${res.status}`);
+  if (!res.ok) {
+    const msg = (data as any)?.error || (data as any)?.message || `HTTP ${res.status}`;
+    const err: any = new Error(msg);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
   return data;
 }
 
@@ -45,39 +51,110 @@ export default function CreateRoomPage() {
   const [err, setErr] = useState<string | null>(null);
 
   const [difficulty, setDifficulty] = useState<number>(5);
-  const [questionCount, setQuestionCount] = useState<number>(10); // 10–30
-  const [roundSeconds, setRoundSeconds] = useState<number>(10);   // 10–30
+  const [questionCount, setQuestionCount] = useState<number>(10);   // 10–30
+  const [questionDuration, setQuestionDuration] = useState<number>(20); // 10–30 (secondes)
 
   const [selectedThemes, setSelectedThemes] = useState<ThemeKey[]>(
-    THEME_OPTIONS.map(t => t.key) // tous sélectionnés par défaut
+    THEME_OPTIONS.map(t => t.key)
+  );
+  const bannedThemes = useMemo(
+    () => THEME_OPTIONS.filter(t => !selectedThemes.includes(t.key)).map(t => t.key),
+    [selectedThemes]
   );
 
+  // 🔑 Code généré… côté serveur
+  const [code, setCode] = useState<string>("");
+  const [codeMsg, setCodeMsg] = useState<string>("");
+
+  // Récupère un code serveur au chargement
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setCodeMsg("Génération du code…");
+      try {
+        const data = await fetchJSON("/rooms/new-code");
+        const c = (data as any)?.code as string | undefined;
+        if (mounted) {
+          setCode(c ?? "");
+          setCodeMsg(c ? "Code prêt" : "Échec de génération");
+        }
+      } catch (e: any) {
+        if (mounted) {
+          setCode("");
+          setCodeMsg("Échec de génération");
+        }
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   const toggleTheme = (k: ThemeKey) => {
-    setSelectedThemes(prev =>
-      prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k]
-    );
+    setSelectedThemes(prev => (prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k]));
   };
   const selectAll = () => setSelectedThemes(THEME_OPTIONS.map(t => t.key));
   const selectNone = () => setSelectedThemes([]);
 
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCodeMsg("Code copié !");
+      setTimeout(() => setCodeMsg("Code prêt"), 1000);
+    } catch {
+      setCodeMsg("Copie impossible");
+      setTimeout(() => setCodeMsg("Code prêt"), 1200);
+    }
+  }
+
+  async function refreshCodeFromServer() {
+    setCodeMsg("Génération du code…");
+    try {
+      const data = await fetchJSON("/rooms/new-code");
+      const c = (data as any)?.code as string | undefined;
+      setCode(c ?? "");
+      setCodeMsg(c ? "Code prêt" : "Échec de génération");
+    } catch {
+      setCode("");
+      setCodeMsg("Échec de génération");
+    }
+  }
+
   async function createRoom() {
+    if (!code) {
+      setErr("Code indisponible. Réessaie.");
+      return;
+    }
     setLoading(true);
     setErr(null);
     try {
-      const bannedThemes = THEME_OPTIONS
-        .filter(t => !selectedThemes.includes(t.key))
-        .map(t => t.key);
+      const payload = {
+        code,                              // ← code généré serveur (pré-affiché)
+        difficulty,
+        questionCount,
+        roundSeconds: questionDuration,    // le serveur convertit en ms
+        bannedThemes,
+      };
 
-      const payload = { difficulty, questionCount, roundSeconds, bannedThemes };
       const data = await fetchJSON("/rooms", {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      const id = data?.result?.id as string | undefined;
+
+      const id = (data as any)?.result?.id as string | undefined;
+      const finalCode = (data as any)?.result?.code as string | undefined;
       if (!id) throw new Error("Création: id manquant");
+
+      // sync d’affichage si jamais le serveur a dû régénérer
+      if (finalCode && finalCode !== code) setCode(finalCode);
+
       nav(`/room/${id}`);
     } catch (e: any) {
-      setErr(e?.message || "Impossible de créer la room");
+      // Si collision improbable (course), on reprend un code serveur
+      if (e?.status === 409) {
+        setErr("Le code vient d’être pris. Nouveau code généré.");
+        await refreshCodeFromServer();
+      } else {
+        setErr(e?.message || "Impossible de créer la room");
+      }
     } finally {
       setLoading(false);
     }
@@ -87,8 +164,88 @@ export default function CreateRoomPage() {
     <div style={{ maxWidth: 820, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
       <h1 style={{ marginTop: 0 }}>Créer une room</h1>
       <p style={{ opacity: 0.8, marginBottom: 16 }}>
-        Choisissez la difficulté, le nombre de questions, la durée des questions et les thèmes autorisés, puis créez la room (vous en serez le propriétaire).
+        Choisissez la difficulté, le nombre et la durée des questions, les thèmes autorisés, puis créez la room (vous en serez le propriétaire).
       </p>
+
+      {/* --- Code du salon (provenant du serveur) --- */}
+      <div
+        style={{
+          padding: 14,
+          border: "1px solid #e5e7eb",
+          borderRadius: 12,
+          marginBottom: 20,
+          background: "#fff",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ fontWeight: 700 }}>Code du salon</div>
+          <div
+            style={{
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+              letterSpacing: 2,
+              fontSize: 18,
+              fontWeight: 800,
+              padding: "6px 10px",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              background: "#f8fafc",
+              minWidth: 72,
+              textAlign: "center",
+            }}
+            aria-label="Code d'accès de la room"
+          >
+            {code || "----"}
+          </div>
+
+          <button
+            type="button"
+            onClick={copyCode}
+            title="Copier le code"
+            disabled={!code}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 10px",
+              borderRadius: 10,
+              border: "1px solid #e5e7eb",
+              background: "#fff",
+              cursor: code ? "pointer" : "not-allowed",
+              fontWeight: 600,
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <rect x="9" y="9" width="12" height="12" rx="2" stroke="#334155" strokeWidth="1.8" />
+              <rect x="3" y="3" width="12" height="12" rx="2" stroke="#94a3b8" strokeWidth="1.2" />
+            </svg>
+            Copier
+          </button>
+
+          <button
+            type="button"
+            onClick={refreshCodeFromServer}
+            title="Générer un autre code"
+            style={{
+              padding: "6px 10px",
+              borderRadius: 8,
+              border: "1px solid #e5e7eb",
+              background: "#fff",
+              cursor: "pointer",
+              fontSize: 12,
+            }}
+          >
+            Régénérer
+          </button>
+
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>
+            {codeMsg}
+          </span>
+        </div>
+      </div>
 
       {/* Difficulté */}
       <div style={{ marginBottom: 24 }}>
@@ -130,19 +287,19 @@ export default function CreateRoomPage() {
         </div>
       </div>
 
-      {/* Durée d'une question */}
+      {/* Durée des questions */}
       <div style={{ marginBottom: 24 }}>
-        <label htmlFor="roundsecs" style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
-          Durée d’une question : <span style={{ fontVariantNumeric: "tabular-nums" }}>{roundSeconds}</span>s
+        <label htmlFor="qdur" style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
+          Durée par question : <span style={{ fontVariantNumeric: "tabular-nums" }}>{questionDuration}</span> s
         </label>
         <input
-          id="roundsecs"
+          id="qdur"
           type="range"
           min={10}
           max={30}
           step={1}
-          value={roundSeconds}
-          onChange={(e) => setRoundSeconds(Number(e.target.value))}
+          value={questionDuration}
+          onChange={(e) => setQuestionDuration(Number(e.target.value))}
           style={{ width: "100%" }}
         />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.7 }}>
@@ -200,12 +357,12 @@ export default function CreateRoomPage() {
 
       <button
         onClick={createRoom}
-        disabled={loading}
+        disabled={loading || !code}
         style={{
           padding: "10px 14px",
           borderRadius: 12,
           border: "1px solid #e5e7eb",
-          background: "#111827",
+          background: loading ? "#6b7280" : "#111827",
           color: "#fff",
           fontWeight: 600,
           cursor: loading ? "not-allowed" : "pointer",

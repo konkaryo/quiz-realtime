@@ -13,7 +13,7 @@ import { getCookie } from "./infra/cookies";
 import type { Client, GameState } from "./types";
 import { authRoutes } from "./routes/auth";
 import { registerSocketHandlers } from "./sockets/handlers";
-import { clientsInRoom } from "./domain/room/room.service";
+import { clientsInRoom, isCodeValid, genCode } from "./domain/room/room.service";
 import { Theme } from "@prisma/client";
 
 /* ---------------- runtime maps ---------------- */
@@ -64,19 +64,24 @@ async function main() {
         difficulty:    z.number().int().min(1).max(10).optional(),
         bannedThemes:  z.array(z.nativeEnum(Theme)).optional(),
         questionCount: z.number().int().min(10).max(30).optional(),
-        roundSeconds:  z.number().int().min(10).max(30).optional()
+        roundSeconds:  z.number().int().min(10).max(30).optional(),
+        code:          z.string().trim().toUpperCase().optional()
       });
       const parsed = Body.safeParse(req.body);
       if (!parsed.success) { return reply.code(400).send({ error: parsed.error.message }); }
-      const { difficulty = 5, bannedThemes = [], questionCount = 10, roundSeconds = 10 } = parsed.data;
+      const { difficulty = 5, bannedThemes = [], questionCount = 10, roundSeconds = 10, code: requestedCodeRaw} = parsed.data;
 
       const roundMs = roundSeconds * 1000;
 
       // 2) Génération code room (4 chars non ambigus)
-      const code = [..."ABCDEFGHJKLMNPQRSTUVWXYZ23456789"]
+      /*const code = [..."ABCDEFGHJKLMNPQRSTUVWXYZ23456789"]
         .sort(() => 0.5 - Math.random())
         .slice(0, 4)
-        .join("");
+        .join(""); */
+
+      const requestedCode = (requestedCodeRaw || "").toUpperCase().trim();
+      const useRequested = requestedCode && isCodeValid(requestedCode);
+      let code = useRequested ? requestedCode : "AAAA";
 
       // 3) Création room + game (owner = session.userId)
       const result = await prisma.$transaction(async (tx) => {
@@ -113,6 +118,36 @@ async function main() {
     if (!room) return reply.code(404).send({ error: "Room not found" });
     if (room.status === "CLOSED") { return reply.code(410).send({ error: "Room closed" }); }
     return { room };
+  });
+
+  app.get("/rooms/new-code", async (_req, reply) => {
+    try {
+      // On tente quelques fois pour éviter un code déjà pris (unicité DB)
+      for (let i = 0; i < 8; i++) {
+        const code = genCode(4);
+        const existing = await prisma.room.findUnique({ where: { code, status: 'OPEN' }, select: { id: true } });
+        if (!existing) { return reply.send({ code }); }
+      }
+      return reply.code(503).send({ error: "no_code_available" });
+    } catch (e) { return reply.code(500).send({ error: "Server error" }); }
+  });
+
+  app.post("/rooms/resolve", async (req, reply) => {
+    try {
+      const Body = z.object({ code: z.string().trim().toUpperCase().length(4) });
+      const parsed = Body.safeParse(req.body);
+      if (!parsed.success) return reply.code(400).send({ error: "Bad code" });
+
+      const code = parsed.data.code;
+      if (!isCodeValid(code)) return reply.code(400).send({ error: "Bad code" });
+
+      const room = await prisma.room.findUnique({ where: { code }, select: { id: true, status: true, code: true } });
+
+      if (!room) return reply.code(404).send({ error: "Room not found" });
+      if (room.status === "CLOSED") return reply.code(410).send({ error: "Room closed" });
+
+      return reply.send({ roomId: room.id, room: { id: room.id } });
+    } catch (e) { return reply.code(500).send({ error: "Server error" }); }
   });
 
   app.get("/rooms", async (req, reply) => {
