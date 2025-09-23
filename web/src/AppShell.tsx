@@ -1,6 +1,7 @@
 // web/src/AppShell.tsx
 import { useEffect, useState, useRef } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
+import logoUrl from "@/assets/synapz.svg";
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
@@ -70,14 +71,14 @@ function UserMenuItem({
   danger?: boolean;
   divider?: boolean;
 }) {
-  const itemFont = 'Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+  const itemFont = "Segoe UI, Roboto, Helvetica, Arial, sans-serif";
 
   const base: React.CSSProperties = {
     display: "block",
     padding: "10px 12px",
     borderRadius: 10,
     textDecoration: "none",
-    fontFamily: itemFont, // 👈 police modifiée
+    fontFamily: itemFont,
     fontWeight: 600,
     fontSize: 14,
     color: danger ? "#ef4444" : "#e5e7eb",
@@ -104,8 +105,8 @@ function UserMenuItem({
           style={{
             display: "block",
             borderRadius: 10,
-            textDecoration: "none", // 👈 enlève le souligné
-            color: "inherit",        // 👈 pas de violet “visited”
+            textDecoration: "none",
+            color: "inherit",
           }}
         >
           {content}
@@ -172,18 +173,10 @@ export default function AppShell() {
     nav("/login", { replace: true });
   }
 
-  const linkStyle = ({ isActive }: { isActive: boolean }) => ({
-    padding: "8px 12px",
-    borderRadius: 8,
-    textDecoration: "none",
-    color: isActive ? "#0f172a" : "#cbd5e1",
-    background: isActive ? "rgba(255,255,255,.9)" : "transparent",
-    fontWeight: 700 as const,
-  });
-
-  // menus (inchangés)
+  // menus
   const soloItems: MenuItem[] = [
     { to: "/solo/campagne",         title: "Campagne",         desc: "Progressez chapitre après chapitre.", icon: "📖" },
+    { to: "/solo/daily",            title: "Défi du jour",     desc: "Un challenge unique chaque jour.",    icon: "📆" },
     { to: "/solo/quiz-thematiques", title: "Quiz thématiques", desc: "Choisissez un thème et enchaînez.",   icon: "🧠" },
   ];
   const multiItems: MenuItem[] = [
@@ -193,8 +186,8 @@ export default function AppShell() {
     { to: "/multi/event",  title: "Évènement",    desc: "Modes spéciaux et compétitions.",   icon: "🏆" },
   ];
   const privateItems: MenuItem[] = [
-    { to: "/private/create", title: "Créer un salon privé",    desc: "Créez un salon et invitez vos amis.", icon: "➕" },
-    { to: "/private/join",   title: "Rejoindre un salon privé", desc: "Entrez un code pour rejoindre.",      icon: "🔑" },
+    { to: "/rooms/new",    title: "Créer un salon privé",     desc: "Créez un salon et invitez vos amis.", icon: "➕" },
+    { to: "/private/join", title: "Rejoindre un salon privé", desc: "Entrez un code pour rejoindre.",      icon: "🔑" },
   ];
 
   const initials =
@@ -225,25 +218,19 @@ export default function AppShell() {
           color: "#e5e7eb",
         }}
       >
-        {/* Left: logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span
-            aria-hidden
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 8,
-              background: "linear-gradient(135deg,#4f46e5,#22d3ee)",
-              display: "inline-block",
-            }}
+        {/* Left: logo → renvoie à la home */}
+        <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <img
+            src={logoUrl}
+            alt="Synapz"
+            width={65}
+            height={65}
+            style={{ display: "block", cursor: "pointer" }}
           />
-          <div style={{ fontWeight: 800, fontSize: 18, color: "#fff" }}>Synapz</div>
-        </div>
+        </Link>
 
-        {/* Center: nav */}
+        {/* Center: nav (sans le bouton Accueil) */}
         <nav style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 16, position: "relative" }}>
-          <NavLink to="/" end style={linkStyle}>Accueil</NavLink>
-
           {/* SOLO */}
           <div onMouseEnter={() => setOpenMenu("solo")} onFocus={() => setOpenMenu("solo")} style={{ position: "relative" }}>
             <button
@@ -403,7 +390,7 @@ export default function AppShell() {
                 position: "absolute",
                 right: 0,
                 top: "calc(100% + 8px)",
-                width: "fit-content",   // 👈 largeur auto
+                width: "fit-content",
                 minWidth: 220,
                 maxWidth: 360,
                 borderRadius: 18,
