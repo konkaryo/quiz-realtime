@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
+import { initSfx, playCorrect } from "../sfx";
 
 const API_BASE   = import.meta.env.VITE_API_BASE    ?? (typeof window !== "undefined" ? window.location.origin : "");
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL  ?? (typeof window !== "undefined" ? window.location.origin : "");
@@ -101,6 +102,17 @@ export default function RoomPage() {
     return () => document.removeEventListener("click", handleClick);
   }, [phase]);
 
+  // ✅ Initialise le moteur audio après la 1re interaction utilisateur (autoplay policy)
+  useEffect(() => {
+    const once = () => { initSfx(); };
+    window.addEventListener("pointerdown", once, { once: true });
+    window.addEventListener("keydown", once, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", once);
+      window.removeEventListener("keydown", once);
+    };
+  }, []);
+
   useEffect(() => {
     if (!socket) return;
     const onEnergy = (p: { energy: number; multiplier: number }) => {
@@ -169,6 +181,11 @@ export default function RoomPage() {
       });
       if (p.correctChoiceId) setCorrectId(p.correctChoiceId);
       setPending(false);
+
+      // ▶️ joue le SFX si la réponse est correcte
+      if (p.correct) {
+        try { playCorrect(); } catch {}
+      }
 
       if (mcChoices === null) {
         if (p.correct) {
