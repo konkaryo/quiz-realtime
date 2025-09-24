@@ -14,7 +14,7 @@ import type { Client, GameState } from "./types";
 import { authRoutes } from "./routes/auth";
 import { registerSocketHandlers } from "./sockets/handlers";
 import { clientsInRoom, isCodeValid, genCode } from "./domain/room/room.service";
-import { Theme } from "@prisma/client";
+import { Theme, RoomVisibility } from "@prisma/client";
 
 /* ---------------- runtime maps ---------------- */
 const clients = new Map<string, Client>();
@@ -73,12 +73,6 @@ async function main() {
 
       const roundMs = roundSeconds * 1000;
 
-      // 2) Génération code room (4 chars non ambigus)
-      /*const code = [..."ABCDEFGHJKLMNPQRSTUVWXYZ23456789"]
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 4)
-        .join(""); */
-
       const requestedCode = (requestedCodeRaw || "").toUpperCase().trim();
       const useRequested = requestedCode && isCodeValid(requestedCode);
       let code = useRequested ? requestedCode : "AAAA";
@@ -92,7 +86,8 @@ async function main() {
             difficulty,
             bannedThemes,
             questionCount,
-            roundMs
+            roundMs,
+            visibility: 'PRIVATE'
           },
           select: { id: true },
         });
@@ -113,7 +108,7 @@ async function main() {
     const id = (req.params as any).id as string;
     const room = await prisma.room.findUnique({
       where: { id },
-      select: { id: true, code: true, status: true },
+      select: { id: true, code: true, status: true, visibility: true },
     });
     if (!room) return reply.code(404).send({ error: "Room not found" });
     if (room.status === "CLOSED") { return reply.code(410).send({ error: "Room closed" }); }
@@ -175,7 +170,7 @@ async function main() {
 
     // 2) Liste des rooms ouvertes
     const rows = await prisma.room.findMany({
-      where: { status: "OPEN" }, // si tu as ajouté le soft close
+      where: { status: "OPEN", visibility: "PUBLIC" },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

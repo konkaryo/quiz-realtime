@@ -256,8 +256,10 @@ export default function RoomPage() {
           return;
         }
         if (res.ok) {
-          const { room } = (await res.json()) as { room: { id: string; code: string } };
-          s.emit("join_game", { code: room.code });
+          const { room } = (await res.json()) as { room: { id: string; code: string | null; visibility: "PUBLIC" | "PRIVATE" } };
+
+          if (room.visibility === "PUBLIC" || !room.code) { s.emit("join_game", { roomId: room.id }); } 
+          else { s.emit("join_game", { code: room.code }); }
         } else if (res.status === 404) {
           setMsg("Room introuvable.");
           s.close();

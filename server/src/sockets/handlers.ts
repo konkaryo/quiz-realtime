@@ -20,16 +20,23 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     socket.emit("welcome", { id: socket.id });
 
     /* ---------------- join_game ---------------- */
-    socket.on("join_game", async (p: { code: string }) => {
+    socket.on("join_game", async (p: { code?: string; roomId?: string }) => {
       try {
-        const roomCode = (p?.code || "").trim().toUpperCase();
-        if (!roomCode) return socket.emit("error_msg", "Missing room code");
-
         const userId = socket.data.userId as string | undefined;
         if (!userId) return socket.emit("error_msg", "Not authenticated");
 
-        const room = await prisma.room.findUnique({ where: { code: roomCode } });
-        if (!room) return socket.emit("error_msg", "Room not found.");
+        let room = null;
+
+        if (p?.code) {
+            room = await prisma.room.findUnique({ where: { code: p.code } });
+            if (!room) return socket.emit("error_msg", "Room not found.");
+        }      
+        else if (p?.roomId) {
+            room = await prisma.room.findUnique({ where: { id: p.roomId } });
+            if (!room) return socket.emit("error_msg", "Room not found.");
+            if (room.visibility !== "PUBLIC") { return socket.emit("error_msg", "This room requires a code."); }
+        }
+        else { return socket.emit("error_msg", "Missing roomId or code."); }
 
         const game = await getOrCreateCurrentGame(prisma, room.id);
 
