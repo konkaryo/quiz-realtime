@@ -1,267 +1,130 @@
-// server/src/domain/bot/bot.service.ts
+// server/src/seed.ts  (extrait)
+import fs from "fs";
 import path from "path";
-import { PrismaClient } from "@prisma/client";
-import type { Server } from "socket.io";
-import type { Client, GameState } from "../../types";
-import { CFG } from "../../config";
-import * as lb_service from "../game/leaderboard.service";
-import { addEnergy, getEnergy, scoreMultiplier } from "../player/energy.service";
-import { logBot } from "../../utils/botLogger";
+import { parse } from "csv-parse";
+import { z } from "zod";
+import { PrismaClient, Theme } from "@prisma/client";
 
-const THEME_FALLBACK = "DIVERS" as const;
+const prisma = new PrismaClient();
 
-/* ------------------------------ Utils ----------------------------------- */
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+/* ----------------------- mapping entêtes -> enum Theme ----------------------- */
+const THEME_BY_HEADER: Record<string, Theme> = {
+  "Arts & Culture":       "ARTS_CULTURE",
+  "Cinéma & Séries":      "CINEMA_SERIES",
+  "Croyances":            "CROYANCES",
+  "Économie & Politique": "ECONOMIE_POLITIQUE",
+  "Gastronomie":          "GASTRONOMIE",
+  "Géographie":           "GEOGRAPHIE",
+  "Histoire":             "HISTOIRE",
+  "Jeux & BD":            "JEUX_BD",
+  "Littérature":          "LITTERATURE",
+  "Actualités & Médias":  "ACTUALITES_MEDIAS",
+  "Musique":              "MUSIQUE",
+  "Sciences de la vie":   "SCIENCES_VIE",
+  "Sciences exactes":     "SCIENCES_EXACTES",
+  "Sport":                "SPORT",
+  "Technologie":          "TECHNOLOGIE",
+  "Divers":               "DIVERS",
+};
 
-/** vitesse 0 -> ~80% du temps, vitesse 100 -> ~15% (±10%) */
-function delayFromSpeed(speed: number, roundMs: number): number {
-  const base = 0.15 + (1 - speed / 100) * 0.65;
-  const jitter = 0.9 + Math.random() * 0.2;
-  return Math.max(300, Math.floor(roundMs * base * jitter));
-}
+/* ----------------------------- CSV -> objets ----------------------------- */
+const CsvRow = z.object({
+  joueur:  z.string().min(1),            // nom du bot
+  vitesse: z.coerce.number().min(0).max(100),
+}).catchall(z.coerce.number().min(0).max(100).optional());
 
-/** Probabilité d’utiliser la réponse texte (le reste = QCM). */
-function botChooseMode(skill: number): "text" | "mc" {
-  const pText = 0.35 + (skill / 100) * 0.45; // 35%..80%
-  return Math.random() < pText ? "text" : "mc";
-}
+type ParsedBot = {
+  name: string;
+  speed: number;
+  skills: { theme: Theme; value: number }[];
+};
 
-/** Retrouve le Client factice d’un bot pour un PG donné. */
-function clientForPg(clients: Map<string, Client>, pgId: string): Client | undefined {
-  for (const c of clients.values()) if (c.playerGameId === pgId) return c;
-  return undefined;
-}
+async function parseBotsCsv(filePath: string): Promise<ParsedBot[]> {
+  if (!fs.existsSync(filePath)) return [];
+  const rows: any[] = [];
 
-/* --------- Attachement des bots pour les rooms publiques ---------------- */
-type WithId = { id: string };
+  await new Promise<void>((resolve, reject) => {
+    fs.createReadStream(filePath)
+      .pipe(parse({ columns: true, trim: true, bom: true }))
+      .on("data", (r) => rows.push(r))
+      .on("end", () => resolve())
+      .on("error", (e) => reject(e));
+  });
 
-export async function ensureBotsForRoomIfPublic(
-  prisma: PrismaClient,
-  io: Server,
-  clients: Map<string, Client>,
-  room: { id: string; visibility: "PUBLIC" | "PRIVATE"; roundMs?: number },
-  game: WithId,
-  botCount = Number(process.env.DEFAULT_BOT_COUNT || 3)
-) {
-  if (room.visibility !== "PUBLIC" || botCount <= 0) return [] as { id: string }[];
+  const bots: ParsedBot[] = [];
+  for (const [idx, raw] of rows.entries()) {
+    const out = CsvRow.safeParse(raw);
+    if (!out.success) {
+      const msg = out.error.issues.map(i => `${i.path.join(".")}: ${i.message}`).join("; ");
+      throw new Error(`bots.csv: ligne ${idx + 2} invalide: ${msg}`);
+    }
+    const r = out.data;
 
-  const bots = await prisma.$queryRaw<{ id: string }[]>`
-    SELECT "id" FROM "Bot" ORDER BY random() LIMIT ${botCount};
-  `;
-
-  const attached: { id: string }[] = [];
-
-  for (const b of bots) {
-    const bot = await prisma.bot.findUnique({
-      where: { id: b.id },
-      select: { id: true, name: true, playerId: true },
-    });
-    if (!bot) continue;
-
-    let playerId = bot.playerId;
-    if (!playerId) {
-      const player = await prisma.player.create({ data: { name: bot.name, isBot: true }, select: { id: true } });
-      await prisma.bot.update({ where: { id: bot.id }, data: { playerId: player.id } });
-      playerId = player.id;
+    // convertit les colonnes de thèmes
+    const skills: { theme: Theme; value: number }[] = [];
+    for (const [header, val] of Object.entries(raw)) {
+      if (header === "joueur" || header === "vitesse") continue;
+      const theme = THEME_BY_HEADER[header];
+      if (!theme) continue; // ignore colonnes inconnues
+      const value = Number(val);
+      if (Number.isFinite(value)) {
+        skills.push({ theme, value: Math.max(0, Math.min(100, Math.round(value))) });
+      }
     }
 
-    const pg = await prisma.playerGame.upsert({
-      where: { gameId_playerId: { gameId: game.id, playerId } },
-      update: {},
-      create: { gameId: game.id, playerId, score: 0 },
-      select: { id: true },
+    bots.push({
+      name: r.joueur.trim(),
+      speed: Math.round(r.vitesse),
+      skills,
     });
-
-    const fakeSocketId = `bot:${bot.id}:${game.id}`;
-    clients.set(fakeSocketId, {
-      socketId: fakeSocketId,
-      playerId,
-      playerGameId: pg.id,
-      gameId: game.id,
-      roomId: room.id,
-      name: bot.name,
-    });
-
-    attached.push({ id: pg.id });
   }
-
-  io.to(room.id).emit("lobby_update");
-  return attached;
+  return bots;
 }
 
-/* -------------------- Planifie les réponses des bots --------------------- */
-export async function scheduleBotAnswers(
-  prisma: PrismaClient,
-  io: Server,
-  clients: Map<string, Client>,
-  st: GameState
-) {
-  const q = st.questions[st.index];
-  if (!q) return;
+/* ----------------------------- Import principal ----------------------------- */
+export async function importBots(csvAbsPath = path.resolve(__dirname, "../import/bots.csv")) {
+  const bots = await parseBotsCsv(csvAbsPath);
+  if (bots.length === 0) {
+    console.log("[bots] Aucun bot à importer (fichier manquant ou vide).");
+    return { inserted: 0, updated: 0 };
+  }
 
-  const roundMs = (st.endsAt ?? 0) - (st.roundStartMs ?? Date.now());
-  if (roundMs <= 0) return;
+  let inserted = 0, updated = 0;
 
-  const correctChoice = q.choices.find((c) => c.isCorrect) || null;
-  const wrongChoices = q.choices.filter((c) => !c.isCorrect);
-
-  const pgs = await prisma.playerGame.findMany({
-    where: { id: { in: Array.from(st.pgIds) } },
-    select: {
-      id: true,
-      player: {
-        select: {
-          isBot: true,
-          name: true,
-          bot: { select: { speed: true, skills: { select: { theme: true, value: true } } } },
+  for (const b of bots) {
+    await prisma.$transaction(async (tx) => {
+      // 1) Upsert du BOT + création/maj du Player associé (isBot: true)
+      const bot = await tx.bot.upsert({
+        where: { name: b.name }, // ou autre clé unique si tu préfères
+        update: {
+          speed: b.speed,
+          player: { update: { name: b.name, isBot: true } },
         },
-      },
-    },
-  });
+        create: {
+          name:  b.name,
+          speed: b.speed,
+          player: { create: { name: b.name, isBot: true } }, // <-- crée le Player ici
+        },
+        select: { id: true },
+      });
 
-  for (const pg of pgs) {
-    if (!pg.player.isBot) continue;
-
-    const speed = pg.player.bot?.speed ?? 50;
-    const themeKey = (q.theme ?? THEME_FALLBACK) as any;
-    const skill =
-      pg.player.bot?.skills.find((s) => s.theme === themeKey)?.value ??
-      pg.player.bot?.skills.find((s) => s.theme === THEME_FALLBACK)?.value ??
-      30;
-
-    const baseProb = skill / 100;
-    const diff = Number(q.difficulty ?? 2);
-    const diffFactor = 1 - (Math.max(1, Math.min(diff, 4)) - 1) * 0.12;
-    const pCorrect = Math.min(0.95, Math.max(0.05, baseProb * diffFactor));
-
-    const mode: "text" | "mc" = botChooseMode(skill);
-    const delay = delayFromSpeed(speed, roundMs);
-
-    setTimeout(async () => {
-      try {
-        if (!st.endsAt || Date.now() > st.endsAt) return;
-        if (st.answeredThisRound.has(pg.id)) return;
-
-        const willBeCorrect = Math.random() < pCorrect;
-        const client = clientForPg(clients, pg.id);
-        if (!client) return;
-
-        const responseMs = Math.max(0, Date.now() - (st.roundStartMs ?? Date.now()));
-
-        if (mode === "mc") {
-          const choice = willBeCorrect && correctChoice ? correctChoice : pick(wrongChoices);
-          if (!choice) return;
-          st.answeredThisRound.add(pg.id);
-          await botApplyMcScoring(prisma, st, client, q.id, choice.label, !!choice.isCorrect, responseMs);
-        } else {
-          const rawText =
-            willBeCorrect && correctChoice
-              ? correctChoice.label
-              : wrongChoices.length
-              ? pick(wrongChoices).label
-              : "???";
-          st.answeredThisRound.add(pg.id);
-          await botApplyTextScoring(prisma, st, client, { id: q.id }, rawText, willBeCorrect, responseMs);
-        }
-
-        const lb = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
-        io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb });
-        io.to(st.roomId).emit("answer_received");
-      } catch (err) {
-        console.error("[bot answer]", err);
+      // 2) Upsert des skills (1 par thème)
+      for (const s of b.skills) {
+        await tx.botSkill.upsert({
+          where: { botId_theme: { botId: bot.id, theme: s.theme } },
+          update: { value: s.value },
+          create: { botId: bot.id, theme: s.theme, value: s.value },
+        });
       }
-    }, delay);
+
+      // comptage insert/update grossier
+      // (si tu veux être exact, fais un select avant/upsert)
+      inserted += 1;
+    });
   }
+
+  console.log(`[bots] Import OK — ${inserted} bots traités.`);
+  return { inserted, updated };
 }
 
-/* ---------------------- Scoring aligné + LOG fichier -------------------- */
-async function botApplyMcScoring(
-  prisma: PrismaClient,
-  _st: GameState,
-  client: Client,
-  questionId: string,
-  label: string,
-  correct: boolean,
-  responseMs: number
-) {
-  const before = await getEnergy(prisma, client);
-  if (!before.ok) return;
-
-  const gain = CFG.AUTO_ENERGY_GAIN + (correct ? CFG.MC_ANSWER_ENERGY_GAIN : 0);
-  const res = await addEnergy(prisma, client, gain);
-  if (!res.ok) return;
-
-  let newScore = 0;
-  const delta = correct ? CFG.MC_ANSWER_POINTS_GAIN : 0;
-
-  await prisma.$transaction(async (tx) => {
-    await tx.answer.create({
-      data: { playerGameId: client.playerGameId, questionId, text: label, correct, responseMs },
-    });
-    const updated = await tx.playerGame.update({
-      where: { id: client.playerGameId },
-      data: { energy: res.energy!, ...(correct ? { score: { increment: delta } } : {}) },
-      select: { score: true },
-    });
-    newScore = updated.score;
-  });
-
-  logBot([
-    new Date().toISOString(),
-    client.name || "BOT",
-    "mc",
-    correct ? 1 : 0,
-    `q=${questionId}`,
-    `E=${before.energy!}->${res.energy!}`,
-    `dS=${delta}`,
-    `S=${newScore}`,
-    `${responseMs}ms`,
-  ].join("\t"));
-}
-
-async function botApplyTextScoring(
-  prisma: PrismaClient,
-  _st: GameState,
-  client: Client,
-  q: { id: string },
-  rawText: string,
-  correct: boolean,
-  responseMs: number
-) {
-  const before = await getEnergy(prisma, client);
-  if (!before.ok) return;
-
-  const gain = CFG.AUTO_ENERGY_GAIN + (correct ? CFG.TXT_ANSWER_ENERGY_GAIN : 0);
-  const res = await addEnergy(prisma, client, gain);
-  if (!res.ok) return;
-
-  const mult = scoreMultiplier(before.energy!);
-  const delta = correct ? mult * CFG.TXT_ANSWER_POINTS_GAIN : 0;
-
-  let newScore = 0;
-  await prisma.$transaction(async (tx) => {
-    await tx.answer.create({
-      data: { playerGameId: client.playerGameId, questionId: q.id, text: rawText, correct, responseMs },
-    });
-    const updated = await tx.playerGame.update({
-      where: { id: client.playerGameId },
-      data: { energy: res.energy!, ...(correct ? { score: { increment: delta } } : {}) },
-      select: { score: true },
-    });
-    newScore = updated.score;
-  });
-
-  logBot([
-    new Date().toISOString(),
-    client.name || "BOT",
-    "text",
-    correct ? 1 : 0,
-    `q=${q.id}`,
-    `E=${before.energy!}->${res.energy!}`,
-    `dS=${delta}`,
-    `S=${newScore}`,
-    `${responseMs}ms`,
-  ].join("\t"));
-}
+export default importBots;
