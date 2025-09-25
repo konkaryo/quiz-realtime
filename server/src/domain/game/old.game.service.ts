@@ -169,12 +169,24 @@ export async function stopGameForRoom(clients: Map<string, Client>, gameStates: 
 /* ---------------------------------------------------------------------------------------- */
 
 /* ---------------------------------------------------------------------------------------- */
-async function startRound(clients: Map<string, Client>, gameStates: Map<string, GameState>, io: Server, prisma: PrismaClient, st: GameState) {
+async function startRound(
+  clients: Map<string, Client>,
+  gameStates: Map<string, GameState>,
+  io: Server,
+  prisma: PrismaClient,
+  st: GameState
+) {
   const q = st.questions[st.index];
   if (!q) return;
 
   const ROUND_MS   = st.roundMs ?? Number(process.env.ROUND_MS || 10000);
   const TEXT_LIVES = Number(process.env.TEXT_LIVES || 3);
+
+  // Points/énergie — on lit l'env pour éviter un import supplémentaire.
+  const ENERGY_MAX                = Number(process.env.ENERGY_MAX || 100);
+  const AUTO_ENERGY_GAIN          = Number(process.env.AUTO_ENERGY_GAIN || 0);
+  const TXT_ANSWER_ENERGY_GAIN    = Number(process.env.TXT_ANSWER_ENERGY_GAIN || 0);
+  const TXT_ANSWER_POINTS_GAIN    = Number(process.env.TXT_ANSWER_POINTS_GAIN || 10);
 
   st.answeredThisRound.clear();
   st.attemptsThisRound = new Map();
@@ -205,22 +217,8 @@ async function startRound(clients: Map<string, Client>, gameStates: Map<string, 
     textLives: TEXT_LIVES,
   });
 
-  if ((st as any)._botsPlannedIndex !== st.index) {
-    // @ts-ignore
-    (st as any)._botsPlannedIndex = st.index;
-    try {
-      await scheduleBotAnswers(prisma, io, clients, st);
-    } catch (e) {
-      console.error("[bot schedule] error:", e);
-    }
-  } else {
-    // Optionnel : log si on détecte un deuxième appel
-    console.warn("[bot schedule] skipped (already planned)", {
-      roomId: st.roomId,
-      gameId: st.gameId,
-      index: st.index,
-    });
-  }
+  try { scheduleBotAnswers(prisma, io, clients, st); } 
+  catch (e) { console.error("[bot schedule] error:", e); }
 
   lb_service
     .buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds))
@@ -228,6 +226,133 @@ async function startRound(clients: Map<string, Client>, gameStates: Map<string, 
       io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb })
     )
     .catch((err) => console.error("[leaderboard startRound]", err));
+
+  // ------------------ LOGIQUE BOTS ------------------
+  // On récupère les PlayerGame des bots présents dans la partie courante.
+  // Hypothèses de schéma :
+  // - Player { isBot: boolean, bot?: Bot }
+  // - Bot contient speed (0..100) et un objet/JSON skills par thème (0..100)
+  //   (adaptation facile si les skills sont en colonnes).
+  try {
+    const botPgs = await prisma.playerGame.findMany({
+      where: {
+        id: { in: Array.from(st.pgIds) },
+        gameId: st.gameId,
+        player: { isBot: true },
+      },
+      select: {
+        id: true,
+        playerId: true,
+        player: {
+          select: {
+            name: true,
+            bot: true, // on récupère speed + skills (quel que soit le format exact)
+          },
+        },
+      },
+    });
+
+    // Normalisation thème & difficulté
+    const themeKey: string = (q.theme ?? "DIVERS")
+      .toString()
+      .toUpperCase()
+      .replace(/\s+/g, "_")
+      .replace(/[&]/g, "_");
+    const diffStr = (q.difficulty ?? "2").toString();
+    const diffMult =
+      diffStr === "1" ? 1 : diffStr === "2" ? 0.85 : diffStr === "3" ? 0.65 : 0.5;
+
+    // Fonctions utilitaires
+    const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+    const map = (x: number, inMin: number, inMax: number, outMin: number, outMax: number) =>
+      outMin + ((x - inMin) * (outMax - outMin)) / (inMax - inMin);
+
+    // Pour chaque bot, on planifie une réponse « texte » simple (1 tentative)
+    for (const bp of botPgs) {
+      const speed = clamp(Number((bp.player as any)?.bot?.speed ?? 50), 0, 100);
+
+      // Accès générique aux skills par thème (JSON/record)
+      const skillsObj = (bp.player as any)?.bot?.skills ?? {};
+      const baseSkill = clamp(Number(skillsObj[themeKey] ?? skillsObj["DIVERS"] ?? 50), 0, 100);
+
+      // Probabilité d'être correct selon skill & difficulté (simple mais efficace)
+      const probCorrect = clamp((baseSkill / 100) * diffMult, 0.02, 0.98);
+
+      // Délai de réponse selon la vitesse (plus la vitesse est grande, plus c'est tôt)
+      // 0 -> ~4500ms, 100 -> ~800ms (avec un léger jitter)
+      const maxDelay = Math.max(250, ROUND_MS - 250);
+      let delay = Math.round(map(speed, 0, 100, 4500, 800) + (Math.random() * 600 - 300));
+      delay = clamp(delay, 250, maxDelay);
+
+      setTimeout(async () => {
+        try {
+          // Si la manche est déjà finie, on annule
+          if (!st.endsAt || Date.now() > st.endsAt) return;
+
+          const correct = Math.random() < probCorrect;
+
+          // Texte simulé (juste pour la trace) :
+          const correctLabel =
+            q.choices.find((c) => c.isCorrect)?.label ?? "";
+          const fakeText = correct ? correctLabel : "…";
+
+          // Énergie actuelle
+          const pg = await prisma.playerGame.findUnique({
+            where: { id: bp.id },
+            select: { energy: true },
+          });
+          const currentEnergy = pg?.energy ?? 0;
+
+          // Calcul énergie et score
+          const gain = AUTO_ENERGY_GAIN + (correct ? TXT_ANSWER_ENERGY_GAIN : 0);
+          const newEnergy = clamp(currentEnergy + gain, 0, ENERGY_MAX);
+
+          let scoreInc = 0;
+          if (correct) {
+            const mult = energy_service.scoreMultiplier(currentEnergy);
+            scoreInc = mult * TXT_ANSWER_POINTS_GAIN;
+          }
+
+          // Enregistre la réponse + maj énergie/score
+          await prisma.$transaction(async (tx) => {
+            await tx.answer.create({
+              data: {
+                playerGameId: bp.id,
+                questionId: q.id,
+                text: fakeText,
+                correct,
+                responseMs: delay,
+              },
+            });
+            await tx.playerGame.update({
+              where: { id: bp.id },
+              data: {
+                energy: newEnergy,
+                ...(scoreInc > 0 ? { score: { increment: scoreInc } } : {}),
+              },
+            });
+          });
+
+          // Mémorise côté runtime (évite que ce bot réponde encore)
+          st.answeredThisRound.add(bp.id);
+
+          // Notifie le front
+          const lb = await lb_service.buildLeaderboard(
+            prisma,
+            st.gameId,
+            Array.from(st.pgIds)
+          );
+          io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb });
+          io.to(st.roomId).emit("answer_received");
+        } catch (err) {
+          console.error("[bot answer error]", err);
+        }
+      }, delay);
+    }
+  } catch (err) {
+    console.error("[bots scheduling error]", err);
+  }
+  // ---------------- FIN LOGIQUE BOTS ----------------
 
   st.timer = setTimeout(() => {
     endRound(clients, gameStates, io, prisma, st).catch((err) => {

@@ -70,12 +70,34 @@ model Session {
 
 model Player {
   id          String       @id @default(cuid())
-  userId      String       @unique
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?      @unique
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   name        String
+  isBot       Boolean      @default(false)
+  bot         Bot?
   createdAt   DateTime     @default(now())
   playerGames PlayerGame[]
 }
+
+model Bot {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  speed     Int
+  skills    BotSkill[]
+  playerId  String?     @unique
+  player    Player?     @relation(fields: [playerId], references: [id])
+  createdAt DateTime    @default(now())
+}
+
+model BotSkill {
+  botId  String
+  theme  Theme
+  value  Int
+  bot    Bot    @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@id([botId, theme])
+}
+
 
 model Room {
   id            String         @id @default(cuid())
