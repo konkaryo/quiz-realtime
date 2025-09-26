@@ -81,7 +81,8 @@ export default function Home() {
       <div
         aria-hidden
         className="
-          fixed inset-0 z-0 pointer-events-none opacity-35 mix-blend-soft-light
+          fixed inset-0 z-0 pointer-events-none
+          mix-blend-soft-light opacity-[0.35]
           bg-[radial-gradient(circle,_rgba(255,255,255,0.16)_0.5px,_transparent_0.5px)]
           bg-[length:4px_4px]
           [mask-image:linear-gradient(to_bottom,rgba(0,0,0,.8),rgba(0,0,0,.5)_60%,transparent_100%)]
@@ -101,7 +102,7 @@ export default function Home() {
           color: "#fff",
         }}
       >
-        {/* Titre + bouton refresh à gauche (zone fixe 32px => le texte ne bouge jamais) */}
+        {/* Titre + bouton refresh à gauche (texte “Rooms” ne bouge pas) */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ width: 32, height: 32, display: "inline-flex" }}>
             <button
@@ -125,7 +126,6 @@ export default function Home() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                {/* Icône refresh minimaliste */}
                 <path d="M4 4v6h6" />
                 <path d="M20 20v-6h-6" />
                 <path d="M5.5 18.5a8 8 0 1 0 .5-13" />
@@ -133,7 +133,9 @@ export default function Home() {
             </button>
           </span>
 
-          <h1 className="font-brand" style={{ margin: 0, lineHeight: 1 }}>LISTE DES SALONS PUBLICS</h1>
+          <h1 className="font-brand" style={{ margin: 0, lineHeight: 1 }}>
+            LISTE DES SALONS PUBLICS
+          </h1>
         </div>
 
         {loading && <div style={{ marginTop: 16 }}>Chargement…</div>}
@@ -208,28 +210,39 @@ export default function Home() {
             );
           })}
 
-          {/* Bouton pour créer une nouvelle room */}
+          {/* CTA — pointillés plus fins, texte blanc, fond transparent */}
           <li>
             <button
               onClick={() => nav("/rooms/new")}
+              title=""
+              aria-label=""
               style={{
                 width: "100%",
                 padding: 20,
                 borderRadius: 12,
-                border: "2px dashed #d1d5db",
-                background: "#f9fafb",
+                border: "1px dashed #d1d5db",   // ✅ plus fin (1px)
+                background: "transparent",       // ✅ fond transparent
+                color: "#ffffff",                // ✅ texte en blanc
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 10,
                 fontWeight: 700,
                 cursor: "pointer",
-                color: "#111827",
+                transition: "transform .12s ease, box-shadow .12s ease",
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.04)",
               }}
-              title="Créer une nouvelle room"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(0px)";
+                e.currentTarget.style.boxShadow = "0 10px 24px rgba(0,0,0,.25), inset 0 0 0 1px rgba(255,255,255,0.10)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "inset 0 0 0 1px rgba(255,255,255,0.04)";
+              }}
             >
               <span style={{ fontSize: 18, lineHeight: 1 }}>＋</span>
-              <span>Nouvelle room</span>
+              <span>Créer un salon privé</span>
             </button>
           </li>
         </ul>
