@@ -8,11 +8,15 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import AppShell from "./AppShell";         // ⬅️ layout persistant
+import AppShell from "./AppShell";
 import Home from "./pages/Home";
 import RoomPage from "./pages/RoomPage";
 import CreateRoomPage from "./pages/CreateRoomPage";
-import JoinPrivateRoomPage from "./pages/JoinPrivateRoomPage"; // ⬅️ NOUVELLE PAGE
+import JoinPrivateRoomPage from "./pages/JoinPrivateRoomPage";
+
+// ✅ nouvelle page
+import CampaignPage from "./pages/CampaignPage";
+import "./index.css";
 
 // pages publiques
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
@@ -62,19 +66,20 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 }
 // ---------------------------------------------------------------------------
 
-// Router avec layout persistant pour les routes protégées
 const router = createBrowserRouter([
   // Route publique (hors AppShell)
   {
     path: "/login",
     element: (
-      <React.Suspense fallback={<div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>}>
+      <React.Suspense
+        fallback={<div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>}
+      >
         <LoginPage />
       </React.Suspense>
     ),
   },
 
-  // Regroupe toutes les routes protégées sous AppShell
+  // Routes protégées sous AppShell
   {
     element: (
       <RequireAuth>
@@ -83,8 +88,14 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: "/", element: <Home /> },
+
+      // ✅ Campagne (menu Solo)
+      { path: "/solo/campagne", element: <CampaignPage /> },
+      // Optionnel : même page pour un niveau précis pour l’instant
+      { path: "/solo/campagne/level/:levelId", element: <CampaignPage /> },
+
       { path: "/rooms/new", element: <CreateRoomPage /> },
-      { path: "/private/join", element: <JoinPrivateRoomPage /> }, // ⬅️ NOUVELLE ROUTE
+      { path: "/private/join", element: <JoinPrivateRoomPage /> },
       { path: "/room/:roomId", element: <RoomPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],

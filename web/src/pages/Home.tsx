@@ -11,17 +11,15 @@ type RoomListItem = {
   playerCount?: number;
   difficulty?: number;
   owner?: OwnerLite | null;
-  canClose?: boolean; // 👈 NOUVEAU: fourni par l'API
+  canClose?: boolean;
 };
 type RoomDetail = { id: string; code?: string | null };
-type Me = { id: string; displayName: string; role?: "USER" | "ADMIN" };
 
 export default function Home() {
   const nav = useNavigate();
   const [rooms, setRooms] = useState<RoomListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [me, setMe] = useState<Me | null>(null);
 
   async function fetchJSON(path: string, init?: RequestInit) {
     const res = await fetch(`${API_BASE}${path}`, { credentials: "include", ...init });
@@ -30,15 +28,6 @@ export default function Home() {
     const data = isJson ? await res.json() : undefined;
     if (!res.ok) throw new Error((data as any)?.error || (data as any)?.message || `HTTP ${res.status}`);
     return data;
-  }
-
-  async function loadMe() {
-    try {
-      const data = (await fetchJSON("/auth/me")) as { user: Me | null };
-      setMe(data?.user ?? null);
-    } catch {
-      setMe(null);
-    }
   }
 
   async function loadRooms() {
@@ -55,7 +44,6 @@ export default function Home() {
   }
 
   useEffect(() => {
-    loadMe();      // pas strictement nécessaire si /rooms renvoie canClose, mais utile pour fallback
     loadRooms();
   }, []);
 
@@ -79,87 +67,87 @@ export default function Home() {
     }
   }
 
-  async function deleteRoom(roomId: string) {
-    const r = rooms.find((x) => x.id === roomId);
-    const label = r ? `#${r.id.slice(0, 6)}` : roomId.slice(0, 6);
-    if (!confirm(`Fermer la room ${label} ?`)) return;
-    try {
-      await fetchJSON(`/rooms/${roomId}`, { method: "DELETE" });
-      setRooms((prev) => prev.filter((x) => x.id !== roomId));
-    } catch (e: any) {
-      alert(e?.message || "Suppression impossible");
-    }
-  }
-
-  // Fallback local si l'API ne renvoie pas canClose
-  function localCanDelete(r: RoomListItem) {
-    if (!me) return false;
-    const isOwner = r.owner?.id === me.id;
-    const isAdmin = me.role === "ADMIN";
-    return isOwner || isAdmin;
-  }
-
   return (
-    <div style={{ maxWidth: 820, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <h1 style={{ margin: 0 }}>Rooms</h1>
-        <button onClick={loadRooms} disabled={loading} style={{ padding: "6px 10px" }}>
-          Rafraîchir
-        </button>
-      </div>
+    <div className="relative">
+      {/* ====== Dégradé (même que Campagne) ====== */}
+      <div
+        aria-hidden
+        className="
+          fixed inset-0 z-0
+          bg-[linear-gradient(to_bottom,_#4A1557_0%,_#2E0F40_33%,_#1A0A2B_66%,_#0A0616_100%)]
+        "
+      />
+      {/* ====== Grain anti-banding ====== */}
+      <div
+        aria-hidden
+        className="
+          fixed inset-0 z-0 pointer-events-none opacity-35 mix-blend-soft-light
+          bg-[radial-gradient(circle,_rgba(255,255,255,0.16)_0.5px,_transparent_0.5px)]
+          bg-[length:4px_4px]
+          [mask-image:linear-gradient(to_bottom,rgba(0,0,0,.8),rgba(0,0,0,.5)_60%,transparent_100%)]
+          [-webkit-mask-image:linear-gradient(to_bottom,rgba(0,0,0,.8),rgba(0,0,0,.5)_60%,transparent_100%)]
+        "
+      />
 
-      {loading && <div style={{ marginTop: 16 }}>Chargement…</div>}
-      {err && <div style={{ marginTop: 16, color: "#b00" }}>{err}</div>}
-      {!loading && !err && rooms.length === 0 && <div style={{ marginTop: 16 }}>Aucune room.</div>}
-
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12, marginTop: 16 }}>
-        {rooms.map((r) => {
-          const ownerName = r.owner?.displayName || "—";
-          const diff = typeof r.difficulty === "number" ? r.difficulty : undefined;
-          const pc = typeof r.playerCount === "number" ? r.playerCount : undefined;
-          const deletable = r.canClose === true || localCanDelete(r);
-
-          return (
-            <li key={r.id}>
-              {/* Ligne: colonne gauche (croix) + colonne droite (carte) */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "40px 1fr",
-                  alignItems: "stretch",
-                  gap: 12,
-                }}
+      {/* ====== Contenu ====== */}
+      <div
+        style={{
+          maxWidth: 820,
+          margin: "40px auto",
+          padding: 16,
+          fontFamily: "system-ui, sans-serif",
+          position: "relative",
+          zIndex: 1,
+          color: "#fff",
+        }}
+      >
+        {/* Titre + bouton refresh à gauche (zone fixe 32px => le texte ne bouge jamais) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ width: 32, height: 32, display: "inline-flex" }}>
+            <button
+              onClick={loadRooms}
+              disabled={loading}
+              aria-label="Rafraîchir"
+              title="Rafraîchir"
+              className={`w-8 h-8 rounded-md border border-white/40 text-white flex items-center justify-center bg-transparent ${
+                loading ? "cursor-not-allowed" : "cursor-pointer"
+              }`}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                className={loading ? "animate-spin" : ""}
+                style={{ display: "block" }}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                {/* Colonne gauche : croix (ou placeholder pour alignement) */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {deletable ? (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteRoom(r.id);
-                      }}
-                      title="Fermer la room"
-                      aria-label="Fermer la room"
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 8,
-                        border: "1px solid #e5e7eb",
-                        background: "#fef2f2",
-                        color: "#991b1b",
-                        fontWeight: 700,
-                        lineHeight: "26px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      ×
-                    </button>
-                  ) : (
-                    <div style={{ width: 28, height: 28 }} />
-                  )}
-                </div>
+                {/* Icône refresh minimaliste */}
+                <path d="M4 4v6h6" />
+                <path d="M20 20v-6h-6" />
+                <path d="M5.5 18.5a8 8 0 1 0 .5-13" />
+              </svg>
+            </button>
+          </span>
 
-                {/* Colonne droite : carte cliquable */}
+          <h1 className="font-brand" style={{ margin: 0, lineHeight: 1 }}>LISTE DES SALONS PUBLICS</h1>
+        </div>
+
+        {loading && <div style={{ marginTop: 16 }}>Chargement…</div>}
+        {err && <div style={{ marginTop: 16, color: "#fca5a5" }}>{err}</div>}
+        {!loading && !err && rooms.length === 0 && <div style={{ marginTop: 16 }}>Aucune room.</div>}
+
+        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12, marginTop: 16 }}>
+          {rooms.map((r) => {
+            const ownerName = r.owner?.displayName || "—";
+            const diff = typeof r.difficulty === "number" ? r.difficulty : undefined;
+            const pc = typeof r.playerCount === "number" ? r.playerCount : undefined;
+
+            return (
+              <li key={r.id}>
                 <button
                   onClick={() => openRoom(r.id)}
                   style={{
@@ -174,11 +162,18 @@ export default function Home() {
                     justifyContent: "space-between",
                     gap: 14,
                     cursor: "pointer",
+                    color: "#111827",
                   }}
                 >
-                  {/* Bloc gauche : titre + métas */}
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        marginBottom: 4,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
                       Room #{r.id.slice(0, 6)}
                     </div>
                     <div style={{ display: "flex", gap: 12, fontSize: 12, opacity: 0.75 }}>
@@ -194,7 +189,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Badge droite */}
                   <div
                     title="Joueurs connectés"
                     style={{
@@ -210,35 +204,36 @@ export default function Home() {
                     {pc !== undefined ? `${pc} joueur${pc > 1 ? "s" : ""}` : "—"}
                   </div>
                 </button>
-              </div>
-            </li>
-          );
-        })}
+              </li>
+            );
+          })}
 
-        {/* Bouton pour créer une nouvelle room */}
-        <li>
-          <button
-            onClick={() => nav("/rooms/new")}
-            style={{
-              width: "100%",
-              padding: 20,
-              borderRadius: 12,
-              border: "2px dashed #d1d5db",
-              background: "#f9fafb",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-            title="Créer une nouvelle room"
-          >
-            <span style={{ fontSize: 18, lineHeight: 1 }}>＋</span>
-            <span>Nouvelle room</span>
-          </button>
-        </li>
-      </ul>
+          {/* Bouton pour créer une nouvelle room */}
+          <li>
+            <button
+              onClick={() => nav("/rooms/new")}
+              style={{
+                width: "100%",
+                padding: 20,
+                borderRadius: 12,
+                border: "2px dashed #d1d5db",
+                background: "#f9fafb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                fontWeight: 700,
+                cursor: "pointer",
+                color: "#111827",
+              }}
+              title="Créer une nouvelle room"
+            >
+              <span style={{ fontSize: 18, lineHeight: 1 }}>＋</span>
+              <span>Nouvelle room</span>
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }
