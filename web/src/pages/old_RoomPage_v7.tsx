@@ -6,6 +6,7 @@ import { initSfx, playCorrect } from "../sfx";
 
 const API_BASE   = import.meta.env.VITE_API_BASE    ?? (typeof window !== "undefined" ? window.location.origin : "");
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL  ?? (typeof window !== "undefined" ? window.location.origin : "");
+const MC_COST    = Number(import.meta.env.VITE_MC_COST ?? 5);
 const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
 
 type ChoiceLite   = { id: string; label: string };
@@ -48,22 +49,16 @@ function TimerBadge({ seconds }: { seconds: number | null }) {
 
 type ThemeMeta = { label: string; color: string };
 const THEMES: Record<string, ThemeMeta> = {
-  CINEMA_SERIES:       { label: "Cinéma & Séries",        color: "#14B8A6" }, // teal-500
-  ARTS_CULTURE:        { label: "Arts & Culture",         color: "#F59E0B" }, // amber-500
-  JEUX_BD:             { label: "Jeux & BD",              color: "#EAB308" }, // yellow-500
-  GEOGRAPHIE:          { label: "Géographie",             color: "#22D3EE" }, // cyan-400
-  LITTERATURE:         { label: "Littérature",            color: "#D946EF" }, // fuchsia-500
-  ECONOMIE_POLITIQUE:  { label: "Économie & Politique",   color: "#3B82F6" }, // bleu-500
-  GASTRONOMIE:         { label: "Gastronomie",            color: "#F97316" }, // orange-500
-  CROYANCES:           { label: "Croyances",              color: "#818CF8" }, // indigo-400
-  SPORT:               { label: "Sport",                  color: "#84CC16" }, // lime-500
-  HISTOIRE:            { label: "Histoire",               color: "#FAFAFA" }, // zinc-50
-  SCIENCES_VIE:        { label: "Sciences de la vie",     color: "#22C55E" }, // green-500
-  SCIENCES_EXACTES:    { label: "Sciences exactes",       color: "#EF4444" }, // red-500
-  MUSIQUE:             { label: "Musique",                color: "#EC4899" }, // pink-500
-  ACTUALITES_MEDIAS:   { label: "Actualités & Médias",    color: "#F43F5E" }, // rose-500
-  TECHNOLOGIE:         { label: "Technologie",            color: "#EF4444" }, // red-500
-  DIVERS:              { label: "Divers",                 color: "#A3A3A3" }, // neutral-400
+  ARTS_CULTURE:  { label: "Arts & Culture",  color: "#F59E0B" },
+  CINEMA_SERIES: { label: "Cinéma & Séries", color: "#EC4899" },
+  HISTOIRE:      { label: "Histoire",        color: "#10B981" },
+  SCIENCE:       { label: "Science",         color: "#22D3EE" },
+  GEOGRAPHIE:    { label: "Géographie",      color: "#8B5CF6" },
+  SPORT:         { label: "Sport",           color: "#EF4444" },
+  MUSIQUE:       { label: "Musique",         color: "#34D399" },
+  TECHNOLOGIE:   { label: "Technologie",     color: "#06B6D4" },
+  LITTERATURE:   { label: "Littérature",     color: "#D946EF" },
+  DIVERS:        { label: "Divers",          color: "#A3A3A3" },
 };
 const themeMeta = (t?: string | null): ThemeMeta => THEMES[(t ?? "DIVERS").toUpperCase()] ?? THEMES.DIVERS;
 
@@ -151,7 +146,7 @@ export default function RoomPage() {
 
     s.on("round_begin", (p: { index:number; total:number; endsAt:number; question: QuestionLite }) => {
       const nowMs = Date.now();
-      const remaining = Math.max(0, p.endsAt - nowMs);
+      const dur = Math.max(1000, p.endsAt - nowMs);
       setPhase("playing");
       setIndex(p.index); setTotal(p.total); setEndsAt(p.endsAt);
       setQuestion(p.question);
@@ -160,8 +155,7 @@ export default function RoomPage() {
       setFeedback(null);
       setLives(TEXT_LIVES);
       setRevealAnswer(false);
-      if (remaining >= 100) { resetTimerBar(remaining); }
-      else { stopTimerBar(); }
+      resetTimerBar(dur);
       initSfx();
     });
 
@@ -184,21 +178,8 @@ export default function RoomPage() {
       try { if (p.correct) playCorrect(); } catch {}
     });
 
-    s.on("round_end", (p: { index:number; correctChoiceId:string|null; correctLabel?: string | null; leaderboard?: LeaderRow[] }) => {
-      setPhase("reveal");
-      setCorrectId(p.correctChoiceId);
-      if (Array.isArray(p.leaderboard)) setLeaderboard(p.leaderboard);
-      setFeedback(prev => ({
-        ok: prev?.ok ?? false,
-        correctLabel: p.correctLabel ?? prev?.correctLabel ?? null,
-        responseMs: prev?.responseMs,
-      }));
-      setRevealAnswer(true);
-      setEndsAt(null);
-      stopTimerBar();
-    });
-
     s.on("leaderboard_update", (p: { leaderboard: LeaderRow[] }) => setLeaderboard(p.leaderboard ?? []));
+    s.on("round_end", () => { setPhase("reveal"); setEndsAt(null); stopTimerBar(); });
     s.on("final_leaderboard", (p: { leaderboard: LeaderRow[] }) => { setPhase("final"); setLeaderboard(p.leaderboard ?? []); setEndsAt(null); stopTimerBar(); });
     s.on("game_over", () => { setPhase("between"); setQuestion(null); setEndsAt(null); stopTimerBar(); });
 
@@ -216,7 +197,7 @@ export default function RoomPage() {
     })();
 
     return () => { s.close(); };
-  }, [roomId, nav]);
+  }, [roomId, nav, mcChoices]);
 
   useEffect(() => { if (phase === "playing") inputRef.current?.focus(); }, [phase, question]);
 
@@ -258,48 +239,42 @@ export default function RoomPage() {
       <div aria-hidden className={bg} />
       <div aria-hidden className={grain} />
 
-      <div className="relative z-10 text-white mx-auto w-full px-4 min-h-[calc(100dvh-64px)] pt-2">
+      <div className="relative z-10 text-white mx-auto w-full max-w-[1200px] px-4 min-h-[calc(100dvh-64px)] pt-2">
         {/* Grille principale : leaderboard / centre / room (leaderboard à gauche, room à droite) */}
-        <div className="grid gap-6 items-start grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div className="grid gap-6 items-start grid-cols-1 md:grid-cols-[minmax(0,1.05fr)_minmax(0,2fr)_minmax(0,1.05fr)]">
           
-{/* LEFT — Leaderboard (sans panneau / fond) */}
-<aside className="min-w-0 md:order-1 relative md:pt-[98px]">
-  {/* label, centré comme la liste */}
-  <div className="hidden mt-7 text-4xl font-brand md:block absolute top-0 left-1/2 -translate-x-1/2 font-bold">CLASSEMENT</div>
+          {/* LEFT — Leaderboard (sans panneau / fond) */}
+          <aside className="min-w-0 md:order-1">
+            <div className="font-bold mb-3">Leaderboard</div>
+            {leaderboard.length === 0 ? (
+              <div className="opacity-60">—</div>
+            ) : (
+              <ol className="m-0 space-y-2">
+                {leaderboard.map((r, i) => {
+                  const isSelf =
+                    (selfId && r.id === selfId) ||
+                    (!!selfName && typeof r.name === "string" && r.name.toLowerCase() === selfName.toLowerCase());
 
-  {/* wrapper centré + largeur en % */}
-  <div className="w-full md:w-[88%] mx-auto">
-    {leaderboard.length === 0 ? (
-      <div className="opacity-60">—</div>
-    ) : (
-      <ol className="m-0 space-y-2">
-        {leaderboard.map((r, i) => {
-          const isSelf =
-            (selfId && r.id === selfId) ||
-            (!!selfName && typeof r.name === "string" && r.name.toLowerCase() === selfName.toLowerCase());
+                  const pillBase = "flex items-center justify-between rounded-xl px-3.5 py-1.5 text-[14px] shadow-[0_6px_14px_rgba(0,0,0,.25)] border";
+                  const pillDark = "bg-[#0f1420]/90 text-white border-white/10";
+                  const pillActive = "bg-gradient-to-r from-[#D30E72] to-[#770577] text-white border-transparent";
 
-          const pillBase =
-            "flex items-center justify-between rounded-xl px-3.5 py-1.5 text-[14px] shadow-[0_6px_14px_rgba(0,0,0,.25)] border";
-          const pillDark = "bg-[#0f1420]/90 text-white border-white/10";
-          const pillActive = "bg-gradient-to-r from-[#D30E72] to-[#770577] text-white border-transparent";
-
-          return (
-            <li key={r.id} className="flex items-center gap-2">
-              <span className="w-4 text-right text-[12px] opacity-80 tabular-nums">{i + 1}</span>
-              <div className={`${pillBase} ${isSelf ? pillActive : pillDark} w-full`}>
-                <span className="truncate">{r.name}</span>
-                <span className="tabular-nums ml-3">{r.score}</span>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-    )}
-  </div>
-</aside>
+                  return (
+                    <li key={r.id} className="flex items-center gap-2">
+                      <span className="w-4 text-right text-[12px] opacity-80 tabular-nums">{i + 1}</span>
+                      <div className={`${pillBase} ${isSelf ? pillActive : pillDark} w-full`}>
+                        <span className="truncate">{r.name}</span>
+                        <span className="tabular-nums ml-3">{r.score}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </aside>
 
           {/* CENTER — 4 conteneurs invisibles à tailles fixes */}
-          <section className="mt-5 min-w-0 md:order-2 md:mx-8 xl:mx-12">
+          <section className="min-w-0 md:order-2">
             {/* 1) TIMER : compact, collé en haut, centré */}
             <div className="h-[70px] flex flex-col justify-start items-center">
               <div className="h-[8px] w-full max-w-[720px] rounded-full bg-white/15 overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,.35)]">
@@ -316,7 +291,7 @@ export default function RoomPage() {
             </div>
 
             {/* 2) QUESTION (hauteur contrôlée, contenu scrollable si trop long) */}
-            <div className="mt-2 h-[100px] overflow-hidden">
+            <div className="mt-2 h-[110px] overflow-hidden">
               {question && (() => {
                 const meta = themeMeta(question.theme);
                 return (
@@ -330,7 +305,7 @@ export default function RoomPage() {
                         {Math.max(1, index + 1)}/{Math.max(total, index + 1)}
                       </span>
                     </div>
-                    <div className="mt-2 max-h-[calc(100%-22px)] overflow-auto pr-1 font-medium leading-snug tracking-[0.2px] text-[18px]">
+                    <div className="max-h-[calc(100%-22px)] overflow-auto pr-1 font-medium leading-snug tracking-[0.2px] text-[18px]">
                       {question.text}
                     </div>
                   </div>
@@ -339,7 +314,7 @@ export default function RoomPage() {
             </div>
 
             {/* 3) IMAGE : zone fixe, image centrée/contain */}
-            <div className="mt-1 h-[300px] overflow-hidden">
+            <div className="mt-1 h-[360px] overflow-hidden">
               <div className="w-full h-full flex items-center justify-center">
                 {question?.img ? (() => {
                   const imgSrc = question.img!.startsWith("http") || question.img!.startsWith("/")
@@ -350,7 +325,7 @@ export default function RoomPage() {
                         <img
                           src={imgSrc}
                           alt=""
-                          className="block w-full h-auto max-h-[240px] object-contain select-none"
+                          className="block w-full h-full object-contain select-none"
                           draggable={false}
                         />
                       </div>
@@ -374,31 +349,21 @@ export default function RoomPage() {
                           const isOk = !!correctId && c.id === correctId;
                           const disabled = phase !== "playing";
                           return (
-<button
-  key={c.id}
-  onMouseDown={(e) => e.preventDefault()}
-  onClick={() => answerByChoice(c.id)}
-  disabled={disabled}
-  className={[
-    "px-4 py-3 rounded-xl border text-left transition-all duration-200 ease-out",
-    "backdrop-blur-[2px]",
-    disabled ? "cursor-default opacity-60" : "cursor-pointer",
-    // Hover state (uniquement si joueur peut encore cliquer)
-    !disabled && !isSel && !isOk
-      ? "hover:border-white/70 hover:bg-white/10"
-      : "",
-    // Feedback visuel selon état
-    isOk
-      ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300 ring-2 ring-emerald-500/40"
-      : isSel && !correctId
-      ? "border-blue-500/60 bg-blue-500/15 text-blue-300"
-      : selected && selected === c.id && !isOk
-      ? "border-rose-500/60 bg-rose-500/15 text-rose-300 ring-2 ring-rose-500/40"
-      : "border-white/35 bg-white/6 text-white"
-  ].join(" ")}
->
-  {c.label}
-</button>
+                            <button
+                              key={c.id}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => answerByChoice(c.id)}
+                              disabled={disabled}
+                              className={[
+                                "px-4 py-3 rounded-xl border text-left transition",
+                                "border-white/35 hover:border-white/70",
+                                isOk ? "bg-emerald-500/18" : isSel ? "bg-blue-500/18" : "bg-white/6",
+                                disabled ? "cursor-default opacity-70" : "cursor-pointer",
+                                "backdrop-blur-[2px]"
+                              ].join(" ")}
+                            >
+                              {c.label}
+                            </button>
                           );
                         })}
                       </div>
@@ -432,6 +397,7 @@ export default function RoomPage() {
                         onClick={showMultipleChoice}
                         disabled={phase !== "playing" || lives <= 0 || !!feedback?.ok}
                         className="px-4 py-3 rounded-xl border border-dashed border-white/75 text-white font-extrabold disabled:opacity-60"
+                        title={`Coût : ${MC_COST} énergie`}
                       >
                         Choix multiple
                       </button>

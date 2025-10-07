@@ -4,7 +4,7 @@ import type { Server } from "socket.io";
 import type { Client, GameState } from "../../types";
 import { CFG } from "../../config";
 import * as lb_service from "../game/leaderboard.service";
-import { addEnergy, getEnergy, scoreMultiplier } from "../player/energy.service";
+import { addEnergy, getEnergy, scoreMultiplier, computeSpeedBonus } from "../player/energy.service";
 import { logBot } from "../../utils/botLogger";
 
 const THEME_FALLBACK = "DIVERS" as const;
@@ -193,8 +193,20 @@ export async function scheduleBotAnswers(
             willBeCorrect && correctChoice
               ? correctChoice.label
               : wrongChoices.length ? pick(wrongChoices).label : "???";
+
+        let speedBonus = 0;
+        if (willBeCorrect) {
+            if (!Array.isArray(st.answeredOrderText)) st.answeredOrderText = [];
+            if (!st.answeredOrderText.includes(pg.id)) {
+            st.answeredOrderText.push(pg.id);
+            const rank = st.answeredOrderText.length;
+            const totalPlayers = st.pgIds.size;
+            speedBonus = computeSpeedBonus(rank, totalPlayers);
+            }
+        }
+
           st.answeredThisRound.add(pg.id);
-          await botApplyTextScoring(prisma, st, client, { id: q.id }, rawText, willBeCorrect, responseMs);
+          await botApplyTextScoring(prisma, st, client, { id: q.id }, rawText, willBeCorrect, responseMs, speedBonus);
         }
 
         const lb = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
@@ -253,7 +265,8 @@ async function botApplyTextScoring(
   q: { id: string },
   rawText: string,
   correct: boolean,
-  responseMs: number
+  responseMs: number,
+  speedBonus = 0
 ) {
   const before = await getEnergy(prisma, client);
   if (!before.ok) return;
@@ -268,10 +281,11 @@ async function botApplyTextScoring(
       data: { playerGameId: client.playerGameId, questionId: q.id, text: rawText, correct, responseMs },
     });
     if (correct) {
-      const mult = scoreMultiplier(beforeE);
+      //const mult = scoreMultiplier(beforeE);
+      const baseWithBonus = CFG.TXT_ANSWER_POINTS_GAIN + speedBonus; // 100 + bonus
       await tx.playerGame.update({
         where: { id: client.playerGameId },
-        data: { energy: res.energy!, score: { increment: mult * CFG.TXT_ANSWER_POINTS_GAIN } },
+        data: { energy: res.energy!, score: { increment: baseWithBonus } },
       });
     } else {
       await tx.playerGame.update({ where: { id: client.playerGameId }, data: { energy: res.energy! } });
@@ -279,5 +293,8 @@ async function botApplyTextScoring(
   });
 
   const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true, energy: true } });
-  logBot(`text\tpg=${client.playerGameId}\tcorr=${correct ? 1 : 0}\tq=${q.id}\tE=${beforeE}->${res.energy!}\tS=${after?.score ?? "?"}\t${responseMs}ms`);
+  logBot(
+    `text\tpg=${client.playerGameId}\tcorr=${correct ? 1 : 0}\tq=${q.id}\tbonus=${speedBonus}` +
+      `\tE=${beforeE}->${res.energy!}\tS=${after?.score ?? "?"}\t${responseMs}ms`
+  );
 }

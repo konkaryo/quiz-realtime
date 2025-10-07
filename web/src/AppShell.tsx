@@ -57,7 +57,7 @@ function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
   );
 }
 
-/* ---------- ligne de menu utilisateur (police sobre + no underline) ---------- */
+/* ---------- ligne de menu utilisateur ---------- */
 function UserMenuItem({
   to,
   label,
@@ -198,6 +198,8 @@ export default function AppShell() {
       .join("")
       .toUpperCase();
 
+  const HEADER_H = 64;
+
   return (
     <div>
       {/* ---- Top bar ---- */}
@@ -207,13 +209,20 @@ export default function AppShell() {
           position: "fixed",
           insetInline: 0,
           top: 0,
-          height: 64,
+          height: HEADER_H,
           display: "flex",
           alignItems: "center",
           gap: 16,
           padding: "0 16px",
-          background: "linear-gradient(180deg,#0b1220,#111827)",
-          borderBottom: "1px solid rgba(255,255,255,.08)",
+          // ——— Nouveau background navbar ———
+          // sobriété + profondeur, cohérent avec tes violets/indigos
+          background:
+            "radial-gradient(900px 160px at 50% -60px, rgba(255,255,255,.07), transparent 70%)," +
+            "linear-gradient(180deg, rgba(10,12,24,.88) 0%, rgba(9,11,22,.92) 60%, rgba(8,10,20,.95) 100%)",
+          borderBottom: "1px solid rgba(255,255,255,.10)",
+          // effet “glass” doux (supporté moderne, inoffensif sinon)
+          backdropFilter: "saturate(140%) blur(6px)",
+          WebkitBackdropFilter: "saturate(140%) blur(6px)",
           zIndex: 60,
           color: "#e5e7eb",
         }}
@@ -416,9 +425,11 @@ export default function AppShell() {
       {/* ---- Page content ---- */}
       <main
         style={{
-          padding: 16,
-          paddingTop: 80,
-          maxWidth: 1100,
+          flex: 1,
+          paddingTop: HEADER_H,
+          minHeight: `calc(100dvh - ${HEADER_H}px)`,
+          width: "100%",
+          boxSizing: "border-box",
           margin: "0 auto",
           fontFamily: "system-ui, sans-serif",
         }}
