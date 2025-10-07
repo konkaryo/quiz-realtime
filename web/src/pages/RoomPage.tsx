@@ -316,7 +316,7 @@ export default function RoomPage() {
             </div>
 
             {/* 2) QUESTION (hauteur contrôlée, contenu scrollable si trop long) */}
-            <div className="mt-2 h-[100px] sm:h-[170px] md:h-[170px] overflow-hidden">
+            <div className="mt-2 h-[100px] sm:h-[175px] md:h-[170px] overflow-hidden">
               {question && (() => {
                 const meta = themeMeta(question.theme);
                 return (
