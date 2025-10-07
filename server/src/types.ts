@@ -18,6 +18,7 @@ export type GameState = {
   roundStartMs?: number;
   timer?: NodeJS.Timeout;
   answeredThisRound: Set<string>;
+  answeredOrderText: string[];
   pgIds: Set<string>;  
   attemptsThisRound: Map<string, number>;
   roundMs: number;  

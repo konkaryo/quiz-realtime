@@ -1,3 +1,4 @@
+//handlers.ts
 import { Server } from "socket.io";
 import type { Client, GameState } from "../types";
 import { prisma } from "../infra/prisma";
@@ -5,11 +6,12 @@ import { CFG } from "../config";
 
 // Domain services
 import { getOrCreateCurrentGame, clientsInRoom } from "../domain/room/room.service";
-import { spendEnergy, addEnergy, getEnergy, scoreMultiplier } from "../domain/player/energy.service";
+import { spendEnergy, addEnergy, getEnergy, scoreMultiplier, computeSpeedBonus } from "../domain/player/energy.service";
 import { isFuzzyMatch, norm } from "../domain/question/textmatch";
 import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
 import { startGameForRoom } from "../domain/game/game.service";
+
 
 /**
  * Enregistre tous les handlers Socket.IO.
@@ -236,6 +238,19 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         const res = await addEnergy(prisma, client, gain);
         if (!res.ok) return ack?.({ ok: false, reason: "no-player" });
 
+        // --------- BONUS DE RAPIDITÉ (texte correct uniquement) ----------
+        let speedBonus = 0;
+        if (correct) {
+            // utilise le même tableau que les bots, RAZ à chaque round dans startRound()
+            if (!Array.isArray(st.answeredOrderText)) st.answeredOrderText = [];
+            if (!st.answeredOrderText.includes(client.playerGameId)) {
+                st.answeredOrderText.push(client.playerGameId);
+                const rank = st.answeredOrderText.length;     // 1, 2, 3, …
+                const totalPlayers = st.pgIds.size;           // nb de joueurs de la partie (humains + bots)
+                speedBonus = computeSpeedBonus(rank, totalPlayers);
+            }
+        }
+
         await prisma.$transaction(async (tx) => {
           await tx.answer.create({
             data: {
@@ -247,14 +262,13 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
             },
           });
           if (correct) {
+            const increment = CFG.TXT_ANSWER_POINTS_GAIN + speedBonus; // 100 + bonus
+            //const increment = scoreMultiplier(playerEnergy.energy!) * baseWithBonus;
             await tx.playerGame.update({
               where: { id: client.playerGameId },
               data: {
                 energy: res.energy!,
-                score: {
-                  increment:
-                    scoreMultiplier(playerEnergy.energy!) * CFG.TXT_ANSWER_POINTS_GAIN,
-                },
+                score: { increment }
               },
             });
             socket.emit("energy_update", {

@@ -12,7 +12,7 @@ export const CFG = {
   TEXT_LIVES: Number(process.env.TEXT_LIVES || 3),
   AUTO_ENERGY_GAIN: Number(process.env.AUTO_ENERGY_GAIN || 5),
   MC_ANSWER_ENERGY_GAIN: Number(process.env.MC_ANSWER_ENERGY_GAIN || 5),
-  MC_ANSWER_POINTS_GAIN: Number(process.env.MC_ANSWER_POINTS_GAIN || 100),
+  MC_ANSWER_POINTS_GAIN: Number(process.env.MC_ANSWER_POINTS_GAIN || 70),
   TXT_ANSWER_ENERGY_GAIN: Number(process.env.TXT_ANSWER_ENERGY_GAIN || 5),
   TXT_ANSWER_POINTS_GAIN: Number(process.env.TXT_ANSWER_POINTS_GAIN || 100),
 };
