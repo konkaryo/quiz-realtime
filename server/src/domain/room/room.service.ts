@@ -1,3 +1,4 @@
+//server/src/domain/room/room.service.ts
 import { PrismaClient, Prisma } from "@prisma/client"; 
 import type { Client } from "../../types";
 import { Server } from "socket.io";
@@ -30,16 +31,10 @@ export async function ensurePlayerGamesForRoom(
   prisma: PrismaClient,
   roomId: string
 ) {
-  // joueurs humains actuellement connectés dans la room
+  // joueurs actuellement connectés (humains ET bots déjà “branchés” dans clients)
   const members = clientsInRoom(clients, roomId);
 
-  // on ne lit que la visibilité : PUBLIC => on ajoute des bots
-  const room = await prisma.room.findUnique({
-    where: { id: roomId },
-    select: { visibility: true },
-  });
-
-  // upsert pour les joueurs connectés
+  // upsert pour tous les membres présents
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const m of members) {
       await tx.playerGame.upsert({
@@ -48,48 +43,15 @@ export async function ensurePlayerGamesForRoom(
         create: { gameId, playerId: m.playerId, score: 0 },
       });
     }
-
-    // si room publique, compléter avec des bots (nombre via env)
-    if (room?.visibility === "PUBLIC") {
-      const desired = Number(process.env.BOT_SLOTS ?? 10);
-
-      // bots déjà inscrits à cette game
-      const alreadyBotPGs = await tx.playerGame.findMany({
-        where: { gameId, player: { isBot: true } },
-        select: { playerId: true },
-      });
-      const alreadyCount = alreadyBotPGs.length;
-
-      const missing = Math.max(0, desired - alreadyCount);
-      if (missing > 0) {
-        // bots disponibles = isBot:true qui n'ont pas encore de PG pour cette game
-        const freeBots = await tx.player.findMany({
-          where: {
-            isBot: true,
-            playerGames: { none: { gameId } },
-          },
-          select: { id: true },
-          take: missing, // pas random, mais suffisant; on peut randomiser plus tard
-        });
-
-        for (const b of freeBots) {
-          await tx.playerGame.upsert({
-            where: { gameId_playerId: { gameId, playerId: b.id } },
-            update: {},
-            create: { gameId, playerId: b.id, score: 0 },
-          });
-        }
-      }
-    }
   });
 
-  // retourne tous les PG de la game (humains + bots)
+  // retourne tous les PG de la game (ceux des membres présents)
   const pgs = await prisma.playerGame.findMany({
     where: { gameId },
     select: { id: true, playerId: true },
   });
 
-  // MAJ des ids côté clients connectés (les bots n'ont pas de socket)
+  // MAJ des ids côté clients connectés (humains et bots)
   const mapByPlayer = new Map<string, string>(pgs.map((x) => [x.playerId, x.id]));
   for (const [sid, c] of clients) {
     if (c.roomId !== roomId) continue;

@@ -55,8 +55,6 @@ const THEME_BY_NORM: Record<string, Theme> = {
 
   "geographie": Theme.GEOGRAPHIE,
 
-  "litterature": Theme.LITTERATURE,
-
   "economie et politique": Theme.ECONOMIE_POLITIQUE,
   "economie politique": Theme.ECONOMIE_POLITIQUE,
 
@@ -70,10 +68,14 @@ const THEME_BY_NORM: Record<string, Theme> = {
 
   "divers": Theme.DIVERS,
 
+  "sciences et techniques": Theme.SCIENCES_TECHNIQUES,
+  "sciences techniques": Theme.SCIENCES_TECHNIQUES,
+
+  "langues litterature": Theme.LANGUES_LITTERATURE,
+  "langues et litterature": Theme.LANGUES_LITTERATURE,
+
   "sciences de la vie": Theme.SCIENCES_VIE,
   "sciences vie": Theme.SCIENCES_VIE,
-
-  "sciences exactes": Theme.SCIENCES_EXACTES,
 
   "musique": Theme.MUSIQUE,
 
@@ -81,7 +83,6 @@ const THEME_BY_NORM: Record<string, Theme> = {
   "actualites medias": Theme.ACTUALITES_MEDIAS,
   "medias": Theme.ACTUALITES_MEDIAS,
 
-  "technologie": Theme.TECHNOLOGIE,
 };
 
 function toEnumTheme(label?: string | null): Theme | null {
