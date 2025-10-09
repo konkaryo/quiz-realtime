@@ -4,7 +4,7 @@ import type { Server } from "socket.io";
 import type { Client, GameState } from "../../types";
 import { CFG } from "../../config";
 import * as lb_service from "../game/leaderboard.service";
-import { addEnergy, getEnergy, scoreMultiplier, computeSpeedBonus } from "../player/energy.service";
+import { addEnergy, getEnergy, computeSpeedBonus } from "../player/energy.service";
 import { logBot } from "../../utils/botLogger";
 
 const THEME_FALLBACK = "DIVERS" as const;
@@ -27,7 +27,7 @@ function delayFromSpeed(speed: number, roundMs: number, remainingMs: number): nu
   return Math.min(Math.max(120, raw), maxAllowed);
 }
 
-/** proba d'utiliser le mode texte (plus fort => plus souvent texte) */
+/** choix “cosmétique” du mode quand on veut varier (uniquement pour les mauvaises réponses) */
 function botChooseMode(skill: number): "text" | "mc" {
   const pText = 0.35 + (skill / 100) * 0.45; // 35..80%
   return Math.random() < pText ? "text" : "mc";
@@ -38,6 +38,24 @@ function clientForPg(clients: Map<string, Client>, pgId: string): Client | undef
   for (const c of clients.values()) if (c.playerGameId === pgId) return c;
   return undefined;
 }
+
+/** tirage gaussien (Box–Muller), centré sur mean, borné [0,100] */
+function sampleNormalClamped(mean: number, sigma = 18): number {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v); // N(0,1)
+  const x = mean + sigma * z;
+  return Math.max(0, Math.min(100, x));
+}
+
+/** seuils par difficulté (seuils utilisés par la logique de décision) */
+const DIFF_THRESHOLD: Record<number, number> = {
+  1: 25,
+  2: 45,
+  3: 65,
+  4: 85,
+};
 
 /* -------------------------------------------------------------------------- */
 /* Attachement des bots                                                        */
@@ -146,16 +164,25 @@ export async function scheduleBotAnswers(
       pg.player.bot?.skills.find((s) => s.theme === themeKey)?.value ??
       pg.player.bot?.skills.find((s) => s.theme === THEME_FALLBACK)?.value ?? 30;
 
-    const baseProb   = skill / 100;
-    const diff       = Number(q.difficulty ?? 2);
-    const diffFactor = 1 - (Math.max(1, Math.min(diff, 4)) - 1) * 0.12;
-    const pCorrect   = Math.min(0.95, Math.max(0.05, baseProb * diffFactor));
+    // --- Nouvelle logique : tirage gaussien et décision par seuil ---
+    const diffNum = Math.max(1, Math.min(4, Number(q.difficulty ?? 2)));
+    const threshold = DIFF_THRESHOLD[diffNum];
+    const draw = sampleNormalClamped(skill); // 0..100 ~ N(skill, sigma)
+
+    let outcome: "text-correct" | "mc-correct" | "wrong";
+    if (draw > threshold) {
+      outcome = "text-correct";                         // a) au-dessus du seuil -> texte correct
+    } else if (threshold - draw <= 10 && threshold - draw >= 0) {
+      outcome = "mc-correct";                           // b) dans la bande [0..10] sous le seuil -> QCM correct
+    } else {
+      outcome = "wrong";                                // c) sinon faux
+    }
+    // ---------------------------------------------------------------
 
     const now = Date.now();
     const remainingMs = Math.max(0, (st.endsAt ?? now) - now);
     const totalRoundMs = st.roundMs ?? Number(process.env.ROUND_MS || 10000);
     const delay = delayFromSpeed(speed, totalRoundMs, remainingMs);
-    const mode  : "text" | "mc" = botChooseMode(skill);
 
     setTimeout(async () => {
       try {
@@ -175,50 +202,64 @@ export async function scheduleBotAnswers(
             name:         pg.player.name ?? "Bot",
           };
           clients.set(fakeSocketId, client);
-          logBot("attach", {
-            pgId: pg.id, name: client.name, reason: "created-ephemeral-client"
-          });
+          logBot("attach", { pgId: pg.id, name: client.name, reason: "created-ephemeral-client" });
         }
 
-        const willBeCorrect = Math.random() < pCorrect;
-        const responseMs    = Math.max(0, Date.now() - (st.roundStartMs ?? Date.now()));
+        const responseMs = Math.max(0, Date.now() - (st.roundStartMs ?? Date.now()));
 
-        if (mode === "mc") {
-          const choice = willBeCorrect && correctChoice ? correctChoice : pick(wrongChoices);
-          if (!choice) return;
+        // ==== Appliquer la réponse / scoring ====
+        if (outcome === "mc-correct") {
+          // QCM correct
+          if (!correctChoice) return;
           st.answeredThisRound.add(pg.id);
-          await botApplyMcScoring(prisma, st, client, q.id, choice.label, !!choice.isCorrect, responseMs);
-        } else {
-          const rawText =
-            willBeCorrect && correctChoice
-              ? correctChoice.label
-              : wrongChoices.length ? pick(wrongChoices).label : "???";
-
-        let speedBonus = 0;
-        if (willBeCorrect) {
-            if (!Array.isArray(st.answeredOrderText)) st.answeredOrderText = [];
-            if (!st.answeredOrderText.includes(pg.id)) {
+          await botApplyMcScoring(prisma, st, client, q.id, correctChoice.label, true, responseMs);
+        } else if (outcome === "text-correct") {
+          // Texte correct + éventuel bonus de rapidité
+          const rawText = correctChoice ? correctChoice.label : "???";
+          let speedBonus = 0;
+          if (!Array.isArray(st.answeredOrderText)) st.answeredOrderText = [];
+          if (!st.answeredOrderText.includes(pg.id)) {
             st.answeredOrderText.push(pg.id);
             const rank = st.answeredOrderText.length;
             const totalPlayers = st.pgIds.size;
             speedBonus = computeSpeedBonus(rank, totalPlayers);
-            }
-        }
-
+          }
           st.answeredThisRound.add(pg.id);
-          await botApplyTextScoring(prisma, st, client, { id: q.id }, rawText, willBeCorrect, responseMs, speedBonus);
+          await botApplyTextScoring(prisma, st, client, { id: q.id }, rawText, true, responseMs, speedBonus);
+        } else {
+          // Mauvaise réponse : varier (texte/QCM) pondéré par skill
+          const mode = botChooseMode(skill);
+          if (mode === "mc") {
+            const wrong = wrongChoices.length ? pick(wrongChoices) : correctChoice; // fallback
+            if (!wrong) return;
+            st.answeredThisRound.add(pg.id);
+            await botApplyMcScoring(prisma, st, client, q.id, wrong.label, false, responseMs);
+          } else {
+            const rawText =
+              wrongChoices.length ? pick(wrongChoices).label :
+              correctChoice ? correctChoice.label + "?" : "???";
+            st.answeredThisRound.add(pg.id);
+            await botApplyTextScoring(prisma, st, client, { id: q.id }, rawText, false, responseMs, 0);
+          }
         }
 
-        const lb = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
+        // 🔒 enregistré une seule fois dans answeredOrder (dédupliqué)
+        if (!Array.isArray(st.answeredOrder)) st.answeredOrder = [];
+        if (!st.answeredOrder.includes(pg.id)) st.answeredOrder.push(pg.id);
+
+        // 🔁 rebâtir le leaderboard sur tout le game (pas de onlyPgIds)
+        const lb = await lb_service.buildLeaderboard(prisma, st.gameId, /*onlyPgIds*/ undefined, st);
         io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb });
-        io.to(st.roomId).emit("answer_received");
+
+        // badge "a répondu" + statut correct/incorrect
+        const wasCorrect = outcome === "mc-correct" || outcome === "text-correct";
+        io.to(st.roomId).emit("player_answered", { pgId: client.playerGameId, correct: wasCorrect });
       } catch (err) {
         console.error("[bot answer]", err);
       }
     }, delay);
   }
 }
-
 
 /* -------------------------------------------------------------------------- */
 /* Scoring + logs détaillés                                                    */
@@ -281,7 +322,6 @@ async function botApplyTextScoring(
       data: { playerGameId: client.playerGameId, questionId: q.id, text: rawText, correct, responseMs },
     });
     if (correct) {
-      //const mult = scoreMultiplier(beforeE);
       const baseWithBonus = CFG.TXT_ANSWER_POINTS_GAIN + speedBonus; // 100 + bonus
       await tx.playerGame.update({
         where: { id: client.playerGameId },

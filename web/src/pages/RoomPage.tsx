@@ -52,17 +52,16 @@ const THEMES: Record<string, ThemeMeta> = {
   ARTS_CULTURE:        { label: "Arts & Culture",         color: "#F59E0B" }, // amber-500
   JEUX_BD:             { label: "Jeux & BD",              color: "#EAB308" }, // yellow-500
   GEOGRAPHIE:          { label: "Géographie",             color: "#22D3EE" }, // cyan-400
-  LITTERATURE:         { label: "Littérature",            color: "#D946EF" }, // fuchsia-500
+  LANGUES_LITTERATURE: { label: "Langues & Littérature",  color: "#D946EF" }, // fuchsia-500
   ECONOMIE_POLITIQUE:  { label: "Économie & Politique",   color: "#3B82F6" }, // bleu-500
   GASTRONOMIE:         { label: "Gastronomie",            color: "#F97316" }, // orange-500
   CROYANCES:           { label: "Croyances",              color: "#818CF8" }, // indigo-400
   SPORT:               { label: "Sport",                  color: "#84CC16" }, // lime-500
   HISTOIRE:            { label: "Histoire",               color: "#FAFAFA" }, // zinc-50
   SCIENCES_VIE:        { label: "Sciences de la vie",     color: "#22C55E" }, // green-500
-  SCIENCES_EXACTES:    { label: "Sciences exactes",       color: "#EF4444" }, // red-500
+  SCIENCES_TECHNIQUES: { label: "Sciences & Techniques",  color: "#EF4444" }, // red-500
   MUSIQUE:             { label: "Musique",                color: "#EC4899" }, // pink-500
   ACTUALITES_MEDIAS:   { label: "Actualités & Médias",    color: "#F43F5E" }, // rose-500
-  TECHNOLOGIE:         { label: "Technologie",            color: "#EF4444" }, // red-500
   DIVERS:              { label: "Divers",                 color: "#A3A3A3" }, // neutral-400
 };
 const themeMeta = (t?: string | null): ThemeMeta => THEMES[(t ?? "DIVERS").toUpperCase()] ?? THEMES.DIVERS;
@@ -75,6 +74,7 @@ export default function RoomPage() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [phase, setPhase]   = useState<Phase>("idle");
 
+  const [answeredByPg, setAnsweredByPg] = useState<Record<string, "correct" | "wrong">>({});
   const [question, setQuestion] = useState<QuestionLite | null>(null);
   const [index, setIndex] = useState(0);
   const [total, setTotal] = useState(0);
@@ -95,6 +95,18 @@ export default function RoomPage() {
   const [selfName, setSelfName] = useState<string | null>(null);
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
+
+  const LB_MAX_VISIBLE = 12;
+
+  const selfIndex = useMemo(() => {
+    return leaderboard.findIndex(
+      (r) =>
+        (selfId && r.id === selfId) ||
+        (!!selfName && typeof r.name === "string" && r.name.toLowerCase() === selfName.toLowerCase())
+    );
+  }, [leaderboard, selfId, selfName]);
+
+  const lbOverflow = leaderboard.length > LB_MAX_VISIBLE;
 
   // timing
   const [endsAt, setEndsAt] = useState<number | null>(null);
@@ -155,6 +167,7 @@ export default function RoomPage() {
       setPhase("playing");
       setIndex(p.index); setTotal(p.total); setEndsAt(p.endsAt);
       setQuestion(p.question);
+      setAnsweredByPg({});
       setSelected(null); setCorrectId(null);
       setMcChoices(null); setTextAnswer("");
       setFeedback(null);
@@ -182,6 +195,11 @@ export default function RoomPage() {
         }
       }
       try { if (p.correct) playCorrect(); } catch {}
+    });
+
+    s.on("player_answered", (p: { pgId: string; correct?: boolean }) => {
+      if (!p?.pgId) return;
+      setAnsweredByPg(prev => ({ ...prev, [p.pgId]: p.correct ? "correct" : "wrong" }));
     });
 
     s.on("round_end", (p: { index:number; correctChoiceId:string|null; correctLabel?: string | null; leaderboard?: LeaderRow[] }) => {
@@ -263,37 +281,119 @@ export default function RoomPage() {
         <div className="grid gap-6 items-start grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
           
 {/* LEFT — Leaderboard (sans panneau / fond) */}
+{/* LEFT — Leaderboard */}
 <aside className="min-w-0 md:order-1 relative md:pt-[98px]">
-  {/* label, centré comme la liste */}
-  <div className="hidden mt-7 text-4xl font-brand md:block absolute top-0 left-1/2 -translate-x-1/2 font-bold">CLASSEMENT</div>
+  {/* Titre */}
+  <div className="hidden mt-7 text-4xl font-brand md:block absolute top-0 left-1/2 -translate-x-1/2 font-bold">
+    CLASSEMENT
+  </div>
 
-  {/* wrapper centré + largeur en % */}
   <div className="w-full md:w-[88%] mx-auto">
     {leaderboard.length === 0 ? (
       <div className="opacity-60">—</div>
     ) : (
-      <ol className="m-0 space-y-2">
-        {leaderboard.map((r, i) => {
-          const isSelf =
-            (selfId && r.id === selfId) ||
-            (!!selfName && typeof r.name === "string" && r.name.toLowerCase() === selfName.toLowerCase());
+      <>
+        <ol
+          className={[
+            "m-0 space-y-2 pr-2",
+            "max-h-[560px] overflow-y-auto lb-scroll",
+          ].join(" ")}
+        >
+          {leaderboard.map((r, i) => {
+            const isSelf =
+              (selfId && r.id === selfId) ||
+              (!!selfName &&
+                typeof r.name === "string" &&
+                r.name.toLowerCase() === selfName.toLowerCase());
 
-          const pillBase =
-            "flex items-center justify-between rounded-xl px-3.5 py-1.5 text-[14px] shadow-[0_6px_14px_rgba(0,0,0,.25)] border";
-          const pillDark = "bg-[#0f1420]/90 text-white border-white/10";
-          const pillActive = "bg-gradient-to-r from-[#D30E72] to-[#770577] text-white border-transparent";
+            const pillBase =
+              "flex items-center justify-between rounded-xl px-3.5 py-1.5 text-[14px] shadow-[0_6px_14px_rgba(0,0,0,.25)] border";
+            const pillDark = "bg-[#0f1420]/90 text-white border-white/10";
+            const pillActive =
+              "bg-gradient-to-r from-[#D30E72] to-[#770577] text-white border-transparent";
 
-          return (
-            <li key={r.id} className="flex items-center gap-2">
-              <span className="w-4 text-right text-[12px] opacity-80 tabular-nums">{i + 1}</span>
-              <div className={`${pillBase} ${isSelf ? pillActive : pillDark} w-full`}>
-                <span className="truncate">{r.name}</span>
-                <span className="tabular-nums ml-3">{r.score}</span>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+            const answered = answeredByPg[r.id]; // "correct" | "wrong" | undefined
+
+            return (
+              <li key={r.id} className="flex items-center gap-2">
+                <span className="w-4 text-right text-[12px] opacity-80 tabular-nums">
+                  {i + 1}
+                </span>
+
+                <div className={`${pillBase} ${isSelf ? pillActive : pillDark} w-full`}>
+                  <span className="truncate">{r.name}</span>
+
+                  {/* --- Petit badge à gauche du score --- */}
+                  <div className="flex items-center gap-2">
+  <span className="tabular-nums">{r.score}</span>
+  <span
+    className={[
+      "inline-block w-2.5 h-2.5 rounded-full transition-colors",
+      answered === "correct" ? "bg-white" :
+      answered === "wrong"   ? "bg-red-500" :
+                               "bg-white/20",
+    ].join(" ")}
+    title={
+      answered === "correct" ? "Bonne réponse" :
+      answered === "wrong"   ? "Mauvaise réponse" :
+                               "Pas encore répondu"
+    }
+  />
+</div>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+
+        {/* Joueur actif répété en bas si la liste dépasse */}
+{leaderboard.length > 14 && (() => {
+  const activeIdx =
+    selfIndex >= 0
+      ? selfIndex
+      : leaderboard.findIndex(
+          (row) =>
+            row.id === selfId ||
+            (!!selfName &&
+              typeof row.name === "string" &&
+              row.name.toLowerCase() === selfName!.toLowerCase())
+        );
+  if (activeIdx < 0) return null;
+
+  const active = leaderboard[activeIdx];
+  const answered = answeredByPg[active.id];
+
+  const pillBase =
+    "flex items-center justify-between rounded-xl px-3.5 py-1.5 text-[14px] shadow-[0_6px_14px_rgba(0,0,0,.25)] border";
+  const pillActive =
+    "bg-gradient-to-r from-[#D30E72] to-[#770577] text-white border-transparent";
+
+  return (
+<div className="sticky bottom-0 z-10 pt-3">   {/* ⬅︎ added pt-3 */}
+  <div className="h-px w-full bg-white/10 mb-2" />  {/* thin separator */}
+  <div className="flex items-center gap-2">
+    <span className="w-4 text-right text-[12px] opacity-80 tabular-nums">
+      {activeIdx + 1}
+    </span>
+    <div className={`${pillBase} ${pillActive} w-full`}>
+      <span className="truncate">{active.name}</span>
+      <div className="flex items-center gap-2">
+        <span className="tabular-nums">{active.score}</span>
+        <span
+          className={[
+            "inline-block w-2.5 h-2.5 rounded-full transition-colors",
+            answered === "correct" ? "bg-white"
+            : answered === "wrong" ? "bg-red-500"
+            : "bg-white/20",
+          ].join(" ")}
+        />
+      </div>
+    </div>
+  </div>
+</div>
+  );
+})()}
+      </>
     )}
   </div>
 </aside>

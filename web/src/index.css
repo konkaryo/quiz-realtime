@@ -114,3 +114,34 @@ body[data-page="campaign"] {
   background: transparent !important;
 }
 
+
+/* === Scrollbar du leaderboard : seulement le thumb, en blanc === */
+.lb-scroll {
+  /* Firefox */
+  scrollbar-width: thin;                  /* mince */
+  scrollbar-color: #ffffff transparent;   /* thumb blanc, piste transparente */
+}
+
+/* Chrome/Safari/Edge (WebKit) */
+.lb-scroll::-webkit-scrollbar {
+  width: 8px;             /* largeur de la barre */
+}
+
+.lb-scroll::-webkit-scrollbar-track {
+  background: transparent; /* piste invisible */
+}
+
+.lb-scroll::-webkit-scrollbar-thumb {
+  background-color: #ffffff;  /* thumb blanc */
+  border-radius: 9999px;      /* pill */
+  border: 2px solid transparent;  /* affiner visuellement */
+  background-clip: content-box;   /* garde le “bord” transparent */
+}
+
+.lb-scroll:hover::-webkit-scrollbar-thumb {
+  opacity: 0.95; /* léger feedback au survol */
+}
+
+.lb-scroll::-webkit-scrollbar-corner {
+  background: transparent; /* coin invisible */
+}

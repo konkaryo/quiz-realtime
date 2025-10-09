@@ -77,6 +77,20 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         io.to(room.id).emit("lobby_update");
         socket.emit("joined", { playerGameId: pg.id, name: player.name, roomId: room.id });
 
+        const st = gameStates.get(room.id);
+        if (st && st.gameId === game.id) {
+            st.pgIds.add(pg.id);
+            const gameRoom = `game:${st.gameId}`;
+            io.sockets.sockets.get(socket.id)?.join(gameRoom);
+            st.attemptsThisRound.set(pg.id, 0);
+            st.answeredThisRound.delete(pg.id);
+            if (Array.isArray((st as any).answeredOrderText)) { st.answeredOrderText = (st as any).answeredOrderText.filter((id: string) => id !== pg.id); }
+            if (Array.isArray((st as any).answeredOrder)) { st.answeredOrder = (st as any).answeredOrder.filter((id: string) => id !== pg.id); }
+
+            const lb = await buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
+            io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb });
+        }
+
         if (game.state !== "running") {
           try {
             await startGameForRoom(clients, gameStates, io, prisma, room.id);
@@ -137,6 +151,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         const responseMs = Math.max(0, Date.now() - start);
 
         st.answeredThisRound.add(client.playerGameId);
+        st.answeredOrder.push(client.playerGameId);
 
         const gain = CFG.AUTO_ENERGY_GAIN + (choice.isCorrect ? CFG.MC_ANSWER_ENERGY_GAIN : 0);
 
@@ -167,7 +182,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           multiplier: scoreMultiplier(res.energy!),
         });
 
-        const lb = await buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
+        const lb = await buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
         io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
 
         ack?.({ ok: true });
@@ -180,7 +195,8 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           responseMs
         });
 
-        io.to(client.roomId).emit("answer_received");
+        //io.to(client.roomId).emit("answer_received");
+        io.to(st.roomId).emit("player_answered", { pgId: client.playerGameId, correct: !!choice.isCorrect });
       }
     );
 
@@ -226,6 +242,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
         if (correct || attempts >= CFG.TEXT_LIVES) {
           st.answeredThisRound.add(client.playerGameId);
+          st.answeredOrder.push(client.playerGameId);
         } else {
           st.attemptsThisRound.set(client.playerGameId, attempts);
         }
@@ -278,7 +295,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           }
         });
 
-        const lb = await buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
+        const lb = await buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
         io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
 
         ack?.({ ok: true });
@@ -295,7 +312,8 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           socket.emit("answer_feedback", { correct: false });
         }
 
-        io.to(client.roomId).emit("answer_received");
+        //io.to(client.roomId).emit("answer_received");
+        io.to(st.roomId).emit("player_answered", { pgId: client.playerGameId, correct });
       }
     );
 

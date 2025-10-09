@@ -1,4 +1,4 @@
-// server/src/domain/game/game.service.ts
+//server/src/domain/game/game.service.ts
 import { PrismaClient, Prisma, Theme } from "@prisma/client";
 import type { Client, RoundQuestion, GameState } from "../../types";
 import { Server } from "socket.io";
@@ -8,6 +8,7 @@ import * as energy_service from "../player/energy.service";
 import * as lb_service from "../game/leaderboard.service";
 import { scheduleBotAnswers } from "../bot/bot.service";
 import { QUESTION_DISTRIBUTION, quotasFromDistribution } from "../question/distribution";
+import { rebalanceBotsAfterGame } from "../bot/traffic";
 
 /* ---------------------------------------------------------------------------------------- */
 export async function startGameForRoom(
@@ -22,12 +23,6 @@ export async function startGameForRoom(
 
   const game = await room_service.getOrCreateCurrentGame(prisma, room.id);
   let pgs = await room_service.ensurePlayerGamesForRoom(clients, game.id, io, prisma, room.id);
-
-  const botPgs = await prisma.playerGame.findMany({
-    where: { gameId: game.id, player: { isBot: true } },
-    select: { id: true, playerId: true },
-  });
-  if (botPgs.length) { pgs = [...pgs, ...botPgs]; }
 
   type Row = { id: string };
   const QUESTION_COUNT =
@@ -133,7 +128,8 @@ export async function startGameForRoom(
     questions: ordered,
     index: 0,
     answeredThisRound: new Set<string>(),
-    answeredOrderText: [],                 // 👈 NEW
+    answeredOrderText: [],
+    answeredOrder: [],  
     pgIds: new Set(pgs.map((p) => p.id)),
     attemptsThisRound: new Map<string, number>(),
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
@@ -189,7 +185,8 @@ async function startRound(
   const TEXT_LIVES = Number(process.env.TEXT_LIVES || 3);
 
   st.answeredThisRound.clear();
-  st.answeredOrderText = [];                  // 👈 RAZ ordre réponses texte
+  st.answeredOrderText = [];
+  st.answeredOrder = [];
   st.attemptsThisRound = new Map();
   st.roundStartMs = Date.now();
   st.endsAt = st.roundStartMs + ROUND_MS;
@@ -214,8 +211,10 @@ async function startRound(
   }
 
   lb_service
-    .buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds))
-    .then((lb) => io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb }))
+    .buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st)
+    .then((lb) => {
+        io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb });
+    })
     .catch((err) => console.error("[leaderboard startRound]", err));
 
   st.timer = setTimeout(() => {
@@ -236,7 +235,7 @@ async function endRound(
   const q = st.questions[st.index];
   if (!q) return;
 
-  const leaderboard = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds));
+  const leaderboard = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
   const correct = q.choices.find((c) => c.isCorrect) || null;
 
   io.to(st.roomId).emit("round_end", {
@@ -255,7 +254,23 @@ async function endRound(
     const finalLeaderboard = leaderboard;
     const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 10000);
 
+    // Crée la prochaine game AVANT le rééquilibrage pour disposer du vrai nextGameId
     const { gameId: nextGameId } = await room_service.createNextGameFrom(prisma, st.gameId);
+
+    // Rééquilibrage des bots pour la prochaine partie (sur la même room)
+    const room = await prisma.room.findUnique({
+      where: { id: st.roomId },
+      select: { id: true, visibility: true, popularity: true },
+    });
+    if (room && room.visibility === "PUBLIC") {
+      const xMax = Number(process.env.BOT_TRAFFIC_MAX || 100); // affluence max globale
+      await rebalanceBotsAfterGame({
+        prisma, io, clients,
+        room: { id: room.id, visibility: room.visibility, traffic: room.popularity ?? 5 },
+        gameId: nextGameId, // ✅ on passe le vrai gameId cible
+        xMax,
+      });
+    }
 
     io.to(st.roomId).emit("final_leaderboard", { leaderboard: finalLeaderboard, displayMs: FINAL_LB_MS });
 

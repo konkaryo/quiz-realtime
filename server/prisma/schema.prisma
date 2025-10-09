@@ -1,3 +1,4 @@
+//schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -23,7 +24,7 @@ enum Theme {
   ARTS_CULTURE
   JEUX_BD
   GEOGRAPHIE
-  LITTERATURE
+  LANGUES_LITTERATURE
   ECONOMIE_POLITIQUE
   GASTRONOMIE
   CROYANCES
@@ -31,10 +32,9 @@ enum Theme {
   HISTOIRE
   DIVERS
   SCIENCES_VIE
-  SCIENCES_EXACTES
+  SCIENCES_TECHNIQUES
   MUSIQUE
   ACTUALITES_MEDIAS
-  TECHNOLOGIE
 }
 
 enum RoomVisibility {
@@ -80,39 +80,44 @@ model Player {
 }
 
 model Bot {
-  id        String      @id @default(cuid())
-  name      String      @unique
-  speed     Int
-  skills    BotSkill[]
-  playerId  String?     @unique
-  player    Player?     @relation(fields: [playerId], references: [id])
-  createdAt DateTime    @default(now())
+  id           String     @id @default(cuid())
+  name         String     @unique
+  speed        Int        @default(50)
+  averageSkill Int        @default(50)
+  skills       BotSkill[]
+  morning      Float      @default(0.1)
+  afternoon    Float      @default(0.2)
+  evening      Float      @default(0.5)
+  night        Float      @default(0.2)
+  playerId     String?    @unique
+  player       Player?    @relation(fields: [playerId], references: [id])
+  createdAt    DateTime   @default(now())
 }
 
 model BotSkill {
-  botId  String
-  theme  Theme
-  value  Int
-  bot    Bot    @relation(fields: [botId], references: [id], onDelete: Cascade)
+  botId String
+  theme Theme
+  value Int
+  bot   Bot    @relation(fields: [botId], references: [id], onDelete: Cascade)
 
   @@id([botId, theme])
 }
-
 
 model Room {
   id            String         @id @default(cuid())
   ownerId       String?
   owner         User?          @relation("UserOwnedRooms", fields: [ownerId], references: [id], onDelete: SetNull)
   difficulty    Int            @default(5)
+  popularity    Int            @default(5)
   code          String?        @unique
   createdAt     DateTime       @default(now())
   games         Game[]
   status        RoomStatus     @default(OPEN)
   closedAt      DateTime?
   bannedThemes  Theme[]
-  questionCount Int             @default(10)
-  roundMs       Int             @default(10000)
-  visibility    RoomVisibility  @default(PRIVATE)
+  questionCount Int            @default(10)
+  roundMs       Int            @default(10000)
+  visibility    RoomVisibility @default(PRIVATE)
 
   @@index([ownerId])
   @@index([status, createdAt])
@@ -131,7 +136,7 @@ model Question {
   id              String           @id @default(cuid())
   text            String
   choices         Choice[]
-  theme           Theme? 
+  theme           Theme?
   difficulty      String?
   img             String?
   playerGames     PlayerGame[]

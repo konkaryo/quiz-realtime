@@ -1,4 +1,4 @@
-// server/scripts/seed.ts
+//server/prisma/seed.ts
 import fs from "fs";
 import path from "path";
 import { loadQuestionCSV } from "../src/ingest";
