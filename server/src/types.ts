@@ -20,6 +20,8 @@ export type GameState = {
   answeredThisRound: Set<string>;
   answeredOrderText: string[];
   answeredOrder: string[];
+  roundSeq: number;
+  roundUid?: string;
   pgIds: Set<string>;  
   attemptsThisRound: Map<string, number>;
   roundMs: number;  
