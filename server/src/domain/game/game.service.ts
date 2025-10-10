@@ -133,6 +133,7 @@ export async function startGameForRoom(
     pgIds: new Set(pgs.map((p) => p.id)),
     attemptsThisRound: new Map<string, number>(),
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
+    roundSeq: 0,
   };
   gameStates.set(room.id, st);
 
@@ -178,49 +179,48 @@ async function startRound(
   prisma: PrismaClient,
   st: GameState
 ) {
-  const q = st.questions[st.index];
-  if (!q) return;
+  const q = st.questions[st.index]; if (!q) return;
 
-  const ROUND_MS   = st.roundMs ?? Number(process.env.ROUND_MS || 10000);
+  // --- Guard: invalide l'ancien timer
+  if (st.timer) { clearTimeout(st.timer); st.timer = undefined; }
+
+  // --- NEW: séquence + UID de round
+  st.roundSeq = (st.roundSeq ?? 0) + 1;
+  st.roundUid = `${st.gameId}:${st.index}:${st.roundSeq}`;
+  const myUid = st.roundUid;
+
+  const ROUND_MS = st.roundMs ?? Number(process.env.ROUND_MS || 10000);
   const TEXT_LIVES = Number(process.env.TEXT_LIVES || 3);
 
   st.answeredThisRound.clear();
   st.answeredOrderText = [];
-  st.answeredOrder = [];
   st.attemptsThisRound = new Map();
   st.roundStartMs = Date.now();
   st.endsAt = st.roundStartMs + ROUND_MS;
 
-  // masque les choix
-  const masked = { id: q.id, text: q.text, img: q.img, theme: q.theme, difficulty: q.difficulty };
-
+  // ... emit round_begin (on peut aussi envoyer roundUid si tu veux)
   io.to(st.roomId).emit("round_begin", {
     index: st.index,
     total: st.questions.length,
     endsAt: st.endsAt,
-    question: masked,
+    question: { id: q.id, text: q.text, img: q.img, theme: q.theme, difficulty: q.difficulty },
     textLives: TEXT_LIVES,
+    serverNow: Date.now()
+    // optional: roundUid: myUid
   });
 
-  if ((st as any)._botsPlannedIndex !== st.index) {
-    (st as any)._botsPlannedIndex = st.index;
-    try { await scheduleBotAnswers(prisma, io, clients, st); }
-    catch (e) { console.error("[bot schedule] error:", e); }
-  } else {
-    console.warn("[bot schedule] skipped (already planned)", { roomId: st.roomId, gameId: st.gameId, index: st.index });
-  }
+  // Planifier les bots pour CE round uniquement
+  try { await scheduleBotAnswers(prisma, io, clients, st, myUid); } catch (e) { console.error(e); }
 
-  lb_service
-    .buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st)
-    .then((lb) => {
-        io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb });
-    })
+  // Leaderboard initial
+  lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st)
+    .then((lb) => io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb }))
     .catch((err) => console.error("[leaderboard startRound]", err));
 
+  // Timer de fin — exécuté SEULEMENT si l'UID n'a pas changé
   st.timer = setTimeout(() => {
-    endRound(clients, gameStates, io, prisma, st).catch((err) => {
-      console.error("[endRound error]", err);
-    });
+    if (st.roundUid !== myUid) return;    // stale timeout, on ignore
+    endRound(clients, gameStates, io, prisma, st, myUid).catch(err => console.error("[endRound error]", err));
   }, ROUND_MS);
 }
 /* ---------------------------------------------------------------------------------------- */
@@ -230,19 +230,21 @@ async function endRound(
   gameStates: Map<string, GameState>,
   io: Server,
   prisma: PrismaClient,
-  st: GameState
+  st: GameState,
+  myUid?: string
 ) {
-  const q = st.questions[st.index];
-  if (!q) return;
+  if (myUid && st.roundUid !== myUid) return;
+
+  const q = st.questions[st.index]; if (!q) return;
 
   const leaderboard = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
-  const correct = q.choices.find((c) => c.isCorrect) || null;
+  const correct = q.choices.find(c => c.isCorrect) || null;
 
   io.to(st.roomId).emit("round_end", {
     index: st.index,
     correctChoiceId: correct ? correct.id : null,
     correctLabel: correct ? correct.label : null,
-    leaderboard
+    leaderboard,
   });
 
   st.endsAt = undefined;
@@ -250,9 +252,10 @@ async function endRound(
   const hasNext = st.index + 1 < st.questions.length;
   if (!hasNext) {
     await prisma.game.update({ where: { id: st.gameId }, data: { state: "ended" } });
-
-    const finalLeaderboard = leaderboard;
     const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 10000);
+    io.to(st.roomId).emit("final_leaderboard", { leaderboard, displayMs: FINAL_LB_MS });
+
+    if (st.timer) { clearTimeout(st.timer); st.timer = undefined; }
 
     // Crée la prochaine game AVANT le rééquilibrage pour disposer du vrai nextGameId
     const { gameId: nextGameId } = await room_service.createNextGameFrom(prisma, st.gameId);
@@ -272,8 +275,6 @@ async function endRound(
       });
     }
 
-    io.to(st.roomId).emit("final_leaderboard", { leaderboard: finalLeaderboard, displayMs: FINAL_LB_MS });
-
     if (st.timer) clearTimeout(st.timer);
 
     setTimeout(async () => {
@@ -287,9 +288,11 @@ async function endRound(
 
   const GAP_MS = Number(process.env.GAP_MS || 3001);
   st.index += 1;
+  const nextDelayUid = `${st.gameId}:${st.index}:gap:${Date.now()}`;
+  st.roundUid = nextDelayUid; // invalide l'ancien round/timeout pendant l'attente
   st.timer = setTimeout(() => {
-    startRound(clients, gameStates, io, prisma, st).catch((err) => {
-      console.error("[startRound error]", err);
-    });
+    // si l’UID a changé (ex: stopGame), on ne lance pas
+    if (st.roundUid !== nextDelayUid) return;
+    startRound(clients, gameStates, io, prisma, st).catch(err => console.error("[startRound error]", err));
   }, GAP_MS);
 }

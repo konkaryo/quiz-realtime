@@ -108,28 +108,21 @@ export default function RoomPage() {
 
   const lbOverflow = leaderboard.length > LB_MAX_VISIBLE;
 
-  // timing
-  const [endsAt, setEndsAt] = useState<number | null>(null);
-  const [now, setNow] = useState(Date.now());
-  const remaining = useMemo(
-    () => (endsAt ? Math.max(0, Math.ceil((endsAt - now) / 1000)) : null),
-    [endsAt, now]
-  );
-  useEffect(() => {
-    if (!endsAt) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [endsAt]);
-
   /* -------- timer bar (inversée) -------- */
+  const [skew, setSkew] = useState(0);
+  const nowServer = () => Date.now() + skew;
   const barRef = useRef<HTMLDivElement | null>(null);
-  const resetTimerBar = (dur: number) => {
+  const resetTimerBarToEndsAt = (endsAtMs: number) => {
     const el = barRef.current; if (!el) return;
+    const remaining = Math.max(0, endsAtMs - nowServer()); // ms exactes côté serveur
+
     el.style.transition = "none";
     el.style.transformOrigin = "left";
     el.style.transform = "scaleX(1)";
+
+    // relance clean à la frame suivante
     requestAnimationFrame(() => {
-      el.style.transition = `transform ${dur}ms linear`;
+      el.style.transition = `transform ${remaining}ms linear`;
       el.style.transform = "scaleX(0)";
     });
   };
@@ -138,6 +131,19 @@ export default function RoomPage() {
     el.style.transition = "none";
     el.style.transform = "scaleX(0)";
   };
+
+    // timing
+  const [endsAt, setEndsAt] = useState<number | null>(null);
+  const [nowTick, setNowTick] = useState(Date.now());
+  const remaining = useMemo(
+    () => (endsAt ? Math.max(0, Math.ceil((endsAt - nowServer()) / 1000)) : null),    
+    [endsAt, nowTick, skew]
+  );
+  useEffect(() => {
+    if (!endsAt) return;
+    const id = setInterval(() => setNowTick(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [endsAt]);
 
   /* ----------------------------- effects ----------------------------- */
   useEffect(() => {
@@ -154,6 +160,14 @@ export default function RoomPage() {
   }, []);
 
   useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === "visible" && endsAt) { resetTimerBarToEndsAt(endsAt); }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [endsAt, skew]);
+
+  useEffect(() => {
     if (!roomId) return;
     const s = io(SOCKET_URL, { path: "/socket.io", withCredentials: true, transports: ["websocket", "polling"] });
     setSocket(s);
@@ -161,9 +175,8 @@ export default function RoomPage() {
     s.on("room_closed", ({ roomId: rid }: { roomId: string }) => { if (rid === roomId) { alert("La room a été fermée."); s.close(); nav("/"); }});
     s.on("room_deleted", ({ roomId: rid }: { roomId: string }) => { if (rid === roomId) { alert("La room a été supprimée."); s.close(); nav("/"); }});
 
-    s.on("round_begin", (p: { index:number; total:number; endsAt:number; question: QuestionLite }) => {
-      const nowMs = Date.now();
-      const remaining = Math.max(0, p.endsAt - nowMs);
+    s.on("round_begin", (p: { index:number; total:number; endsAt:number; question: QuestionLite; serverNow?: number }) => {
+      if (typeof p.serverNow === "number") { setSkew(p.serverNow - Date.now()); }
       setPhase("playing");
       setIndex(p.index); setTotal(p.total); setEndsAt(p.endsAt);
       setQuestion(p.question);
@@ -173,7 +186,7 @@ export default function RoomPage() {
       setFeedback(null);
       setLives(TEXT_LIVES);
       setRevealAnswer(false);
-      if (remaining >= 100) { resetTimerBar(remaining); }
+      if (p.endsAt - nowServer() >= 50) { resetTimerBarToEndsAt(p.endsAt); } 
       else { stopTimerBar(); }
       initSfx();
     });

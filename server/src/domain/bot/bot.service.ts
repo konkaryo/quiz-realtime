@@ -128,13 +128,16 @@ export async function scheduleBotAnswers(
   prisma: PrismaClient,
   io: Server,
   clients: Map<string, Client>,
-  st: GameState
+  st: GameState,
+  roundUid?: string
 ) {
   const q = st.questions[st.index];
   if (!q) return;
 
   const roundMs = (st.endsAt ?? 0) - (st.roundStartMs ?? Date.now());
   if (roundMs <= 0) return;
+
+  const myUid = roundUid ?? st.roundUid;
 
   const correctChoice = q.choices.find((c) => c.isCorrect) || null;
   const wrongChoices  = q.choices.filter((c) => !c.isCorrect);
@@ -187,6 +190,7 @@ export async function scheduleBotAnswers(
     setTimeout(async () => {
       try {
         if (!st.endsAt || Date.now() > st.endsAt) return;
+        if (st.roundUid !== myUid) return;
         if (st.answeredThisRound.has(pg.id))     return;
 
         // ⬇️ ASSURE UN CLIENT FACTICE SI ABSENT
