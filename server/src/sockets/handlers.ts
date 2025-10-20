@@ -1,4 +1,4 @@
-//handlers.ts
+// /server/src/domain/sockets/handlers.ts
 import { Server } from "socket.io";
 import type { Client, GameState } from "../types";
 import { prisma } from "../infra/prisma";
@@ -165,6 +165,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
               questionId: q.id,
               text: choice.label,
               correct: choice.isCorrect,
+              mode: 'mc',
               responseMs
             },
           });
@@ -275,6 +276,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
               questionId:   q.id, 
               text: raw,
               correct,
+              mode: 'text',
               responseMs
             },
           });

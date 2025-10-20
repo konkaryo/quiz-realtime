@@ -8,6 +8,6 @@ export function toImgUrl(name?: string | null): string | null {
         .replace(/^\.?\/?img\//i, "")
         .replace(/\.(avif|webp|png|jpg|jpeg)$/i, "");
 
-    return `/img/${encodeURIComponent(cleaned)}.avif`;
+    return `/img/questions/${encodeURIComponent(cleaned)}.avif`;
 }
 /* ---------------------------------------------------------------------------------------- */

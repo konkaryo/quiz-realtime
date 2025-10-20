@@ -3,12 +3,13 @@ import { PrismaClient, Prisma, Theme } from "@prisma/client";
 import type { Client, RoundQuestion, GameState } from "../../types";
 import { Server } from "socket.io";
 import * as room_service from "../room/room.service";
-import * as question_service from "../question/question.service";
+import * as media_service from "../media/media.service";
 import * as energy_service from "../player/energy.service";
 import * as lb_service from "../game/leaderboard.service";
 import { scheduleBotAnswers } from "../bot/bot.service";
 import { QUESTION_DISTRIBUTION, quotasFromDistribution } from "../question/distribution";
 import { rebalanceBotsAfterGame } from "../bot/traffic";
+import { buildPlayerSummary, buildRoomQuestionStats } from "./summary.service";
 
 /* ---------------------------------------------------------------------------------------- */
 export async function startGameForRoom(
@@ -110,7 +111,7 @@ export async function startGameForRoom(
       text: q.text,
       theme: q.theme ?? null,
       difficulty: q.difficulty ?? null,
-      img: question_service.toImgUrl(q.img),
+      img: media_service.toImgUrl(q.img),
       choices: q.choices,
       acceptedNorms: q.acceptedAnswers.map((a) => a.norm),
       correctLabel: correct ? correct.label : "",
@@ -252,8 +253,24 @@ async function endRound(
   const hasNext = st.index + 1 < st.questions.length;
   if (!hasNext) {
     await prisma.game.update({ where: { id: st.gameId }, data: { state: "ended" } });
-    const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 10000);
+    const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 20000);
     io.to(st.roomId).emit("final_leaderboard", { leaderboard, displayMs: FINAL_LB_MS });
+
+    const statsMap = await buildRoomQuestionStats(prisma, st.gameId);
+
+
+    for (const [socketId, client] of clients) {
+      if (client.roomId !== st.roomId) continue;
+
+      const summary = await buildPlayerSummary(prisma, st.gameId, client.playerGameId);
+
+      const enriched = summary.map(item => ({
+        ...item,
+        stats: statsMap.get(item.questionId) ?? { correct: 0, correctQcm: 0, wrong: 0 },
+      }));
+
+      io.to(socketId).emit("final_summary", { summary: enriched });
+    }
 
     if (st.timer) { clearTimeout(st.timer); st.timer = undefined; }
 

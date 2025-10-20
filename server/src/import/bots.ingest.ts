@@ -39,11 +39,11 @@ type ParsedBot = {
   name: string;
   speed: number;
   skills: { theme: Theme; value: number }[];
-  // 0..1
   morning?: number;
   afternoon?: number;
   evening?: number;
   night?: number;
+  img?: string;
 };
 
 function toNum0_1(raw: unknown): number | undefined {
@@ -102,7 +102,7 @@ async function parseBotsCsv(filePath: string): Promise<ParsedBot[]> {
     // ---- compétences par thème (colonnes “matières”) ----
     const skills: { theme: Theme; value: number }[] = [];
     for (const [header, val] of Object.entries(raw)) {
-      if (["joueur","vitesse","matin","apres_midi","soir","nuit"].includes(header)) continue;
+      if (["joueur","vitesse","matin","apres_midi","soir","nuit","img"].includes(header)) continue;
       const theme = THEME_BY_HEADER[header];
       if (!theme) continue;
       const n = Number(String(val).replace(",", "."));
@@ -119,6 +119,8 @@ async function parseBotsCsv(filePath: string): Promise<ParsedBot[]> {
     const norm = normalizeIfNeeded(m, ap, so, nu);
     m = norm.a; ap = norm.b; so = norm.c; nu = norm.d;
 
+    const img = raw.img;
+
     bots.push({
       name: r.joueur.trim(),
       speed: Math.round(r.vitesse),
@@ -127,6 +129,7 @@ async function parseBotsCsv(filePath: string): Promise<ParsedBot[]> {
       afternoon: ap,
       evening: so,
       night: nu,
+      img
     });
   }
   return bots;
@@ -144,6 +147,7 @@ export async function importBots(csvAbsPath = path.resolve(__dirname, "../import
 
   for (const b of bots) {
     await prisma.$transaction(async (tx) => {
+      const playerImg = (b.img && b.img.trim()) || "0";
       const bot = await tx.bot.upsert({
         where: { name: b.name },
         update: {
@@ -154,8 +158,8 @@ export async function importBots(csvAbsPath = path.resolve(__dirname, "../import
           ...(typeof b.evening   === "number" ? { evening:   b.evening   } : {}),
           ...(typeof b.night     === "number" ? { night:     b.night     } : {}),
           player: { upsert: {
-            update: { name: b.name, isBot: true },
-            create: { name: b.name, isBot: true }
+            update: { name: b.name, isBot: true, img: playerImg },
+            create: { name: b.name, isBot: true, img: playerImg }
           }},
         },
         create: {
@@ -165,7 +169,7 @@ export async function importBots(csvAbsPath = path.resolve(__dirname, "../import
           ...(typeof b.afternoon === "number" ? { afternoon: b.afternoon } : {}),
           ...(typeof b.evening   === "number" ? { evening:   b.evening   } : {}),
           ...(typeof b.night     === "number" ? { night:     b.night     } : {}),
-          player: { create: { name: b.name, isBot: true } },
+          player: { create: { name: b.name, isBot: true, img: playerImg } },
         },
         select: { id: true },
       });

@@ -1,6 +1,7 @@
 // server/src/domain/game/leaderboard.service.ts
 import { PrismaClient } from "@prisma/client";
 import type { GameState } from "../../types";
+import * as media_service from "../media/media.service";
 
 /**
  * Construit le leaderboard pour un gameId (ou un sous-ensemble de PlayerGame ids)
@@ -9,12 +10,7 @@ import type { GameState } from "../../types";
  *  2) en cas d'égalité: ordre de réponse de la manche en cours (answeredOrder)
  *     -> plus tôt = plus haut
  */
-export async function buildLeaderboard(
-  prisma: PrismaClient,
-  gameId: string,
-  onlyPgIds?: string[],
-  st?: GameState
-) {
+export async function buildLeaderboard(prisma: PrismaClient, gameId: string, onlyPgIds?: string[], st?: GameState) {
   const where =
     onlyPgIds && onlyPgIds.length
       ? { id: { in: onlyPgIds } }
@@ -24,13 +20,14 @@ export async function buildLeaderboard(
     where,
     // on garde un premier tri DB par score desc pour limiter le travail en mémoire
     orderBy: [{ score: "desc" }],
-    select: { id: true, score: true, player: { select: { name: true } } },
+    select: { id: true, score: true, player: { select: { name: true, img: true } } },
   });
 
   const lb = rows.map((r) => ({
     id: r.id,
     name: r.player.name,
     score: r.score,
+    img: media_service.toProfileUrl(r.player.img)
   }));
 
   // Tie-break si on a un GameState (et donc un answeredOrder)

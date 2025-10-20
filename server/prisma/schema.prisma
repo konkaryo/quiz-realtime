@@ -19,6 +19,11 @@ enum RoomStatus {
   CLOSED
 }
 
+enum AnswerMode {
+  text
+  mc
+}
+
 enum Theme {
   CINEMA_SERIES
   ARTS_CULTURE
@@ -73,6 +78,7 @@ model Player {
   userId      String?      @unique
   user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   name        String
+  img         String       @default("0")   
   isBot       Boolean      @default(false)
   bot         Bot?
   createdAt   DateTime     @default(now())
@@ -173,6 +179,7 @@ model Answer {
   question     Question?  @relation(fields: [questionId], references: [id])
   questionId   String?
   text         String
+  mode         AnswerMode?
   correct      Boolean
   createdAt    DateTime   @default(now())
   responseMs   Int        @default(-1)

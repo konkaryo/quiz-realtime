@@ -1,5 +1,5 @@
 // server/src/domain/bot/bot.service.ts
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, AnswerMode } from "@prisma/client";
 import type { Server } from "socket.io";
 import type { Client, GameState } from "../../types";
 import { CFG } from "../../config";
@@ -287,7 +287,7 @@ async function botApplyMcScoring(
 
   await prisma.$transaction(async (tx) => {
     await tx.answer.create({
-      data: { playerGameId: client.playerGameId, questionId, text: label, correct, responseMs },
+      data: { playerGameId: client.playerGameId, questionId, text: label, correct, mode: AnswerMode.mc, responseMs },
     });
     if (correct) {
       await tx.playerGame.update({
@@ -323,7 +323,7 @@ async function botApplyTextScoring(
 
   await prisma.$transaction(async (tx) => {
     await tx.answer.create({
-      data: { playerGameId: client.playerGameId, questionId: q.id, text: rawText, correct, responseMs },
+      data: { playerGameId: client.playerGameId, questionId: q.id, text: rawText, correct, mode: AnswerMode.text, responseMs },
     });
     if (correct) {
       const baseWithBonus = CFG.TXT_ANSWER_POINTS_GAIN + speedBonus; // 100 + bonus
