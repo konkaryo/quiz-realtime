@@ -7,6 +7,8 @@ Appliquer les modifications de schéma de base de données
 -> npx prisma migrate dev --create-only --name [nom_de_la_migration]
 -> npx prisma generate
 
+CTRL+SHIFT+P : typescript: reload server
+
 Réinitialiser la base de données
 -> npx prisma migrate reset
 
@@ -75,8 +77,13 @@ Reset de la prod
 -> curl -i https://synapz.online/health
 -> curl -I "https://synapz.online/socket.io/?EIO=4&transport=polling"
 
+Identifier bug en prod
+-> pm2 logs quiz-server --lines 100
+
 Créer un user
 -> curl -i -H "Content-Type: application/json" -d "{\"email\":\"test@example.com\",\"password\":\"secret123\",\"displayName\":\"Test\"}" http://127.0.0.1:3001/auth/register
+
+Tout commenter : CTRL+K CTRL+C
 
 
 
