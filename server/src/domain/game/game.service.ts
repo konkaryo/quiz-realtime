@@ -11,6 +11,8 @@ import { QUESTION_DISTRIBUTION, quotasFromDistribution } from "../question/distr
 import { rebalanceBotsAfterGame } from "../bot/traffic";
 import { buildPlayerSummary, buildRoomQuestionStats } from "./summary.service";
 
+type Leaderboard = Awaited<ReturnType<typeof lb_service.buildLeaderboard>>;
+
 /* ---------------------------------------------------------------------------------------- */
 export async function startGameForRoom(
   clients: Map<string, Client>,
@@ -138,7 +140,7 @@ export async function startGameForRoom(
     index: 0,
     answeredThisRound: new Set<string>(),
     answeredOrderText: [],
-    answeredOrder: [],  
+    answeredOrder: [],
     pgIds: new Set(pgs.map((p) => p.id)),
     attemptsThisRound: new Map<string, number>(),
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
@@ -178,7 +180,7 @@ export async function stopGameForRoom(
 
   if (st?.gameId) {
     try { await prisma.game.update({ where: { id: st.gameId }, data: { state: "ended" } }); }
-    catch {}
+    catch { }
   }
   io.to(roomId).emit("game_stopped");
 }
@@ -263,59 +265,16 @@ async function endRound(
 
   const hasNext = st.index + 1 < st.questions.length;
   if (!hasNext) {
-    await prisma.game.update({ where: { id: st.gameId }, data: { state: "ended" } });
-    const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 20000);
-    io.to(st.roomId).emit("final_leaderboard", { leaderboard, displayMs: FINAL_LB_MS });
+    const finalGapMs = Number(process.env.FINAL_GAP_MS || process.env.GAP_MS || 3001);
+    const finalGapUid = `${st.gameId}:${st.index}:finalgap:${Date.now()}`;
+    st.roundUid = finalGapUid;
 
-    const statsMap = await buildRoomQuestionStats(prisma, st.gameId);
-
-
-    for (const [socketId, client] of clients) {
-      if (client.roomId !== st.roomId) continue;
-
-      const summary = await buildPlayerSummary(prisma, st.gameId, client.playerGameId);
-
-      const enriched = summary.map(item => ({
-        ...item,
-        stats: statsMap.get(item.questionId) ?? { correct: 0, correctQcm: 0, wrong: 0 },
-      }));
-
-      io.to(socketId).emit("final_summary", { summary: enriched });
-    }
-
-    if (st.timer) { clearTimeout(st.timer); st.timer = undefined; }
-
-    st.finished = true;
-
-    // Crée la prochaine game AVANT le rééquilibrage pour disposer du vrai nextGameId
-    const { gameId: nextGameId } = await room_service.createNextGameFrom(prisma, st.gameId);
-
-    // Rééquilibrage des bots pour la prochaine partie (sur la même room)
-    const room = await prisma.room.findUnique({
-      where: { id: st.roomId },
-      select: { id: true, visibility: true, popularity: true },
-    });
-    if (room && room.visibility === "PUBLIC") {
-      const xMax = Number(process.env.BOT_TRAFFIC_MAX || 100); // affluence max globale
-      await rebalanceBotsAfterGame({
-        prisma, io, clients,
-        room: { id: room.id, visibility: room.visibility, traffic: room.popularity ?? 5 },
-        gameId: nextGameId, // ✅ on passe le vrai gameId cible
-        xMax,
-      });
-    }
-
-    if (st.timer) clearTimeout(st.timer);
-
-    setTimeout(async () => {
-      const current = gameStates.get(st.roomId);
-      if (current && current.gameId !== st.gameId) {
-        return;
-      }
-      gameStates.delete(st.roomId);
-      await room_service.ensurePlayerGamesForRoom(clients, nextGameId, io, prisma, st.roomId);
-      await startGameForRoom(clients, gameStates, io, prisma, st.roomId);
-    }, FINAL_LB_MS);
+    if (st.timer) { clearTimeout(st.timer); }
+    st.timer = setTimeout(() => {
+      if (st.roundUid !== finalGapUid) return;
+      finalizeGameAfterReveal(clients, gameStates, io, prisma, st, leaderboard)
+        .catch(err => console.error("[finalizeGame error]", err));
+    }, finalGapMs);
 
     return;
   }
@@ -329,4 +288,71 @@ async function endRound(
     if (st.roundUid !== nextDelayUid) return;
     startRound(clients, gameStates, io, prisma, st).catch(err => console.error("[startRound error]", err));
   }, GAP_MS);
+}
+
+async function finalizeGameAfterReveal(
+  clients: Map<string, Client>,
+  gameStates: Map<string, GameState>,
+  io: Server,
+  prisma: PrismaClient,
+  st: GameState,
+  leaderboard: Leaderboard,
+) {
+  st.timer = undefined;
+
+  await prisma.game.update({ where: { id: st.gameId }, data: { state: "ended" } });
+
+  const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 20000);
+  io.to(st.roomId).emit("final_leaderboard", { leaderboard, displayMs: FINAL_LB_MS });
+
+  const statsMap = await buildRoomQuestionStats(prisma, st.gameId);
+
+  for (const [socketId, client] of clients) {
+    if (client.roomId !== st.roomId) continue;
+
+    const summary = await buildPlayerSummary(prisma, st.gameId, client.playerGameId);
+
+    const enriched = summary.map(item => ({
+      ...item,
+      stats: statsMap.get(item.questionId) ?? { correct: 0, correctQcm: 0, wrong: 0 },
+    }));
+
+    io.to(socketId).emit("final_summary", { summary: enriched });
+  }
+
+  st.finished = true;
+
+  // Crée la prochaine game AVANT le rééquilibrage pour disposer du vrai nextGameId
+  const { gameId: nextGameId } = await room_service.createNextGameFrom(prisma, st.gameId);
+
+  // Rééquilibrage des bots pour la prochaine partie (sur la même room)
+  const room = await prisma.room.findUnique({
+    where: { id: st.roomId },
+    select: { id: true, visibility: true, popularity: true },
+  });
+  if (room && room.visibility === "PUBLIC") {
+    const xMax = Number(process.env.BOT_TRAFFIC_MAX || 100); // affluence max globale
+    await rebalanceBotsAfterGame({
+      prisma, io, clients,
+      room: { id: room.id, visibility: room.visibility, traffic: room.popularity ?? 5 },
+      gameId: nextGameId, // ✅ on passe le vrai gameId cible
+      xMax,
+    });
+
+  }
+
+  const restartUid = `${st.gameId}:finalLb:${Date.now()}`;
+  st.roundUid = restartUid;
+  st.timer = setTimeout(async () => {
+    if (st.roundUid !== restartUid) return;
+
+    const current = gameStates.get(st.roomId);
+    if (current && current.gameId !== st.gameId) {
+      return;
+    }
+
+    gameStates.delete(st.roomId);
+    await room_service.ensurePlayerGamesForRoom(clients, nextGameId, io, prisma, st.roomId);
+    await startGameForRoom(clients, gameStates, io, prisma, st.roomId);
+  }, FINAL_LB_MS);
 }
