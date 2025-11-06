@@ -52,6 +52,14 @@ async function executeStartGameForRoom(
   if (!room) return;
 
   const game = await room_service.getOrCreateCurrentGame(prisma, room.id);
+
+  const existingState = gameStates.get(room.id);
+  if (existingState && existingState.gameId === game.id && game.state === "running") {
+    const refreshed = await room_service.ensurePlayerGamesForRoom(clients, game.id, io, prisma, room.id);
+    for (const pg of refreshed) existingState.pgIds.add(pg.id);
+    return;
+  }
+  
   let pgs = await room_service.ensurePlayerGamesForRoom(clients, game.id, io, prisma, room.id);
 
   type Row = { id: string };
