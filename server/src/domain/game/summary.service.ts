@@ -2,6 +2,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import { toImgUrl } from "../media/media.service";
+import type { RoundQuestion } from "../../types";
 
 type Mode = 'text' | 'mc';
 
@@ -24,21 +25,37 @@ export type QuestionStats = {
   wrong: number;      // aucune bonne tentative
 };
 
+type QuestionMeta = {
+  index: number;
+  text: string;
+  img: string | null;
+  correctLabel: string | null;
+};
+
 export async function buildPlayerSummary(
   prisma: PrismaClient,
   gameId: string,
-  playerGameId: string
+  playerGameId: string,
+  orderedQuestions?: readonly RoundQuestion[]
 ): Promise<QuestionRecap[]> {
   // On récupère l’ordre des questions joué + leurs choix
-  const game = await prisma.game.findUnique({
-    where: { id: gameId },
+  const playerGame = await prisma.playerGame.findFirst({
+    where: { id: playerGameId, gameId },
     select: {
-      playerGames: { where: { id: playerGameId }, select: { id: true } },
+      id: true,
+      questions: {
+        select: {
+          id: true,
+          text: true,
+          img: true,
+          choices: { select: { label: true, isCorrect: true } },
+        },
+      },
       // Si tu stocks déjà l’ordre des questions ailleurs, adapte ici :
       // sinon, on lit via les Answer (index par createdAt)
     },
   });
-  if (!game) return [];
+  if (!playerGame) return [];
 
   // Réponses du joueur + question associée + choix correct
   const answers = await prisma.answer.findMany({
@@ -63,28 +80,135 @@ export async function buildPlayerSummary(
   // Pour estimer les points, on peut reconstituer à partir des règles CFG
   // Si tu préfères, tu peux ajouter une colonne "points" à Answer.
   const { CFG } = require("../../config");
-  const rows: QuestionRecap[] = answers.map((a, i) => {
+
+  const metas = new Map<string, QuestionMeta>();
+  if (orderedQuestions?.length) {
+    orderedQuestions.forEach((q, idx) => {
+      metas.set(q.id, {
+        index: idx,
+        text: q.text,
+        img: q.img ?? null,
+        correctLabel: q.correctLabel?.trim() ? q.correctLabel : null,
+      });
+    });
+  }
+
+   if (playerGame.questions?.length) {
+    playerGame.questions.forEach((q, idx) => {
+      const correctChoice = q.choices.find((c) => c.isCorrect);
+      const fallbackLabel = correctChoice?.label ?? null;
+      const meta = metas.get(q.id);
+      const img = toImgUrl(q.img || undefined);
+      if (!meta) {
+        metas.set(q.id, {
+          index: metas.size > 0 && !orderedQuestions?.length ? idx : metas.size,
+          text: q.text,
+          img,
+          correctLabel: fallbackLabel,
+        });
+        return;
+      }
+
+      if (!meta.text) meta.text = q.text;
+      if (!meta.img) meta.img = img;
+      if (!meta.correctLabel && fallbackLabel) meta.correctLabel = fallbackLabel;
+    });
+  }
+
+  let nextIndex = metas.size;
+  const ensureMeta = (
+    questionId: string,
+    fallback: { text: string; img?: string | null; correctLabel?: string | null }
+  ): QuestionMeta => {
+    let meta = metas.get(questionId);
+    if (!meta) {
+      meta = {
+        index: nextIndex++,
+        text: fallback.text,
+        img: toImgUrl(fallback.img || undefined),
+        correctLabel: fallback.correctLabel ?? null,
+      };
+      metas.set(questionId, meta);
+      return meta;
+    }
+
+    if (!meta.text) meta.text = fallback.text;
+    if (!meta.img) meta.img = toImgUrl(fallback.img || undefined);
+    if (!meta.correctLabel && fallback.correctLabel) meta.correctLabel = fallback.correctLabel;
+    return meta;
+  };
+
+  const byQuestion = new Map<string, QuestionRecap[]>();
+
+  for (const a of answers) {  
+
     const q = a.question!;
     const correctChoice = q.choices.find(c => c.isCorrect);
-    const base =
-      a.correct
-        ? (correctChoice ? CFG.MC_ANSWER_POINTS_GAIN : CFG.TXT_ANSWER_POINTS_GAIN)
-        : 0;
 
-    return {
-      index: i,
-      questionId: q.id,
+    const fallbackLabel = correctChoice?.label ?? null;
+    const meta = ensureMeta(q.id, {
       text: q.text,
-      img: toImgUrl(q.img || undefined),
-      correctLabel: correctChoice?.label ?? null,
+      img: q.img,
+      correctLabel: fallbackLabel,
+    });
+
+    const base = a.correct ? (correctChoice ? CFG.MC_ANSWER_POINTS_GAIN : CFG.TXT_ANSWER_POINTS_GAIN) : 0;
+
+    const entry: QuestionRecap = {
+      index: meta.index,
+      questionId: q.id,
+      text: meta.text,
+      img: meta.img,
+      correctLabel: meta.correctLabel ?? fallbackLabel,
       yourAnswer: a.text,
       correct: a.correct,
       responseMs: a.responseMs ?? -1,
-      points: base, // + éventuel bonus de vitesse si tu l’utilises (ajoute-le ici)
+      points: base
     };
+
+    const list = byQuestion.get(q.id);
+    if (list) list.push(entry);
+    else byQuestion.set(q.id, [entry]);
+  }
+
+  for (const [questionId, meta] of metas) {
+    const list = byQuestion.get(questionId);
+    if (!list || list.length === 0) {
+      byQuestion.set(questionId, [
+        {
+          index: meta.index,
+          questionId,
+          text: meta.text,
+          img: meta.img,
+          correctLabel: meta.correctLabel,
+          yourAnswer: null,
+          correct: false,
+          responseMs: -1,
+          points: 0,
+        },
+      ]);
+      continue;
+    }
+
+    byQuestion.set(
+      questionId,
+      list.map((item) => ({
+        ...item,
+        index: meta.index,
+        text: meta.text,
+        img: meta.img,
+        correctLabel: meta.correctLabel ?? item.correctLabel ?? null,
+      }))
+    );
+  }
+
+  const ordered = Array.from(byQuestion.values()).sort((a, b) => {
+    const ia = a[0]?.index ?? 0;
+    const ib = b[0]?.index ?? 0;
+    return ia - ib;
   });
 
-  return rows;
+  return ordered.flatMap((items) => items);
 }
 
 export async function buildRoomQuestionStats(
