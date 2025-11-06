@@ -25,6 +25,7 @@ export type GameState = {
   pgIds: Set<string>;  
   attemptsThisRound: Map<string, number>;
   roundMs: number;  
+  finished?: boolean;
 };
 export type Client = {
   socketId: string;

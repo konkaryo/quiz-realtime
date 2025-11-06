@@ -12,8 +12,6 @@ import { rebalanceBotsAfterGame } from "../bot/traffic";
 import { buildPlayerSummary, buildRoomQuestionStats } from "./summary.service";
 
 /* ---------------------------------------------------------------------------------------- */
-const startingRooms = new Map<string, Promise<void>>();
-
 export async function startGameForRoom(
   clients: Map<string, Client>,
   gameStates: Map<string, GameState>,
@@ -21,45 +19,18 @@ export async function startGameForRoom(
   prisma: PrismaClient,
   roomId: string
 ) {
-  const inFlight = startingRooms.get(roomId);
-  if (inFlight) {
-    await inFlight;
+
+  const running = gameStates.get(roomId);
+  if (running && !running.finished) {
+    const refreshed = await room_service.ensurePlayerGamesForRoom(clients, running.gameId, io, prisma, roomId);
+    for (const pg of refreshed) { running.pgIds.add(pg.id); }
     return;
   }
 
-  const startPromise = executeStartGameForRoom(clients, gameStates, io, prisma, roomId);
-  startingRooms.set(roomId, startPromise);
-
-  try {
-    await startPromise;
-  } finally {
-    const current = startingRooms.get(roomId);
-    if (current === startPromise) {
-      startingRooms.delete(roomId);
-    }
-  }
-}
-
-async function executeStartGameForRoom(
-  clients: Map<string, Client>,
-  gameStates: Map<string, GameState>,
-  io: Server,
-  prisma: PrismaClient,
-  roomId: string
-
-) {
   const room = await prisma.room.findUnique({ where: { id: roomId } });
   if (!room) return;
 
   const game = await room_service.getOrCreateCurrentGame(prisma, room.id);
-
-  const existingState = gameStates.get(room.id);
-  if (existingState && existingState.gameId === game.id && game.state === "running") {
-    const refreshed = await room_service.ensurePlayerGamesForRoom(clients, game.id, io, prisma, room.id);
-    for (const pg of refreshed) existingState.pgIds.add(pg.id);
-    return;
-  }
-  
   let pgs = await room_service.ensurePlayerGamesForRoom(clients, game.id, io, prisma, room.id);
 
   type Row = { id: string };
@@ -158,11 +129,7 @@ async function executeStartGameForRoom(
   const ordered: RoundQuestion[] = qIds.map((id) => byId.get(id)!).filter(Boolean) as RoundQuestion[];
 
   const prev = gameStates.get(room.id);
-  if (prev) {
-    if (prev.timer) clearTimeout(prev.timer);
-    prev.roundUid = `stale:${prev.gameId}:${Date.now()}`;
-    prev.endsAt = undefined;
-  }
+  if (prev?.timer) clearTimeout(prev.timer);
 
   const st: GameState = {
     roomId: room.id,
@@ -176,6 +143,7 @@ async function executeStartGameForRoom(
     attemptsThisRound: new Map<string, number>(),
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
     roundSeq: 0,
+    finished: false,
   };
   gameStates.set(room.id, st);
 
@@ -203,6 +171,8 @@ export async function stopGameForRoom(
 ) {
   const st = gameStates.get(roomId);
   if (st?.timer) clearTimeout(st.timer);
+
+  if (st) st.finished = true;
 
   gameStates.delete(roomId);
 
@@ -315,6 +285,8 @@ async function endRound(
 
     if (st.timer) { clearTimeout(st.timer); st.timer = undefined; }
 
+    st.finished = true;
+
     // Crée la prochaine game AVANT le rééquilibrage pour disposer du vrai nextGameId
     const { gameId: nextGameId } = await room_service.createNextGameFrom(prisma, st.gameId);
 
@@ -336,6 +308,10 @@ async function endRound(
     if (st.timer) clearTimeout(st.timer);
 
     setTimeout(async () => {
+      const current = gameStates.get(st.roomId);
+      if (current && current.gameId !== st.gameId) {
+        return;
+      }
       gameStates.delete(st.roomId);
       await room_service.ensurePlayerGamesForRoom(clients, nextGameId, io, prisma, st.roomId);
       await startGameForRoom(clients, gameStates, io, prisma, st.roomId);

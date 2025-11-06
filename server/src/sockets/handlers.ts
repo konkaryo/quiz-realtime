@@ -91,10 +91,9 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
             io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb });
         }
 
-        const existingState = gameStates.get(room.id);
-        const shouldAutoStart = game.state !== "running" && (!existingState || existingState.gameId !== game.id);
+        const alreadyRunning = !!(st && !st.finished);
 
-        if (shouldAutoStart) {
+        if (game.state !== "running" && !alreadyRunning) {
           try {
             await startGameForRoom(clients, gameStates, io, prisma, room.id);
           } catch (e: any) {
@@ -117,6 +116,11 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       if (!roomId) return socket.emit("error_msg", "Not in a room");
 
       try {
+        const st = gameStates.get(roomId);
+        if (st && !st.finished) {
+          socket.emit("info_msg", "Game already running");
+          return;
+        }
         await startGameForRoom(clients, gameStates, io, prisma, roomId);
         socket.emit("info_msg", "Game started");
       } catch (e) {
