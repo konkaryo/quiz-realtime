@@ -36,7 +36,7 @@ enum Theme {
   SPORT
   HISTOIRE
   DIVERS
-  SCIENCES_VIE
+  SCIENCES_NATURELLES
   SCIENCES_TECHNIQUES
   MUSIQUE
   ACTUALITES_MEDIAS
@@ -78,7 +78,7 @@ model Player {
   userId      String?      @unique
   user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   name        String
-  img         String       @default("0")   
+  img         String       @default("0")
   isBot       Boolean      @default(false)
   bot         Bot?
   createdAt   DateTime     @default(now())
@@ -173,16 +173,16 @@ model Choice {
 }
 
 model Answer {
-  id           String     @id @default(cuid())
-  playerGame   PlayerGame @relation(fields: [playerGameId], references: [id])
+  id           String      @id @default(cuid())
+  playerGame   PlayerGame  @relation(fields: [playerGameId], references: [id])
   playerGameId String
-  question     Question?  @relation(fields: [questionId], references: [id])
+  question     Question?   @relation(fields: [questionId], references: [id])
   questionId   String?
   text         String
   mode         AnswerMode?
   correct      Boolean
-  createdAt    DateTime   @default(now())
-  responseMs   Int        @default(-1)
+  createdAt    DateTime    @default(now())
+  responseMs   Int         @default(-1)
 }
 
 model AcceptedAnswer {

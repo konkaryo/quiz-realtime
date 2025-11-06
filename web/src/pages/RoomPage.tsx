@@ -72,7 +72,7 @@ const THEMES: Record<string, ThemeMeta> = {
   CROYANCES:           { label: "Croyances",              color: "#818CF8" },
   SPORT:               { label: "Sport",                  color: "#84CC16" },
   HISTOIRE:            { label: "Histoire",               color: "#FAFAFA" },
-  SCIENCES_VIE:        { label: "Sciences de la vie",     color: "#22C55E" },
+  SCIENCES_NATURELLES: { label: "Sciences naturelles",    color: "#22C55E" },
   SCIENCES_TECHNIQUES: { label: "Sciences & Techniques",  color: "#EF4444" },
   MUSIQUE:             { label: "Musique",                color: "#EC4899" },
   ACTUALITES_MEDIAS:   { label: "Actualités & Médias",    color: "#F43F5E" },

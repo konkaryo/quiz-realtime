@@ -91,7 +91,10 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
             io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb });
         }
 
-        if (game.state !== "running") {
+        const existingState = gameStates.get(room.id);
+        const shouldAutoStart = game.state !== "running" && (!existingState || existingState.gameId !== game.id);
+
+        if (shouldAutoStart) {
           try {
             await startGameForRoom(clients, gameStates, io, prisma, room.id);
           } catch (e: any) {

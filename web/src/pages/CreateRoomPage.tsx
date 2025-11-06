@@ -29,18 +29,17 @@ const THEME_OPTIONS = [
   { key: "ARTS_CULTURE",        label: "Arts & Culture" },
   { key: "JEUX_BD",             label: "Jeux & BD" },
   { key: "GEOGRAPHIE",          label: "Géographie" },
-  { key: "LITTERATURE",         label: "Littérature" },
+  { key: "LANGUES_LITTERATURE", label: "Langues & Littérature" },
   { key: "ECONOMIE_POLITIQUE",  label: "Économie & Politique" },
   { key: "GASTRONOMIE",         label: "Gastronomie" },
   { key: "CROYANCES",           label: "Croyances" },
   { key: "SPORT",               label: "Sport" },
   { key: "HISTOIRE",            label: "Histoire" },
   { key: "DIVERS",              label: "Divers" },
-  { key: "SCIENCES_VIE",        label: "Sciences de la vie" },
-  { key: "SCIENCES_EXACTES",    label: "Sciences exactes" },
+  { key: "SCIENCES_NATURELLES", label: "Sciences naturelles" },
+  { key: "SCIENCES_TECHNIQUES", label: "Sciences & Techniques" },
   { key: "MUSIQUE",             label: "Musique" },
   { key: "ACTUALITES_MEDIAS",   label: "Actualités & Médias" },
-  { key: "TECHNOLOGIE",         label: "Technologie" },
 ] as const;
 
 type ThemeKey = (typeof THEME_OPTIONS)[number]["key"];

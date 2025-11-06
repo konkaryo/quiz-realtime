@@ -74,8 +74,7 @@ const THEME_BY_NORM: Record<string, Theme> = {
   "langues litterature": Theme.LANGUES_LITTERATURE,
   "langues et litterature": Theme.LANGUES_LITTERATURE,
 
-  "sciences de la vie": Theme.SCIENCES_VIE,
-  "sciences vie": Theme.SCIENCES_VIE,
+  "sciences naturelles": Theme.SCIENCES_NATURELLES,
 
   "musique": Theme.MUSIQUE,
 

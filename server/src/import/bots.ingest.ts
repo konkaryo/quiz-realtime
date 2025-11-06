@@ -21,7 +21,7 @@ const THEME_BY_HEADER: Record<string, Theme> = {
   "actualites_medias":    "ACTUALITES_MEDIAS",
   "musique":              "MUSIQUE",
   "sciences_techniques":  "SCIENCES_TECHNIQUES",
-  "sciences_vie":         "SCIENCES_VIE",
+  "sciences_naturelles":  "SCIENCES_NATURELLES",
   "sport":                "SPORT",
   "divers":               "DIVERS",
 };
