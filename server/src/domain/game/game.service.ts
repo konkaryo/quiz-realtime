@@ -121,7 +121,11 @@ export async function startGameForRoom(
   const ordered: RoundQuestion[] = qIds.map((id) => byId.get(id)!).filter(Boolean) as RoundQuestion[];
 
   const prev = gameStates.get(room.id);
-  if (prev?.timer) clearTimeout(prev.timer);
+  if (prev) {
+    if (prev.timer) clearTimeout(prev.timer);
+    prev.roundUid = `stale:${prev.gameId}:${Date.now()}`;
+    prev.endsAt = undefined;
+  }
 
   const st: GameState = {
     roomId: room.id,
