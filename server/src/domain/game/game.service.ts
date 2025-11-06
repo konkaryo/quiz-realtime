@@ -12,12 +12,41 @@ import { rebalanceBotsAfterGame } from "../bot/traffic";
 import { buildPlayerSummary, buildRoomQuestionStats } from "./summary.service";
 
 /* ---------------------------------------------------------------------------------------- */
+const startingRooms = new Map<string, Promise<void>>();
+
 export async function startGameForRoom(
   clients: Map<string, Client>,
   gameStates: Map<string, GameState>,
   io: Server,
   prisma: PrismaClient,
   roomId: string
+) {
+  const inFlight = startingRooms.get(roomId);
+  if (inFlight) {
+    await inFlight;
+    return;
+  }
+
+  const startPromise = executeStartGameForRoom(clients, gameStates, io, prisma, roomId);
+  startingRooms.set(roomId, startPromise);
+
+  try {
+    await startPromise;
+  } finally {
+    const current = startingRooms.get(roomId);
+    if (current === startPromise) {
+      startingRooms.delete(roomId);
+    }
+  }
+}
+
+async function executeStartGameForRoom(
+  clients: Map<string, Client>,
+  gameStates: Map<string, GameState>,
+  io: Server,
+  prisma: PrismaClient,
+  roomId: string
+
 ) {
   const room = await prisma.room.findUnique({ where: { id: roomId } });
   if (!room) return;
