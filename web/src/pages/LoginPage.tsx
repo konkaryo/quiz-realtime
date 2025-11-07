@@ -10,7 +10,7 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState<"login"|"register">("login");
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const redirectTo = state?.from?.pathname || "/";
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setErr(null);
     try {
       if (mode === "login") await login(email, password);
-      else await register(name, email, password);
+      else await register(displayName, email, password);
       await refresh();
       nav(redirectTo, { replace: true });
     } catch (e: any) {
@@ -33,7 +33,12 @@ export default function LoginPage() {
       <h2>{mode === "login" ? "Connexion" : "Inscription"}</h2>
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
         {mode === "register" && (
-          <input placeholder="Nom" value={name} onChange={e=>setName(e.target.value)} required />
+          <input
+            placeholder="Nom"
+            value={displayName}
+            onChange={e=>setDisplayName(e.target.value)}
+            required
+          />
         )}
         <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} type="email" required />
         <input placeholder="Mot de passe" value={password} onChange={e=>setPassword(e.target.value)} type="password" required />

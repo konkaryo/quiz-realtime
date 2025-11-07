@@ -21,10 +21,18 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
   async (app) => {
     // POST /auth/register
     app.post("/register", async (req, reply) => {
-      const body = (req.body ?? {}) as { email?: string; password?: string; displayName?: string };
+      const body = (req.body ?? {}) as {
+        email?: string;
+        password?: string;
+        displayName?: string;
+        name?: string;
+        username?: string;
+      };
       const email = normEmail(body.email || "");
       const password = (body.password || "").trim();
-      const displayName = cleanName(body.displayName || email.split("@")[0]);
+      const displayName = cleanName(
+        body.displayName || body.name || body.username || email.split("@")[0]
+      );
 
       if (!email || !password) return reply.code(400).send({ error: "missing-fields" });
       if (password.length < 8)   return reply.code(400).send({ error: "weak-password" });
