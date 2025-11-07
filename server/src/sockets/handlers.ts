@@ -6,7 +6,7 @@ import { CFG } from "../config";
 
 // Domain services
 import { getOrCreateCurrentGame, clientsInRoom } from "../domain/room/room.service";
-import { spendEnergy, addEnergy, getEnergy, scoreMultiplier, computeSpeedBonus } from "../domain/player/energy.service";
+import { computeSpeedBonus } from "../domain/player/scoring.service";
 import { isFuzzyMatch, norm } from "../domain/question/textmatch";
 import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
@@ -160,11 +160,6 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         st.answeredThisRound.add(client.playerGameId);
         st.answeredOrder.push(client.playerGameId);
 
-        const gain = CFG.AUTO_ENERGY_GAIN + (choice.isCorrect ? CFG.MC_ANSWER_ENERGY_GAIN : 0);
-
-        const res = await addEnergy(prisma, client, gain);
-        if (!res.ok) return ack?.({ ok: false, reason: "no-player" });
-
         await prisma.$transaction(async (tx) => {
           await tx.answer.create({
             data: {
@@ -179,15 +174,9 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           await tx.playerGame.update({
             where: { id: client.playerGameId },
             data: {
-              energy: res.energy!,
               score: { increment: choice.isCorrect ? CFG.MC_ANSWER_POINTS_GAIN : 0 },
             },
           });
-        });
-
-        socket.emit("energy_update", {
-          energy: res.energy!,
-          multiplier: scoreMultiplier(res.energy!),
         });
 
         const lb = await buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
@@ -255,14 +244,6 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           st.attemptsThisRound.set(client.playerGameId, attempts);
         }
 
-        // Énergie & score
-        const playerEnergy = await getEnergy(prisma, client);
-        if (!playerEnergy.ok) return ack?.({ ok: false, reason: "no-energy" });
-
-        const gain = CFG.AUTO_ENERGY_GAIN + (correct ? CFG.TXT_ANSWER_ENERGY_GAIN : 0);
-        const res = await addEnergy(prisma, client, gain);
-        if (!res.ok) return ack?.({ ok: false, reason: "no-player" });
-
         // --------- BONUS DE RAPIDITÉ (texte correct uniquement) ----------
         let speedBonus = 0;
         if (correct) {
@@ -289,17 +270,11 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           });
           if (correct) {
             const increment = CFG.TXT_ANSWER_POINTS_GAIN + speedBonus; // 100 + bonus
-            //const increment = scoreMultiplier(playerEnergy.energy!) * baseWithBonus;
             await tx.playerGame.update({
               where: { id: client.playerGameId },
               data: {
-                energy: res.energy!,
                 score: { increment }
               },
-            });
-            socket.emit("energy_update", {
-              energy: res.energy!,
-              multiplier: scoreMultiplier(res.energy!),
             });
           }
         });
@@ -336,14 +311,6 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
       const client = clients.get(socket.id);
       if (!client) return;
-
-      const res = await spendEnergy(prisma, client, CFG.MC_COST);
-      if (!res.ok) return socket.emit("not_enough_energy");
-
-      socket.emit("energy_update", {
-        energy: res.energy!,
-        multiplier: scoreMultiplier(res.energy!),
-      });
 
       const choices = getShuffledChoicesForSocket(st, socket.id);
       socket.emit("multiple_choice", { choices });

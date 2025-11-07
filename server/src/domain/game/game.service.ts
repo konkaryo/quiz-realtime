@@ -4,7 +4,6 @@ import type { Client, RoundQuestion, GameState } from "../../types";
 import { Server } from "socket.io";
 import * as room_service from "../room/room.service";
 import * as media_service from "../media/media.service";
-import * as energy_service from "../player/energy.service";
 import * as lb_service from "../game/leaderboard.service";
 import { scheduleBotAnswers } from "../bot/bot.service";
 import { QUESTION_DISTRIBUTION, quotasFromDistribution } from "../question/distribution";
@@ -88,8 +87,6 @@ export async function startGameForRoom(
     console.warn(`[question-pick] Only ${qIds.length}/${QUESTION_COUNT} questions could be loaded.`);
   }
 
-  const INIT_ENERGY = Number(process.env.INIT_ENERGY || 10);
-
   await prisma.$transaction(async (tx) => {
     for (const pg of pgs) {
       await tx.playerGame.update({ where: { id: pg.id }, data: { questions: { set: [] } } });
@@ -100,7 +97,7 @@ export async function startGameForRoom(
     }
     await tx.playerGame.updateMany({
       where: { gameId: game.id, id: { in: pgs.map(p => p.id) } },
-      data: { energy: INIT_ENERGY, score: 0 }
+      data: { score: 0 }
     });
     await tx.game.update({ where: { id: game.id }, data: { state: "running" } });
   });
@@ -155,9 +152,6 @@ export async function startGameForRoom(
     if (!st.pgIds.has(c.playerGameId)) continue;
     io.sockets.sockets.get(sid)?.join(gameRoom);
   }
-
-  const mult = energy_service.scoreMultiplier(INIT_ENERGY);
-  io.to(gameRoom).emit("energy_update", { energy: INIT_ENERGY, multiplier: mult });
 
   await startRound(clients, gameStates, io, prisma, st);
 }

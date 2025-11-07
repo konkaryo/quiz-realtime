@@ -4,7 +4,7 @@ import type { Server } from "socket.io";
 import type { Client, GameState } from "../../types";
 import { CFG } from "../../config";
 import * as lb_service from "../game/leaderboard.service";
-import { addEnergy, getEnergy, computeSpeedBonus } from "../player/energy.service";
+import { computeSpeedBonus } from "../player/scoring.service";
 import { logBot } from "../../utils/botLogger";
 
 const THEME_FALLBACK = "DIVERS" as const;
@@ -278,12 +278,7 @@ async function botApplyMcScoring(
   correct: boolean,
   responseMs: number
 ) {
-  const before = await getEnergy(prisma, client);
-  const beforeE = before.ok ? before.energy! : undefined;
 
-  const gain = CFG.AUTO_ENERGY_GAIN + (correct ? CFG.MC_ANSWER_ENERGY_GAIN : 0);
-  const res = await addEnergy(prisma, client, gain);
-  if (!res.ok) return;
 
   await prisma.$transaction(async (tx) => {
     await tx.answer.create({
@@ -292,15 +287,13 @@ async function botApplyMcScoring(
     if (correct) {
       await tx.playerGame.update({
         where: { id: client.playerGameId },
-        data: { energy: res.energy!, score: { increment: CFG.MC_ANSWER_POINTS_GAIN } },
+        data: { score: { increment: CFG.MC_ANSWER_POINTS_GAIN } },
       });
-    } else {
-      await tx.playerGame.update({ where: { id: client.playerGameId }, data: { energy: res.energy! } });
     }
   });
 
-  const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true, energy: true } });
-  logBot(`mc\tpg=${client.playerGameId}\tcorr=${correct ? 1 : 0}\tq=${questionId}\tE=${beforeE ?? "?"}->${res.energy!}\tS=${after?.score ?? "?"}\t${responseMs}ms`);
+  const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true } });
+  logBot(`mc\tpg=${client.playerGameId}\tcorr=${correct ? 1 : 0}\tq=${questionId}\tS=${after?.score ?? "?"}\t${responseMs}ms`);
 }
 
 async function botApplyTextScoring(
@@ -313,13 +306,6 @@ async function botApplyTextScoring(
   responseMs: number,
   speedBonus = 0
 ) {
-  const before = await getEnergy(prisma, client);
-  if (!before.ok) return;
-  const beforeE = before.energy!;
-
-  const gain = CFG.AUTO_ENERGY_GAIN + (correct ? CFG.TXT_ANSWER_ENERGY_GAIN : 0);
-  const res = await addEnergy(prisma, client, gain);
-  if (!res.ok) return;
 
   await prisma.$transaction(async (tx) => {
     await tx.answer.create({
@@ -329,16 +315,14 @@ async function botApplyTextScoring(
       const baseWithBonus = CFG.TXT_ANSWER_POINTS_GAIN + speedBonus; // 100 + bonus
       await tx.playerGame.update({
         where: { id: client.playerGameId },
-        data: { energy: res.energy!, score: { increment: baseWithBonus } },
+        data: { score: { increment: baseWithBonus } },
       });
-    } else {
-      await tx.playerGame.update({ where: { id: client.playerGameId }, data: { energy: res.energy! } });
     }
   });
 
-  const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true, energy: true } });
+  const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true } });
   logBot(
     `text\tpg=${client.playerGameId}\tcorr=${correct ? 1 : 0}\tq=${q.id}\tbonus=${speedBonus}` +
-      `\tE=${beforeE}->${res.energy!}\tS=${after?.score ?? "?"}\t${responseMs}ms`
+    `\tS=${after?.score ?? "?"}\t${responseMs}ms`
   );
 }
