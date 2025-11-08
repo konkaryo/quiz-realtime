@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 
 type Row = { id: string; name: string; score: number; img?: string | null };
 
@@ -12,7 +12,7 @@ export function FinalLeaderboard({
   selfName?: string | null;
 }) {
   const top3 = rows.slice(0, 3);
-  const rest = rows.slice(3);
+  const listRows = rows;
 
   // 2 | 1 | 3
   const order = [top3[1], top3[0], top3[2]].filter(Boolean) as Row[];
@@ -32,10 +32,7 @@ export function FinalLeaderboard({
   const listWrapRef = useRef<HTMLDivElement | null>(null);
   const activeItemRef = useRef<HTMLLIElement | null>(null);
 
-  const activeRestIndex = useMemo(
-    () => rest.findIndex(isSelfRow),
-    [rest, selfId, selfName]
-  );
+  const activeListIndex = listRows.findIndex(isSelfRow);
 
   useEffect(() => {
     const item = activeItemRef.current;
@@ -44,7 +41,7 @@ export function FinalLeaderboard({
       item.scrollIntoView({ block: "center", inline: "nearest" });
     });
     return () => cancelAnimationFrame(id);
-  }, [activeRestIndex, rest.length]);
+  }, [activeListIndex, listRows.length]);
 
   return (
     <div className="px-2 pt-1 pb-2">
@@ -128,15 +125,15 @@ export function FinalLeaderboard({
       </div>
 
       {/* Liste */}
-      {rest.length > 0 && (
+      {listRows.length > 0 && (
         <div className="px-3 md:px-6 mt-6">
           <div
             ref={listWrapRef}
             className="lb-scroll max-h-[28vh] md:max-h-[32vh] overflow-y-auto pr-2"
           >
             <ol className="space-y-1.5">
-              {rest.map((r, idx) => {
-                const rank = idx + 4;
+              {listRows.map((r, idx) => {
+                const rank = idx + 1;
                 const isSelf = isSelfRow(r);
 
                 return (
