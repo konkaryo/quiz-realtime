@@ -2,7 +2,8 @@
 import fs from "fs";
 import path from "path";
 import { loadQuestionCSV } from "../src/ingest";
-import { importBots } from "../src/import/bots.ingest"; // ⬅️ corrige ici
+import { importBots } from "../src/import/bots.ingest";
+import { importDailyChallenges } from "../src/import/daily-challenges.ingest";
 
 async function main() {
   // ---- Questions (optionnel) ----
@@ -34,6 +35,23 @@ async function main() {
     }
   } else {
     console.warn("[seed] Aucun bots.csv trouvé (server/import/bots.csv) — import bots ignoré.");
+  }
+
+  // ---- Daily challenge (optionnel) ----
+  const dailyCsvEnv = process.env.DAILY_CSV;
+  const dailyCsv = dailyCsvEnv
+    ? path.resolve(process.cwd(), dailyCsvEnv)
+    : path.resolve(process.cwd(), "./import/daily_challenge.csv");
+
+  if (fs.existsSync(dailyCsv)) {
+    try {
+      console.log(`[seed] Import daily challenge depuis ${dailyCsv}`);
+      await importDailyChallenges(dailyCsv);
+    } catch (e: any) {
+      console.warn("[seed] daily challenge CSV ignoré:", e?.message || e);
+    }
+  } else {
+    console.warn("[seed] Aucun daily_challenge.csv trouvé — import daily ignoré.");
   }
 
   console.log("[seed] Terminé.");

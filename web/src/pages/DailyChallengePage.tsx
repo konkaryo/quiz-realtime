@@ -1,22 +1,9 @@
 // web/src/pages/DailyChallengePage.tsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getThemeMeta } from "../lib/themeMeta";
 
-type LeaderboardEntry = {
-  id: number;
-  name: string;
-  avatarColor: string;
-  score: number;
-};
-
-type DailyChallenge = {
-  day: number;
-  title: string;
-  theme: string;
-  difficulty: "Facile" | "Intermédiaire" | "Difficile";
-  questionCount: number;
-  description: string;
-};
+const API_BASE = import.meta.env.VITE_API_BASE as string;
 
 const MONTH_NAMES = [
   "janvier",
@@ -35,7 +22,7 @@ const MONTH_NAMES = [
 
 const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
-const LEADERBOARD: LeaderboardEntry[] = [
+const LEADERBOARD = [
   { id: 1, name: "Amélie Dupont", avatarColor: "#6366f1", score: 2140 },
   { id: 2, name: "Noah Martin", avatarColor: "#ec4899", score: 2075 },
   { id: 3, name: "Sofia Bernard", avatarColor: "#22d3ee", score: 1920 },
@@ -48,47 +35,40 @@ const LEADERBOARD: LeaderboardEntry[] = [
   { id: 10, name: "Nina Lefèvre", avatarColor: "#ef4444", score: 1440 },
 ];
 
-function buildChallenges(year: number, month: number): DailyChallenge[] {
-  const themes = [
-    "Culture pop",
-    "Histoire",
-    "Sciences",
-    "Sport",
-    "Arts",
-    "Technologie",
-    "Géographie",
-  ];
-  const difficulties: DailyChallenge["difficulty"][] = [
-    "Facile",
-    "Intermédiaire",
-    "Difficile",
-  ];
+const STORAGE_KEY = "dailyChallenge:results:v1";
 
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+type CompletedInfo = { score: number; completedAt: string };
 
-  return Array.from({ length: daysInMonth }, (_, index) => {
-    const day = index + 1;
-    const theme = themes[index % themes.length];
-    const difficulty = difficulties[index % difficulties.length];
-    const questionCount = 8 + ((index * 3) % 5);
+type CalendarChallenge = {
+  date: string;
+  questionCount: number;
+  slotLabels: string[];
+  themeCounts: Record<string, number>;
+  difficultyAverage: number | null;
+};
 
-    return {
-      day,
-      theme,
-      difficulty,
-      questionCount,
-      title: `Défi #${day}`,
-      description:
-        "Relevez une série de questions minutées pour engranger des points bonus. Chaque défi accompli renforce votre classement mensuel.",
-    };
-  });
+type CalendarResponse = {
+  month: { year: number; month: number };
+  today: string;
+  challenges: CalendarChallenge[];
+};
+
+function readStorage(): Record<string, CompletedInfo> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") return parsed as Record<string, CompletedInfo>;
+    return {};
+  } catch {
+    return {};
+  }
 }
 
-function getCalendarMatrix(year: number, month: number) {
-  const firstDay = new Date(year, month, 1);
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const weekStartMonday = (firstDay.getDay() + 6) % 7; // 0 = lundi
+function getCalendarMatrix(year: number, monthIndex: number) {
+  const firstDay = new Date(Date.UTC(year, monthIndex, 1));
+  const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  const weekStartMonday = (firstDay.getUTCDay() + 6) % 7; // 0 = lundi
   const totalCells = Math.ceil((weekStartMonday + daysInMonth) / 7) * 7;
 
   const cells: (number | null)[] = [];
@@ -100,29 +80,114 @@ function getCalendarMatrix(year: number, month: number) {
   return cells;
 }
 
+function isoFromParts(year: number, monthIndex: number, day: number) {
+  const mm = (monthIndex + 1).toString().padStart(2, "0");
+  const dd = day.toString().padStart(2, "0");
+  return `${year}-${mm}-${dd}`;
+}
+
+function difficultyLabel(avg: number | null): string {
+  if (avg === null) return "Mixte";
+  if (avg < 1.8) return "Facile";
+  if (avg < 2.6) return "Intermédiaire";
+  return "Difficile";
+}
+
+function topThemeKey(counts: Record<string, number>): string | null {
+  let key: string | null = null;
+  let best = -1;
+  Object.entries(counts).forEach(([theme, count]) => {
+    if (count > best) {
+      best = count;
+      key = theme;
+    }
+  });
+  return key;
+}
+
+
 export default function DailyChallengePage() {
   const navigate = useNavigate();
   const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const currentDay = today.getDate();
+  const fallbackYear = today.getUTCFullYear();
+  const fallbackMonthIndex = today.getUTCMonth();
 
-  const [selectedDay, setSelectedDay] = useState<number>(currentDay);
+  const [calendar, setCalendar] = useState<CalendarResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [progress, setProgress] = useState<Record<string, CompletedInfo>>(() => readStorage());
 
-  const challenges = useMemo(() => buildChallenges(year, month), [month, year]);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCalendar() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${API_BASE}/daily/calendar`, { credentials: "include" });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error((data as any)?.error || `HTTP ${res.status}`);
+        }
+        const data = (await res.json()) as CalendarResponse;
+        if (cancelled) return;
+        setCalendar(data);
+        const map = new Map<string, CalendarChallenge>();
+        data.challenges.forEach((c) => map.set(c.date, c));
+        const defaultDate = map.has(data.today)
+          ? data.today
+          : data.challenges.length > 0
+          ? data.challenges[0].date
+          : null;
+        setSelectedDate(defaultDate);
+      } catch (e: any) {
+        if (cancelled) return;
+        setError(e?.message || "Erreur lors du chargement");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadCalendar();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handler = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY) {
+        setProgress(readStorage());
+      }
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  const year = calendar?.month.year ?? fallbackYear;
+  const monthIndex = calendar ? calendar.month.month - 1 : fallbackMonthIndex;
+  const monthLabel = `${MONTH_NAMES[monthIndex]} ${year}`;
+
   const challengeMap = useMemo(() => {
-    const map = new Map<number, DailyChallenge>();
-    challenges.forEach((ch) => map.set(ch.day, ch));
+    const map = new Map<string, CalendarChallenge>();
+    (calendar?.challenges ?? []).forEach((item) => {
+      map.set(item.date, item);
+    });
     return map;
-  }, [challenges]);
+  }, [calendar]);
 
   const calendarCells = useMemo(
-    () => getCalendarMatrix(year, month),
-    [month, year],
+    () => getCalendarMatrix(year, monthIndex),
+    [year, monthIndex],
   );
 
-  const monthLabel = `${MONTH_NAMES[month]} ${year}`;
-  const selectedChallenge = challengeMap.get(selectedDay);
+  const selectedChallenge = selectedDate ? challengeMap.get(selectedDate) : undefined;
+  const selectedProgress = selectedDate ? progress[selectedDate] : undefined;
+  const selectedThemeKey = selectedChallenge ? topThemeKey(selectedChallenge.themeCounts) : null;
+  const selectedThemeMeta = selectedThemeKey ? getThemeMeta(selectedThemeKey) : getThemeMeta(null);
+  const selectedDifficultyLabel = difficultyLabel(selectedChallenge?.difficultyAverage ?? null);
+
+  const todayIso = calendar?.today ?? isoFromParts(fallbackYear, fallbackMonthIndex, today.getUTCDate());
+  const completedDates = useMemo(() => new Set(Object.keys(progress)), [progress]);
 
   return (
     <div className="relative">
@@ -132,33 +197,33 @@ export default function DailyChallengePage() {
       />
       <div
         aria-hidden
-        className="fixed inset-0 z-0 pointer-events-none opacity-40 mix-blend-soft-light bg-[radial-gradient(circle,_rgba(255,255,255,0.2)_0.5px,_transparent_0.5px)] bg-[length:4px_4px]"
+        className="fixed inset-0 z-0 pointer-events-none opacity-40 mix-blend-soft-light bg-[radial-gradient(circle,_rgba(255,195,255,0.2)_0.5px,_transparent_0.5px)] bg-[length:4px_4px]"
       />
 
       <div className="relative z-10 mx-auto w-full max-w-[1200px] px-4 py-10 text-white">
         <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="uppercase tracking-[0.5em] text-sm text-white/70">Mode solo</p>
-            <h1 className="font-brand m-0 text-4xl md:text-5xl tracking-wide">
-              Défi du jour
-            </h1>
+            <h1 className="font-brand m-0 text-4xl md:text-5xl tracking-wide">Défi du jour</h1>
             <p className="mt-2 max-w-xl text-white/85">
-              Revenez chaque jour pour relever un nouveau challenge et grimper dans le
-              classement mensuel.
+              Revenez chaque jour pour relever un nouveau challenge et grimper dans le classement mensuel.
             </p>
           </div>
           <div className="rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-right">
             <div className="text-xs uppercase tracking-wide text-white/60">Mois en cours</div>
-            <div className="text-lg font-semibold">{monthLabel}</div>
+            <div className="text-lg font-semibold capitalize">{monthLabel}</div>
           </div>
         </header>
+
+        <div className="mt-6 text-sm text-white/80">
+          {loading && <span>Chargement des défis…</span>}
+          {!loading && error && <span className="text-rose-200">{error}</span>}
+        </div>
 
         <div className="mt-8 grid gap-5 lg:grid-cols-[260px,minmax(0,1fr),280px]">
           <aside className="rounded-[22px] border border-white/15 bg-white/8 p-5 backdrop-blur">
             <div className="flex items-center justify-between">
-              <div className="font-semibold uppercase tracking-wide text-sm text-white/70">
-                Classement mensuel
-              </div>
+              <div className="font-semibold uppercase tracking-wide text-sm text-white/70">Classement mensuel</div>
               <div className="text-xs text-white/50">Top 10</div>
             </div>
             <div className="mt-4 max-h-[520px] space-y-2 overflow-y-auto pr-2 lb-scroll">
@@ -181,9 +246,7 @@ export default function DailyChallengePage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold">{entry.name}</div>
-                    <div className="text-xs uppercase tracking-wide text-white/60">
-                      {entry.score} pts
-                    </div>
+                    <div className="text-xs uppercase tracking-wide text-white/60">{entry.score} pts</div>
                   </div>
                 </div>
               ))}
@@ -194,50 +257,52 @@ export default function DailyChallengePage() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <div className="text-sm uppercase tracking-[0.35em] text-white/60">Calendrier</div>
-                <div className="text-2xl font-semibold capitalize">{MONTH_NAMES[month]}</div>
+                <div className="text-2xl font-semibold capitalize">{MONTH_NAMES[monthIndex]}</div>
               </div>
               <div className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs uppercase tracking-wide text-white/70">
                 {year}
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-wide text-white/60">
-              {WEEKDAY_LABELS.map((label, index) => (
-                <div key={`${label}-${index}`} className="py-1">
+            <div className="mt-6 grid grid-cols-7 gap-2 text-center text-sm text-white/60">
+              {WEEKDAY_LABELS.map((label) => (
+                <div key={label} className="uppercase tracking-[0.35em]">
                   {label}
                 </div>
               ))}
             </div>
-            <div className="mt-1 grid grid-cols-7 gap-2 text-sm">
-              {calendarCells.map((day, index) => {
+            <div className="mt-2 grid grid-cols-7 gap-2">
+              {calendarCells.map((day, idx) => {
                 if (!day) {
-                  return <div key={`empty-${index}`} className="h-12 rounded-2xl bg-transparent" />;
+                  return <div key={`empty-${idx}`} />;
                 }
 
-                const isSelected = day === selectedDay;
-                const isToday = day === currentDay;
-                const isPast = day < currentDay;
+                const iso = isoFromParts(year, monthIndex, day);
+                const challenge = challengeMap.get(iso);
+                const isToday = iso === todayIso;
+                const isSelected = iso === selectedDate;
+                const isCompleted = completedDates.has(iso);
+                const disabled = !challenge;
 
                 return (
                   <button
-                    key={day}
+                    key={iso}
                     type="button"
-                    onClick={() => setSelectedDay(day)}
-                    className={`
-                      group flex h-12 flex-col items-center justify-center rounded-2xl border transition
-                      ${isSelected
-                        ? "border-white bg-white/90 text-slate-900 shadow-lg"
-                        : "border-white/10 bg-white/10 text-white hover:border-white/30 hover:bg-white/20"}
-                      ${isToday && !isSelected ? "ring-2 ring-white/70" : ""}
-                      ${isPast && !isSelected ? "opacity-80" : ""}
-                    `}
+                    disabled={disabled}
+                    onClick={() => {
+                      if (!disabled) setSelectedDate(iso);
+                    }}
+                    className={[
+                      "relative flex h-14 w-full items-center justify-center rounded-2xl border text-lg font-semibold transition",
+                      disabled
+                        ? "border-white/5 bg-white/5 text-white/35 cursor-not-allowed"
+                        : "border-white/15 bg-white/10 text-white hover:border-white/30",
+                      isToday && !isSelected ? "border-white/50" : "",
+                      isSelected ? "bg-white text-slate-900 shadow-lg" : "",
+                    ].join(" ")}
                   >
-                    <span className="text-sm font-semibold">{day}</span>
-                    {isToday && !isSelected ? (
-                      <span className="text-[10px] uppercase tracking-wide text-white/80">Aujourd'hui</span>
-                    ) : (
-                      <span className="text-[10px] uppercase tracking-wide text-white/60 opacity-0 transition group-hover:opacity-100">
-                        Sélectionner
-                      </span>
+                    <span>{day}</span>
+                    {isCompleted && (
+                      <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-emerald-300" />
                     )}
                   </button>
                 );
@@ -245,47 +310,54 @@ export default function DailyChallengePage() {
             </div>
           </section>
 
-          <aside className="rounded-[22px] border border-white/15 bg-white/10 p-6 backdrop-blur">
+          <aside className="rounded-[26px] border border-white/10 bg-white/8 p-6 backdrop-blur">
             {selectedChallenge ? (
               <div className="flex h-full flex-col">
                 <div className="text-xs uppercase tracking-[0.4em] text-white/60">Défi sélectionné</div>
-                <div className="mt-2 text-3xl font-semibold">{selectedChallenge.title}</div>
-                <div className="mt-1 text-sm uppercase tracking-wide text-white/70">
-                  {selectedChallenge.theme} · {selectedChallenge.difficulty}
+                <div className="mt-2 text-3xl font-semibold">
+                  Défi du {selectedDate?.split("-")[2]} {MONTH_NAMES[monthIndex]}
                 </div>
-                <p className="mt-3 text-sm text-white/80">{selectedChallenge.description}</p>
-
-                <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-white/70">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
-                    <div className="text-2xl font-semibold text-white">
-                      {selectedChallenge.questionCount}
-                    </div>
-                    <div className="mt-1 text-[11px] uppercase tracking-wide">Questions</div>
+                <div className="mt-4 space-y-3 text-sm text-white/80">
+                  <div className="flex items-center justify-between">
+                    <span>Thème dominant</span>
+                    <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: `${selectedThemeMeta.color}33`, color: selectedThemeMeta.color }}>
+                      {selectedThemeMeta.label}
+                    </span>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
-                    <div className="text-2xl font-semibold text-white">
-                      {selectedDay.toString().padStart(2, "0")}
-                    </div>
-                    <div className="mt-1 text-[11px] uppercase tracking-wide">Jour du mois</div>
+                  <div className="flex items-center justify-between">
+                    <span>Difficulté</span>
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+                      {selectedDifficultyLabel}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Nombre de questions</span>
+                    <span className="font-semibold text-white">{selectedChallenge.questionCount}</span>
                   </div>
                 </div>
 
-                <div className="mt-auto pt-6">
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/solo/daily/${selectedDay}`)}
-                    className="w-full rounded-2xl border border-transparent bg-white py-3 text-base font-semibold text-slate-900 transition hover:scale-[1.01] hover:bg-white"
-                  >
-                    Jouer le défi du {selectedDay}
-                  </button>
-                </div>
+                {selectedProgress && (
+                  <div className="mt-4 rounded-2xl border border-emerald-300/40 bg-emerald-300/15 p-3 text-xs text-emerald-100">
+                    Défi complété — {selectedProgress.score} bonnes réponses.
+                  </div>
+                )}
+
+                <p className="mt-5 text-sm text-white/75">
+                  Chaque défi journalier vous propose une sélection de questions préparées à l'avance. Pas de hasard : tout le monde joue sur le même set.
+                </p>
+
+                <button
+                  type="button"
+                  disabled={!selectedChallenge}
+                  onClick={() => selectedDate && navigate(`/solo/daily/${selectedDate}`)}
+                  className="mt-auto rounded-full border border-transparent bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Lancer le défi
+                </button>
               </div>
             ) : (
-              <div className="flex h-full flex-col items-center justify-center text-center text-white/70">
-                <div className="text-lg font-semibold">Sélectionnez un jour</div>
-                <p className="mt-2 text-sm">
-                  Touchez une case du calendrier pour afficher les détails du défi.
-                </p>
+              <div className="flex h-full flex-col items-center justify-center text-center text-sm text-white/70">
+                <p>Aucun défi sélectionné.</p>
               </div>
             )}
           </aside>

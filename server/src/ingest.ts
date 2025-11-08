@@ -9,6 +9,7 @@ import { PrismaClient, Prisma, Theme } from "@prisma/client";
 const prisma = new PrismaClient();
 
 const Row = z.object({
+  id: z.string().min(1),
   question: z.string().min(1),
   A: z.string().min(1),
   B: z.string().min(1),
@@ -21,6 +22,7 @@ const Row = z.object({
 });
 
 type Parsed = {
+  id: string;
   text: string;
   correct: string;
   wrongs: [string, string, string];
@@ -126,6 +128,8 @@ async function parseCsv(filePath: string): Promise<Parsed[]> {
       .on("error", (e) => reject(e));
   });
 
+  const seenIds = new Set<string>();
+
   if (rows.length === 0) throw new Error("CSV vide ou en-têtes manquants.");
 
   return rows.map((raw, idx) => {
@@ -136,6 +140,15 @@ async function parseCsv(filePath: string): Promise<Parsed[]> {
     }
     const r = out.data;
     const compact = (s: string) => s.replace(/\s+/g, " ").trim();
+
+    const id = compact(r.id).toUpperCase();
+    if (!/^[A-Z0-9]{4}$/.test(id)) {
+      throw new Error(`Ligne ${idx + 2} invalide : id "${r.id}" doit contenir 4 caractères [A-Z0-9].`);
+    }
+    if (seenIds.has(id)) {
+      throw new Error(`Ligne ${idx + 2} invalide : id "${id}" dupliqué.`);
+    }
+    seenIds.add(id);
 
     const fuzzyList =
       (r.fuzzy ?? "")
@@ -154,6 +167,7 @@ async function parseCsv(filePath: string): Promise<Parsed[]> {
     }
 
     return {
+      id,
       text: compact(r.question),
       correct: compact(r.A),
       wrongs: [compact(r.B), compact(r.C), compact(r.D)] as [string, string, string],
@@ -194,34 +208,55 @@ async function upsertAcceptedAnswers(
 export async function loadQuestionCSV(filePath: string) {
   const data = await parseCsv(filePath);
 
-  let inserted = 0;
+  let created = 0;
+  let updated = 0;
 
   for (const q of data) {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const created = await tx.question.create({
-        data: {
-          text: q.text,
-          theme: q.theme ?? undefined,          // 👈 enum Prisma (ou undefined)
-          difficulty: q.difficulty ?? undefined, // "1".."4" conservé tel quel
-          img: q.img ?? undefined,
-          choices: {
-            create: [
-              { label: q.correct,   isCorrect: true },
-              { label: q.wrongs[0], isCorrect: false },
-              { label: q.wrongs[1], isCorrect: false },
-              { label: q.wrongs[2], isCorrect: false },
-            ],
-          },
-        },
-        select: { id: true },
-      });
+      const baseData = {
+        text: q.text,
+        theme: q.theme ?? null,
+        difficulty: q.difficulty ?? null,
+        img: q.img ?? null,
+      };
 
-      await upsertAcceptedAnswers(tx, created.id, q.correct, q.fuzzy);
-      inserted += 1;
+      const choicePayload = [
+        { label: q.correct,   isCorrect: true },
+        { label: q.wrongs[0], isCorrect: false },
+        { label: q.wrongs[1], isCorrect: false },
+        { label: q.wrongs[2], isCorrect: false },
+      ];
+
+      const existing = await tx.question.findUnique({ where: { id: q.id }, select: { id: true } });
+
+      if (existing) {
+        await tx.choice.deleteMany({ where: { questionId: q.id } });
+        await tx.acceptedAnswer.deleteMany({ where: { questionId: q.id } });
+        await tx.question.update({
+          where: { id: q.id },
+          data: {
+            ...baseData,
+            choices: {
+              create: choicePayload,
+            },
+          },
+        });
+        updated += 1;
+      } else {
+        await tx.question.create({
+          data: {
+            id: q.id,
+            ...baseData,
+            choices: {
+              create: choicePayload,
+            },
+          },
+        });
+        created += 1;
+      }
     });
   }
 
-  return { inserted };
 }
 
 /** Watcher : traite chaque .csv déposé dans IMPORT_DIR */
