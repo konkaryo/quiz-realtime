@@ -40,3 +40,9 @@ export function getThemeMeta(theme?: string | null): ThemeMeta {
   if (!theme) return THEME_META.DIVERS;
   return THEME_META[theme] ?? THEME_META[(theme || "").toUpperCase()] ?? THEME_META.DIVERS;
 }
+
+export const THEMES = THEME_META;
+
+export function themeMeta(theme?: string | null): ThemeMeta {
+  return getThemeMeta(theme);
+}

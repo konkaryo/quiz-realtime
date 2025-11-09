@@ -1,7 +1,10 @@
 // web/src/pages/DailyChallengePlayPage.tsx
-import { useCallback, useEffect, useMemo, useState } from "react";
+import clsx from "clsx";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Lives } from "../components/game/Lives";
 import { QuestionRecapList } from "../components/QuestionRecapList";
+import { themeMeta } from "../lib/themeMeta";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -51,77 +54,15 @@ type AnswerRecord = {
   userAnswer: string | null;
   correct: boolean;
   responseMs: number;
+  attempts: number;
+  mode: "text" | "mcq";
 };
 
 type GameState = "intro" | "playing" | "finished";
 
 const TOTAL_QUESTION_COUNT = 15;
 const TOTAL_TIME_MS = 3 * 60 * 1000;
-const TOTAL_LIVES = 3;
-
-function Lives({ lives, total }: { lives: number; total: number }) {
-  const full = Array.from({ length: Math.max(0, Math.min(total, lives)) }).map((_, index) => (
-    <span key={`full-${index}`} aria-hidden>
-      ❤️
-    </span>
-  ));
-  const empty = Array.from({ length: Math.max(0, total - lives) }).map((_, index) => (
-    <span key={`empty-${index}`} aria-hidden className="opacity-30">
-      ❤️
-    </span>
-  ));
-  return (
-    <div className="flex items-center gap-1 text-2xl" aria-label={`${lives} vie${lives > 1 ? "s" : ""}`}>
-      {full}
-      {empty}
-    </div>
-  );
-}
-
-type ThemeMeta = { label: string; color: string };
-
-const THEMES: Record<string, ThemeMeta> = {
-  CINEMA_SERIES: { label: "Cinéma & Séries", color: "#14B8A6" },
-  ARTS_CULTURE: { label: "Arts & Culture", color: "#F59E0B" },
-  JEUX_BD: { label: "Jeux & BD", color: "#EAB308" },
-  GEOGRAPHIE: { label: "Géographie", color: "#22D3EE" },
-  LANGUES_LITTERATURE: { label: "Langues & Littérature", color: "#D946EF" },
-  ECONOMIE_POLITIQUE: { label: "Économie & Politique", color: "#3B82F6" },
-  GASTRONOMIE: { label: "Gastronomie", color: "#F97316" },
-  CROYANCES: { label: "Croyances", color: "#818CF8" },
-  SPORT: { label: "Sport", color: "#84CC16" },
-  HISTOIRE: { label: "Histoire", color: "#FAFAFA" },
-  SCIENCES_NATURELLES: { label: "Sciences naturelles", color: "#22C55E" },
-  SCIENCES_TECHNIQUES: { label: "Sciences & Techniques", color: "#EF4444" },
-  MUSIQUE: { label: "Musique", color: "#EC4899" },
-  ACTUALITES_MEDIAS: { label: "Actualités & Médias", color: "#F43F5E" },
-  DIVERS: { label: "Divers", color: "#A3A3A3" },
-};
-
-function themeMeta(theme: string | null | undefined): ThemeMeta {
-  if (!theme) return THEMES.DIVERS;
-  return THEMES[theme.toUpperCase()] ?? THEMES.DIVERS;
-}
-
-function TimerBadge({ seconds }: { seconds: number | null }) {
-  const total = Math.max(0, Math.round(seconds ?? 0));
-  const minutes = Math.floor(total / 60);
-  const secs = total % 60;
-  const urgent = total <= 15;
-  return (
-    <div
-      aria-live="polite"
-      className={[
-        "relative inline-flex h-11 min-w-[88px] items-center justify-center rounded-full border px-4 backdrop-blur",
-        urgent ? "border-rose-400/60 bg-rose-500/20" : "border-white/15 bg-black/60",
-      ].join(" ")}
-    >
-      <span className="text-lg font-semibold tabular-nums tracking-wide">
-        {String(minutes).padStart(2, "0")}:{String(secs).padStart(2, "0")}
-      </span>
-    </div>
-  );
-}
+const TEXT_MODE_LIVES = 3;
 
 function formatDurationMs(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return "";
@@ -131,6 +72,41 @@ function formatDurationMs(ms: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function formatSeconds(value: number): string {
+  const seconds = Math.max(0, Math.round(value));
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
+}
+
+function TimerBar({ totalMs, remainingSeconds }: { totalMs: number; remainingSeconds: number }) {
+  const totalSeconds = Math.max(1, Math.round(totalMs / 1000));
+  const safeRemaining = Math.max(0, Math.round(remainingSeconds));
+  const progress = 1 - Math.min(1, safeRemaining / totalSeconds);
+  const urgent = safeRemaining <= 15;
+
+  return (
+    <div className="w-full">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-white/12">
+        <div
+          className={clsx(
+            "h-full rounded-full transition-[width] duration-200 ease-linear",
+            urgent ? "bg-rose-400" : "bg-white",
+          )}
+          style={{ width: `${Math.min(100, Math.max(0, progress * 100))}%` }}
+        />
+      </div>
+      <div className={clsx("mt-4 text-center text-4xl font-semibold tabular-nums", urgent ? "text-rose-200" : "text-white")}
+        aria-live="polite"
+      >
+        {formatSeconds(safeRemaining)}
+      </div>
+      <div className="mt-2 text-center text-[11px] uppercase tracking-[0.35em] text-white/60">
+        Temps restant
+      </div>
+    </div>
+  );
+}
 
 function normString(input: string): string {
   let value = (input ?? "")
@@ -270,6 +246,11 @@ export default function DailyChallengePlayPage() {
   const [totalDuration, setTotalDuration] = useState<number | null>(null);
   const [runEndsAt, setRunEndsAt] = useState<number | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(TOTAL_TIME_MS / 1000);
+  const [persistedMultipleChoice, setPersistedMultipleChoice] = useState(false);
+  const [activeMultipleChoice, setActiveMultipleChoice] = useState(false);
+  const [remainingLives, setRemainingLives] = useState<number>(TEXT_MODE_LIVES);
+  const [attemptCount, setAttemptCount] = useState<number>(0);
+  const [attemptFeedback, setAttemptFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (!dateIso) {
@@ -335,6 +316,11 @@ export default function DailyChallengePlayPage() {
         setTotalDuration(null);
         setRunEndsAt(null);
         setRemainingSeconds(TOTAL_TIME_MS / 1000);
+        setRemainingLives(TEXT_MODE_LIVES);
+        setAttemptCount(0);
+        setAttemptFeedback(null);
+        setActiveMultipleChoice(false);
+        setPersistedMultipleChoice(false);
       } catch (e: any) {
         if (cancelled) return;
         if (e?.name === "AbortError") return;
@@ -350,6 +336,11 @@ export default function DailyChallengePlayPage() {
         setCurrentIndex(0);
         setRunEndsAt(null);
         setRemainingSeconds(TOTAL_TIME_MS / 1000);
+        setRemainingLives(TEXT_MODE_LIVES);
+        setAttemptCount(0);
+        setAttemptFeedback(null);
+        setActiveMultipleChoice(false);
+        setPersistedMultipleChoice(false);
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -362,13 +353,6 @@ export default function DailyChallengePlayPage() {
       controller.abort();
     };
   }, [normalizedDateIso]);
-
-  useEffect(() => {
-    if (gameState !== "playing") return;
-    setQuestionStart(performance.now());
-    setTextAnswer("");
-  }, [currentIndex, gameState]);
-
 
   const finishChallenge = useCallback(
     (reason: "completed" | "timeout") => {
@@ -420,81 +404,161 @@ export default function DailyChallengePlayPage() {
     };
   }, [finishChallenge, gameState, runEndsAt]);
 
-
-  const monthLabel = parsedDate ? `${MONTH_NAMES[parsedDate.monthIndex]} ${parsedDate.year}` : "";
-  const dayLabel = parsedDate ? parsedDate.day : null;
+  useEffect(() => {
+    if (gameState !== "playing") return;
+    const question = challenge?.questions?.[currentIndex];
+    if (!question) return;
+    const hasChoices = (question.choices?.length ?? 0) > 0;
+    const shouldUseMcq = hasChoices && persistedMultipleChoice;
+    setActiveMultipleChoice(shouldUseMcq);
+    setRemainingLives(shouldUseMcq ? 1 : TEXT_MODE_LIVES);
+    setAttemptCount(0);
+    setAttemptFeedback(null);
+    setTextAnswer("");
+    setQuestionStart(performance.now());
+  }, [challenge, currentIndex, gameState, persistedMultipleChoice]);
 
   const questions = challenge?.questions ?? [];
   const currentQuestion = questions[currentIndex] ?? null;
   const currentRecord = currentQuestion ? records[currentIndex] : null;
+  const currentTheme = currentQuestion ? themeMeta(currentQuestion.theme) : null;
   const answered = Boolean(currentRecord);
+  const hasChoices = (currentQuestion?.choices?.length ?? 0) > 0;
+  const totalQuestions = challenge?.questions.length ?? 0;
+  const livesTotal = activeMultipleChoice ? 1 : TEXT_MODE_LIVES;
+  const displayLives = answered
+    ? currentRecord?.correct
+      ? Math.max(1, remainingLives)
+      : 0
+    : remainingLives;
+
   const correctCount = useMemo(
     () => records.reduce((acc, record) => (record?.correct ? acc + 1 : acc), 0),
     [records],
   );
 
-  const introReady = Boolean(challenge && gameState === "intro");
-  const playing = gameState === "playing" && currentQuestion;
-  const finished = gameState === "finished" && challenge;
+  const formattedTotalDuration = totalDuration !== null ? formatDurationMs(totalDuration) : null;
+  const totalTimeLabel = formatDurationMs(TOTAL_TIME_MS);
+
+  const handleToggleMultipleChoice = () => {
+    if (!hasChoices) return;
+    if (attemptCount > 0 || answered) return;
+    setPersistedMultipleChoice((prev) => {
+      const next = !prev;
+      setActiveMultipleChoice(next);
+      setRemainingLives(next ? 1 : TEXT_MODE_LIVES);
+      setAttemptFeedback(null);
+      setTextAnswer("");
+      return next;
+    });
+  };
+
+  const completeQuestion = useCallback(
+    (payload: { choiceId: string | null; userAnswer: string | null; correct: boolean; attempts: number; mode: "text" | "mcq" }) => {
+      if (!currentQuestion) return;
+      const now = performance.now();
+      const responseMs = questionStart ? Math.round(now - questionStart) : -1;
+      setRecords((prev) => {
+        const next = [...prev];
+        next[currentIndex] = {
+          questionId: currentQuestion.id,
+          choiceId: payload.choiceId,
+          userAnswer: payload.userAnswer,
+          correct: payload.correct,
+          responseMs,
+          attempts: payload.attempts,
+          mode: payload.mode,
+        };
+        return next;
+      });
+    },
+    [currentIndex, currentQuestion, questionStart],
+  );
 
   const handleChoice = (choice: ChallengeChoice) => {
     if (!currentQuestion) return;
     if (gameState !== "playing") return;
+    if (!activeMultipleChoice) return;
     if (answered) return;
-    const now = performance.now();
-    const responseMs = questionStart ? Math.round(now - questionStart) : -1;
+    const attempts = attemptCount + 1;
     const correct = choice.isCorrect;
-    setRecords((prev) => {
-      const next = [...prev];
-      next[currentIndex] = {
-        questionId: currentQuestion.id,
-        choiceId: choice.id,
-        userAnswer: choice.label,
-        correct,
-        responseMs,
-      };
-      return next;
+    setAttemptCount(attempts);
+    setRemainingLives(correct ? 1 : 0);
+    completeQuestion({
+      choiceId: choice.id,
+      userAnswer: choice.label,
+      correct,
+      attempts,
+      mode: "mcq",
     });
   };
 
-  const handleSubmitText = () => {
+  const handleSubmitText = (event: FormEvent) => {
+    event.preventDefault();
     if (!currentQuestion) return;
     if (gameState !== "playing") return;
     if (answered) return;
+    if (!textAnswer.trim()) return;
+
     const raw = textAnswer.trim();
-    if (!raw) return;
     const userNorm = normString(raw);
     const accepted = currentQuestion.acceptedNorms ?? [];
-    const isCorrect = accepted.length > 0 ? isFuzzyMatch(userNorm, accepted) : normString(currentQuestion.correctLabel) === userNorm;
-    const now = performance.now();
-    const responseMs = questionStart ? Math.round(now - questionStart) : -1;
-    setRecords((prev) => {
-      const next = [...prev];
-      next[currentIndex] = {
-        questionId: currentQuestion.id,
+    const normalizedCorrect = normString(currentQuestion.correctLabel);
+    const isCorrect = accepted.length > 0 ? isFuzzyMatch(userNorm, accepted) : userNorm === normalizedCorrect;
+    const nextAttempts = attemptCount + 1;
+    setAttemptCount(nextAttempts);
+
+    if (isCorrect) {
+      completeQuestion({
         choiceId: null,
         userAnswer: raw,
-        correct: isCorrect,
-        responseMs,
-      };
-      return next;
-    });
+        correct: true,
+        attempts: nextAttempts,
+        mode: "text",
+      });
+      return;
+    }
+
+    const nextLives = Math.max(0, remainingLives - 1);
+    setRemainingLives(nextLives);
+    if (nextLives <= 0) {
+      completeQuestion({
+        choiceId: null,
+        userAnswer: raw,
+        correct: false,
+        attempts: nextAttempts,
+        mode: "text",
+      });
+      setAttemptFeedback(null);
+    } else {
+      const label = nextLives > 1 ? "vies" : "vie";
+      setAttemptFeedback(`✘ Mauvaise réponse. Il te reste ${nextLives} ${label}.`);
+    }
   };
 
-
-  const goNext = () => {
+  const goNext = useCallback(() => {
     if (!challenge) return;
-    if (!answered) return;
     if (currentIndex + 1 < challenge.questions.length) {
       setCurrentIndex((index) => index + 1);
     } else {
       finishChallenge("completed");
     }
-  };
+  }, [challenge, currentIndex, finishChallenge]);
+
+  useEffect(() => {
+    if (gameState !== "playing") return;
+    if (!currentQuestion) return;
+    if (!currentRecord) return;
+    const timer = window.setTimeout(() => {
+      goNext();
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [currentQuestion, currentRecord, gameState, goNext]);
 
   const startChallenge = () => {
     if (!challenge) return;
     const total = challenge.questions.length;
+    if (!total) return;
     setRecords(Array.from({ length: total }, () => null));
     setCurrentIndex(0);
     setGameState("playing");
@@ -505,6 +569,9 @@ export default function DailyChallengePlayPage() {
     setTotalDuration(null);
     setQuestionStart(null);
     setTextAnswer("");
+    setRemainingLives(TEXT_MODE_LIVES);
+    setAttemptCount(0);
+    setAttemptFeedback(null);
   };
 
   const recapItems = useMemo(() => {
@@ -525,266 +592,257 @@ export default function DailyChallengePlayPage() {
     });
   }, [challenge, records]);
 
-  const totalQuestions = challenge?.questionCount ?? 0;
-  const progressLabel = playing ? `${currentIndex + 1}/${totalQuestions}` : null;
-  const progressRatio = playing && totalQuestions > 0 ? Math.min(1, (currentIndex + (answered ? 1 : 0)) / totalQuestions) : 0;
-  const progressPercent = Math.round(progressRatio * 100);
-  const questionHasChoices = currentQuestion ? currentQuestion.choices.length > 0 : false;
-  const formattedTotalDuration = typeof totalDuration === "number" ? formatDurationMs(totalDuration) : null;
-  const totalTimeLabel = formatDurationMs(TOTAL_TIME_MS);
-  const mistakes = useMemo(
-    () => records.reduce((acc, record) => (record && !record.correct ? acc + 1 : acc), 0),
-    [records],
-  );
-  const remainingLives = Math.max(0, TOTAL_LIVES - mistakes);
-  const currentTheme = currentQuestion ? themeMeta(currentQuestion.theme) : null;
-  const backgroundClass =
-    "fixed inset-0 z-0 bg-[radial-gradient(1200px_800px_at_20%_10%,#191736_0%,transparent_60%),radial-gradient(900px_600px_at_80%_30%,#3e0f64_0%,transparent_55%),linear-gradient(180deg,#070611_0%,#120d21_45%,#0a0815_100%)]";
-  const grainClass =
-    "fixed inset-0 z-0 pointer-events-none opacity-[0.28] mix-blend-soft-light bg-[radial-gradient(circle,rgba(255,255,255,0.18)_0.5px,transparent_0.5px)] bg-[length:4px_4px] [mask-image:linear-gradient(to_bottom,rgba(0,0,0,.95),rgba(0,0,0,.6)_60%,transparent_100%)]";
-
+  const monthLabel = parsedDate ? `${MONTH_NAMES[parsedDate.monthIndex]} ${parsedDate.year}` : "";
+  const dayLabel = parsedDate ? parsedDate.day : null;
 
   return (
-    <>
-      <div aria-hidden className={backgroundClass} />
-      <div aria-hidden className={grainClass} />
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-4xl flex-col px-4 py-10 text-white">
-        <header className="flex flex-col gap-2 text-center">
-          <div className="mx-auto rounded-full border border-white/15 bg-white/10 px-4 py-1 text-xs uppercase tracking-[0.4em] text-white/75">
-            Défi du jour
-          </div>
-          <h1 className="font-brand text-4xl font-semibold tracking-wide md:text-5xl">
-            {dayLabel ? `Défi du ${dayLabel} ${monthLabel}` : "Défi introuvable"}
+    <div className="min-h-screen bg-gradient-to-b from-[#100727] via-[#160b3c] to-[#1f0f4e] text-white">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 pb-16 pt-10 lg:px-8">
+        <header className="flex flex-col gap-3 text-center">
+          <button
+            type="button"
+            onClick={() => navigate("/solo/daily")}
+            className="self-center rounded-full border border-white/20 px-5 py-2 text-xs uppercase tracking-[0.3em] text-white/70 transition-colors hover:border-white"
+          >
+            Retour au calendrier
+          </button>
+          <div className="text-sm uppercase tracking-[0.35em] text-white/60">Défi quotidien</div>
+          <h1 className="text-3xl font-semibold sm:text-4xl">
+            {dayLabel ? `Défi du ${dayLabel} ${monthLabel}` : "Défi quotidien"}
           </h1>
-          <p className="mx-auto mt-2 max-w-2xl text-white/75">
-            Tu disposes de 3 minutes pour répondre aux 15 questions du jour et signer le meilleur score possible. Tu peux revenir au calendrier à tout moment.
+          <p className="mx-auto max-w-2xl text-sm text-white/70">
+            15 questions, 3 minutes et trois tentatives par question en saisie libre. Active le mode QCM si tu préfères répondre avec un seul essai.
           </p>
         </header>
 
-        <div className="mt-6 text-center text-sm text-white/75">
-          {loading && <span>Chargement du défi…</span>}
-          {!loading && error && <span className="text-rose-200">{error}</span>}
-          {!loading && !error && !challenge && <span>Aucun défi disponible pour cette date.</span>}
-        </div>
+        {error ? (
+          <div className="mx-auto w-full max-w-xl rounded-3xl border border-rose-400/40 bg-rose-500/20 px-6 py-5 text-center text-sm text-rose-100">
+            {error}
+          </div>
+        ) : null}
 
-        {introReady && challenge ? (
-          <section className="mx-auto mt-12 w-full max-w-2xl rounded-[26px] border border-white/12 bg-white/5 p-8 text-center shadow-[0_18px_48px_rgba(0,0,0,0.45)] backdrop-blur">
-            <div className="text-sm uppercase tracking-[0.35em] text-white/60">Défi sélectionné</div>
-            <div className="mt-3 text-3xl font-semibold">15 questions en 3 minutes</div>
-            <p className="mt-4 text-white/75">
-              Reste concentré : une seule session pour réaliser le meilleur score. Retrouve la correction complète et ton chrono final à la fin du défi.
+        {loading && !challenge ? (
+          <div className="flex flex-1 items-center justify-center text-sm text-white/70">
+            Chargement du défi…
+          </div>
+        ) : null}
+
+        {challenge && gameState === "intro" && !loading ? (
+          <section className="mx-auto w-full max-w-3xl rounded-[32px] border border-white/12 bg-white/5 px-8 py-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur">
+            <div className="text-sm uppercase tracking-[0.35em] text-white/60">Prêt à jouer ?</div>
+            <h2 className="mt-4 text-3xl font-semibold">{challenge.questionCount} questions t'attendent</h2>
+            <p className="mt-3 text-sm text-white/70">
+              Tu disposes de 3 minutes pour répondre correctement au maximum de questions. Tu peux utiliser jusqu'à trois tentatives par question en saisie libre ou activer le mode QCM pour n'avoir qu'un seul essai par question.
             </p>
-            <div className="mt-6 flex flex-col items-center gap-4 text-sm text-white/70">
-              <TimerBadge seconds={TOTAL_TIME_MS / 1000} />
-              <Lives lives={TOTAL_LIVES} total={TOTAL_LIVES} />
-            </div>
             <button
               type="button"
               onClick={startChallenge}
-              className="mt-8 inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold text-[#1f1232] transition-transform hover:scale-[1.03]"
+              className="mt-8 inline-flex items-center justify-center rounded-full bg-white px-10 py-3 text-sm font-semibold text-[#1f1232] transition-transform hover:scale-[1.03]"
             >
-              Commencer le défi
+              Lancer le défi
             </button>
-            <div className="mt-6 text-xs text-white/60">
-              Besoin de changer de date ?
-              <button
-                type="button"
-                onClick={() => navigate("/solo/daily")}
-                className="ml-2 inline-flex items-center rounded-full border border-white/30 px-3 py-1 text-white transition-colors hover:border-white"
-              >
-                Retour au calendrier
-              </button>
-            </div>
           </section>
         ) : null}
-        {playing && currentQuestion ? (
-          <section className="mt-10 rounded-[32px] border border-white/12 bg-black/45 p-6 shadow-[0_20px_52px_rgba(0,0,0,0.55)] backdrop-blur-lg">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/60">
-                {currentTheme ? (
-                  <span className="flex items-center gap-2">
-                    <span
-                      className="inline-block h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: currentTheme.color }}
-                      aria-hidden
-                    />
-                    <span>{currentTheme.label}</span>
+
+        {gameState === "playing" && currentQuestion ? (
+          <section className="flex flex-col gap-8">
+            <div className="flex flex-col gap-6">
+              <TimerBar totalMs={TOTAL_TIME_MS} remainingSeconds={remainingSeconds} />
+              <div className="flex flex-col items-center justify-between gap-4 text-sm text-white/70 sm:flex-row">
+                <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2">
+                  <span className="text-xs uppercase tracking-[0.3em] text-white/50">Progression</span>
+                  <span className="text-sm font-semibold text-white">
+                    Question {currentIndex + 1} / {totalQuestions}
                   </span>
-                ) : null}
-                {progressLabel ? (
-                  <span className="tabular-nums text-white/70">Question {progressLabel}</span>
-                ) : null}
-                <span className="tabular-nums text-white/60">Score {correctCount}/{totalQuestions}</span>
-              </div>
-              <TimerBadge seconds={remainingSeconds} />
-            </div>
-            <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#FF7DEB] via-[#A774FF] to-[#6C63FF] transition-[transform] duration-300"
-                style={{ transform: `scaleX(${progressRatio || 0})`, transformOrigin: "left" }}
-                aria-hidden
-              />
-            </div>
-            <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-              <div className="space-y-5 rounded-[26px] border border-white/12 bg-black/60 px-6 py-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
-                {currentQuestion.slotLabel ? (
-                  <div className="text-[11px] uppercase tracking-[0.3em] text-white/50">{currentQuestion.slotLabel}</div>
-                ) : null}
-                <h2 className="text-2xl font-semibold leading-snug">{currentQuestion.text}</h2>
-
-                <div className="flex flex-col gap-3 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
-                  <Lives lives={remainingLives} total={TOTAL_LIVES} />
-                  <div className="text-xs uppercase tracking-[0.3em] text-white/60">Réussites {correctCount}/{totalQuestions}</div>
                 </div>
+                <div className="flex items-center gap-3 rounded-full border border-white/15 bg-white/5 px-4 py-2">
+                  <span className="text-xs uppercase tracking-[0.3em] text-white/50">Score</span>
+                  <span className="text-sm font-semibold text-white">
+                    {correctCount} / {totalQuestions}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-                {questionHasChoices ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {currentQuestion.choices.map((choice) => {
-                      const record = currentRecord;
-                      const isSelected = record?.choiceId === choice.id;
-                      const reveal = Boolean(record);
-                      const isCorrectChoice = choice.isCorrect;
-                      const baseClasses =
-                        "rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ease-out backdrop-blur focus:outline-none";
-                      let stateClasses = "border-white/25 bg-white/5 hover:border-white/60 hover:bg-white/10";
-                      if (reveal) {
-                        if (isCorrectChoice) {
-                          stateClasses = "border-emerald-400/70 bg-emerald-500/20 text-emerald-200";
-                        } else if (isSelected) {
-                          stateClasses = "border-rose-400/70 bg-rose-500/20 text-rose-200";
-                        } else {
-                          stateClasses = "border-white/10 bg-transparent text-white/55";
-                        }
-                      }
-                      return (
-                        <button
-                          key={choice.id}
-                          type="button"
-                          disabled={reveal}
-                          onClick={() => handleChoice(choice)}
-                          className={`${baseClasses} ${stateClasses}`}
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+              <div className="flex flex-col gap-6">
+                <article className="relative overflow-hidden rounded-[28px] border border-white/12 bg-white/5 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur">
+                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-[0.3em] text-white/60">
+                    <span>Question {currentIndex + 1}</span>
+                    {currentTheme ? (
+                      <span className="flex items-center gap-2 text-[11px]">
+                        <span className="opacity-70">Thème</span>
+                        <span
+                          className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold"
+                          style={{
+                            backgroundColor: `${currentTheme.color}26`,
+                            color: currentTheme.color,
+                          }}
                         >
-                          {choice.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <form
-                    className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      handleSubmitText();
-                    }}
-                  >
-                    <input
-                      type="text"
-                      value={answered ? currentRecord?.userAnswer ?? '' : textAnswer}
-                      onChange={(event) => setTextAnswer(event.target.value)}
-                      disabled={answered}
-                      placeholder="Tape ta réponse…"
-                      className="rounded-[16px] border border-white/25 bg-white/10 px-5 py-3 text-sm placeholder:text-white/50 focus:border-white focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={answered || !textAnswer.trim()}
-                      className="inline-flex items-center justify-center rounded-[16px] border border-white bg-white px-6 py-3 text-sm font-semibold text-[#1f1232] transition-transform enabled:hover:scale-[1.02] disabled:cursor-not-allowed disabled:border-white/40 disabled:bg-white/60"
-                    >
-                      Envoyer
-                    </button>
-                  </form>
-                )}
-                {answered ? (
-                  <div className="rounded-[18px] border border-white/12 bg-black/40 px-4 py-3 text-sm">
-                    {currentRecord?.correct ? (
-                      <span className="text-emerald-300">✔ Bonne réponse !</span>
-                    ) : (
-                      <span className="text-rose-200">
-                        ✘ Mauvaise réponse.
-                        {currentQuestion.correctLabel ? (
-                          <> Réponse attendue : <span className="font-semibold text-white">{currentQuestion.correctLabel}</span></>
-                        ) : null}
+                          {currentTheme.label}
+                        </span>
                       </span>
-                    )}
-                    {currentRecord?.responseMs && currentRecord.responseMs > 0 ? (
-                      <span className="ml-4 text-xs text-white/60">{currentRecord.responseMs} ms</span>
                     ) : null}
                   </div>
-                ) : null}
+                  <h2 className="mt-5 text-2xl font-semibold leading-snug text-white">
+                    {currentQuestion.text}
+                  </h2>
+                </article>
 
-                <div className="flex flex-col gap-3 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/solo/daily")}
-                    className="inline-flex items-center justify-center rounded-full border border-white/40 px-5 py-2 text-xs uppercase tracking-[0.3em] text-white transition-colors hover:border-white"
-                  >
-                    Retour au calendrier
-                  </button>
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    disabled={!answered}
-                    className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2 text-sm font-semibold text-[#1f1232] transition-transform enabled:hover:scale-[1.02] disabled:cursor-not-allowed disabled:bg-white/60"
-                  >
-                    {currentIndex + 1 < totalQuestions ? 'Question suivante' : 'Terminer le défi'}
-                  </button>
+                <div className="rounded-[28px] border border-white/12 bg-white/5 p-6 shadow-[0_20px_52px_rgba(0,0,0,0.45)] backdrop-blur">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <Lives lives={displayLives} total={livesTotal} />
+                      <button
+                        type="button"
+                        onClick={handleToggleMultipleChoice}
+                        disabled={!hasChoices || attemptCount > 0 || answered}
+                        className={clsx(
+                          "inline-flex items-center justify-center rounded-full border px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] transition-colors",
+                          activeMultipleChoice
+                            ? "border-white bg-white text-[#1f1232]"
+                            : "border-white/30 text-white/80 hover:border-white",
+                          (!hasChoices || attemptCount > 0 || answered) && "cursor-not-allowed opacity-50",
+                        )}
+                      >
+                        {activeMultipleChoice ? "Mode QCM activé" : "Activer le mode QCM"}
+                      </button>
+                    </div>
+
+                    {attemptFeedback && !answered ? (
+                      <div className="rounded-2xl border border-rose-400/30 bg-rose-500/15 px-4 py-3 text-sm text-rose-100">
+                        {attemptFeedback}
+                      </div>
+                    ) : null}
+
+                    {activeMultipleChoice ? (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {currentQuestion.choices.map((choice) => {
+                          const isSelected = answered && currentRecord?.choiceId === choice.id;
+                          const isCorrectChoice = answered && choice.isCorrect;
+                          return (
+                            <button
+                              key={choice.id}
+                              type="button"
+                              onClick={() => handleChoice(choice)}
+                              disabled={answered}
+                              className={clsx(
+                                "rounded-2xl border px-4 py-4 text-left text-sm transition-transform",
+                                "bg-black/30 hover:scale-[1.01] hover:border-white/60",
+                                answered && !isSelected && !isCorrectChoice && "opacity-50",
+                                isCorrectChoice && "border-emerald-400/60 bg-emerald-500/20 text-emerald-100",
+                                isSelected && !choice.isCorrect && "border-rose-400/60 bg-rose-500/20 text-rose-100",
+                                answered && "cursor-default hover:scale-100",
+                              )}
+                            >
+                              {choice.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <form onSubmit={handleSubmitText} className="flex flex-col gap-3 sm:flex-row">
+                        <input
+                          type="text"
+                          value={answered ? currentRecord?.userAnswer ?? textAnswer : textAnswer}
+                          onChange={(event) => setTextAnswer(event.target.value)}
+                          disabled={answered}
+                          placeholder="Tape ta réponse…"
+                          className="flex-1 rounded-2xl border border-white/25 bg-black/30 px-5 py-4 text-sm placeholder:text-white/50 focus:border-white focus:outline-none"
+                        />
+                        <button
+                          type="submit"
+                          disabled={answered || !textAnswer.trim()}
+                          className="inline-flex items-center justify-center rounded-2xl border border-white bg-white px-6 py-4 text-sm font-semibold text-[#1f1232] transition-transform enabled:hover:scale-[1.02] disabled:cursor-not-allowed disabled:border-white/40 disabled:bg-white/60"
+                        >
+                          Envoyer
+                        </button>
+                      </form>
+                    )}
+
+                    {answered ? (
+                      <div className="rounded-2xl border border-white/15 bg-black/40 px-4 py-4 text-sm">
+                        {currentRecord?.correct ? (
+                          <span className="text-emerald-300">✔ Bonne réponse !</span>
+                        ) : (
+                          <span className="text-rose-200">
+                            ✘ Mauvaise réponse.
+                            {currentQuestion.correctLabel ? (
+                              <>
+                                {" "}Réponse attendue :{" "}
+                                <span className="font-semibold text-white">{currentQuestion.correctLabel}</span>
+                              </>
+                            ) : null}
+                          </span>
+                        )}
+                        {currentRecord?.responseMs && currentRecord.responseMs > 0 ? (
+                          <span className="ml-4 text-xs text-white/60">{currentRecord.responseMs} ms</span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-center">
+
+              <div className="rounded-[28px] border border-white/12 bg-white/5 p-4 text-center shadow-[0_20px_52px_rgba(0,0,0,0.45)] backdrop-blur">
                 {currentQuestion.img ? (
-                  <figure className="inline-flex max-w-full flex-col items-center gap-4 rounded-[24px] border border-white/12 bg-black/60 p-4 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+                  <figure className="flex h-full flex-col items-center justify-center gap-4">
                     <img
                       src={currentQuestion.img}
                       alt=""
-                      className="max-h-[260px] w-full rounded-[18px] object-cover"
+                      className="max-h-[360px] w-full rounded-[22px] object-cover"
                       loading="lazy"
                     />
                   </figure>
                 ) : (
-                  <div className="flex min-h-[220px] w-full items-center justify-center rounded-[24px] border border-dashed border-white/15 bg-white/5 text-xs uppercase tracking-[0.3em] text-white/30">
-                    Pas d'image
+                  <div className="flex h-full min-h-[280px] items-center justify-center rounded-[22px] border border-dashed border-white/20 bg-black/30 text-xs uppercase tracking-[0.3em] text-white/40">
+                    Pas d'image pour cette question
                   </div>
                 )}
               </div>
             </div>
           </section>
         ) : null}
-        {finished && challenge ? (
-          <section className="mt-12 space-y-6">
-            <div className="rounded-[26px] border border-white/12 bg-black/50 p-8 text-center shadow-[0_20px_52px_rgba(0,0,0,0.5)] backdrop-blur">
-              <div className="text-sm uppercase tracking-[0.35em] text-white/60">Défi complété</div>
-              <div className="mt-3 text-3xl font-semibold">
+
+        {gameState === "finished" && challenge ? (
+          <section className="mb-6 flex flex-col gap-8">
+            <div className="rounded-[32px] border border-white/12 bg-white/10 px-8 py-10 text-center shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur">
+              <div className="text-sm uppercase tracking-[0.35em] text-white/60">Défi terminé</div>
+              <div className="mt-4 text-4xl font-semibold">
                 Score : {correctCount}/{challenge.questionCount}
               </div>
               {formattedTotalDuration ? (
-                <div className="mt-1 text-sm text-white/70">Temps total : {formattedTotalDuration} / {totalTimeLabel}</div>
+                <div className="mt-2 text-sm text-white/70">
+                  Temps total : {formattedTotalDuration} / {totalTimeLabel}
+                </div>
               ) : null}
-              <p className="mt-4 text-white/75">
-                Bravo ! Tu peux rejouer pour améliorer ton score ou revenir au calendrier pour sélectionner un autre défi.
+              <p className="mt-4 text-sm text-white/75">
+                Bravo ! Tu peux relancer le défi pour améliorer ton score ou revenir au calendrier pour choisir une autre date.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <button
                   type="button"
                   onClick={startChallenge}
-                  className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2 text-sm font-semibold text-[#1f1232] transition-transform hover:scale-[1.02]"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold text-[#1f1232] transition-transform hover:scale-[1.03]"
                 >
                   Rejouer ce défi
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate("/solo/daily")}
-                  className="inline-flex items-center justify-center rounded-full border border-white/40 px-6 py-2 text-sm font-semibold text-white transition-colors hover:border-white"
+                  className="inline-flex items-center justify-center rounded-full border border-white/40 px-8 py-3 text-sm font-semibold text-white transition-colors hover:border-white"
                 >
                   Retour au calendrier
                 </button>
               </div>
             </div>
-            <div className="rounded-[24px] border border-white/12 bg-black/45 p-6 text-left shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur">
+
+            <div className="rounded-[28px] border border-white/12 bg-white/5 p-6 shadow-[0_20px_52px_rgba(0,0,0,0.45)] backdrop-blur">
               <QuestionRecapList items={recapItems} />
             </div>
           </section>
         ) : null}
       </div>
-    </>
+    </div>
   );
 }

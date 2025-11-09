@@ -4,6 +4,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
+import { Lives } from "../components/game/Lives";
+import { themeMeta } from "../lib/themeMeta";
 
 const API_BASE   = import.meta.env.VITE_API_BASE    ?? (typeof window !== "undefined" ? window.location.origin : "");
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL  ?? (typeof window !== "undefined" ? window.location.origin : "");
@@ -29,14 +31,6 @@ type RecapItem = {
   points: number;
 };
 
-/* ---------- UI helpers ---------- */
-function Lives({ lives, total }: { lives: number; total: number }) {
-  const full = Array.from({ length: lives }).map((_, i) => <span key={`f${i}`}>❤️</span>);
-  const empty = Array.from({ length: Math.max(0, total - lives) }).map((_, i) => (
-    <span key={`e${i}`} className="opacity-30">❤️</span>
-  ));
-  return <div className="flex justify-start gap-1 text-[20px]">{full}{empty}</div>;
-}
 
 function TimerBadge({ seconds }: { seconds: number | null }) {
   const s = seconds ?? 0;
@@ -59,26 +53,6 @@ function TimerBadge({ seconds }: { seconds: number | null }) {
     </div>
   );
 }
-
-type ThemeMeta = { label: string; color: string };
-const THEMES: Record<string, ThemeMeta> = {
-  CINEMA_SERIES:       { label: "Cinéma & Séries",        color: "#14B8A6" },
-  ARTS_CULTURE:        { label: "Arts & Culture",         color: "#F59E0B" },
-  JEUX_BD:             { label: "Jeux & BD",              color: "#EAB308" },
-  GEOGRAPHIE:          { label: "Géographie",             color: "#22D3EE" },
-  LANGUES_LITTERATURE: { label: "Langues & Littérature",  color: "#D946EF" },
-  ECONOMIE_POLITIQUE:  { label: "Économie & Politique",   color: "#3B82F6" },
-  GASTRONOMIE:         { label: "Gastronomie",            color: "#F97316" },
-  CROYANCES:           { label: "Croyances",              color: "#818CF8" },
-  SPORT:               { label: "Sport",                  color: "#84CC16" },
-  HISTOIRE:            { label: "Histoire",               color: "#FAFAFA" },
-  SCIENCES_NATURELLES: { label: "Sciences naturelles",    color: "#22C55E" },
-  SCIENCES_TECHNIQUES: { label: "Sciences & Techniques",  color: "#EF4444" },
-  MUSIQUE:             { label: "Musique",                color: "#EC4899" },
-  ACTUALITES_MEDIAS:   { label: "Actualités & Médias",    color: "#F43F5E" },
-  DIVERS:              { label: "Divers",                 color: "#A3A3A3" },
-};
-const themeMeta = (t?: string | null): ThemeMeta => THEMES[(t ?? "DIVERS").toUpperCase()] ?? THEMES.DIVERS;
 
 /* ============================== PAGE ============================== */
 export default function RoomPage() {
