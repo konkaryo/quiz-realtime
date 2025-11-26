@@ -12,6 +12,7 @@ import { getCookie } from "./infra/cookies";
 
 import type { Client, GameState } from "./types";
 import { authRoutes } from "./routes/auth";
+import { dailyRoutes } from "./routes/daily";
 import { registerSocketHandlers } from "./sockets/handlers";
 import { clientsInRoom, isCodeValid, genCode } from "./domain/room/room.service";
 import { Theme, RoomVisibility } from "@prisma/client";
@@ -42,6 +43,7 @@ async function main() {
   await app.register(fastifyCookie, { secret: process.env.COOKIE_SECRET || "dev-secret", hook: "onRequest" });
 
   await app.register(authRoutes({ prisma }), { prefix: "/auth" });
+  await app.register(dailyRoutes({ prisma }), { prefix: "/daily" });
 
   app.get("/health", async () => ({ ok: true }));
 

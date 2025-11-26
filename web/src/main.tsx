@@ -16,6 +16,8 @@ import JoinPrivateRoomPage from "./pages/JoinPrivateRoomPage";
 
 // ✅ nouvelle page
 import CampaignPage from "./pages/CampaignPage";
+import DailyChallengePage from "./pages/DailyChallengePage";
+import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import "./index.css";
 
 // pages publiques
@@ -93,7 +95,8 @@ const router = createBrowserRouter([
       { path: "/solo/campagne", element: <CampaignPage /> },
       // Optionnel : même page pour un niveau précis pour l’instant
       { path: "/solo/campagne/level/:levelId", element: <CampaignPage /> },
-
+      { path: "/solo/daily", element: <DailyChallengePage /> },
+      { path: "/solo/daily/:date", element: <DailyChallengePlayPage /> },
       { path: "/rooms/new", element: <CreateRoomPage /> },
       { path: "/private/join", element: <JoinPrivateRoomPage /> },
       { path: "/room/:roomId", element: <RoomPage /> },

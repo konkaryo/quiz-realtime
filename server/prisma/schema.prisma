@@ -139,7 +139,7 @@ model Game {
 }
 
 model Question {
-  id              String           @id @default(cuid())
+  id              String                   @id @default(cuid())
   text            String
   choices         Choice[]
   theme           Theme?
@@ -148,6 +148,7 @@ model Question {
   playerGames     PlayerGame[]
   acceptedAnswers AcceptedAnswer[]
   answers         Answer[]
+  dailyEntries    DailyChallengeQuestion[]
 }
 
 model PlayerGame {
@@ -192,4 +193,26 @@ model AcceptedAnswer {
   norm       String
 
   @@unique([questionId, norm])
+}
+
+model DailyChallenge {
+  id        String                   @id @default(cuid())
+  date      DateTime                 @unique @db.Date
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+  entries   DailyChallengeQuestion[]
+}
+
+model DailyChallengeQuestion {
+  id          String         @id @default(cuid())
+  challenge   DailyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId String
+  question    Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId  String
+  position    Int
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([challengeId, position])
+  @@index([questionId])
 }
