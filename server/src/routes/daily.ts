@@ -2,7 +2,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { PrismaClient } from "@prisma/client";
-import { getChallengeByDate, listChallengesForMonth } from "../domain/daily/daily.service";
+import { getChallengeByDate, listChallengesForMonth, toPublicChallenge } from "../domain/daily/daily.service";
 
 function parseMonth(input?: string | null) {
   const now = new Date();
@@ -59,7 +59,7 @@ export function dailyRoutes({ prisma }: { prisma: PrismaClient }) {
       }
 
       const dateIso = parsed.data.date;
-      const challenge = await getChallengeByDate(prisma, dateIso);
+      const challenge = toPublicChallenge(await getChallengeByDate(prisma, dateIso));
       if (!challenge) {
         return reply.code(404).send({ error: "not_found" });
       }

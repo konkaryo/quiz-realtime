@@ -53,10 +53,28 @@ export type DailyChallengeQuestionDto = {
   position: number;
 };
 
+export type DailyChallengeQuestionPublicDto = {
+  id: string;
+  text: string;
+  theme: string | null;
+  difficulty: string | null;
+  img: string | null;
+  choices: { id: string; label: string }[];
+  slotLabel: string | null;
+  position: number;
+};
+
+
 export type DailyChallengeDetail = {
   date: string;
   questionCount: number;
   questions: DailyChallengeQuestionDto[];
+};
+
+export type DailyChallengePublicDetail = {
+  date: string;
+  questionCount: number;
+  questions: DailyChallengeQuestionPublicDto[];
 };
 
 function isoDate(date: Date): string {
@@ -178,5 +196,25 @@ export async function getChallengeByDate(prisma: PrismaClient, dateIso: string):
     date: isoDate(row.date),
     questionCount: questions.length,
     questions,
+  };
+
+}
+
+export function toPublicChallenge(detail: DailyChallengeDetail | null): DailyChallengePublicDetail | null {
+  if (!detail) return null;
+  return {
+    date: detail.date,
+    questionCount: detail.questionCount,
+    questions: detail.questions.map((q) => ({
+      id: q.id,
+      text: q.text,
+      theme: q.theme,
+      difficulty: q.difficulty,
+      img: q.img,
+      slotLabel: q.slotLabel,
+      position: q.position,
+      // Strip correctness/accepted norms
+      choices: q.choices.map((c) => ({ id: c.id, label: c.label })),
+    })),
   };
 }

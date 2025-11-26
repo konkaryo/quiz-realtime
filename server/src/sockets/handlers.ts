@@ -11,6 +11,7 @@ import { isFuzzyMatch, norm } from "../domain/question/textmatch";
 import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
 import { startGameForRoom } from "../domain/game/game.service";
+import { getChallengeByDate } from "../domain/daily/daily.service";
 
 
 /**
@@ -18,8 +19,283 @@ import { startGameForRoom } from "../domain/game/game.service";
  * - io.use(...) (auth) est fait dans app.ts pour garder ce fichier centré sur les events.
  */
 export function registerSocketHandlers( io: Server, clients: Map<string, Client>, gameStates: Map<string, GameState> ) {
+  // Daily challenge sessions are scoped to a single socket (solo mode)
+  type DailySession = {
+    date: string;
+    questions: {
+      id: string;
+      text: string;
+      theme: string | null;
+      difficulty: string | null;
+      img: string | null;
+      slotLabel: string | null;
+      choices: { id: string; label: string; isCorrect: boolean }[];
+      acceptedNorms: string[];
+      correctLabel: string;
+    }[];
+    index: number;
+    score: number;
+    attempts: number;
+    answered: boolean;
+    endsAt: number | null;
+    roundStartMs: number | null;
+    timer: NodeJS.Timeout | null;
+    results: {
+      questionId: string;
+      questionText: string;
+      slotLabel: string | null;
+      theme: string | null;
+      difficulty: string | null;
+      img: string | null;
+      correct: boolean;
+      answer: string | null;
+      mode: "text" | "choice" | "timeout";
+      responseMs: number;
+      correctLabel: string;
+    }[];
+  };
+
+  const dailySessions = new Map<string, DailySession>();
+  const DAILY_ROUND_MS = Number(process.env.DAILY_ROUND_MS || 20000);
+
+  const stopDailyTimer = (socketId: string) => {
+    const sess = dailySessions.get(socketId);
+    if (sess?.timer) {
+      clearTimeout(sess.timer);
+      sess.timer = null;
+    }
+  };
+
+  const queueNextRound = (socket: any) => {
+    setTimeout(() => scheduleNext(socket), 1600);
+  };
+
+  const scheduleNext = (socket: any) => {
+    const sess = dailySessions.get(socket.id);
+    if (!sess) return;
+    const nextIndex = sess.index + 1;
+    const nextQuestion = sess.questions[nextIndex];
+    if (!nextQuestion) {
+      socket.emit("daily_finished", { score: sess.score, results: sess.results });
+      return;
+    }
+    sess.index = nextIndex;
+    sess.attempts = 0;
+    sess.answered = false;
+    sess.roundStartMs = Date.now();
+    sess.endsAt = sess.roundStartMs + DAILY_ROUND_MS;
+    sess.timer = setTimeout(() => {
+      // MOVED TO SERVER: timeout/validation
+      stopDailyTimer(socket.id);
+      const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
+      const q = sess.questions[sess.index];
+      sess.results.push({
+        questionId: q.id,
+        questionText: q.text,
+        slotLabel: q.slotLabel,
+        theme: q.theme,
+        difficulty: q.difficulty,
+        img: q.img,
+        correct: false,
+        answer: null,
+        mode: "timeout",
+        responseMs,
+        correctLabel: q.correctLabel,
+      });
+      socket.emit("daily_round_end", {
+        index: sess.index,
+        correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
+        correctLabel: q.correctLabel,
+        score: sess.score,
+      });
+      queueNextRound(socket);
+    }, DAILY_ROUND_MS + 10);
+
+    socket.emit("daily_round_begin", {
+      index: sess.index,
+      total: sess.questions.length,
+      endsAt: sess.endsAt,
+      serverNow: Date.now(),
+      question: {
+        id: nextQuestion.id,
+        text: nextQuestion.text,
+        theme: nextQuestion.theme,
+        difficulty: nextQuestion.difficulty,
+        img: nextQuestion.img,
+        slotLabel: nextQuestion.slotLabel,
+      },
+      score: sess.score,
+    });
+  };
+
+  const startDaily = (socket: any, sess: DailySession) => {
+    sess.index = -1;
+    scheduleNext(socket);
+  };
+
   io.on("connection", (socket) => {
     socket.emit("welcome", { id: socket.id });
+
+    /* ---------------- DAILY CHALLENGE (solo) ---------------- */
+    socket.on("join_daily", async (p: { date: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const date = (p?.date || "").trim();
+      const valid = /^\d{4}-\d{2}-\d{2}$/.test(date);
+      if (!valid) return ack?.({ ok: false, reason: "invalid-date" });
+      try {
+        const challenge = await getChallengeByDate(prisma, date);
+        if (!challenge) return ack?.({ ok: false, reason: "not-found" });
+        stopDailyTimer(socket.id);
+
+        dailySessions.set(socket.id, {
+          date,
+          questions: challenge.questions,
+          index: -1,
+          score: 0,
+          attempts: 0,
+          answered: false,
+          endsAt: null,
+          roundStartMs: null,
+          timer: null,
+          results: [],
+        });
+
+        startDaily(socket, dailySessions.get(socket.id)!);
+        ack?.({ ok: true });
+      } catch (err) {
+        console.error("[join_daily]", err);
+        ack?.({ ok: false, reason: "server-error" });
+      }
+    });
+
+    socket.on("daily_request_choices", () => {
+      const sess = dailySessions.get(socket.id);
+      if (!sess || sess.answered) return;
+      const q = sess.questions[sess.index];
+      if (!q) return;
+      const choices = [...q.choices].map(({ id, label }) => ({ id, label })).sort(() => Math.random() - 0.5);
+      socket.emit("daily_multiple_choice", { choices });
+    });
+
+    socket.on("daily_submit_answer", (p: { choiceId: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const sess = dailySessions.get(socket.id);
+      if (!sess) return ack?.({ ok: false, reason: "no-session" });
+      if (sess.answered) return ack?.({ ok: false, reason: "already" });
+      if (!sess.endsAt || Date.now() > sess.endsAt) return ack?.({ ok: false, reason: "too-late" });
+
+      const q = sess.questions[sess.index];
+      if (!q) return ack?.({ ok: false, reason: "no-question" });
+      const choice = q.choices.find((c) => c.id === p.choiceId);
+      if (!choice) return ack?.({ ok: false, reason: "bad-choice" });
+
+      const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
+      sess.answered = true;
+      stopDailyTimer(socket.id);
+
+      let gained = 0;
+      if (choice.isCorrect) {
+        const remainingMs = Math.max(0, (sess.endsAt ?? Date.now()) - Date.now());
+        const secsLeft = Math.floor(remainingMs / 1000);
+        const bonus = Math.floor(secsLeft / 2) * 5;
+        gained = 60 + bonus; // MOVED TO SERVER
+      }
+      sess.score += gained;
+      sess.results.push({
+        questionId: q.id,
+        questionText: q.text,
+        slotLabel: q.slotLabel,
+        theme: q.theme,
+        difficulty: q.difficulty,
+        img: q.img,
+        correct: !!choice.isCorrect,
+        answer: choice.label,
+        mode: "choice",
+        responseMs,
+        correctLabel: q.correctLabel,
+      });
+
+      socket.emit("daily_answer_feedback", {
+        correct: !!choice.isCorrect,
+        correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
+        correctLabel: q.correctLabel,
+        responseMs,
+        score: sess.score,
+      });
+      socket.emit("daily_round_end", {
+        index: sess.index,
+        correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
+        correctLabel: q.correctLabel,
+        score: sess.score,
+      });
+
+      queueNextRound(socket);
+      ack?.({ ok: true });
+    });
+
+    socket.on("daily_submit_answer_text", (p: { text: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const sess = dailySessions.get(socket.id);
+      if (!sess) return ack?.({ ok: false, reason: "no-session" });
+      if (sess.answered) return ack?.({ ok: false, reason: "already" });
+      if (!sess.endsAt || Date.now() > sess.endsAt) return ack?.({ ok: false, reason: "too-late" });
+
+      const q = sess.questions[sess.index];
+      if (!q) return ack?.({ ok: false, reason: "no-question" });
+
+      const raw = (p?.text || "").trim();
+      const userNorm = norm(raw);
+      if (!userNorm) return ack?.({ ok: false, reason: "empty" });
+
+      const correct = isFuzzyMatch(userNorm, q.acceptedNorms);
+      const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
+
+      sess.attempts += 1;
+      const remainingLives = Math.max(0, CFG.TEXT_LIVES - sess.attempts);
+
+      if (correct || sess.attempts >= CFG.TEXT_LIVES) {
+        sess.answered = true;
+        stopDailyTimer(socket.id);
+        let gained = 0;
+        if (correct) {
+          const remainingMs = Math.max(0, (sess.endsAt ?? Date.now()) - Date.now());
+          const secsLeft = Math.floor(remainingMs / 1000);
+          const bonus = Math.floor(secsLeft / 2) * 5;
+          gained = CFG.TXT_ANSWER_POINTS_GAIN + bonus; // MOVED TO SERVER
+          sess.score += gained;
+        }
+
+        sess.results.push({
+          questionId: q.id,
+          questionText: q.text,
+          slotLabel: q.slotLabel,
+          theme: q.theme,
+          difficulty: q.difficulty,
+          img: q.img,
+          correct,
+          answer: raw,
+          mode: "text",
+          responseMs,
+          correctLabel: q.correctLabel,
+        });
+
+        socket.emit("daily_answer_feedback", {
+          correct,
+          correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
+          correctLabel: q.correctLabel,
+          responseMs,
+          score: sess.score,
+        });
+        socket.emit("daily_round_end", {
+          index: sess.index,
+          correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
+          correctLabel: q.correctLabel,
+          score: sess.score,
+        });
+        queueNextRound(socket);
+      } else {
+        socket.emit("daily_answer_feedback", { correct: false, livesLeft: remainingLives });
+      }
+
+      ack?.({ ok: true });
+    });
 
     /* ---------------- join_game ---------------- */
     socket.on("join_game", async (p: { code?: string; roomId?: string }) => {
@@ -318,6 +594,8 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
     /* ---------------- disconnect ---------------- */
     socket.on("disconnect", async () => {
+      stopDailyTimer(socket.id);
+      dailySessions.delete(socket.id);
       const c = clients.get(socket.id);
       if (!c) return;
 

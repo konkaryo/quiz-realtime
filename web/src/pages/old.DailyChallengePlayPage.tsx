@@ -329,18 +329,18 @@ export default function DailyChallengePlayPage() {
     });
 
     // NEW SERVER CALL
-s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }) => {
-  if (cancelled) return;
-  if (!res?.ok) {
-    setStatus("error");
-    setError(res?.reason === "not-found" ? "Défi introuvable" : "Impossible de rejoindre le défi");
-    s.close();
-  } else {
-    setStatus("ready");
-    // Ne pas toucher à `phase` ici : c'est `daily_round_begin` qui le gère.
-    // On laisse `phase` tel qu'il est (probablement déjà "playing" pour la première question).
-  }
-});
+    s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }) => {
+      if (cancelled) return;
+      if (!res?.ok) {
+        setStatus("error");
+        setError(res?.reason === "not-found" ? "Défi introuvable" : "Impossible de rejoindre le défi");
+        s.close();
+      } else {
+        setStatus("ready");
+        setPhase("idle");
+        phaseRef.current = "idle";
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -604,47 +604,41 @@ s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }
                   </div>
                 </div>
 
-{/* feedback + temps de réponse */}
-{feedback && (
-  <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-stretch md:gap-4">
-    {/* cellule feedback */}
-    <div className="inline-flex min-h-[42px] items-center gap-3 rounded-[12px] border border-slate-700/80 bg-black/80 px-6 py-2.5 text-sm text-slate-100 shadow-inner shadow-black/80">
-      <span
-        className={[
-          "text-base",
-          feedback === "Temps écoulé !"
-            ? "text-amber-300"
-            : feedback.includes("Bravo")
-            ? "text-emerald-400"
-            : "text-rose-400",
-        ].join(" ")}
-      >
-        {feedback === "Temps écoulé !"
-          ? "⏳"
-          : feedback.includes("Bravo")
-          ? "✅"
-          : "❌"}
-      </span>
-      <div>
-        <span className="font-medium">{feedback}</span>
-      </div>
-    </div>
+                {/* feedback */}
+                {feedback && (
+                  <div
+                    className="mt-4 flex items-center gap-3 rounded-[14px] border border-slate-800/80 bg-black/70 px-4 py-3 text-sm text-slate-100 shadow-inner shadow-black/60"
+                    role="status"
+                  >
+                    <span
+                      className={[
+                        "text-base",
+                        feedback === "Temps écoulé !"
+                          ? "text-amber-300"
+                          : feedback.includes("Bravo")
+                          ? "text-emerald-400"
+                          : "text-rose-400",
+                      ].join(" ")}
+                    >
+                      {feedback === "Temps écoulé !" ? "⏳" : feedback.includes("Bravo") ? "✅" : "❌"}
+                    </span>
+                    <div>
+                      <span className="font-medium">{feedback}</span>
+                    </div>
+                  </div>
+                )}
 
-    {/* cellule temps de réponse (uniquement si bonne réponse) */}
-    {lastResult?.correct && (
-      <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-slate-700/80 bg-black/80 px-5 py-2.5 text-xs text-slate-100 shadow-inner shadow-black/80">
-        <div className="flex flex-col leading-tight">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-            Temps de réponse
-          </span>
-          <span className="mt-1 font-mono text-sm text-slate-50">
-            {lastResult.responseMs.toLocaleString("fr-FR")} ms
-          </span>
-        </div>
-      </div>
-    )}
-  </div>
-)}
+                {/* cellule temps de réponse (uniquement si bonne réponse) */}
+                {lastResult?.correct && (
+                  <div className="mt-4 inline-flex min-h-[42px] items-center rounded-[12px] border border-slate-700/80 bg-black/80 px-5 py-2.5 text-xs text-slate-100 shadow-inner shadow-black/80">
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Temps de réponse</span>
+                      <span className="mt-1 font-mono text-sm text-slate-50">
+                        {lastResult.responseMs.toLocaleString("fr-FR")} ms
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* choix multiples */}
                 {showChoices && choices && (
