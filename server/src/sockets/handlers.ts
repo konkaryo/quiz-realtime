@@ -176,29 +176,127 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       socket.emit("daily_multiple_choice", { choices });
     });
 
-    socket.on("daily_submit_answer", (p: { choiceId: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
-      const sess = dailySessions.get(socket.id);
-      if (!sess) return ack?.({ ok: false, reason: "no-session" });
-      if (sess.answered) return ack?.({ ok: false, reason: "already" });
-      if (!sess.endsAt || Date.now() > sess.endsAt) return ack?.({ ok: false, reason: "too-late" });
+socket.on(
+  "daily_submit_answer",
+  (p: { choiceId: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+    const sess = dailySessions.get(socket.id);
+    if (!sess) return ack?.({ ok: false, reason: "no-session" });
+    if (sess.answered) return ack?.({ ok: false, reason: "already" });
+    if (!sess.endsAt || Date.now() > sess.endsAt) return ack?.({ ok: false, reason: "too-late" });
 
-      const q = sess.questions[sess.index];
-      if (!q) return ack?.({ ok: false, reason: "no-question" });
-      const choice = q.choices.find((c) => c.id === p.choiceId);
-      if (!choice) return ack?.({ ok: false, reason: "bad-choice" });
+    const q = sess.questions[sess.index];
+    if (!q) return ack?.({ ok: false, reason: "no-question" });
 
-      const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
+    const choice = q.choices.find((c) => c.id === p.choiceId);
+    if (!choice) return ack?.({ ok: false, reason: "bad-choice" });
+
+    const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
+    sess.answered = true;
+    stopDailyTimer(socket.id);
+
+    const isCorrect = !!choice.isCorrect;
+
+    let gained = 0;
+    if (isCorrect) {
+      const remainingMs = Math.max(0, (sess.endsAt ?? Date.now()) - Date.now());
+      const secsLeft = Math.floor(remainingMs / 1000);
+      const bonus = Math.floor(secsLeft / 2) * 5;
+      gained = 60 + bonus; // MOVED TO SERVER
+    }
+    sess.score += gained;
+
+    sess.results.push({
+      questionId: q.id,
+      questionText: q.text,
+      slotLabel: q.slotLabel,
+      theme: q.theme,
+      difficulty: q.difficulty,
+      img: q.img,
+      correct: isCorrect,
+      answer: choice.label,
+      mode: "choice",
+      responseMs,
+      correctLabel: q.correctLabel,
+    });
+
+    const correctChoice = q.choices.find((c) => c.isCorrect) ?? null;
+
+    // Payload de base
+    const feedbackPayload: {
+      correct: boolean;
+      correctChoiceId: string | null;
+      correctLabel: string | null;
+      responseMs: number;
+      score: number;
+      livesLeft?: number;
+    } = {
+      correct: isCorrect,
+      correctChoiceId: correctChoice ? correctChoice.id : null,
+      correctLabel: q.correctLabel,
+      responseMs,
+      score: sess.score,
+    };
+
+    // 👉 Règle demandée :
+    // - si la réponse QCM est FAUSSE : tous les cœurs restants disparaissent => livesLeft = 0
+    // - si la réponse est BONNE : on ne touche PAS aux cœurs => pas de livesLeft dans le payload
+    if (!isCorrect) {
+      feedbackPayload.livesLeft = 0;
+    }
+
+    socket.emit("daily_answer_feedback", feedbackPayload);
+
+    socket.emit("daily_round_end", {
+      index: sess.index,
+      correctChoiceId: correctChoice ? correctChoice.id : null,
+      correctLabel: q.correctLabel,
+      score: sess.score,
+    });
+
+    queueNextRound(socket);
+    ack?.({ ok: true });
+  },
+);
+
+socket.on(
+  "daily_submit_answer_text",
+  (p: { text: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+    const sess = dailySessions.get(socket.id);
+    if (!sess) return ack?.({ ok: false, reason: "no-session" });
+    if (sess.answered) return ack?.({ ok: false, reason: "already" });
+    if (!sess.endsAt || Date.now() > sess.endsAt) return ack?.({ ok: false, reason: "too-late" });
+
+    const q = sess.questions[sess.index];
+    if (!q) return ack?.({ ok: false, reason: "no-question" });
+
+    const raw = (p?.text || "").trim();
+    const userNorm = norm(raw);
+    if (!userNorm) return ack?.({ ok: false, reason: "empty" });
+
+    const correct = isFuzzyMatch(userNorm, q.acceptedNorms);
+    const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
+
+    // --- Gestion des tentatives / vies ---
+    // On ne consomme un "cœur" QUE si la réponse est fausse.
+    if (!correct) {
+      sess.attempts += 1;
+    }
+    const remainingLives = Math.max(0, CFG.TEXT_LIVES - sess.attempts);
+
+    // Fin du round : soit bonne réponse, soit plus de vies (3 mauvaises réponses)
+    if (correct || sess.attempts >= CFG.TEXT_LIVES) {
       sess.answered = true;
       stopDailyTimer(socket.id);
 
       let gained = 0;
-      if (choice.isCorrect) {
+      if (correct) {
         const remainingMs = Math.max(0, (sess.endsAt ?? Date.now()) - Date.now());
         const secsLeft = Math.floor(remainingMs / 1000);
         const bonus = Math.floor(secsLeft / 2) * 5;
-        gained = 60 + bonus; // MOVED TO SERVER
+        gained = CFG.TXT_ANSWER_POINTS_GAIN + bonus; // MOVED TO SERVER
+        sess.score += gained;
       }
-      sess.score += gained;
+
       sess.results.push({
         questionId: q.id,
         questionText: q.text,
@@ -206,20 +304,28 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         theme: q.theme,
         difficulty: q.difficulty,
         img: q.img,
-        correct: !!choice.isCorrect,
-        answer: choice.label,
-        mode: "choice",
+        correct,
+        answer: raw,
+        mode: "text",
         responseMs,
         correctLabel: q.correctLabel,
       });
 
-      socket.emit("daily_answer_feedback", {
-        correct: !!choice.isCorrect,
+      const baseFeedback = {
+        correct,
         correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
         correctLabel: q.correctLabel,
         responseMs,
         score: sess.score,
-      });
+      };
+
+      // 👉 Si la réponse est fausse ET qu'on vient d'épuiser les vies, on envoie livesLeft (0)
+      // 👉 Si la réponse est correcte, on NE touche pas aux cœurs : pas de livesLeft dans le payload
+      socket.emit(
+        "daily_answer_feedback",
+        correct ? baseFeedback : { ...baseFeedback, livesLeft: remainingLives },
+      );
+
       socket.emit("daily_round_end", {
         index: sess.index,
         correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
@@ -228,74 +334,17 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       });
 
       queueNextRound(socket);
-      ack?.({ ok: true });
-    });
+    } else {
+      // Mauvaise réponse mais il reste encore des vies
+      socket.emit("daily_answer_feedback", {
+        correct: false,
+        livesLeft: remainingLives,
+      });
+    }
 
-    socket.on("daily_submit_answer_text", (p: { text: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
-      const sess = dailySessions.get(socket.id);
-      if (!sess) return ack?.({ ok: false, reason: "no-session" });
-      if (sess.answered) return ack?.({ ok: false, reason: "already" });
-      if (!sess.endsAt || Date.now() > sess.endsAt) return ack?.({ ok: false, reason: "too-late" });
-
-      const q = sess.questions[sess.index];
-      if (!q) return ack?.({ ok: false, reason: "no-question" });
-
-      const raw = (p?.text || "").trim();
-      const userNorm = norm(raw);
-      if (!userNorm) return ack?.({ ok: false, reason: "empty" });
-
-      const correct = isFuzzyMatch(userNorm, q.acceptedNorms);
-      const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
-
-      sess.attempts += 1;
-      const remainingLives = Math.max(0, CFG.TEXT_LIVES - sess.attempts);
-
-      if (correct || sess.attempts >= CFG.TEXT_LIVES) {
-        sess.answered = true;
-        stopDailyTimer(socket.id);
-        let gained = 0;
-        if (correct) {
-          const remainingMs = Math.max(0, (sess.endsAt ?? Date.now()) - Date.now());
-          const secsLeft = Math.floor(remainingMs / 1000);
-          const bonus = Math.floor(secsLeft / 2) * 5;
-          gained = CFG.TXT_ANSWER_POINTS_GAIN + bonus; // MOVED TO SERVER
-          sess.score += gained;
-        }
-
-        sess.results.push({
-          questionId: q.id,
-          questionText: q.text,
-          slotLabel: q.slotLabel,
-          theme: q.theme,
-          difficulty: q.difficulty,
-          img: q.img,
-          correct,
-          answer: raw,
-          mode: "text",
-          responseMs,
-          correctLabel: q.correctLabel,
-        });
-
-        socket.emit("daily_answer_feedback", {
-          correct,
-          correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
-          correctLabel: q.correctLabel,
-          responseMs,
-          score: sess.score,
-        });
-        socket.emit("daily_round_end", {
-          index: sess.index,
-          correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
-          correctLabel: q.correctLabel,
-          score: sess.score,
-        });
-        queueNextRound(socket);
-      } else {
-        socket.emit("daily_answer_feedback", { correct: false, livesLeft: remainingLives });
-      }
-
-      ack?.({ ok: true });
-    });
+    ack?.({ ok: true });
+  },
+);
 
     /* ---------------- join_game ---------------- */
     socket.on("join_game", async (p: { code?: string; roomId?: string }) => {
@@ -594,8 +643,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
     /* ---------------- disconnect ---------------- */
     socket.on("disconnect", async () => {
-      stopDailyTimer(socket.id);
-      dailySessions.delete(socket.id);
+
       const c = clients.get(socket.id);
       if (!c) return;
 

@@ -85,6 +85,8 @@ type ChallengeMeta = { date: string; questionCount: number } | null;
 
 type SocketStatus = "idle" | "connecting" | "connected";
 
+type QuestionProgress = "pending" | "correct" | "wrong";
+
 function formatDateLabel(iso: string): string {
   const parts = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!parts) return iso;
@@ -190,20 +192,31 @@ export default function DailyChallengePlayPage() {
   const [question, setQuestion] = useState<QuestionLite | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackResponseMs, setFeedbackResponseMs] = useState<number | null>(null);
+  const [feedbackWasCorrect, setFeedbackWasCorrect] = useState<boolean | null>(null);
+  const [feedbackCorrectLabel, setFeedbackCorrectLabel] = useState<string | null>(null);
+  const [answerMode, setAnswerMode] = useState<"text" | "choice" | null>(null);
+  const [choicesRevealed, setChoicesRevealed] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [points, setPoints] = useState(0);
   const [skew, setSkew] = useState(0);
   const [nowTick, setNowTick] = useState(Date.now());
+  const [questionProgress, setQuestionProgress] = useState<QuestionProgress[]>([]);
 
   const phaseRef = useRef<"idle" | "playing" | "reveal" | "finished">("idle");
+  const feedbackWasCorrectRef = useRef<boolean | null>(null);
   const revealTimeoutRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
+
+  useEffect(() => {
+    feedbackWasCorrectRef.current = feedbackWasCorrect;
+  }, [feedbackWasCorrect]);
 
   useEffect(() => {
     return () => {
@@ -232,7 +245,6 @@ export default function DailyChallengePlayPage() {
     setRemainingSeconds(Math.max(0, Math.ceil((endsAt - serverNow) / 1000)));
   }, [nowTick, endsAt, skew]);
 
-
   useEffect(() => {
     if (!validDate) return;
     let cancelled = false;
@@ -259,6 +271,12 @@ export default function DailyChallengePlayPage() {
       setIndex(p.index);
       setTotalQuestions(p.total);
       setChallengeMeta({ date: dateParam, questionCount: p.total });
+
+      // initialisation de la barre de progression à la première question
+      if (p.index === 0) {
+        setQuestionProgress(Array(p.total).fill("pending"));
+      }
+
       setQuestion(p.question);
       setLives(TEXT_LIVES);
       setShowChoices(false);
@@ -266,9 +284,17 @@ export default function DailyChallengePlayPage() {
       setSelectedChoice(null);
       setCorrectChoiceId(null);
       setTextAnswer("");
+      setFeedbackResponseMs(null);
+      setFeedbackWasCorrect(null);
+      feedbackWasCorrectRef.current = null;
+      setFeedbackCorrectLabel(null);
+      setAnswerMode(null);
+      setChoicesRevealed(false);
       setEndsAt(p.endsAt);
       setPoints(p.score);
-      setRemainingSeconds(Math.max(0, Math.ceil((p.endsAt - (p.serverNow ?? Date.now())) / 1000)));
+      setRemainingSeconds(
+        Math.max(0, Math.ceil((p.endsAt - (p.serverNow ?? Date.now())) / 1000)),
+      );
       window.setTimeout(() => inputRef.current?.focus(), 60);
     });
 
@@ -276,11 +302,20 @@ export default function DailyChallengePlayPage() {
       setShowChoices(true);
       setChoices(p.choices);
       setTextAnswer("");
+      setChoicesRevealed(true);
     });
 
     s.on("daily_answer_feedback", (p: DailyAnswerFeedback) => {
       if (typeof p.score === "number") setPoints(p.score);
+      if (typeof p.correct === "boolean") {
+        setFeedbackWasCorrect(p.correct);
+        feedbackWasCorrectRef.current = p.correct;
+      }
+      if (typeof p.responseMs === "number") setFeedbackResponseMs(p.responseMs);
       if (p.correctChoiceId) setCorrectChoiceId(p.correctChoiceId);
+      if (typeof p.correctLabel === "string" && p.correctLabel) {
+        setFeedbackCorrectLabel(p.correctLabel);
+      }
       if (typeof p.livesLeft === "number") setLives(p.livesLeft);
       if (!p.correct && typeof p.livesLeft === "number" && p.livesLeft > 0) {
         setFeedback("Mauvaise réponse, essayez encore !");
@@ -297,6 +332,19 @@ export default function DailyChallengePlayPage() {
       phaseRef.current = "reveal";
       setCorrectChoiceId(p.correctChoiceId);
       setFeedback((prev) => prev ?? "Temps écoulé !");
+      if (p.correctLabel) {
+        setFeedbackCorrectLabel(p.correctLabel);
+      }
+
+      // mise à jour de la barre de progression pour la question courante
+      setQuestionProgress((prev) => {
+        if (!prev.length) return prev;
+        const next = [...prev];
+        const wasCorrect = feedbackWasCorrectRef.current === true;
+        next[p.index] = wasCorrect ? "correct" : "wrong";
+        return next;
+      });
+
       setEndsAt(null);
       setRemainingSeconds(0);
       setPoints(p.score);
@@ -329,18 +377,19 @@ export default function DailyChallengePlayPage() {
     });
 
     // NEW SERVER CALL
-s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }) => {
-  if (cancelled) return;
-  if (!res?.ok) {
-    setStatus("error");
-    setError(res?.reason === "not-found" ? "Défi introuvable" : "Impossible de rejoindre le défi");
-    s.close();
-  } else {
-    setStatus("ready");
-    // Ne pas toucher à `phase` ici : c'est `daily_round_begin` qui le gère.
-    // On laisse `phase` tel qu'il est (probablement déjà "playing" pour la première question).
-  }
-});
+    s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }) => {
+      if (cancelled) return;
+      if (!res?.ok) {
+        setStatus("error");
+        setError(
+          res?.reason === "not-found" ? "Défi introuvable" : "Impossible de rejoindre le défi",
+        );
+        s.close();
+      } else {
+        setStatus("ready");
+        // Ne pas toucher à `phase` ici : c'est `daily_round_begin` qui le gère.
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -352,27 +401,29 @@ s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }
     if (phase === "playing") inputRef.current?.focus();
   }, [phase, question]);
 
-    const timerProgress = useMemo(() => {
+  const timerProgress = useMemo(() => {
     if (remainingSeconds === null) return 1;
     return Math.max(0, Math.min(1, remainingSeconds / (QUESTION_DURATION_MS / 1000)));
   }, [remainingSeconds]);
-
 
   const submitText = () => {
     if (phaseRef.current !== "playing" || !question || !socket) return;
     const value = textAnswer.trim();
     if (!value) return;
+    setAnswerMode("text");
     socket.emit("daily_submit_answer_text", { text: value });
   };
 
   const onSelectChoice = (choice: Choice) => {
     if (!socket || phaseRef.current !== "playing" || selectedChoice) return;
     setSelectedChoice(choice.id);
+    setAnswerMode("choice");
     socket.emit("daily_submit_answer", { choiceId: choice.id });
   };
 
   const showMultipleChoice = () => {
-    if (!socket || phaseRef.current !== "playing" || lives <= 0 || !!feedback?.includes("Bravo")) return;
+    if (!socket || phaseRef.current !== "playing" || lives <= 0 || !!feedback?.includes("Bravo"))
+      return;
     socket.emit("daily_request_choices");
   };
 
@@ -391,7 +442,11 @@ s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }
     ? formatDateLabel(challengeMeta.date)
     : formatDateLabel(dateParam);
 
-  const lastResult = results.length > 0 ? results[results.length - 1] : null;
+  const showResponseTime = feedbackWasCorrect === true && feedbackResponseMs !== null;
+  const showCorrectLabelCell =
+    !!feedbackCorrectLabel &&
+    (answerMode === "text" ||
+      (answerMode === null && feedback === "Temps écoulé !" && !choicesRevealed));
 
   const themeMeta = getThemeMeta(question?.theme ?? null);
 
@@ -484,7 +539,9 @@ s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }
 
                   <div className="order-1 flex justify-center md:order-2">
                     {phase === "reveal" && remainingSeconds === 0 ? (
-                      <div className="text-[13px] font-semibold uppercase tracking-[0.3em] text-slate-300/80">En attente...</div>
+                      <div className="text-[13px] font-semibold uppercase tracking-[0.3em] text-slate-300/80">
+                        En attente...
+                      </div>
                     ) : (
                       <TimerBadge seconds={remainingSeconds} />
                     )}
@@ -521,7 +578,9 @@ s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }
                       )}
                     </div>
 
-                    <p className="mt-5 text-[20px] font-semibold leading-snug text-slate-50 sm:text-[20px]">{question.text}</p>
+                    <p className="mt-5 text-[20px] font-semibold leading-snug text-slate-50 sm:text-[20px]">
+                      {question.text}
+                    </p>
                   </div>
                   {question.img && (
                     <div className="md:w-2/5">
@@ -599,52 +658,66 @@ s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }
                       ].join(" ")}
                     >
                       <img src={tabKey} alt="Tab" className="mr-2 h-5 w-5" />
-                      Voir les choix
+                      Propositions
                     </button>
                   </div>
                 </div>
 
-{/* feedback + temps de réponse */}
-{feedback && (
-  <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-stretch md:gap-4">
-    {/* cellule feedback */}
-    <div className="inline-flex min-h-[42px] items-center gap-3 rounded-[12px] border border-slate-700/80 bg-black/80 px-6 py-2.5 text-sm text-slate-100 shadow-inner shadow-black/80">
-      <span
-        className={[
-          "text-base",
-          feedback === "Temps écoulé !"
-            ? "text-amber-300"
-            : feedback.includes("Bravo")
-            ? "text-emerald-400"
-            : "text-rose-400",
-        ].join(" ")}
-      >
-        {feedback === "Temps écoulé !"
-          ? "⏳"
-          : feedback.includes("Bravo")
-          ? "✅"
-          : "❌"}
-      </span>
-      <div>
-        <span className="font-medium">{feedback}</span>
-      </div>
-    </div>
+                {/* feedback + temps de réponse + bonne réponse */}
+                {feedback && (
+                  <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-stretch md:gap-4">
+                    {/* cellule feedback */}
+                    <div className="inline-flex min-h-[42px] items-center gap-3 rounded-[12px] border border-slate-700/80 bg-black/80 px-6 py-2.5 text-sm text-slate-100 shadow-inner shadow-black/80">
+                      <span
+                        className={[
+                          "text-base",
+                          feedback === "Temps écoulé !"
+                            ? "text-amber-300"
+                            : feedback.includes("Bravo")
+                            ? "text-emerald-400"
+                            : "text-rose-400",
+                        ].join(" ")}
+                      >
+                        {feedback === "Temps écoulé !"
+                          ? "⏳"
+                          : feedback.includes("Bravo")
+                          ? "✅"
+                          : "❌"}
+                      </span>
+                      <div>
+                        <span className="font-medium">{feedback}</span>
+                      </div>
+                    </div>
 
-    {/* cellule temps de réponse (uniquement si bonne réponse) */}
-    {lastResult?.correct && (
-      <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-slate-700/80 bg-black/80 px-5 py-2.5 text-xs text-slate-100 shadow-inner shadow-black/80">
-        <div className="flex flex-col leading-tight">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-            Temps de réponse
-          </span>
-          <span className="mt-1 font-mono text-sm text-slate-50">
-            {lastResult.responseMs.toLocaleString("fr-FR")} ms
-          </span>
-        </div>
-      </div>
-    )}
-  </div>
-)}
+                    {/* cellule temps de réponse (uniquement si bonne réponse) */}
+                    {showResponseTime && feedbackResponseMs !== null && (
+                      <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-slate-700/80 bg-black/80 px-5 py-2.5 text-xs text-slate-100 shadow-inner shadow-black/80">
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                            Temps de réponse
+                          </span>
+                          <span className="mt-1 font-mono text-sm text-slate-50">
+                            {feedbackResponseMs.toLocaleString("fr-FR")} ms
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* cellule "bonne réponse" (texte uniquement, pas QCM) */}
+                    {showCorrectLabelCell && (
+                      <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-emerald-600 bg-emerald-600 px-5 py-2.5 text-xs text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]">
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-100">
+                            Bonne réponse
+                          </span>
+                          <span className="mt-1 font-medium text-[13px]">
+                            {feedbackCorrectLabel}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* choix multiples */}
                 {showChoices && choices && (
@@ -678,6 +751,32 @@ s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }
                 )}
               </div>
             </div>
+
+            {/* barre de progression des questions sous le cadre */}
+            {questionProgress.length > 0 && (
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                {questionProgress.map((state, i) => {
+                  const base =
+                    "w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-md text-sm font-semibold";
+                  let colorClasses =
+                    "border-slate-700/90 bg-slate-700/60 text-slate-200"; // pending
+
+                  if (state === "correct") {
+                    colorClasses =
+                      "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
+                  } else if (state === "wrong") {
+                    colorClasses =
+                      "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]";
+                  }
+
+                  return (
+                    <div key={i} className={`${base} ${colorClasses}`}>
+                      {i + 1}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -686,11 +785,16 @@ s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }
           <section className="mt-12 rounded-[34px] border border-slate-800/80 bg-black/80 p-6 shadow-[0_32px_90px_rgba(0,0,0,0.95)] backdrop-blur-2xl sm:p-8">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-slate-50">Résultats du défi</h2>
+                <h2 className="text-2xl font-semibold tracking-tight text-slate-50">
+                  Résultats du défi
+                </h2>
                 <p className="mt-2 text-sm text-slate-300/90">
                   Score :{" "}
-                  <span className="font-semibold text-rose-400">{points} pts</span>{" "}·{" "}
-                  <span className="font-semibold text-slate-100">{correctCount}/{totalQuestions} bonnes réponses</span>
+                  <span className="font-semibold text-rose-400">{points} pts</span>{" "}
+                  ·{" "}
+                  <span className="font-semibold text-slate-100">
+                    {correctCount}/{totalQuestions} bonnes réponses
+                  </span>
                 </p>
               </div>
               <div className="flex gap-8 text-right text-xs uppercase tracking-[0.3em] text-slate-300/80">
@@ -714,16 +818,24 @@ s.emit("join_daily", { date: dateParam }, (res: { ok: boolean; reason?: string }
                     key={res.questionId}
                     className={[
                       "rounded-2xl border px-4 py-3 text-sm backdrop-blur-xl",
-                      ok ? "border-emerald-400/70 bg-emerald-500/10" : "border-rose-400/80 bg-rose-500/10",
+                      ok
+                        ? "border-emerald-400/70 bg-emerald-500/10"
+                        : "border-rose-400/80 bg-rose-500/10",
                     ].join(" ")}
                   >
                     <div className="font-semibold text-slate-50">Question {i + 1}</div>
                     <div className="mt-1 text-slate-100">{res.questionText}</div>
                     <div className="mt-2 text-[12px] text-slate-300">
                       {ok ? "Bonne réponse" : `Réponse attendue : ${res.correctLabel}`}
-                      {res.answer && <span className="mt-1 block text-slate-400">Votre réponse : {res.answer}</span>}
+                      {res.answer && (
+                        <span className="mt-1 block text-slate-400">
+                          Votre réponse : {res.answer}
+                        </span>
+                      )}
                     </div>
-                    <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">{meta.label}</div>
+                    <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      {meta.label}
+                    </div>
                   </div>
                 );
               })}
