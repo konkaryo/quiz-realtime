@@ -52,8 +52,6 @@ type Result = {
   correctLabel: string;
 };
 
-type CompletedInfo = { score: number; completedAt: string };
-
 type DailyRoundBegin = {
   index: number;
   total: number;
@@ -87,6 +85,13 @@ type SocketStatus = "idle" | "connecting" | "connected";
 
 type QuestionProgress = "pending" | "correct" | "wrong";
 
+type CompletedInfo = {
+  score: number;
+  completedAt: string;
+  // nouvel ajout : états de chaque question (pour l’affichage sur DailyChallengePage)
+  questionStates?: QuestionProgress[];
+};
+
 function formatDateLabel(iso: string): string {
   const parts = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!parts) return iso;
@@ -113,6 +118,7 @@ function writeStorage(date: string, info: CompletedInfo) {
   try {
     const data = readStorage();
     const prev = data[date];
+    // on garde le meilleur score ainsi que les états les plus récents
     if (!prev || info.score > prev.score) {
       data[date] = info;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -427,14 +433,16 @@ export default function DailyChallengePlayPage() {
     socket.emit("daily_request_choices");
   };
 
+  // Sauvegarde du score + états des questions à la fin du défi
   useEffect(() => {
     if (phase === "finished" && challengeMeta) {
       writeStorage(challengeMeta.date, {
         score: points,
         completedAt: new Date().toISOString(),
+        questionStates: questionProgress,
       });
     }
-  }, [phase, challengeMeta, points]);
+  }, [phase, challengeMeta, points, questionProgress]);
 
   const correctCount = useMemo(() => results.filter((r) => r.correct).length, [results]);
 
@@ -790,8 +798,7 @@ export default function DailyChallengePlayPage() {
                 </h2>
                 <p className="mt-2 text-sm text-slate-300/90">
                   Score :{" "}
-                  <span className="font-semibold text-rose-400">{points} pts</span>{" "}
-                  ·{" "}
+                  <span className="font-semibold text-rose-400">{points} pts</span> ·{" "}
                   <span className="font-semibold text-slate-100">
                     {correctCount}/{totalQuestions} bonnes réponses
                   </span>

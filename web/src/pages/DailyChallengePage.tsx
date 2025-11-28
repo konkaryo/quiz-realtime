@@ -1,4 +1,3 @@
-// web/src/pages/DailyChallengePage.tsx
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getThemeMeta } from "../lib/themeMeta";
@@ -42,7 +41,14 @@ const AVATAR_COLORS = [
 
 const STORAGE_KEY = "dailyChallenge:results:v1";
 
-type CompletedInfo = { score: number; completedAt: string };
+// états des questions stockés depuis DailyChallengePlayPage
+type QuestionState = "pending" | "correct" | "wrong";
+
+type CompletedInfo = {
+  score: number;
+  completedAt: string;
+  questionStates?: QuestionState[];
+};
 
 type CalendarChallenge = {
   date: string;
@@ -56,6 +62,7 @@ type LeaderboardEntry = {
   playerId: string;
   playerName: string;
   score: number;
+  img?: string | null;
 };
 
 type CalendarResponse = {
@@ -418,7 +425,8 @@ export default function DailyChallengePage() {
               "p-5 sm:p-6 lg:p-7",
             ].join(" ")}
           >
-            <div className="grid gap-6 lg:grid-cols-[260px,minmax(0,1fr),280px]">
+            {/* colonne gauche élargie + légère réduction colonne droite pour donner un peu plus d'air au calendrier */}
+            <div className="grid gap-6 lg:grid-cols-[300px,minmax(0,1fr),260px]">
               {/* CLASSEMENT */}
               <aside className="rounded-[24px] border border-slate-800/80 bg-black/70 p-4 shadow-inner shadow-black/70 backdrop-blur-xl">
                 <div className="text-sm font-semibold text-slate-100 sm:text-base flex items-center justify-center gap-2">
@@ -444,7 +452,7 @@ export default function DailyChallengePage() {
                           : "hover:text-white",
                       ].join(" ")}
                     >
-                      Mensuelle
+                      Mensuel
                     </button>
                     <button
                       type="button"
@@ -458,7 +466,7 @@ export default function DailyChallengePage() {
                         !selectedDate ? "cursor-not-allowed opacity-40" : "",
                       ].join(" ")}
                     >
-                      Quotidienne
+                      Quotidien
                     </button>
                   </div>
                 </div>
@@ -477,23 +485,38 @@ export default function DailyChallengePage() {
                     leaderboard.map((entry, index) => (
                       <div
                         key={`${entry.playerId}-${index}`}
-                        className="flex items-center gap-3 rounded-2xl border border-slate-800/80 bg-black/70 p-3 text-slate-50 shadow-[0_14px_35px_rgba(0,0,0,0.9)]"
+                        className="mx-auto flex items-center gap-2 rounded-[10px] border border-slate-700/80 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/10 px-2.5 py-1.5 text-slate-50 shadow-[0_14px_30px_rgba(0,0,0,0.85)]"
                       >
-                        <div className="text-xs font-bold text-slate-400">#{index + 1}</div>
-                        <div
-                          className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl text-sm font-semibold text-slate-50"
-                          style={{ background: avatarColor(entry.playerName, index) }}
-                        >
-                          {entry.playerName
-                            .split(" ")
-                            .map((part) => part[0])
-                            .join("")
-                            .slice(0, 2)
-                            .toUpperCase()}
+                        {/* numéro plus proche du bord et aligné à gauche */}
+                        <div className="w-4 text-left text-[11px] font-bold text-slate-400">
+                          #{index + 1}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-semibold">{entry.playerName}</div>
-                          <div className="text-[11px] uppercase tracking-[0.22em] text-slate-400">
+                        {entry.img ? (
+                          <img
+                            src={entry.img}
+                            alt=""
+                            className="h-5 w-5 flex-shrink-0 rounded-[4px] object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div
+                            className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-xl text-[9px] font-semibold text-slate-50"
+                            style={{ background: avatarColor(entry.playerName, index) }}
+                          >
+                            {entry.playerName
+                              .split(" ")
+                              .map((part) => part[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </div>
+                        )}
+                        {/* NOM + SCORE SUR UNE LIGNE */}
+                        <div className="min-w-0 ml-0.5 flex flex-1 items-center justify-between">
+                          <div className="truncate text-[13px] font-semibold">
+                            {entry.playerName}
+                          </div>
+                          <div className="flex-shrink-0 text-[11px] font-semibold text-slate-100">
                             {entry.score} pts
                           </div>
                         </div>
@@ -638,7 +661,7 @@ export default function DailyChallengePage() {
                     </div>
 
                     <div className="mt-4 space-y-3 text-sm text-slate-200">
-                      <div className="flex items-center justify_between gap-2">
+                      <div className="flex items-center justify-between gap-2">
                         <span className="text-slate-300">Difficulté</span>
                         <span className="rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold text-slate-100">
                           {selectedDifficultyLabel}
@@ -658,10 +681,42 @@ export default function DailyChallengePage() {
                       </div>
                     </div>
 
-                    <p className="mt-5 text-sm text-slate-300">
-                      Chaque défi journalier propose un set fixe de questions. Pas de hasard :
-                      tout le monde joue sur le même terrain pour comparer les scores.
-                    </p>
+                    {/* Bande de carrés rouge / vert comme sur la page de jeu,
+                        uniquement si le défi a été joué ET que les infos existent */}
+{selectedProgress?.questionStates &&
+  selectedProgress.questionStates.length > 0 && (
+    <div className="mt-5 grid grid-cols-8 gap-1.5">
+      {Array.from({
+        length: selectedChallenge.questionCount,
+      }).map((_, i) => {
+        const state = selectedProgress.questionStates?.[i];
+        let colorClasses =
+          "border-slate-700/90 bg-slate-700/60 text-slate-100"; // par défaut (gris)
+
+        if (state === "correct") {
+          colorClasses =
+            "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
+        } else if (state === "wrong") {
+          colorClasses =
+            "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]";
+        }
+
+        return (
+          <div
+            key={i}
+            className={[
+              // chaque case prend 1/8 de la largeur, et reste carrée
+              "flex aspect-square w-full items-center justify-center rounded-md text-[11px] font-semibold",
+              "border",
+              colorClasses,
+            ].join(" ")}
+          >
+            {i + 1}
+          </div>
+        );
+      })}
+    </div>
+  )}
 
                     <button
                       type="button"

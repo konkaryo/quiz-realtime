@@ -1,10 +1,12 @@
 // server/src/domain/daily/daily-score.service.ts
 import { Prisma, PrismaClient } from "@prisma/client";
+import { toProfileUrl } from "../media/media.service";
 
 export type DailyChallengeLeaderboardEntry = {
   playerId: string;
   playerName: string;
   score: number;
+  img?: string | null;
 };
 
 function isMissingDailyScoreTableError(err: unknown): boolean {
@@ -80,7 +82,7 @@ export async function getDailyChallengeStats(
         ],
         select: {
           score: true,
-          player: { select: { id: true, name: true } },
+          player: { select: { id: true, name: true, img: true } },
         },
         take: limit,
       })
@@ -98,6 +100,7 @@ export async function getDailyChallengeStats(
       playerId: row.player.id,
       playerName: row.player.name,
       score: row.score,
+      img: toProfileUrl(row.player.img),
     })),
   };
 }
@@ -163,15 +166,19 @@ export async function getMonthlyDailyLeaderboard(
 
   const players = await prisma.player.findMany({
     where: { id: { in: aggregates.map((row) => row.playerId) } },
-    select: { id: true, name: true },
+    select: { id: true, name: true, img: true },
   });
 
-  const playerNameById = new Map(players.map((p) => [p.id, p.name]));
+  const playerById = new Map(
+    players.map((p) => [p.id, { name: p.name, img: toProfileUrl(p.img) }]),
+  );
+
 
   return aggregates.map((row) => ({
     playerId: row.playerId,
-    playerName: playerNameById.get(row.playerId) ?? "",
+    playerName: playerById.get(row.playerId)?.name ?? "",
     score: row._sum?.score ?? 0,
+    img: playerById.get(row.playerId)?.img ?? null,
   }));
 }
 
@@ -195,7 +202,7 @@ export async function getDailyLeaderboardForDate(
     return { leaderboard: [], found: false };
   }
 
-  let rows: Array<{ score: number; player: { id: string; name: string } }> = [];
+  let rows: Array<{ score: number; player: { id: string; name: string; img: string | null } }> = [];
 
   try {
     rows = await prisma.dailyChallengeScore.findMany({
@@ -206,7 +213,7 @@ export async function getDailyLeaderboardForDate(
       ],
       select: {
         score: true,
-        player: { select: { id: true, name: true } },
+        player: { select: { id: true, name: true, img: true } },
       },
       take: limit,
     });
@@ -222,6 +229,7 @@ export async function getDailyLeaderboardForDate(
       playerId: row.player.id,
       playerName: row.player.name,
       score: row.score,
+      img: toProfileUrl(row.player.img),
     })),
     found: true,
   };

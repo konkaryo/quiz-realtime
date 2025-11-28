@@ -1,7 +1,11 @@
-// web/src/pages/DailyChallengePage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getThemeMeta } from "../lib/themeMeta";
+import BronzeMedal from "../assets/bronze-medal.png";
+import SilverMedal from "../assets/silver-medal.png";
+import GoldMedal from "../assets/gold-medal.png";
+import EliteMedal from "../assets/elite-medal.png";
+import { User } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -22,22 +26,29 @@ const MONTH_NAMES = [
 
 const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
-const LEADERBOARD = [
-  { id: 1, name: "Amélie Dupont", avatarColor: "#6366f1", score: 2140 },
-  { id: 2, name: "Noah Martin", avatarColor: "#ec4899", score: 2075 },
-  { id: 3, name: "Sofia Bernard", avatarColor: "#22d3ee", score: 1920 },
-  { id: 4, name: "Léo Garcia", avatarColor: "#f97316", score: 1870 },
-  { id: 5, name: "Emma Rossi", avatarColor: "#84cc16", score: 1765 },
-  { id: 6, name: "Lucas Moreau", avatarColor: "#14b8a6", score: 1690 },
-  { id: 7, name: "Mila Lambert", avatarColor: "#a855f7", score: 1655 },
-  { id: 8, name: "Louis Richard", avatarColor: "#facc15", score: 1580 },
-  { id: 9, name: "Jade Petit", avatarColor: "#38bdf8", score: 1495 },
-  { id: 10, name: "Nina Lefèvre", avatarColor: "#ef4444", score: 1440 },
+const AVATAR_COLORS = [
+  "#6366f1",
+  "#ec4899",
+  "#22d3ee",
+  "#f97316",
+  "#84cc16",
+  "#14b8a6",
+  "#a855f7",
+  "#facc15",
+  "#38bdf8",
+  "#ef4444",
 ];
 
 const STORAGE_KEY = "dailyChallenge:results:v1";
 
-type CompletedInfo = { score: number; completedAt: string };
+// états des questions stockés depuis DailyChallengePlayPage
+type QuestionState = "pending" | "correct" | "wrong";
+
+type CompletedInfo = {
+  score: number;
+  completedAt: string;
+  questionStates?: QuestionState[];
+};
 
 type CalendarChallenge = {
   date: string;
@@ -45,6 +56,13 @@ type CalendarChallenge = {
   slotLabels: string[];
   themeCounts: Record<string, number>;
   difficultyAverage: number | null;
+};
+
+type LeaderboardEntry = {
+  playerId: string;
+  playerName: string;
+  score: number;
+  img?: string | null;
 };
 
 type CalendarResponse = {
@@ -103,6 +121,14 @@ function topThemeKey(counts: Record<string, number>): string | null {
   return key;
 }
 
+function avatarColor(name: string, index: number) {
+  const sum = name
+    .split("")
+    .map((c) => c.charCodeAt(0))
+    .reduce((acc, cur) => acc + cur, 0);
+  return AVATAR_COLORS[(sum + index) % AVATAR_COLORS.length];
+}
+
 export default function DailyChallengePage() {
   const navigate = useNavigate();
   const today = new Date();
@@ -114,6 +140,10 @@ export default function DailyChallengePage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [progress, setProgress] = useState<Record<string, CompletedInfo>>(() => readStorage());
+  const [leaderboardMode, setLeaderboardMode] = useState<"monthly" | "daily">("monthly");
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -160,9 +190,72 @@ export default function DailyChallengePage() {
     return () => window.removeEventListener("storage", handler);
   }, []);
 
+  const fetchMonthlyLeaderboard = useCallback(
+    async (yearValue: number, monthIndexValue: number) => {
+      setLeaderboardLoading(true);
+      setLeaderboardError(null);
+      try {
+        const monthLabel = `${yearValue}-${String(monthIndexValue + 1).padStart(2, "0")}`;
+        const res = await fetch(`${API_BASE}/daily/leaderboard/monthly?month=${monthLabel}`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error((data as any)?.error || `HTTP ${res.status}`);
+        }
+        const data = (await res.json()) as { leaderboard: LeaderboardEntry[] };
+        setLeaderboard(data.leaderboard ?? []);
+      } catch (e: any) {
+        setLeaderboard([]);
+        setLeaderboardError(e?.message || "Erreur lors du chargement du classement");
+      } finally {
+        setLeaderboardLoading(false);
+      }
+    },
+    [],
+  );
+
+  const fetchDailyLeaderboard = useCallback(async (dateIso: string) => {
+    setLeaderboardLoading(true);
+    setLeaderboardError(null);
+    try {
+      const res = await fetch(`${API_BASE}/daily/leaderboard/daily/${dateIso}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as any)?.error || `HTTP ${res.status}`);
+      }
+      const data = (await res.json()) as { leaderboard: LeaderboardEntry[] };
+      setLeaderboard(data.leaderboard ?? []);
+    } catch (e: any) {
+      setLeaderboard([]);
+      const msg = e?.message;
+      setLeaderboardError(
+        msg === "not_found"
+          ? "Aucun défi trouvé pour cette date."
+          : msg || "Erreur lors du chargement du classement",
+      );
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  }, []);
+
+  // Mois / année renvoyés par l'API = mois en cours (limite max)
   const year = calendar?.month.year ?? fallbackYear;
   const monthIndex = calendar ? calendar.month.month - 1 : fallbackMonthIndex;
-  const monthLabel = `${MONTH_NAMES[monthIndex]} ${year}`;
+
+  // Mois / année affichés (navigables)
+  const [viewYear, setViewYear] = useState(year);
+  const [viewMonthIndex, setViewMonthIndex] = useState(monthIndex);
+
+  // Recalage de la vue quand on reçoit les données
+  useEffect(() => {
+    if (calendar) {
+      setViewYear(calendar.month.year);
+      setViewMonthIndex(calendar.month.month - 1);
+    }
+  }, [calendar]);
 
   const challengeMap = useMemo(() => {
     const map = new Map<string, CalendarChallenge>();
@@ -172,9 +265,10 @@ export default function DailyChallengePage() {
     return map;
   }, [calendar]);
 
+  // Grille basée sur le mois affiché
   const calendarCells = useMemo(
-    () => getCalendarMatrix(year, monthIndex),
-    [year, monthIndex],
+    () => getCalendarMatrix(viewYear, viewMonthIndex),
+    [viewYear, viewMonthIndex],
   );
 
   const selectedChallenge = selectedDate ? challengeMap.get(selectedDate) : undefined;
@@ -183,183 +277,468 @@ export default function DailyChallengePage() {
   const selectedThemeMeta = selectedThemeKey ? getThemeMeta(selectedThemeKey) : getThemeMeta(null);
   const selectedDifficultyLabel = difficultyLabel(selectedChallenge?.difficultyAverage ?? null);
 
-  const todayIso = calendar?.today ?? isoFromParts(fallbackYear, fallbackMonthIndex, today.getUTCDate());
-  const completedDates = useMemo(() => new Set(Object.keys(progress)), [progress]);
+  const todayIso =
+    calendar?.today ?? isoFromParts(fallbackYear, fallbackMonthIndex, today.getUTCDate());
+
+  useEffect(() => {
+    if (!calendar) return;
+
+    if (leaderboardMode === "daily") {
+      if (!selectedDate) {
+        setLeaderboardMode("monthly");
+        return;
+      }
+      fetchDailyLeaderboard(selectedDate);
+      return;
+    }
+
+    fetchMonthlyLeaderboard(calendar.month.year, calendar.month.month - 1);
+  }, [
+    calendar,
+    fetchDailyLeaderboard,
+    fetchMonthlyLeaderboard,
+    leaderboardMode,
+    selectedDate,
+  ]);
+
+  // Navigation mois avec limite max = mois / année de l'API
+  const goToMonth = useCallback(
+    (delta: number) => {
+      if (!delta) return;
+
+      let newMonth = viewMonthIndex + delta;
+      let newYear = viewYear;
+
+      if (newMonth < 0) {
+        newMonth = 11;
+        newYear -= 1;
+      } else if (newMonth > 11) {
+        newMonth = 0;
+        newYear += 1;
+      }
+
+      const maxYear = year;
+      const maxMonthIndex = monthIndex;
+
+      // Interdit d'aller dans le futur au-delà du mois en cours
+      if (newYear > maxYear || (newYear === maxYear && newMonth > maxMonthIndex)) {
+        return;
+      }
+
+      setViewMonthIndex(newMonth);
+      setViewYear(newYear);
+    },
+    [viewMonthIndex, viewYear, year, monthIndex],
+  );
+
+  // Navigation clavier (flèches gauche/droite)
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goToMonth(-1);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        goToMonth(1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [goToMonth]);
+
+  // Libellé du jour sélectionné
+  const selectedDayLabel = selectedDate?.split("-")[2] ?? "";
+  let selectedMonthLabel = MONTH_NAMES[monthIndex];
+  if (selectedDate) {
+    const [, mStr] = selectedDate.split("-");
+    const mIdx = Number(mStr) - 1;
+    if (!Number.isNaN(mIdx) && mIdx >= 0 && mIdx < 12) {
+      selectedMonthLabel = MONTH_NAMES[mIdx];
+    }
+  }
+
+  // Choix de la médaille en fonction du score (Bronze <1000, Argent 1000–1499, Or 1500–1999, Elite ≥2000)
+  let medalSrc: string | null = null;
+  let medalAlt = "";
+
+  if (selectedProgress) {
+    const s = selectedProgress.score;
+    if (s < 1000) {
+      medalSrc = BronzeMedal;
+      medalAlt = "Médaille bronze";
+    } else if (s < 1500) {
+      medalSrc = SilverMedal;
+      medalAlt = "Médaille argent";
+    } else if (s < 2000) {
+      medalSrc = GoldMedal;
+      medalAlt = "Médaille or";
+    } else {
+      medalSrc = EliteMedal;
+      medalAlt = "Médaille élite";
+    }
+  }
 
   return (
-    <div className="relative">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308] text-slate-50">
+      {/* halo + gradient alignés avec la page de jeu */}
       <div
         aria-hidden
-        className="fixed inset-0 z-0 bg-[radial-gradient(circle_at_top,_#5522aa,_#1c0c33_55%,_#060111_100%)]"
+        className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(15,23,42,0.95),#020617)]"
       />
-      <div
-        aria-hidden
-        className="fixed inset-0 z-0 pointer-events-none opacity-40 mix-blend-soft-light bg-[radial-gradient(circle,_rgba(255,195,255,0.2)_0.5px,_transparent_0.5px)] bg-[length:4px_4px]"
-      />
+      {/* petites particules lumineuses */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
+        {[...Array(18)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute h-[3px] w-[3px] rounded-full bg-rose-200/40"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              opacity: 0.55,
+            }}
+          />
+        ))}
+      </div>
 
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] px-4 py-10 text-white">
-        <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="uppercase tracking-[0.5em] text-sm text-white/70">Mode solo</p>
-            <h1 className="font-brand m-0 text-4xl md:text-5xl tracking-wide">Défi du jour</h1>
-            <p className="mt-2 max-w-xl text-white/85">
-              Revenez chaque jour pour relever un nouveau challenge et grimper dans le classement mensuel.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-right">
-            <div className="text-xs uppercase tracking-wide text-white/60">Mois en cours</div>
-            <div className="text-lg font-semibold capitalize">{monthLabel}</div>
-          </div>
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10">
+        {/* HEADER simplifié : titre centré */}
+        <header className="mb-6 text-center">
+          <h1 className="text-xl font-semibold text-slate-50 sm:text-2xl">Défi du jour</h1>
         </header>
 
-        <div className="mt-6 text-sm text-white/80">
+        <div className="text-sm text-slate-200/80">
           {loading && <span>Chargement des défis…</span>}
           {!loading && error && <span className="text-rose-200">{error}</span>}
         </div>
 
-        <div className="mt-8 grid gap-5 lg:grid-cols-[260px,minmax(0,1fr),280px]">
-          <aside className="rounded-[22px] border border-white/15 bg-white/8 p-5 backdrop-blur">
-            <div className="flex items-center justify-between">
-              <div className="font-semibold uppercase tracking-wide text-sm text-white/70">Classement mensuel</div>
-              <div className="text-xs text-white/50">Top 10</div>
-            </div>
-            <div className="mt-4 max-h-[520px] space-y-2 overflow-y-auto pr-2 lb-scroll">
-              {LEADERBOARD.map((entry, index) => (
-                <div
-                  key={entry.id}
-                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"
-                >
-                  <div className="text-sm font-bold text-white/60">#{index + 1}</div>
-                  <div
-                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl text-base font-semibold text-white"
-                    style={{ background: entry.avatarColor }}
-                  >
-                    {entry.name
-                      .split(" ")
-                      .map((part) => part[0])
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold">{entry.name}</div>
-                    <div className="text-xs uppercase tracking-wide text-white/60">{entry.score} pts</div>
+        {/* CARTE PRINCIPALE */}
+        <div className="mt-4">
+          <div
+            className={[
+              "relative w-full rounded-[40px] border border-slate-800/80",
+              "bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.96),rgba(15,23,42,0.98)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.8),#020617)]",
+              "shadow-[0_30px_80px_rgba(0,0,0,0.95)]",
+              "p-5 sm:p-6 lg:p-7",
+            ].join(" ")}
+          >
+            {/* colonne gauche élargie + légère réduction colonne droite pour donner un peu plus d'air au calendrier */}
+            <div className="grid gap-6 lg:grid-cols-[300px,minmax(0,1fr),260px]">
+              {/* CLASSEMENT */}
+              <aside className="rounded-[24px] border border-slate-800/80 bg-black/70 p-4 shadow-inner shadow-black/70 backdrop-blur-xl">
+                <div className="text-sm font-semibold text-slate-100 sm:text-base flex items-center justify-center gap-2">
+                  <span>Classement</span>
+                  <span className="text-[11px] text-slate-100 flex items-center gap-1">
+                    (
+                    <User className="w-3 h-3 text-white" />
+                    <span>{leaderboard.length}</span>
+                    )
+                  </span>
+                </div>
+
+                {/* Switch centré */}
+                <div className="mt-4 flex justify-center">
+                  <div className="flex items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/60 p-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300">
+                    <button
+                      type="button"
+                      onClick={() => setLeaderboardMode("monthly")}
+                      className={[
+                        "rounded-full px-3 py-1 transition",
+                        leaderboardMode === "monthly"
+                          ? "bg-[#2563ff] text-white shadow-[0_0_12px_rgba(37,99,255,0.45)]"
+                          : "hover:text-white",
+                      ].join(" ")}
+                    >
+                      Mensuel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!selectedDate}
+                      onClick={() => selectedDate && setLeaderboardMode("daily")}
+                      className={[
+                        "rounded-full px-3 py-1 transition",
+                        leaderboardMode === "daily"
+                          ? "bg-[#2563ff] text-white shadow-[0_0_12px_rgba(37,99,255,0.45)]"
+                          : "hover:text-white",
+                        !selectedDate ? "cursor-not-allowed opacity-40" : "",
+                      ].join(" ")}
+                    >
+                      Quotidien
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </aside>
 
-          <section className="rounded-[26px] border border-white/10 bg-white/8 p-6 backdrop-blur">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-sm uppercase tracking-[0.35em] text-white/60">Calendrier</div>
-                <div className="text-2xl font-semibold capitalize">{MONTH_NAMES[monthIndex]}</div>
-              </div>
-              <div className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs uppercase tracking-wide text-white/70">
-                {year}
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-7 gap-2 text-center text-sm text-white/60">
-              {WEEKDAY_LABELS.map((label) => (
-                <div key={label} className="uppercase tracking-[0.35em]">
-                  {label}
+                <div className="mt-4 max-h-[520px] space-y-2 overflow-y-auto pr-2 lb-scroll">
+                  {!leaderboardLoading && leaderboardError && (
+                    <div className="text-sm text-rose-200">{leaderboardError}</div>
+                  )}
+                  {!leaderboardLoading && !leaderboardError && leaderboard.length === 0 && (
+                    <div className="text-sm text-slate-400">
+                      Aucun score disponible pour ce classement.
+                    </div>
+                  )}
+                  {!leaderboardLoading &&
+                    !leaderboardError &&
+                    leaderboard.map((entry, index) => (
+                      <div
+                        key={`${entry.playerId}-${index}`}
+                        className="mx-auto flex items-center gap-2 rounded-[10px] border border-slate-700/80 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/10 px-2.5 py-1.5 text-slate-50 shadow-[0_14px_30px_rgba(0,0,0,0.85)]"
+                      >
+                        {/* numéro plus proche du bord et aligné à gauche */}
+                        <div className="w-4 text-left text-[11px] font-bold text-slate-400">
+                          #{index + 1}
+                        </div>
+                        {entry.img ? (
+                          <img
+                            src={entry.img}
+                            alt=""
+                            className="h-5 w-5 flex-shrink-0 rounded-[4px] object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div
+                            className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-xl text-[9px] font-semibold text-slate-50"
+                            style={{ background: avatarColor(entry.playerName, index) }}
+                          >
+                            {entry.playerName
+                              .split(" ")
+                              .map((part) => part[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </div>
+                        )}
+                        {/* NOM + SCORE SUR UNE LIGNE */}
+                        <div className="min-w-0 ml-0.5 flex flex-1 items-center justify-between">
+                          <div className="truncate text-[13px] font-semibold">
+                            {entry.playerName}
+                          </div>
+                          <div className="flex-shrink-0 text-[11px] font-semibold text-slate-100">
+                            {entry.score} pts
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                 </div>
-              ))}
-            </div>
+              </aside>
 
-            <div className="mt-2 grid grid-cols-7 gap-2">
-              {calendarCells.map((day, idx) => {
-                if (!day) {
-                  return <div key={`empty-${idx}`} />;
-                }
-                const iso = isoFromParts(year, monthIndex, day);
-                const challenge = challengeMap.get(iso);
-                const isToday = iso === todayIso;
-                const isSelected = iso === selectedDate;
-                const isCompleted = completedDates.has(iso);
-                const disabled = !challenge;
-
-                return (
+              {/* CALENDRIER */}
+              <section className="rounded-[24px] border border-slate-800/80 bg-black/70 p-5 shadow-inner shadow-black/70 backdrop-blur-xl">
+                {/* EN-TÊTE CALENDRIER */}
+                <div className="mb-6 flex items-center justify-between">
                   <button
-                    key={iso}
                     type="button"
-                    disabled={disabled}
-                    onClick={() => {
-                      if (!disabled) setSelectedDate(iso);
-                    }}
-                    className={[
-                      "relative flex h-14 w-full items-center justify-center rounded-2xl border text-lg font-semibold transition",
-                      disabled
-                        ? "border-white/5 bg-white/5 text-white/35 cursor-not-allowed"
-                        : "border-white/15 bg-white/10 text-white hover:border-white/30",
-                      isToday && !isSelected ? "border-white/50" : "",
-                      isSelected ? "bg-white text-slate-900 shadow-lg" : "",
-                    ].join(" ")}
+                    onClick={() => goToMonth(-1)}
+                    className="flex h-8 w-8 items-center justify-center text-sm font-semibold text-slate-300 hover:text-[#2563ff] focus:outline-none"
                   >
-                    <span>{day}</span>
-                    {isCompleted && (
-                      <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                    )}
+                    <span className="sr-only">Mois précédent</span>
+                    <span className="text-lg leading-none">‹</span>
                   </button>
-                );
-              })}
-            </div>
-          </section>
 
-          <aside className="rounded-[26px] border border-white/10 bg-white/8 p-6 backdrop-blur">
-            {selectedChallenge ? (
-              <div className="flex h-full flex-col">
-                <div className="text-xs uppercase tracking-[0.4em] text-white/60">Défi sélectionné</div>
-                <div className="mt-2 text-3xl font-semibold">
-                  Défi du {selectedDate?.split("-")[2]} {MONTH_NAMES[monthIndex]}
+                  <div className="text-sm font-semibold text-slate-100 sm:text-base">
+                    {MONTH_NAMES[viewMonthIndex]} {viewYear}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => goToMonth(1)}
+                    className="flex h-8 w-8 items-center justify-center text-sm font-semibold text-slate-300 hover:text-[#2563ff] focus:outline-none"
+                  >
+                    <span className="sr-only">Mois suivant</span>
+                    <span className="text-lg leading-none">›</span>
+                  </button>
                 </div>
 
-                <div className="mt-4 space-y-3 text-sm text-white/80">
-                  <div className="flex items-center justify-between">
-                    <span>Thème dominant</span>
-                    <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: `${selectedThemeMeta.color}33`, color: selectedThemeMeta.color }}>
-                      {selectedThemeMeta.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Difficulté</span>
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">
-                      {selectedDifficultyLabel}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Nombre de questions</span>
-                    <span className="font-semibold text-white">{selectedChallenge.questionCount}</span>
-                  </div>
+                <div className="grid grid-cols-7 gap-2 text-center text-xs text-slate-400">
+                  {WEEKDAY_LABELS.map((label) => (
+                    <div key={label} className="uppercase tracking-[0.32em]">
+                      {label}
+                    </div>
+                  ))}
                 </div>
 
-                {selectedProgress && (
-                  <div className="mt-4 rounded-2xl border border-emerald-300/40 bg-emerald-300/15 p-3 text-xs text-emerald-100">
-                    Défi complété — {selectedProgress.score} bonnes réponses.
+                <div className="mt-2 grid grid-cols-7 gap-2">
+                  {calendarCells.map((day, idx) => {
+                    if (!day) {
+                      return <div key={`empty-${idx}`} />;
+                    }
+
+                    const iso = isoFromParts(viewYear, viewMonthIndex, day);
+                    const challenge = challengeMap.get(iso);
+                    const isToday = iso === todayIso;
+                    const isSelected = iso === selectedDate;
+                    const completion = progress[iso];
+                    const disabled = !challenge;
+
+                    if (disabled) {
+                      return (
+                        <button
+                          key={iso}
+                          type="button"
+                          disabled
+                          className="relative flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold cursor-not-allowed bg-transparent text-slate-600/60"
+                        >
+                          <span>{day}</span>
+                        </button>
+                      );
+                    }
+
+                    const isTodayNotSelected = isToday && !isSelected;
+
+                    const classes = [
+                      "relative flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-colors border",
+                      isSelected
+                        ? "border-transparent bg-[#2563ff] text-white hover:bg-[#2563ff]"
+                        : "border-slate-700/80 bg-slate-900/80 hover:bg-slate-900 hover:border-slate-300",
+                      isTodayNotSelected ? "text-[#2563ff]" : "text-slate-100",
+                    ].join(" ");
+
+                    // Couleur du point sous la date :
+                    // - pas de point si pas joué
+                    // - pas de point si cellule sélectionnée
+                    // - bronze / argent / or / élite selon le score
+                    let dotColor: string | null = null;
+                    if (completion && !isSelected) {
+                      const s = completion.score;
+                      if (s < 1000) {
+                        dotColor = "#b45309"; // bronze
+                      } else if (s < 1500) {
+                        dotColor = "#d1d5db"; // argent
+                      } else if (s < 2000) {
+                        dotColor = "#facc15"; // or
+                      } else {
+                        dotColor = "#a855f7"; // élite (violet)
+                      }
+                    }
+
+                    return (
+                      <button
+                        key={iso}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDate(iso);
+                          setLeaderboardMode("daily");
+                        }}
+                        className={classes}
+                      >
+                        <span>{day}</span>
+                        {dotColor && (
+                          <span
+                            className="absolute bottom-1 h-1.5 w-1.5 rounded-full"
+                            style={{ backgroundColor: dotColor }}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* PANNEAU DÉTAIL DU DÉFI */}
+              <aside className="rounded-[24px] border border-slate-800/80 bg-black/70 p-5 shadow-inner shadow-black/70 backdrop-blur-xl">
+                {selectedChallenge ? (
+                  <div className="flex h-full flex-col">
+                    {/* Titre + médaille à droite */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                          Défi du
+                        </div>
+                        <div className="mt-1 text-2xl font-semibold text-slate-50">
+                          {selectedDayLabel} {selectedMonthLabel}
+                        </div>
+                      </div>
+                      {medalSrc && (
+                        <img
+                          src={medalSrc}
+                          alt={medalAlt}
+                          className="h-10 w-10 flex-shrink-0"
+                        />
+                      )}
+                    </div>
+
+                    <div className="mt-4 space-y-3 text-sm text-slate-200">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-slate-300">Difficulté</span>
+                        <span className="rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold text-slate-100">
+                          {selectedDifficultyLabel}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-slate-300">Nombre de questions</span>
+                        <span className="font-semibold text-slate-50">
+                          {selectedChallenge.questionCount}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-slate-300">Score</span>
+                        <span className="font-semibold text-slate-50">
+                          {selectedProgress ? `${selectedProgress.score} pts` : "—"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bande de carrés rouge / vert comme sur la page de jeu,
+                        uniquement si le défi a été joué ET que les infos existent */}
+                    {selectedProgress?.questionStates &&
+                      selectedProgress.questionStates.length > 0 && (
+                        <div className="mt-5 flex flex-wrap gap-1.5">
+                          {Array.from({
+                            length: selectedChallenge.questionCount,
+                          }).map((_, i) => {
+                            const state = selectedProgress.questionStates?.[i];
+                            let colorClasses =
+                              "border-slate-700/90 bg-slate-700/60 text-slate-100"; // par défaut (gris)
+
+                            if (state === "correct") {
+                              colorClasses =
+                                "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
+                            } else if (state === "wrong") {
+                              colorClasses =
+                                "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]";
+                            }
+
+                            return (
+                              <div
+                                key={i}
+                                className={[
+                                  "flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-semibold",
+                                  "border",
+                                  colorClasses,
+                                ].join(" ")}
+                              >
+                                {i + 1}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                    <button
+                      type="button"
+                      disabled={!selectedChallenge}
+                      onClick={() => selectedDate && navigate(`/solo/daily/${selectedDate}`)}
+                      className={[
+                        "mt-auto inline-flex items-center justify-center rounded-[14px] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] transition",
+                        "border border-transparent bg-[#2563ff] text-slate-50 hover:bg-[#1d4ed8]",
+                        !selectedChallenge ? "cursor-not-allowed opacity-40" : "",
+                      ].join(" ")}
+                    >
+                      <span className="mr-2 text-xs">▶</span>
+                      Lancer le défi
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center text-center text-sm text-slate-300">
+                    <p>Aucun défi sélectionné.</p>
                   </div>
                 )}
-
-                <p className="mt-5 text-sm text-white/75">
-                  Chaque défi journalier vous propose une sélection de questions préparées à l'avance. Pas de hasard : tout le monde joue sur le même set.
-                </p>
-
-                <button
-                  type="button"
-                  disabled={!selectedChallenge}
-                  onClick={() => selectedDate && navigate(`/solo/daily/${selectedDate}`)}
-                  className="mt-auto rounded-full border border-transparent bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Lancer le défi
-                </button>
-              </div>
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center text-center text-sm text-white/70">
-                <p>Aucun défi sélectionné.</p>
-              </div>
-            )}
-          </aside>
+              </aside>
+            </div>
+          </div>
         </div>
       </div>
     </div>
