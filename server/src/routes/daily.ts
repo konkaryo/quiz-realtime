@@ -3,6 +3,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { PrismaClient } from "@prisma/client";
 import { getChallengeByDate, listChallengesForMonth, toPublicChallenge } from "../domain/daily/daily.service";
+import { getDailyLeaderboardForDate, getMonthlyDailyLeaderboard } from "../domain/daily/daily-score.service";
 
 function parseMonth(input?: string | null) {
   const now = new Date();
@@ -65,6 +66,36 @@ export function dailyRoutes({ prisma }: { prisma: PrismaClient }) {
       }
 
       return reply.send({ challenge });
+    });
+
+    app.get("/leaderboard/monthly", async (req, reply) => {
+      try {
+        const monthParam = (req.query as any)?.month as string | undefined;
+        const { year, monthIndex } = parseMonth(monthParam);
+        const leaderboard = await getMonthlyDailyLeaderboard(prisma, year, monthIndex, 10);
+        return reply.send({
+          month: { year, month: monthIndex + 1 },
+          leaderboard,
+        });
+      } catch (err: any) {
+        req.log.error(err, "[GET /daily/leaderboard/monthly]");
+        return reply.code(400).send({ error: err?.message || "invalid_month" });
+      }
+    });
+
+    app.get("/leaderboard/daily/:date", async (req, reply) => {
+      const Params = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
+      const parsed = Params.safeParse(req.params);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: "invalid_date" });
+      }
+
+      const { leaderboard, found } = await getDailyLeaderboardForDate(prisma, parsed.data.date, 10);
+      if (!found) {
+        return reply.code(404).send({ error: "not_found" });
+      }
+
+      return reply.send({ leaderboard });
     });
   };
 }
