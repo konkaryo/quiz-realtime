@@ -16,6 +16,7 @@ type ChallengeSummaryRow = {
 };
 
 type ChallengeDetailRow = {
+  id: string;
   date: Date;
   entries: {
     slotLabel: string | null;
@@ -66,6 +67,7 @@ export type DailyChallengeQuestionPublicDto = {
 
 
 export type DailyChallengeDetail = {
+  id: string;
   date: string;
   questionCount: number;
   questions: DailyChallengeQuestionDto[];
@@ -193,6 +195,7 @@ export async function getChallengeByDate(prisma: PrismaClient, dateIso: string):
     });
 
   return {
+    id: row.id,
     date: isoDate(row.date),
     questionCount: questions.length,
     questions,

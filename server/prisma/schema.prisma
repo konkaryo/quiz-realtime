@@ -74,15 +74,16 @@ model Session {
 }
 
 model Player {
-  id          String       @id @default(cuid())
-  userId      String?      @unique
-  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id          String                @id @default(cuid())
+  userId      String?               @unique
+  user        User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
   name        String
-  img         String       @default("0")
-  isBot       Boolean      @default(false)
+  img         String                @default("0")
+  isBot       Boolean               @default(false)
   bot         Bot?
-  createdAt   DateTime     @default(now())
+  createdAt   DateTime              @default(now())
   playerGames PlayerGame[]
+  dailyScores DailyChallengeScore[]
 }
 
 model Bot {
@@ -201,6 +202,7 @@ model DailyChallenge {
   createdAt DateTime                 @default(now())
   updatedAt DateTime                 @updatedAt
   entries   DailyChallengeQuestion[]
+  scores    DailyChallengeScore[]
 }
 
 model DailyChallengeQuestion {
@@ -215,4 +217,18 @@ model DailyChallengeQuestion {
 
   @@unique([challengeId, position])
   @@index([questionId])
+}
+
+model DailyChallengeScore {
+  id          String         @id @default(cuid())
+  challenge   DailyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId String
+  player      Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId    String
+  score       Int
+  createdAt   DateTime       @default(now())
+
+  @@unique([challengeId, playerId], name: "challenge_player_unique")
+  @@index([challengeId])
+  @@index([playerId])
 }

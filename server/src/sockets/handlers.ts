@@ -12,6 +12,8 @@ import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
 import { startGameForRoom } from "../domain/game/game.service";
 import { getChallengeByDate } from "../domain/daily/daily.service";
+import { recordDailyScoreIfFirst } from "../domain/daily/daily-score.service";
+import { ensurePlayerForUser } from "../domain/player/player.service";
 
 
 /**
@@ -22,6 +24,8 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
   // Daily challenge sessions are scoped to a single socket (solo mode)
   type DailySession = {
     date: string;
+    challengeId: string;
+    playerId: string;
     questions: {
       id: string;
       text: string;
@@ -67,15 +71,22 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
   };
 
   const queueNextRound = (socket: any) => {
-    setTimeout(() => scheduleNext(socket), 1600);
+    setTimeout(() => {
+      void scheduleNext(socket);
+    }, 1600);
   };
 
-  const scheduleNext = (socket: any) => {
+  const scheduleNext = async (socket: any) => {
     const sess = dailySessions.get(socket.id);
     if (!sess) return;
     const nextIndex = sess.index + 1;
     const nextQuestion = sess.questions[nextIndex];
     if (!nextQuestion) {
+      try {
+        await recordDailyScoreIfFirst(prisma, sess.challengeId, sess.playerId, sess.score);
+      } catch (err) {
+        console.error("[daily_score_record]", err);
+      }
       socket.emit("daily_finished", { score: sess.score, results: sess.results });
       return;
     }
@@ -130,7 +141,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
   const startDaily = (socket: any, sess: DailySession) => {
     sess.index = -1;
-    scheduleNext(socket);
+    void scheduleNext(socket);
   };
 
   io.on("connection", (socket) => {
@@ -142,12 +153,18 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       const valid = /^\d{4}-\d{2}-\d{2}$/.test(date);
       if (!valid) return ack?.({ ok: false, reason: "invalid-date" });
       try {
+        const userId = socket.data.userId as string | undefined;
+        if (!userId) return ack?.({ ok: false, reason: "unauthorized" });
+
+        const player = await ensurePlayerForUser(prisma, userId);
         const challenge = await getChallengeByDate(prisma, date);
         if (!challenge) return ack?.({ ok: false, reason: "not-found" });
         stopDailyTimer(socket.id);
 
         dailySessions.set(socket.id, {
           date,
+          challengeId: challenge.id,
+          playerId: player.id,
           questions: challenge.questions,
           index: -1,
           score: 0,
