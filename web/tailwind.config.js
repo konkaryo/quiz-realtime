@@ -8,6 +8,7 @@ export default {
     extend: {
       fontFamily: {
         brand: ['"Acumin Pro Extra Condensed Bold Italic"'],
+        brutal: ['"Brutal Type Black"']
       },
       borderRadius: {
         lg: "var(--radius)",

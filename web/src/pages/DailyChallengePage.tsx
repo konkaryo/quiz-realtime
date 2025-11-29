@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getThemeMeta } from "../lib/themeMeta";
-import BronzeMedal from "../assets/bronze-medal.png";
-import SilverMedal from "../assets/silver-medal.png";
-import GoldMedal from "../assets/gold-medal.png";
-import EliteMedal from "../assets/elite-medal.png";
+import BronzeMedal from "../assets/bronze-feather.png";
+import SilverMedal from "../assets/silver-feather.png";
+import GoldMedal from "../assets/gold-feather.png";
+import EliteMedal from "../assets/elite-feather.png";
+import OwlEdge from "../assets/owledge.png";
 import { User } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
@@ -131,6 +132,9 @@ function avatarColor(name: string, index: number) {
 
 export default function DailyChallengePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationSelectedDate =
+    (location.state as { selectedDate?: string } | null)?.selectedDate ?? null;
   const today = new Date();
   const fallbackYear = today.getUTCFullYear();
   const fallbackMonthIndex = today.getUTCMonth();
@@ -161,7 +165,13 @@ export default function DailyChallengePage() {
         setCalendar(data);
         const map = new Map<string, CalendarChallenge>();
         data.challenges.forEach((c) => map.set(c.date, c));
-        const defaultDate = map.has(data.today)
+        const preferredDate =
+          navigationSelectedDate && map.has(navigationSelectedDate)
+            ? navigationSelectedDate
+            : null;
+        const defaultDate = preferredDate
+          ? preferredDate
+          : map.has(data.today)
           ? data.today
           : data.challenges.length > 0
           ? data.challenges[0].date
@@ -217,7 +227,7 @@ export default function DailyChallengePage() {
 
   const fetchDailyLeaderboard = useCallback(async (dateIso: string) => {
     setLeaderboardLoading(true);
-    setLeaderboardError(null);
+       setLeaderboardError(null);
     try {
       const res = await fetch(`${API_BASE}/daily/leaderboard/daily/${dateIso}`, {
         credentials: "include",
@@ -251,11 +261,20 @@ export default function DailyChallengePage() {
 
   // Recalage de la vue quand on reçoit les données
   useEffect(() => {
+    if (selectedDate) {
+      const match = selectedDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (match) {
+        setViewYear(Number(match[1]));
+        setViewMonthIndex(Number(match[2]) - 1);
+        return;
+      }
+    }
+
     if (calendar) {
       setViewYear(calendar.month.year);
       setViewMonthIndex(calendar.month.month - 1);
     }
-  }, [calendar]);
+  }, [calendar, selectedDate]);
 
   const challengeMap = useMemo(() => {
     const map = new Map<string, CalendarChallenge>();
@@ -383,8 +402,13 @@ export default function DailyChallengePage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308] text-slate-50">
-      {/* halo + gradient alignés avec la page de jeu */}
+    <div className="relative text-slate-50">
+      {/* BACKGROUND GLOBAL (comme "wrapper background", mais en fixed pleine page) */}
+      <div
+        aria-hidden
+        className="fixed inset-0 z-0 bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308]"
+      />
+      {/* halo + gradient additionnel, aligné avec la page de jeu */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(15,23,42,0.95),#020617)]"
@@ -404,19 +428,20 @@ export default function DailyChallengePage() {
         ))}
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10">
+      {/* CONTENU : même pattern que Home → relative + z-10, pas de min-h-screen */}
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-6 sm:px-8 lg:px-10">
         {/* HEADER simplifié : titre centré */}
-        <header className="mb-6 text-center">
-          <h1 className="text-xl font-semibold text-slate-50 sm:text-2xl">Défi du jour</h1>
+        <header className="mb-3 text-center">
+          <h1 className="text-xl font-brutal text-slate-50 sm:text-2xl">DÉFI DU JOUR</h1>
         </header>
 
-        <div className="text-sm text-slate-200/80">
+        <div className="mb-3 text-sm text-slate-200/80">
           {loading && <span>Chargement des défis…</span>}
           {!loading && error && <span className="text-rose-200">{error}</span>}
         </div>
 
-        {/* CARTE PRINCIPALE */}
-        <div className="mt-4">
+        {/* CARTE PRINCIPALE : prend l'espace dispo, sans forcer le viewport */}
+        <div className="min-h-0">
           <div
             className={[
               "relative w-full rounded-[40px] border border-slate-800/80",
@@ -425,109 +450,107 @@ export default function DailyChallengePage() {
               "p-5 sm:p-6 lg:p-7",
             ].join(" ")}
           >
-            {/* colonne gauche élargie + légère réduction colonne droite pour donner un peu plus d'air au calendrier */}
             <div className="grid gap-6 lg:grid-cols-[300px,minmax(0,1fr),260px]">
               {/* CLASSEMENT */}
               <aside className="rounded-[24px] border border-slate-800/80 bg-black/70 p-4 shadow-inner shadow-black/70 backdrop-blur-xl">
-                <div className="text-sm font-semibold text-slate-100 sm:text-base flex items-center justify-center gap-2">
-                  <span>Classement</span>
-                  <span className="text-[11px] text-slate-100 flex items-center gap-1">
-                    (
-                    <User className="w-3 h-3 text-white" />
-                    <span>{leaderboard.length}</span>
-                    )
-                  </span>
-                </div>
-
-                {/* Switch centré */}
-                <div className="mt-4 flex justify-center">
-                  <div className="flex items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/60 p-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300">
-                    <button
-                      type="button"
-                      onClick={() => setLeaderboardMode("monthly")}
-                      className={[
-                        "rounded-full px-3 py-1 transition",
-                        leaderboardMode === "monthly"
-                          ? "bg-[#2563ff] text-white shadow-[0_0_12px_rgba(37,99,255,0.45)]"
-                          : "hover:text-white",
-                      ].join(" ")}
-                    >
-                      Mensuel
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!selectedDate}
-                      onClick={() => selectedDate && setLeaderboardMode("daily")}
-                      className={[
-                        "rounded-full px-3 py-1 transition",
-                        leaderboardMode === "daily"
-                          ? "bg-[#2563ff] text-white shadow-[0_0_12px_rgba(37,99,255,0.45)]"
-                          : "hover:text-white",
-                        !selectedDate ? "cursor-not-allowed opacity-40" : "",
-                      ].join(" ")}
-                    >
-                      Quotidien
-                    </button>
+                <div className="flex h-full flex-col">
+                  <div className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-100 sm:text-base">
+                    <span>Classement</span>
+                    <span className="flex items-center gap-1 text-[11px] text-slate-100">
+                      (
+                      <User className="h-3 w-3 text-white" />
+                      <span>{leaderboard.length}</span>
+                      )
+                    </span>
                   </div>
-                </div>
 
-                <div className="mt-4 max-h-[520px] space-y-2 overflow-y-auto pr-2 lb-scroll">
-                  {!leaderboardLoading && leaderboardError && (
-                    <div className="text-sm text-rose-200">{leaderboardError}</div>
-                  )}
-                  {!leaderboardLoading && !leaderboardError && leaderboard.length === 0 && (
-                    <div className="text-sm text-slate-400">
-                      Aucun score disponible pour ce classement.
-                    </div>
-                  )}
-                  {!leaderboardLoading &&
-                    !leaderboardError &&
-                    leaderboard.map((entry, index) => (
-                      <div
-                        key={`${entry.playerId}-${index}`}
-                        className="mx-auto flex items-center gap-2 rounded-[10px] border border-slate-700/80 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/10 px-2.5 py-1.5 text-slate-50 shadow-[0_14px_30px_rgba(0,0,0,0.85)]"
+                  {/* Switch centré */}
+                  <div className="mt-4 flex justify-center">
+                    <div className="flex items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/60 p-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300">
+                      <button
+                        type="button"
+                        onClick={() => setLeaderboardMode("monthly")}
+                        className={[
+                          "rounded-full px-3 py-1 transition",
+                          leaderboardMode === "monthly"
+                            ? "bg-[#2563ff] text-white shadow-[0_0_12px_rgba(37,99,255,0.45)]"
+                            : "hover:text-white",
+                        ].join(" ")}
                       >
-                        {/* numéro plus proche du bord et aligné à gauche */}
-                        <div className="w-4 text-left text-[11px] font-bold text-slate-400">
-                          #{index + 1}
-                        </div>
-                        {entry.img ? (
-                          <img
-                            src={entry.img}
-                            alt=""
-                            className="h-5 w-5 flex-shrink-0 rounded-[4px] object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div
-                            className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-xl text-[9px] font-semibold text-slate-50"
-                            style={{ background: avatarColor(entry.playerName, index) }}
-                          >
-                            {entry.playerName
-                              .split(" ")
-                              .map((part) => part[0])
-                              .join("")
-                              .slice(0, 2)
-                              .toUpperCase()}
-                          </div>
-                        )}
-                        {/* NOM + SCORE SUR UNE LIGNE */}
-                        <div className="min-w-0 ml-0.5 flex flex-1 items-center justify-between">
-                          <div className="truncate text-[13px] font-semibold">
-                            {entry.playerName}
-                          </div>
-                          <div className="flex-shrink-0 text-[11px] font-semibold text-slate-100">
-                            {entry.score} pts
-                          </div>
-                        </div>
+                        Mensuel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!selectedDate}
+                        onClick={() => selectedDate && setLeaderboardMode("daily")}
+                        className={[
+                          "rounded-full px-3 py-1 transition",
+                          leaderboardMode === "daily"
+                            ? "bg-[#2563ff] text-white shadow-[0_0_12px_rgba(37,99,255,0.45)]"
+                            : "hover:text-white",
+                          !selectedDate ? "cursor-not-allowed opacity-40" : "",
+                        ].join(" ")}
+                      >
+                        Quotidien
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 max-h-[520px] flex-1 space-y-2 overflow-y-auto pr-2 lb-scroll">
+                    {!leaderboardLoading && leaderboardError && (
+                      <div className="text-sm text-rose-200">{leaderboardError}</div>
+                    )}
+                    {!leaderboardLoading && !leaderboardError && leaderboard.length === 0 && (
+                      <div className="text-sm text-slate-400">
+                        Aucun score disponible pour ce classement.
                       </div>
-                    ))}
+                    )}
+                    {!leaderboardLoading &&
+                      !leaderboardError &&
+                      leaderboard.map((entry, index) => (
+                        <div
+                          key={`${entry.playerId}-${index}`}
+                          className="mx-auto flex items-center gap-2 rounded-[10px] border border-slate-700/80 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/10 px-2.5 py-1.5 text-slate-50 shadow-[0_14px_30px_rgba(0,0,0,0.85)]"
+                        >
+                          <div className="w-4 text-left text-[11px] font-bold text-slate-400">
+                            #{index + 1}
+                          </div>
+                          {entry.img ? (
+                            <img
+                              src={entry.img}
+                              alt=""
+                              className="h-5 w-5 flex-shrink-0 rounded-[4px] object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div
+                              className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-xl text-[9px] font-semibold text-slate-50"
+                              style={{ background: avatarColor(entry.playerName, index) }}
+                            >
+                              {entry.playerName
+                                .split(" ")
+                                .map((part) => part[0])
+                                .join("")
+                                .slice(0, 2)
+                                .toUpperCase()}
+                            </div>
+                          )}
+                          <div className="ml-0.5 flex min-w-0 flex-1 items-center justify-between">
+                            <div className="truncate text-[13px] font-semibold">
+                              {entry.playerName}
+                            </div>
+                            <div className="flex-shrink-0 text-[11px] font-semibold text-slate-100">
+                              {entry.score} pts
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 </div>
               </aside>
 
               {/* CALENDRIER */}
               <section className="rounded-[24px] border border-slate-800/80 bg-black/70 p-5 shadow-inner shadow-black/70 backdrop-blur-xl">
-                {/* EN-TÊTE CALENDRIER */}
                 <div className="mb-6 flex items-center justify-between">
                   <button
                     type="button"
@@ -579,7 +602,7 @@ export default function DailyChallengePage() {
                           key={iso}
                           type="button"
                           disabled
-                          className="relative flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold cursor-not-allowed bg-transparent text-slate-600/60"
+                          className="relative flex h-12 w-full cursor-not-allowed items-center justify-center rounded-2xl bg-transparent text-sm font-semibold text-slate-600/60"
                         >
                           <span>{day}</span>
                         </button>
@@ -596,21 +619,17 @@ export default function DailyChallengePage() {
                       isTodayNotSelected ? "text-[#2563ff]" : "text-slate-100",
                     ].join(" ");
 
-                    // Couleur du point sous la date :
-                    // - pas de point si pas joué
-                    // - pas de point si cellule sélectionnée
-                    // - bronze / argent / or / élite selon le score
                     let dotColor: string | null = null;
                     if (completion && !isSelected) {
                       const s = completion.score;
                       if (s < 1000) {
-                        dotColor = "#b45309"; // bronze
+                        dotColor = "#b45309";
                       } else if (s < 1500) {
-                        dotColor = "#d1d5db"; // argent
+                        dotColor = "#d1d5db";
                       } else if (s < 2000) {
-                        dotColor = "#facc15"; // or
+                        dotColor = "#facc15";
                       } else {
-                        dotColor = "#a855f7"; // élite (violet)
+                        dotColor = "#a855f7";
                       }
                     }
 
@@ -641,7 +660,6 @@ export default function DailyChallengePage() {
               <aside className="rounded-[24px] border border-slate-800/80 bg-black/70 p-5 shadow-inner shadow-black/70 backdrop-blur-xl">
                 {selectedChallenge ? (
                   <div className="flex h-full flex-col">
-                    {/* Titre + médaille à droite */}
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
@@ -681,42 +699,39 @@ export default function DailyChallengePage() {
                       </div>
                     </div>
 
-                    {/* Bande de carrés rouge / vert comme sur la page de jeu,
-                        uniquement si le défi a été joué ET que les infos existent */}
-{selectedProgress?.questionStates &&
-  selectedProgress.questionStates.length > 0 && (
-    <div className="mt-5 grid grid-cols-8 gap-1.5">
-      {Array.from({
-        length: selectedChallenge.questionCount,
-      }).map((_, i) => {
-        const state = selectedProgress.questionStates?.[i];
-        let colorClasses =
-          "border-slate-700/90 bg-slate-700/60 text-slate-100"; // par défaut (gris)
+                    {selectedProgress?.questionStates &&
+                      selectedProgress.questionStates.length > 0 && (
+                        <div className="mt-5 grid grid-cols-8 gap-1.5">
+                          {Array.from({
+                            length: selectedChallenge.questionCount,
+                          }).map((_, i) => {
+                            const state = selectedProgress.questionStates?.[i];
+                            let colorClasses =
+                              "border-slate-700/90 bg-slate-700/60 text-slate-100";
 
-        if (state === "correct") {
-          colorClasses =
-            "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
-        } else if (state === "wrong") {
-          colorClasses =
-            "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]";
-        }
+                            if (state === "correct") {
+                              colorClasses =
+                                "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
+                            } else if (state === "wrong") {
+                              colorClasses =
+                                "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]";
+                            }
 
-        return (
-          <div
-            key={i}
-            className={[
-              // chaque case prend 1/8 de la largeur, et reste carrée
-              "flex aspect-square w-full items-center justify-center rounded-md text-[11px] font-semibold",
-              "border",
-              colorClasses,
-            ].join(" ")}
-          >
-            {i + 1}
-          </div>
-        );
-      })}
-    </div>
-  )}
+                            return (
+                              <div
+                                key={i}
+                                className={[
+                                  "flex aspect-square w-full items-center justify-center rounded-md text-[11px] font-semibold",
+                                  "border",
+                                  colorClasses,
+                                ].join(" ")}
+                              >
+                                {i + 1}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
 
                     <button
                       type="button"

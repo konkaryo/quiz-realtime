@@ -461,13 +461,17 @@ export default function DailyChallengePlayPage() {
   // RENDER -------------------------------------------------------------------
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308] text-slate-50">
+    <div className="relative text-slate-50">
+      {/* BACKGROUND GLOBAL plein écran (remplace l'ancien bg du wrapper) */}
+      <div
+        aria-hidden
+        className="fixed inset-0 z-0 bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308]"
+      />
       {/* halo rouge principal */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(15,23,42,0.95),#020617)]"
       />
-
       {/* particules légères */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
         {[...Array(18)].map((_, i) => (
@@ -483,7 +487,8 @@ export default function DailyChallengePlayPage() {
         ))}
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10">
+      {/* CONTENU : wrapper sans min-h-screen, comme Home/DailyChallengePage */}
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10">
         {/* top bar type landing samouraï */}
         <header className="mb-10 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -507,7 +512,7 @@ export default function DailyChallengePlayPage() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate("/solo/daily")}
+              onClick={() => navigate("/solo/daily", { state: { selectedDate: dateParam } })}
               className="inline-flex items-center gap-2 rounded-[12px] border border-slate-800/80 bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-100 transition hover:border-rose-400 hover:text-white"
             >
               <span className="text-xs">←</span>
