@@ -15,6 +15,7 @@ import { authRoutes } from "./routes/auth";
 import { dailyRoutes } from "./routes/daily";
 import { registerSocketHandlers } from "./sockets/handlers";
 import { clientsInRoom, isCodeValid, genCode } from "./domain/room/room.service";
+import { raceRoutes } from "./routes/race";
 import { Theme, RoomVisibility } from "@prisma/client";
 
 /* ---------------- runtime maps ---------------- */
@@ -44,6 +45,7 @@ async function main() {
 
   await app.register(authRoutes({ prisma }), { prefix: "/auth" });
   await app.register(dailyRoutes({ prisma }), { prefix: "/daily" });
+  await app.register(raceRoutes({ prisma }), { prefix: "/race" });
 
   app.get("/health", async () => ({ ok: true }));
 

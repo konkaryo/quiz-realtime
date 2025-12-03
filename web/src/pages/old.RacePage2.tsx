@@ -18,15 +18,15 @@ type StageProfile = {
 
 type EnergyTier = {
   speed: number;      // km/h
-  tierEnergy: number; // énergie propre au palier (sert pour la décroissance)
-  cumEnergy: number;  // énergie totale minimale pour atteindre ce palier
+  tierEnergy: number; // énergie propre au palier
+  cumEnergy: number;  // énergie totale min pour atteindre ce palier
 };
 
 type EnergyInfo = {
   tier: EnergyTier;
   index: number;
-  prevCum: number; // énergie totale au moment d'entrer dans ce palier
-  nextCum: number; // énergie totale nécessaire pour atteindre le palier suivant
+  prevCum: number;    // énergie totale juste à l'entrée du palier courant
+  nextCum: number;    // énergie totale pour atteindre le palier suivant
   isMax: boolean;
 };
 
@@ -34,17 +34,21 @@ const STAGE_LENGTH_KM = 100;
 const SEGMENT_KM = 10;
 const NB_SAMPLES = 400;
 
+// pente max entre ancres (en %)
 const MAX_SEG_SLOPE_PCT = 12;
+// écart-type de la pente (en %) → joue sur le "relief"
 const SLOPE_STD_PCT = 4;
 
-// --------------------- Energie / vitesse ---------------------
+// ----------------------- Energie / vitesse ------------------------------
 
-// Données de base : vitesse & énergie propre du palier
-// (énergie nécessaire pour passer AU palier suivant et utilisée pour la décroissance)
+// Définition des paliers :
+// - On démarre au palier 0 avec 0 énergie.
+// - Il faut 40 énergie pour passer au palier 1.
+// - Depuis le palier 1, il faut 50 énergie supplémentaires pour passer au palier 2, etc.
 const BASE_ENERGY_DATA: { speed: number; tierEnergy: number }[] = [
-  { speed: 0, tierEnergy: 0 },    // Palier 0 : départ, 0 énergie
-  { speed: 1000, tierEnergy: 40 }, // Palier 1
-  { speed: 2000, tierEnergy: 50 }, // Palier 2
+  { speed: 0, tierEnergy: 0 },    // Palier 0 : départ
+  { speed: 1000, tierEnergy: 40 }, // énergie pour passer 0 → 1
+  { speed: 2000, tierEnergy: 50 }, // énergie pour passer 1 → 2
   { speed: 3000, tierEnergy: 70 },
   { speed: 4000, tierEnergy: 100 },
   { speed: 5000, tierEnergy: 140 },
@@ -55,15 +59,15 @@ const BASE_ENERGY_DATA: { speed: number; tierEnergy: number }[] = [
   { speed: 10000, tierEnergy: 490 }, // adapte si tu veux 590 ici
 ];
 
-// On calcule cumEnergy[i] = énergie totale minimale pour être au palier i.
+// Calcul de cumEnergy : énergie totale min pour chaque palier
 // cumEnergy[0] = 0
-// cumEnergy[1] = 40  (il a fallu 40 énergie pour passer de 0 → 1)
-// cumEnergy[2] = 90  (40 + 50), etc.
+// cumEnergy[1] = 40
+// cumEnergy[2] = 40 + 50 = 90
+// cumEnergy[3] = 40 + 50 + 70 = 160, etc.
 const ENERGY_TIERS: EnergyTier[] = (() => {
   let cum = 0;
   return BASE_ENERGY_DATA.map((t, idx) => {
     if (idx === 0) {
-      // palier 0 : énergie totale min = 0
       return { speed: t.speed, tierEnergy: t.tierEnergy, cumEnergy: 0 };
     }
     cum += BASE_ENERGY_DATA[idx].tierEnergy;
@@ -77,7 +81,7 @@ const DEFAULT_ENERGY = 0;
 // Incrément / décrément d’énergie par clic
 const ENERGY_STEP = 50;
 
-// Facteur de vitesse en fonction de la pente (en %)
+// table pente (en %) → facteur de vitesse (valeur décimale)
 const SLOPE_SPEED_MAP: Record<number, number> = {
   [-14]: 2.2,
   [-13]: 2.1,
@@ -157,16 +161,20 @@ function getEnergyInfoForEnergy(energy: number): EnergyInfo {
   }
   const tier = ENERGY_TIERS[idx];
   const isMax = idx === ENERGY_TIERS.length - 1;
-
-  // énergie totale quand on vient JUSTE d’entrer dans ce palier
+  // énergie totale min au moment d'entrer dans ce palier
   const prevCum = tier.cumEnergy;
+  // énergie totale min pour atteindre le palier suivant
   const nextCum = isMax ? tier.cumEnergy : ENERGY_TIERS[idx + 1].cumEnergy;
-
   return { tier, index: idx, prevCum, nextCum, isMax };
 }
 
 // --------------------- Génération du profil ------------------------------
 
+/**
+ * Génère 11 ancres : x = 0, 10, 20, ..., 100.
+ * La pente moyenne entre deux points consécutifs suit une loi normale
+ * centrée en 0 % (σ = SLOPE_STD_PCT) puis bornée dans [-12 %, 12 %].
+ */
 function generateAnchorsEquidistant(
   lengthKm: number,
   segmentKm: number
@@ -203,6 +211,10 @@ function createStageProfile(lengthKm: number): StageProfile {
   return { anchors };
 }
 
+/**
+ * Construit la fonction f(x) :
+ * pour chaque segment [x_k, x_{k+1}], interpolation sinusoidale entre y_k et y_{k+1}.
+ */
 function makeStageFunction(profile: StageProfile): StageFunction {
   const { anchors } = profile;
 
@@ -247,21 +259,32 @@ const RacePage: React.FC = () => {
   const [seed, setSeed] = useState(0);
   const [hover, setHover] = useState<HoverInfo | null>(null);
 
+  // état du joueur
   const [playerKm, setPlayerKm] = useState(0);
   const [energy, setEnergy] = useState<number>(DEFAULT_ENERGY);
+
+  // refs pour la physique (utilisées à haute fréquence)
   const energyRef = useRef(energy);
+  const playerKmRef = useRef(playerKm);
+
   useEffect(() => {
     energyRef.current = energy;
   }, [energy]);
+
+  useEffect(() => {
+    playerKmRef.current = playerKm;
+  }, [playerKm]);
 
   const profile = useMemo(
     () => createStageProfile(STAGE_LENGTH_KM),
     [seed]
   );
+
   const stageFunction = useMemo(
     () => makeStageFunction(profile),
     [profile]
   );
+
   const points = useMemo(
     () => sampleStageFunction(stageFunction, STAGE_LENGTH_KM, NB_SAMPLES),
     [stageFunction]
@@ -286,13 +309,49 @@ const RacePage: React.FC = () => {
   const height = 280;
   const margin = { top: 30, right: 40, bottom: 45, left: 46 };
 
-  const minY = Math.min(...points.map((p) => p.y), 0);
-  const maxY = Math.max(...points.map((p) => p.y)) + 200;
+  // Géométrie du relief + pathD mémoïsé : ne change que si "points" change (nouveau seed)
+  const { pathD, scaleX, scaleY, minY } = useMemo(() => {
+    if (points.length === 0) {
+      return {
+        pathD: "",
+        scaleX: 1,
+        scaleY: 1,
+        minY: 0,
+      };
+    }
 
-  const scaleX =
-    (width - margin.left - margin.right) / STAGE_LENGTH_KM;
-  const scaleY =
-    (height - margin.top - margin.bottom) / (maxY - minY);
+    const minYLocal = Math.min(...points.map((p) => p.y), 0);
+    const maxYLocal = Math.max(...points.map((p) => p.y)) + 200;
+
+    const scaleXLocal =
+      (width - margin.left - margin.right) / STAGE_LENGTH_KM;
+    const scaleYLocal =
+      (height - margin.top - margin.bottom) / (maxYLocal - minYLocal);
+
+    const baselineYLocal = height - margin.bottom;
+
+    const toSvgLocal = (p: Point) => ({
+      x: margin.left + p.x * scaleXLocal,
+      y: baselineYLocal - (p.y - minYLocal) * scaleYLocal,
+    });
+
+    const first = toSvgLocal(points[0]);
+    const last = toSvgLocal(points[points.length - 1]);
+
+    let d = `M ${first.x} ${baselineYLocal} L ${first.x} ${first.y}`;
+    for (let i = 1; i < points.length; i++) {
+      const { x, y } = toSvgLocal(points[i]);
+      d += ` L ${x} ${y}`;
+    }
+    d += ` L ${last.x} ${baselineYLocal} Z`;
+
+    return {
+      pathD: d,
+      scaleX: scaleXLocal,
+      scaleY: scaleYLocal,
+      minY: minYLocal,
+    };
+  }, [points, width, height, margin.left, margin.right, margin.bottom]);
 
   const baselineY = height - margin.bottom;
 
@@ -300,16 +359,6 @@ const RacePage: React.FC = () => {
     x: margin.left + p.x * scaleX,
     y: baselineY - (p.y - minY) * scaleY,
   });
-
-  const first = toSvg(points[0]);
-  const last = toSvg(points[points.length - 1]);
-
-  let pathD = `M ${first.x} ${baselineY} L ${first.x} ${first.y}`;
-  for (let i = 1; i < points.length; i++) {
-    const { x, y } = toSvg(points[i]);
-    pathD += ` L ${x} ${y}`;
-  }
-  pathD += ` L ${last.x} ${baselineY} Z`;
 
   const ticks: number[] = [];
   for (let km = 0; km <= STAGE_LENGTH_KM; km += 10) ticks.push(km);
@@ -388,7 +437,7 @@ const RacePage: React.FC = () => {
 
   // énergie déjà accumulée dans CE palier
   const energyInCurrentTier = Math.max(0, energy - energyInfo.prevCum);
-  // énergie nécessaire pour atteindre le palier suivant
+  // capacité du palier courant = énergie pour aller au palier suivant
   const capacityCurrentTier = energyInfo.isMax
     ? energyInfo.tier.tierEnergy
     : energyInfo.nextCum - energyInfo.prevCum;
@@ -401,45 +450,52 @@ const RacePage: React.FC = () => {
         )
       : 0;
 
-  // Animation du joueur avec vitesse impactée par pente + énergie
+  // Animation du joueur : logique à 60 FPS, UI à ~10 FPS
   useEffect(() => {
     let animationId: number;
     let lastTs: number | null = null;
+    let lastUiTs: number | null = null; // dernière mise à jour React
 
     const tick = (ts: number) => {
       if (lastTs === null) {
         lastTs = ts;
+        lastUiTs = ts;
         animationId = requestAnimationFrame(tick);
         return;
       }
+
       const dtSec = (ts - lastTs) / 1000;
       lastTs = ts;
+
+      // 1) Physique à haute fréquence (sur les refs)
 
       const energyNow = energyRef.current;
       const infoNow = getEnergyInfoForEnergy(energyNow);
       const baseSpeed = infoNow.tier.speed;
-      const decayPerSec = 0.05 * infoNow.tier.tierEnergy;
+      const decayPerSec = 0.05 * infoNow.tier.tierEnergy; // 5% du palier
 
-      // 1) décroissance naturelle de l’énergie
+      // énergie
       let newEnergy = energyNow - decayPerSec * dtSec;
       if (newEnergy < 0) newEnergy = 0;
       energyRef.current = newEnergy;
-      setEnergy(newEnergy);
 
-      // 2) déplacement du joueur
-      setPlayerKm((prevKm) => {
-        if (prevKm >= STAGE_LENGTH_KM) return prevKm;
-
-        const slopePct = getSlopePctAt(prevKm, stageFunction);
+      // position
+      let kmNow = playerKmRef.current;
+      if (kmNow < STAGE_LENGTH_KM) {
+        const slopePct = getSlopePctAt(kmNow, stageFunction);
         const factor = getSlopeSpeedFactor(slopePct);
         const effectiveSpeed = baseSpeed * factor; // km/h
-
         const deltaKm = (effectiveSpeed * dtSec) / 3600;
-        let next = prevKm + deltaKm;
-        if (next > STAGE_LENGTH_KM) next = STAGE_LENGTH_KM;
-        if (next < 0) next = 0;
-        return next;
-      });
+        kmNow = Math.min(STAGE_LENGTH_KM, Math.max(0, kmNow + deltaKm));
+        playerKmRef.current = kmNow;
+      }
+
+      // 2) Mise à jour de l'UI seulement à ~10 FPS (toutes les 100ms)
+      if (lastUiTs === null || ts - lastUiTs >= 30) {
+        lastUiTs = ts;
+        setEnergy(energyRef.current);
+        setPlayerKm(playerKmRef.current);
+      }
 
       animationId = requestAnimationFrame(tick);
     };
@@ -448,7 +504,7 @@ const RacePage: React.FC = () => {
     return () => cancelAnimationFrame(animationId);
   }, [stageFunction]);
 
-  // Position du joueur
+  // Position SVG du joueur et infos de vitesse actuelles
   const playerAlt = stageFunction(playerKm);
   const playerSvg = toSvg({ x: playerKm, y: playerAlt });
 
@@ -456,7 +512,7 @@ const RacePage: React.FC = () => {
   const currentFactor = getSlopeSpeedFactor(currentSlopePct);
   const effectiveSpeedKmh = baseSpeedKmh * currentFactor;
 
-  // Boutons énergie
+  // Helpers pour modifier l'énergie via les boutons
   const addEnergy = (delta: number) => {
     setEnergy((prev) => {
       let next = prev + delta;
@@ -522,7 +578,7 @@ const RacePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Barre d'énergie = énergie nécessaire pour passer au palier suivant */}
+        {/* Barre d'énergie vers le prochain palier */}
         <div className="rounded-xl border border-emerald-400/30 bg-slate-900/70 px-3 py-2">
           <div className="flex items-center justify-between text-[11px] text-slate-100/80">
             <span>
@@ -571,9 +627,9 @@ const RacePage: React.FC = () => {
             </h1>
             <p className="mt-2 text-sm text-slate-100/80 max-w-2xl">
               On part du palier 0 avec 0 énergie. Chaque palier nécessite une
-              certaine quantité d&apos;énergie supplémentaire pour atteindre le
-              suivant (40, puis 50, puis 70, etc.). L&apos;énergie décroit de 5 % de
-              l&apos;énergie du palier par seconde, et la pente modifie la vitesse
+              quantité d&apos;énergie supplémentaire pour atteindre le suivant (40,
+              puis 50, 70, etc.). L&apos;énergie décroît de 5 % de l&apos;énergie du
+              palier par seconde, et la pente modifie ensuite la vitesse
               effective du joueur.
             </p>
           </div>
@@ -583,6 +639,7 @@ const RacePage: React.FC = () => {
               setHover(null);
               setSeed((s) => s + 1);
               setPlayerKm(0);
+              playerKmRef.current = 0;
             }}
             className="mt-2 rounded-xl border border-sky-400/50 bg-sky-400/10 px-4 py-2 text-sm font-semibold text-sky-100 hover:bg-sky-400/20"
           >
@@ -605,7 +662,7 @@ const RacePage: React.FC = () => {
               rx={18}
             />
 
-            {/* Profil */}
+            {/* Profil (statique tant que le seed ne change pas) */}
             <path
               d={pathD}
               fill="#ffd800"
