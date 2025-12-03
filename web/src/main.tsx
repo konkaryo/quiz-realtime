@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import RoomPage from "./pages/RoomPage";
 import CreateRoomPage from "./pages/CreateRoomPage";
 import JoinPrivateRoomPage from "./pages/JoinPrivateRoomPage";
+import RacePage from "./pages/RacePage";
 
 // ✅ nouvelle page
 import CampaignPage from "./pages/CampaignPage";
@@ -98,6 +99,7 @@ const router = createBrowserRouter([
       { path: "/solo/campagne/level/:levelId", element: <CampaignPage /> },
       { path: "/solo/daily", element: <DailyChallengePage /> },
       { path: "/solo/daily/:date", element: <DailyChallengePlayPage /> },
+      { path: "/multi/race", element: <RacePage /> },
       { path: "/me/profile", element: <ProfilePage /> },
       { path: "/rooms/new", element: <CreateRoomPage /> },
       { path: "/private/join", element: <JoinPrivateRoomPage /> },

@@ -180,6 +180,7 @@ export default function AppShell() {
     { to: "/solo/quiz-thematiques", title: "Quiz thématiques", desc: "Choisissez un thème et enchaînez.",   icon: "🧠" },
   ];
   const multiItems: MenuItem[] = [
+    { to: "/multi/race",   title: "Course",       desc: "Sprint chronométré et classements.", icon: "🏁" },
     { to: "/multi/duel",   title: "Duel",         desc: "Affrontez un joueur en 1v1.",       icon: "⚔️" },
     { to: "/multi/equipe", title: "Par équipe",   desc: "Formez une équipe et coopérez.",    icon: "👥" },
     { to: "/multi/public", title: "Salon public", desc: "Rejoignez des parties ouvertes.",   icon: "🏟️" },
