@@ -26,8 +26,9 @@ export type AnswerResponse = {
   correctLabel: string | null;
 };
 
-const SCORE_BASE = 120;
-const SCORE_TIME_BONUS = 8;
+// énergie gagnée par bonne réponse
+const ENERGY_BASE = 120;
+const ENERGY_TIME_BONUS = 8;
 const MAX_POINTS = 10000;
 
 export default function RacePage() {
@@ -51,11 +52,13 @@ export default function RacePage() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [points, setPoints] = useState(0);
   const [questionCounter, setQuestionCounter] = useState(0);
+  const [energy, setEnergy] = useState(0);
 
   const phaseRef = useRef<"idle" | "playing" | "reveal" | "finished">("idle");
   const revealTimeoutRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const roundStartRef = useRef<number | null>(null);
+  const speedRef = useRef(0);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -84,25 +87,24 @@ export default function RacePage() {
     return () => window.clearInterval(id);
   }, [endsAt, phase]);
 
-const handleTimeout = () => {
-  if (phaseRef.current !== "playing") return;
+  const handleTimeout = () => {
+    if (phaseRef.current !== "playing") return;
 
-  setPhase("reveal");
-  phaseRef.current = "reveal";
+    setPhase("reveal");
+    phaseRef.current = "reveal";
 
-  setFeedback("Temps écoulé !");
-  setFeedbackWasCorrect(false);
+    setFeedback("Temps écoulé !");
+    setFeedbackWasCorrect(false);
 
-  setAnswerMode(null);
+    setAnswerMode(null);
 
-  setFeedbackCorrectLabel(question?.correctLabel ?? null);
-  setCorrectChoiceId(question?.correctChoiceId ?? null);
+    setFeedbackCorrectLabel(question?.correctLabel ?? null);
+    setCorrectChoiceId(question?.correctChoiceId ?? null);
 
-  scheduleNextQuestion();
-};
+    scheduleNextQuestion();
+  };
 
   const loadQuestion = async () => {
-    // si on a déjà atteint l'objectif, ne recharge plus de question
     if (points >= MAX_POINTS) {
       setPhase("finished");
       phaseRef.current = "finished";
@@ -172,6 +174,20 @@ const handleTimeout = () => {
     [points],
   );
 
+  // x = 10 * (sqrt(0.1 y - 3) - 0.5)
+  const speed = useMemo(() => {
+    const inner = 0.1 * energy - 3;
+    if (inner <= 0) return 0;
+    const base = Math.sqrt(inner) - 0.5;
+    const raw = 10 * base;
+    if (!Number.isFinite(raw) || raw < 0) return 0;
+    return raw;
+  }, [energy]);
+
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
+
   const scheduleNextQuestion = () => {
     if (phaseRef.current === "finished") return;
 
@@ -196,34 +212,16 @@ const handleTimeout = () => {
 
     setPhase("reveal");
     phaseRef.current = "reveal";
-
     setRemainingSeconds(0);
 
     setFeedback(res.correct ? "Bravo !" : "Mauvaise réponse !");
 
-    let reachedGoal = false;
-
     if (res.correct) {
       const bonus = Math.max(
         0,
-        Math.floor((QUESTION_DURATION_MS - responseMs) / 1000) * SCORE_TIME_BONUS,
+        Math.floor((QUESTION_DURATION_MS - responseMs) / 1000) * ENERGY_TIME_BONUS,
       );
-
-      setPoints((prev) => {
-        const next = prev + SCORE_BASE + bonus;
-        if (next >= MAX_POINTS) reachedGoal = true;
-        return next;
-      });
-    }
-
-    // si l'objectif est atteint, on termine la course et on ne charge plus de question
-    if (res.correct && reachedGoal) {
-      setPhase("finished");
-      phaseRef.current = "finished";
-      setEndsAt(null);
-      setRemainingSeconds(null);
-      setFeedback("Bravo ! Objectif des 10 000 points atteint 🎉");
-      return;
+      setEnergy((prev) => prev + ENERGY_BASE + bonus);
     }
 
     scheduleNextQuestion();
@@ -303,6 +301,30 @@ const handleTimeout = () => {
     setShowChoices(true);
   };
 
+  // génération automatique des points en fonction de la vitesse
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setPoints((prev) => {
+        if (phaseRef.current === "finished") return prev;
+
+        const next = prev + speedRef.current;
+
+        if (next >= MAX_POINTS) {
+          setPhase("finished");
+          phaseRef.current = "finished";
+          setEndsAt(null);
+          setRemainingSeconds(null);
+          setFeedback("Bravo ! Objectif des 10 000 points atteint 🎉");
+          return MAX_POINTS;
+        }
+
+        return next;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <div className="relative text-slate-50">
       {/* BACKGROUND */}
@@ -328,123 +350,151 @@ const handleTimeout = () => {
         ))}
       </div>
 
-      {/* CONTENT WRAPPER */}
-      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10">
-        {/* HEADER */}
-        <header className="mb-10 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-rose-400 shadow-[0_0_12px_rgba(248,113,113,0.7)]">
-              <span className="text-lg font-black tracking-tight">⚡</span>
-            </div>
-            <div className="leading-tight">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-300">
-                Mode course
+      {/* PAGE CONTENT (large container, on peut y mettre deux colonnes) */}
+      <div className="relative z-10 px-4 pb-16 pt-8 sm:px-8 lg:px-10">
+        <div className="mx-auto max-w-[1280px]">
+          {/* HEADER */}
+          <header className="mb-10 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-rose-400 shadow-[0_0_12px_rgba(248,113,113,0.7)]">
+                <span className="text-lg font-black tracking-tight">⚡</span>
               </div>
-              <div className="text-sm font-semibold text-slate-100">
-                Questions infinies
+              <div className="leading-tight">
+                <div className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-300">
+                  Mode course
+                </div>
+                <div className="text-sm font-semibold text-slate-100">
+                  Questions infinies
+                </div>
               </div>
+            </div>
+
+            <div className="flex flex-col items-center text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">
+              <span className="text-[10px] text-slate-400">Score</span>
+              <span className="mt-1 text-sm tabular-nums text-rose-300">
+                {Math.floor(points)} pts
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-2 rounded-[12px] border border-slate-800/80 bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9))] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-100 transition hover:border-rose-400 hover:text-white"
+            >
+              <span className="text-xs">←</span>
+              <span>Retour</span>
+            </button>
+          </header>
+
+          {/* LIGNE DE PROGRESSION DE LA COURSE */}
+          <div className="mb-6">
+            <div className="relative h-[2px] w-full overflow-hidden rounded-full bg-slate-900/80">
+              <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-rose-500/40 via-rose-300/25 to-emerald-400/40 opacity-60" />
+              <div
+                className="absolute -top-[6px] h-3 w-3 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(248,113,113,0.9)]"
+                style={{
+                  left: `${raceProgress * 100}%`,
+                  transform: "translateX(-50%)",
+                }}
+              />
+            </div>
+            <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+              <span>Départ</span>
+              <span>10 000 pts</span>
             </div>
           </div>
 
-          <div className="flex flex-col items-center text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">
-            <span className="text-[10px] text-slate-400">Score</span>
-            <span className="mt-1 text-sm tabular-nums text-rose-300">
-              {points} pts
-            </span>
-          </div>
+          {/* ÉTATS DE CHARGEMENT / FIN */}
+          {status === "loading" && (
+            <p className="mt-6 text-sm text-slate-200/80">Chargement…</p>
+          )}
 
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 rounded-[12px] border border-slate-800/80 bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-100 transition hover:border-rose-400 hover:text-white"
-          >
-            <span className="text-xs">←</span>
-            <span>Retour</span>
-          </button>
-        </header>
+          {status === "error" && (
+            <p className="mt-6 text-sm text-rose-300">
+              Impossible de charger une question.
+            </p>
+          )}
 
-        {/* RACE PROGRESSION LINE */}
-        <div className="mb-6">
-          <div className="relative h-[2px] w-full overflow-hidden rounded-full bg-slate-900/80">
-            {/* ligne légère */}
-            <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-rose-500/40 via-rose-300/25 to-emerald-400/40 opacity-60" />
-            {/* curseur joueur */}
-            <div
-              className="absolute -top-[6px] h-3 w-3 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(248,113,113,0.9)]"
-              style={{
-                left: `${raceProgress * 100}%`,
-                transform: "translateX(-50%)",
-              }}
-            />
-          </div>
-          <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
-            <span>Départ</span>
-            <span>10 000 pts</span>
-          </div>
+          {phase === "finished" && (
+            <div className="mt-6 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-6 py-5 text-sm text-emerald-100 shadow-[0_0_40px_rgba(16,185,129,0.25)]">
+              <div className="text-xs uppercase tracking-[0.3em] text-emerald-300">
+                Course terminée
+              </div>
+              <div className="mt-2 text-lg font-semibold">
+                Objectif des 10 000 points atteint 🎉
+              </div>
+              <div className="mt-2 text-[13px] text-emerald-100/80">
+                Score final :{" "}
+                <span className="font-semibold">{Math.floor(points)} pts</span>
+              </div>
+            </div>
+          )}
+
+          {/* LAYOUT PRINCIPAL : vrai nouveau bloc à gauche + bloc question */}
+          {status === "ready" && question && phase !== "finished" && (
+            <div className="mt-10 grid gap-10 lg:grid-cols-[280px_minmax(640px,1fr)]">
+              {/* BLOC GAUCHE DÉDIÉ AU PANNEAU VITESSE */}
+              <aside className="order-2 w-full rounded-2xl border border-slate-800/80 bg-black/60 px-4 py-4 text-sm text-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.7)] lg:order-1">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
+                  Vitesse
+                </div>
+                <div className="mt-2 text-3xl font-bold tabular-nums text-rose-300">
+                  {speed.toFixed(1)}{" "}
+                  <span className="text-sm font-semibold">pts/s</span>
+                </div>
+                <div className="mt-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
+                  Énergie
+                </div>
+                <div className="mt-1 text-lg font-semibold tabular-nums text-slate-50">
+                  {Math.floor(energy)}
+                </div>
+                <p className="mt-3 text-[11px] text-slate-400 leading-snug">
+                  Plus vous avez d&apos;énergie, plus votre vitesse de gain de points
+                  augmente.
+                </p>
+              </aside>
+
+              {/* BLOC CENTRAL : PANNEAU QUESTION */}
+              <div className="order-1 lg:order-2">
+                <QuestionPanel
+                  question={{
+                    id: question.id,
+                    text: question.text,
+                    theme: question.theme,
+                    difficulty: question.difficulty,
+                    img: question.img,
+                    slotLabel: null,
+                  }}
+                  index={questionCounter - 1}
+                  totalQuestions={null}
+                  lives={lives}
+                  totalLives={TEXT_LIVES}
+                  remainingSeconds={remainingSeconds}
+                  timerProgress={timerProgress}
+                  isReveal={phase === "reveal" && remainingSeconds === 0}
+                  isPlaying={phase === "playing"}
+                  inputRef={inputRef}
+                  textAnswer={textAnswer}
+                  onChangeText={setTextAnswer}
+                  onSubmitText={submitText}
+                  onShowChoices={showMultipleChoice}
+                  feedback={feedback}
+                  feedbackResponseMs={feedbackResponseMs}
+                  feedbackWasCorrect={feedbackWasCorrect}
+                  feedbackCorrectLabel={feedbackCorrectLabel}
+                  answerMode={answerMode}
+                  choicesRevealed={showChoices}
+                  showChoices={showChoices}
+                  choices={choices}
+                  selectedChoice={selectedChoice}
+                  correctChoiceId={correctChoiceId}
+                  onSelectChoice={onSelectChoice}
+                  questionProgress={[]}
+                />
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* PANEL / FIN DE COURSE */}
-        {status === "loading" && (
-          <p className="mt-6 text-sm text-slate-200/80">Chargement…</p>
-        )}
-
-        {status === "error" && (
-          <p className="mt-6 text-sm text-rose-300">
-            Impossible de charger une question.
-          </p>
-        )}
-
-        {phase === "finished" && (
-          <div className="mt-6 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-6 py-5 text-sm text-emerald-100 shadow-[0_0_40px_rgba(16,185,129,0.25)]">
-            <div className="text-xs uppercase tracking-[0.3em] text-emerald-300">
-              Course terminée
-            </div>
-            <div className="mt-2 text-lg font-semibold">
-              Objectif des 10 000 points atteint 🎉
-            </div>
-            <div className="mt-2 text-[13px] text-emerald-100/80">
-              Score final : <span className="font-semibold">{points} pts</span>
-            </div>
-          </div>
-        )}
-
-        {status === "ready" && question && phase !== "finished" && (
-          <QuestionPanel
-            question={{
-              id: question.id,
-              text: question.text,
-              theme: question.theme,
-              difficulty: question.difficulty,
-              img: question.img,
-              slotLabel: null,
-            }}
-            index={questionCounter - 1}
-            totalQuestions={null}
-            lives={lives}
-            totalLives={TEXT_LIVES}
-            remainingSeconds={remainingSeconds}
-            timerProgress={timerProgress}
-            isReveal={phase === "reveal" && remainingSeconds === 0}
-            isPlaying={phase === "playing"}
-            inputRef={inputRef}
-            textAnswer={textAnswer}
-            onChangeText={setTextAnswer}
-            onSubmitText={submitText}
-            onShowChoices={showMultipleChoice}
-            feedback={feedback}
-            feedbackResponseMs={feedbackResponseMs}
-            feedbackWasCorrect={feedbackWasCorrect}
-            feedbackCorrectLabel={feedbackCorrectLabel}
-            answerMode={answerMode}
-            choicesRevealed={showChoices}
-            showChoices={showChoices}
-            choices={choices}
-            selectedChoice={selectedChoice}
-            correctChoiceId={correctChoiceId}
-            onSelectChoice={onSelectChoice}
-            questionProgress={[]} // Pas de barre des 15 questions en mode course
-          />
-        )}
       </div>
     </div>
   );

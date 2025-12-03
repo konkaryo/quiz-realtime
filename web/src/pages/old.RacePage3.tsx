@@ -1,4 +1,5 @@
 // web/src/pages/RacePage.tsx
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import QuestionPanel from "../components/QuestionPanel";
@@ -28,14 +29,13 @@ export type AnswerResponse = {
 
 const SCORE_BASE = 120;
 const SCORE_TIME_BONUS = 8;
-const MAX_POINTS = 10000;
 
 export default function RacePage() {
   const navigate = useNavigate();
 
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [question, setQuestion] = useState<RaceQuestion | null>(null);
-  const [phase, setPhase] = useState<"idle" | "playing" | "reveal" | "finished">("idle");
+  const [phase, setPhase] = useState<"idle" | "playing" | "reveal">("idle");
   const [lives, setLives] = useState(TEXT_LIVES);
   const [showChoices, setShowChoices] = useState(false);
   const [choices, setChoices] = useState<Choice[] | null>(null);
@@ -52,7 +52,7 @@ export default function RacePage() {
   const [points, setPoints] = useState(0);
   const [questionCounter, setQuestionCounter] = useState(0);
 
-  const phaseRef = useRef<"idle" | "playing" | "reveal" | "finished">("idle");
+  const phaseRef = useRef<"idle" | "playing" | "reveal">("idle");
   const revealTimeoutRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const roundStartRef = useRef<number | null>(null);
@@ -84,32 +84,24 @@ export default function RacePage() {
     return () => window.clearInterval(id);
   }, [endsAt, phase]);
 
-const handleTimeout = () => {
-  if (phaseRef.current !== "playing") return;
+  const handleTimeout = () => {
+    if (phaseRef.current !== "playing") return;
 
-  setPhase("reveal");
-  phaseRef.current = "reveal";
+    setPhase("reveal");
+    phaseRef.current = "reveal";
 
-  setFeedback("Temps écoulé !");
-  setFeedbackWasCorrect(false);
+    setFeedback("Temps écoulé !");
+    setFeedbackWasCorrect(false);
 
-  setAnswerMode(null);
+    setAnswerMode(null);
 
-  setFeedbackCorrectLabel(question?.correctLabel ?? null);
-  setCorrectChoiceId(question?.correctChoiceId ?? null);
+    setFeedbackCorrectLabel(question?.correctLabel ?? null);
+    setCorrectChoiceId(question?.correctChoiceId ?? null);
 
-  scheduleNextQuestion();
-};
+    scheduleNextQuestion();
+  };
 
   const loadQuestion = async () => {
-    // si on a déjà atteint l'objectif, ne recharge plus de question
-    if (points >= MAX_POINTS) {
-      setPhase("finished");
-      phaseRef.current = "finished";
-      setStatus("ready");
-      return;
-    }
-
     setStatus("loading");
     setFeedback(null);
     setFeedbackWasCorrect(null);
@@ -167,14 +159,7 @@ const handleTimeout = () => {
     return Math.max(0, Math.min(1, remainingSeconds / (QUESTION_DURATION_MS / 1000)));
   }, [remainingSeconds]);
 
-  const raceProgress = useMemo(
-    () => Math.max(0, Math.min(1, points / MAX_POINTS)),
-    [points],
-  );
-
   const scheduleNextQuestion = () => {
-    if (phaseRef.current === "finished") return;
-
     if (revealTimeoutRef.current !== null) {
       window.clearTimeout(revealTimeoutRef.current);
     }
@@ -201,29 +186,12 @@ const handleTimeout = () => {
 
     setFeedback(res.correct ? "Bravo !" : "Mauvaise réponse !");
 
-    let reachedGoal = false;
-
     if (res.correct) {
       const bonus = Math.max(
         0,
-        Math.floor((QUESTION_DURATION_MS - responseMs) / 1000) * SCORE_TIME_BONUS,
+        Math.floor((QUESTION_DURATION_MS - responseMs) / 1000) * SCORE_TIME_BONUS
       );
-
-      setPoints((prev) => {
-        const next = prev + SCORE_BASE + bonus;
-        if (next >= MAX_POINTS) reachedGoal = true;
-        return next;
-      });
-    }
-
-    // si l'objectif est atteint, on termine la course et on ne charge plus de question
-    if (res.correct && reachedGoal) {
-      setPhase("finished");
-      phaseRef.current = "finished";
-      setEndsAt(null);
-      setRemainingSeconds(null);
-      setFeedback("Bravo ! Objectif des 10 000 points atteint 🎉");
-      return;
+      setPoints((prev) => prev + SCORE_BASE + bonus);
     }
 
     scheduleNextQuestion();
@@ -363,27 +331,7 @@ const handleTimeout = () => {
           </button>
         </header>
 
-        {/* RACE PROGRESSION LINE */}
-        <div className="mb-6">
-          <div className="relative h-[2px] w-full overflow-hidden rounded-full bg-slate-900/80">
-            {/* ligne légère */}
-            <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-rose-500/40 via-rose-300/25 to-emerald-400/40 opacity-60" />
-            {/* curseur joueur */}
-            <div
-              className="absolute -top-[6px] h-3 w-3 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(248,113,113,0.9)]"
-              style={{
-                left: `${raceProgress * 100}%`,
-                transform: "translateX(-50%)",
-              }}
-            />
-          </div>
-          <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
-            <span>Départ</span>
-            <span>10 000 pts</span>
-          </div>
-        </div>
-
-        {/* PANEL / FIN DE COURSE */}
+        {/* PANEL */}
         {status === "loading" && (
           <p className="mt-6 text-sm text-slate-200/80">Chargement…</p>
         )}
@@ -394,21 +342,7 @@ const handleTimeout = () => {
           </p>
         )}
 
-        {phase === "finished" && (
-          <div className="mt-6 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-6 py-5 text-sm text-emerald-100 shadow-[0_0_40px_rgba(16,185,129,0.25)]">
-            <div className="text-xs uppercase tracking-[0.3em] text-emerald-300">
-              Course terminée
-            </div>
-            <div className="mt-2 text-lg font-semibold">
-              Objectif des 10 000 points atteint 🎉
-            </div>
-            <div className="mt-2 text-[13px] text-emerald-100/80">
-              Score final : <span className="font-semibold">{points} pts</span>
-            </div>
-          </div>
-        )}
-
-        {status === "ready" && question && phase !== "finished" && (
+        {status === "ready" && question && (
           <QuestionPanel
             question={{
               id: question.id,

@@ -1,4 +1,4 @@
-// web/src/components/DailyQuestionPanel.tsx
+// web/src/components/QuestionPanel.tsx
 import { RefObject, KeyboardEvent } from "react";
 import enterKey from "@/assets/enter-key.svg";
 import tabKey from "@/assets/tab-key.svg";
@@ -63,7 +63,7 @@ type Props = {
   // données de la question
   question: QuestionLite;
   index: number;
-  totalQuestions: number;
+  totalQuestions: number | null;
   lives: number;
   totalLives: number;
 
@@ -163,10 +163,12 @@ export default function DailyQuestionPanel(props: Props) {
         >
           {/* bandeau supérieur : timer / info / vies */}
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="order-2 gap-4 font-medium text-slate-100 md:order-1">
-              Question {index + 1}
-              <span className="text-slate-500"> / {totalQuestions}</span>
-            </div>
+<div className="order-2 gap-4 font-medium text-slate-100 md:order-1">
+  Question {index + 1}
+  {typeof totalQuestions === "number" && totalQuestions > 0 && (
+    <span className="text-slate-500"> / {totalQuestions}</span>
+  )}
+</div>
 
             <div className="order-1 flex justify-center md:order-2">
               {isReveal ? (
