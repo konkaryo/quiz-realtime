@@ -26,8 +26,9 @@ export type AnswerResponse = {
   correctLabel: string | null;
 };
 
-const SCORE_BASE = 120;
-const SCORE_TIME_BONUS = 8;
+// l’énergie gagnée par bonne réponse (on reprend les constantes existantes)
+const ENERGY_BASE = 120;
+const ENERGY_TIME_BONUS = 8;
 const MAX_POINTS = 10000;
 
 export default function RacePage() {
@@ -51,11 +52,13 @@ export default function RacePage() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [points, setPoints] = useState(0);
   const [questionCounter, setQuestionCounter] = useState(0);
+  const [energy, setEnergy] = useState(0); // nouvelle ressource
 
   const phaseRef = useRef<"idle" | "playing" | "reveal" | "finished">("idle");
   const revealTimeoutRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const roundStartRef = useRef<number | null>(null);
+  const speedRef = useRef(0); // pour l’intervalle de points auto
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -84,22 +87,22 @@ export default function RacePage() {
     return () => window.clearInterval(id);
   }, [endsAt, phase]);
 
-const handleTimeout = () => {
-  if (phaseRef.current !== "playing") return;
+  const handleTimeout = () => {
+    if (phaseRef.current !== "playing") return;
 
-  setPhase("reveal");
-  phaseRef.current = "reveal";
+    setPhase("reveal");
+    phaseRef.current = "reveal";
 
-  setFeedback("Temps écoulé !");
-  setFeedbackWasCorrect(false);
+    setFeedback("Temps écoulé !");
+    setFeedbackWasCorrect(false);
 
-  setAnswerMode(null);
+    setAnswerMode(null);
 
-  setFeedbackCorrectLabel(question?.correctLabel ?? null);
-  setCorrectChoiceId(question?.correctChoiceId ?? null);
+    setFeedbackCorrectLabel(question?.correctLabel ?? null);
+    setCorrectChoiceId(question?.correctChoiceId ?? null);
 
-  scheduleNextQuestion();
-};
+    scheduleNextQuestion();
+  };
 
   const loadQuestion = async () => {
     // si on a déjà atteint l'objectif, ne recharge plus de question
@@ -172,6 +175,22 @@ const handleTimeout = () => {
     [points],
   );
 
+  // vitesse en fonction de l’énergie :
+  // x = 10 * (sqrt(0.1 y - 3) - 0.5)
+  const speed = useMemo(() => {
+    const inner = 0.1 * energy - 3;
+    if (inner <= 0) return 0;
+    const base = Math.sqrt(inner) - 0.5;
+    const raw = 10 * base;
+    if (!Number.isFinite(raw) || raw < 0) return 0;
+    return raw;
+  }, [energy]);
+
+  // garder la vitesse à jour dans un ref pour l’intervalle
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
+
   const scheduleNextQuestion = () => {
     if (phaseRef.current === "finished") return;
 
@@ -201,29 +220,13 @@ const handleTimeout = () => {
 
     setFeedback(res.correct ? "Bravo !" : "Mauvaise réponse !");
 
-    let reachedGoal = false;
-
+    // 👉 Une bonne réponse donne de l’énergie (plus de points direct)
     if (res.correct) {
       const bonus = Math.max(
         0,
-        Math.floor((QUESTION_DURATION_MS - responseMs) / 1000) * SCORE_TIME_BONUS,
+        Math.floor((QUESTION_DURATION_MS - responseMs) / 1000) * ENERGY_TIME_BONUS,
       );
-
-      setPoints((prev) => {
-        const next = prev + SCORE_BASE + bonus;
-        if (next >= MAX_POINTS) reachedGoal = true;
-        return next;
-      });
-    }
-
-    // si l'objectif est atteint, on termine la course et on ne charge plus de question
-    if (res.correct && reachedGoal) {
-      setPhase("finished");
-      phaseRef.current = "finished";
-      setEndsAt(null);
-      setRemainingSeconds(null);
-      setFeedback("Bravo ! Objectif des 10 000 points atteint 🎉");
-      return;
+      setEnergy((prev) => prev + ENERGY_BASE + bonus);
     }
 
     scheduleNextQuestion();
@@ -303,6 +306,31 @@ const handleTimeout = () => {
     setShowChoices(true);
   };
 
+  // 👉 Intervalle qui ajoute automatiquement des points chaque seconde en fonction de la vitesse
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setPoints((prev) => {
+        if (phaseRef.current === "finished") return prev;
+
+        const next = prev + speedRef.current;
+
+        if (next >= MAX_POINTS) {
+            setPhase("finished");
+            phaseRef.current = "finished";
+            setEndsAt(null);
+            setRemainingSeconds(null);
+            setFeedback("Bravo ! Objectif des 10 000 points atteint 🎉");
+
+          return MAX_POINTS;
+        }
+
+        return next;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <div className="relative text-slate-50">
       {/* BACKGROUND */}
@@ -349,7 +377,7 @@ const handleTimeout = () => {
           <div className="flex flex-col items-center text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">
             <span className="text-[10px] text-slate-400">Score</span>
             <span className="mt-1 text-sm tabular-nums text-rose-300">
-              {points} pts
+              {Math.floor(points)} pts
             </span>
           </div>
 
@@ -403,47 +431,71 @@ const handleTimeout = () => {
               Objectif des 10 000 points atteint 🎉
             </div>
             <div className="mt-2 text-[13px] text-emerald-100/80">
-              Score final : <span className="font-semibold">{points} pts</span>
+              Score final : <span className="font-semibold">{Math.floor(points)} pts</span>
             </div>
           </div>
         )}
 
         {status === "ready" && question && phase !== "finished" && (
-          <QuestionPanel
-            question={{
-              id: question.id,
-              text: question.text,
-              theme: question.theme,
-              difficulty: question.difficulty,
-              img: question.img,
-              slotLabel: null,
-            }}
-            index={questionCounter - 1}
-            totalQuestions={null}
-            lives={lives}
-            totalLives={TEXT_LIVES}
-            remainingSeconds={remainingSeconds}
-            timerProgress={timerProgress}
-            isReveal={phase === "reveal" && remainingSeconds === 0}
-            isPlaying={phase === "playing"}
-            inputRef={inputRef}
-            textAnswer={textAnswer}
-            onChangeText={setTextAnswer}
-            onSubmitText={submitText}
-            onShowChoices={showMultipleChoice}
-            feedback={feedback}
-            feedbackResponseMs={feedbackResponseMs}
-            feedbackWasCorrect={feedbackWasCorrect}
-            feedbackCorrectLabel={feedbackCorrectLabel}
-            answerMode={answerMode}
-            choicesRevealed={showChoices}
-            showChoices={showChoices}
-            choices={choices}
-            selectedChoice={selectedChoice}
-            correctChoiceId={correctChoiceId}
-            onSelectChoice={onSelectChoice}
-            questionProgress={[]} // Pas de barre des 15 questions en mode course
-          />
+          <div className="mt-4 flex flex-col gap-6 md:flex-row">
+            {/* PANNEAU VITESSE / ÉNERGIE */}
+            <aside className="w-full rounded-2xl border border-slate-800/80 bg-black/60 px-4 py-4 text-sm text-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.7)] md:w-64">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
+                Vitesse
+              </div>
+              <div className="mt-2 text-3xl font-bold tabular-nums text-rose-300">
+                {speed.toFixed(1)} <span className="text-sm font-semibold">pts/s</span>
+              </div>
+              <div className="mt-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
+                Énergie
+              </div>
+              <div className="mt-1 text-lg font-semibold tabular-nums text-slate-50">
+                {Math.floor(energy)}
+              </div>
+              <p className="mt-3 text-[11px] text-slate-400 leading-snug">
+                Plus vous avez d&apos;énergie, plus votre vitesse de gain de points augmente.
+              </p>
+            </aside>
+
+            {/* PANNEAU QUESTIONS */}
+            <div className="flex-1">
+              <QuestionPanel
+                question={{
+                  id: question.id,
+                  text: question.text,
+                  theme: question.theme,
+                  difficulty: question.difficulty,
+                  img: question.img,
+                  slotLabel: null,
+                }}
+                index={questionCounter - 1}
+                totalQuestions={null}
+                lives={lives}
+                totalLives={TEXT_LIVES}
+                remainingSeconds={remainingSeconds}
+                timerProgress={timerProgress}
+                isReveal={phase === "reveal" && remainingSeconds === 0}
+                isPlaying={phase === "playing"}
+                inputRef={inputRef}
+                textAnswer={textAnswer}
+                onChangeText={setTextAnswer}
+                onSubmitText={submitText}
+                onShowChoices={showMultipleChoice}
+                feedback={feedback}
+                feedbackResponseMs={feedbackResponseMs}
+                feedbackWasCorrect={feedbackWasCorrect}
+                feedbackCorrectLabel={feedbackCorrectLabel}
+                answerMode={answerMode}
+                choicesRevealed={showChoices}
+                showChoices={showChoices}
+                choices={choices}
+                selectedChoice={selectedChoice}
+                correctChoiceId={correctChoiceId}
+                onSelectChoice={onSelectChoice}
+                questionProgress={[]} // Pas de barre des 15 questions en mode course
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>
