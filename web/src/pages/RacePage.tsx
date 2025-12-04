@@ -3,6 +3,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import QuestionPanel from "../components/QuestionPanel";
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 const QUESTION_DURATION_MS = Number(import.meta.env.VITE_DAILY_ROUND_MS ?? 20000);
 const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
 
@@ -26,7 +35,7 @@ export type AnswerResponse = {
   correctLabel: string | null;
 };
 
-// l’énergie gagnée par bonne réponse (on reprend les constantes existantes)
+// l’énergie gagnée par bonne réponse
 const ENERGY_BASE = 120;
 const ENERGY_TIME_BONUS = 8;
 const MAX_POINTS = 10000;
@@ -52,13 +61,13 @@ export default function RacePage() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [points, setPoints] = useState(0);
   const [questionCounter, setQuestionCounter] = useState(0);
-  const [energy, setEnergy] = useState(0); // nouvelle ressource
+  const [energy, setEnergy] = useState(0);
 
   const phaseRef = useRef<"idle" | "playing" | "reveal" | "finished">("idle");
   const revealTimeoutRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const roundStartRef = useRef<number | null>(null);
-  const speedRef = useRef(0); // pour l’intervalle de points auto
+  const speedRef = useRef(0);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -105,7 +114,6 @@ export default function RacePage() {
   };
 
   const loadQuestion = async () => {
-    // si on a déjà atteint l'objectif, ne recharge plus de question
     if (points >= MAX_POINTS) {
       setPhase("finished");
       phaseRef.current = "finished";
@@ -133,7 +141,7 @@ export default function RacePage() {
       const q = data.question;
 
       setQuestion(q);
-      setChoices(q.choices);
+      setChoices(shuffleArray(q.choices));   // <-- SHUFFLE APPLIQUÉ ICI
 
       setPhase("playing");
       phaseRef.current = "playing";
@@ -175,8 +183,6 @@ export default function RacePage() {
     [points],
   );
 
-  // vitesse en fonction de l’énergie :
-  // x = 10 * (sqrt(0.1 y - 3) - 0.5)
   const speed = useMemo(() => {
     const inner = 0.1 * energy - 3;
     if (inner <= 0) return 0;
@@ -186,7 +192,6 @@ export default function RacePage() {
     return raw;
   }, [energy]);
 
-  // garder la vitesse à jour dans un ref pour l’intervalle
   useEffect(() => {
     speedRef.current = speed;
   }, [speed]);
@@ -215,18 +220,15 @@ export default function RacePage() {
 
     setPhase("reveal");
     phaseRef.current = "reveal";
-
     setRemainingSeconds(0);
 
     setFeedback(res.correct ? "Bravo !" : "Mauvaise réponse !");
 
-    // 👉 Une bonne réponse donne de l’énergie (plus de points direct)
     if (res.correct) {
-      const bonus = Math.max(
-        0,
-        Math.floor((QUESTION_DURATION_MS - responseMs) / 1000) * ENERGY_TIME_BONUS,
-      );
-      setEnergy((prev) => prev + ENERGY_BASE + bonus);
+      if (mode === "text") setEnergy((prev) => prev + 100);
+      else if (mode === "choice") setEnergy((prev) => prev + 60);
+    } else {
+      setEnergy((prev) => Math.max(0, prev - 20));
     }
 
     scheduleNextQuestion();
@@ -306,7 +308,6 @@ export default function RacePage() {
     setShowChoices(true);
   };
 
-  // 👉 Intervalle qui ajoute automatiquement des points chaque seconde en fonction de la vitesse
   useEffect(() => {
     const id = window.setInterval(() => {
       setPoints((prev) => {
@@ -315,16 +316,21 @@ export default function RacePage() {
         const next = prev + speedRef.current;
 
         if (next >= MAX_POINTS) {
-            setPhase("finished");
-            phaseRef.current = "finished";
-            setEndsAt(null);
-            setRemainingSeconds(null);
-            setFeedback("Bravo ! Objectif des 10 000 points atteint 🎉");
-
+          setPhase("finished");
+          phaseRef.current = "finished";
+          setEndsAt(null);
+          setRemainingSeconds(null);
+          setFeedback("Bravo ! Objectif des 10 000 points atteint 🎉");
           return MAX_POINTS;
         }
 
         return next;
+      });
+
+      setEnergy((prev) => {
+        if (phaseRef.current === "finished" || prev <= 0) return prev;
+        const next = prev * 0.98;
+        return next < 0.001 ? 0 : next;
       });
     }, 1000);
 
@@ -342,104 +348,13 @@ export default function RacePage() {
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(15,23,42,0.95),#020617)]"
       />
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-        {[...Array(18)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute h-[3px] w-[3px] rounded-full bg-rose-200/40"
-            style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              opacity: 0.55,
-            }}
-          />
-        ))}
-      </div>
 
-      {/* CONTENT WRAPPER */}
-      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10">
-        {/* HEADER */}
-        <header className="mb-10 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-rose-400 shadow-[0_0_12px_rgba(248,113,113,0.7)]">
-              <span className="text-lg font-black tracking-tight">⚡</span>
-            </div>
-            <div className="leading-tight">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-300">
-                Mode course
-              </div>
-              <div className="text-sm font-semibold text-slate-100">
-                Questions infinies
-              </div>
-            </div>
-          </div>
+      <div className="relative z-10 mx-auto w-full max-w-none px-4 pb-16 pt-8 sm:px-8 lg:px-10 xl:px-14">
+        <div className="grid gap-6 lg:grid-cols-[minmax(260px,22vw)_minmax(0,1fr)_minmax(240px,20vw)] xl:gap-8 2xl:gap-10">
 
-          <div className="flex flex-col items-center text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">
-            <span className="text-[10px] text-slate-400">Score</span>
-            <span className="mt-1 text-sm tabular-nums text-rose-300">
-              {Math.floor(points)} pts
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 rounded-[12px] border border-slate-800/80 bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-100 transition hover:border-rose-400 hover:text-white"
-          >
-            <span className="text-xs">←</span>
-            <span>Retour</span>
-          </button>
-        </header>
-
-        {/* RACE PROGRESSION LINE */}
-        <div className="mb-6">
-          <div className="relative h-[2px] w-full overflow-hidden rounded-full bg-slate-900/80">
-            {/* ligne légère */}
-            <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-rose-500/40 via-rose-300/25 to-emerald-400/40 opacity-60" />
-            {/* curseur joueur */}
-            <div
-              className="absolute -top-[6px] h-3 w-3 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(248,113,113,0.9)]"
-              style={{
-                left: `${raceProgress * 100}%`,
-                transform: "translateX(-50%)",
-              }}
-            />
-          </div>
-          <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
-            <span>Départ</span>
-            <span>10 000 pts</span>
-          </div>
-        </div>
-
-        {/* PANEL / FIN DE COURSE */}
-        {status === "loading" && (
-          <p className="mt-6 text-sm text-slate-200/80">Chargement…</p>
-        )}
-
-        {status === "error" && (
-          <p className="mt-6 text-sm text-rose-300">
-            Impossible de charger une question.
-          </p>
-        )}
-
-        {phase === "finished" && (
-          <div className="mt-6 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-6 py-5 text-sm text-emerald-100 shadow-[0_0_40px_rgba(16,185,129,0.25)]">
-            <div className="text-xs uppercase tracking-[0.3em] text-emerald-300">
-              Course terminée
-            </div>
-            <div className="mt-2 text-lg font-semibold">
-              Objectif des 10 000 points atteint 🎉
-            </div>
-            <div className="mt-2 text-[13px] text-emerald-100/80">
-              Score final : <span className="font-semibold">{Math.floor(points)} pts</span>
-            </div>
-          </div>
-        )}
-
-        {status === "ready" && question && phase !== "finished" && (
-          <div className="mt-4 flex flex-col gap-6 md:flex-row">
-            {/* PANNEAU VITESSE / ÉNERGIE */}
-            <aside className="w-full rounded-2xl border border-slate-800/80 bg-black/60 px-4 py-4 text-sm text-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.7)] md:w-64">
+          {/* COLONNE GAUCHE */}
+          <div className="flex items-start justify-start">
+            <aside className="w-full max-w-xs rounded-2xl border border-slate-800/80 bg-black/60 px-4 py-4 text-sm text-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
               <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
                 Vitesse
               </div>
@@ -452,13 +367,87 @@ export default function RacePage() {
               <div className="mt-1 text-lg font-semibold tabular-nums text-slate-50">
                 {Math.floor(energy)}
               </div>
-              <p className="mt-3 text-[11px] text-slate-400 leading-snug">
+              <p className="mt-3 text-[11px] leading-snug text-slate-400">
                 Plus vous avez d&apos;énergie, plus votre vitesse de gain de points augmente.
               </p>
             </aside>
+          </div>
 
-            {/* PANNEAU QUESTIONS */}
-            <div className="flex-1">
+          {/* COLONNE CENTRALE */}
+          <div className="flex flex-col gap-6 px-4 lg:px-8 xl:px-12">
+            <header className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-rose-400 shadow-[0_0_12px_rgba(248,113,113,0.7)]">
+                  <span className="text-lg font-black tracking-tight">⚡</span>
+                </div>
+                <div className="leading-tight">
+                  <div className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-300">
+                    Mode course
+                  </div>
+                  <div className="text-sm font-semibold text-slate-100">
+                    Questions infinies
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">
+                <span className="text-[10px] text-slate-400">Score</span>
+                <span className="mt-1 text-sm tabular-nums text-rose-300">
+                  {Math.floor(points)} pts
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center gap-2 rounded-[12px] border border-slate-800/80 bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-100 transition hover:border-rose-400 hover:text-white"
+              >
+                <span className="text-xs">←</span>
+                <span>Retour</span>
+              </button>
+            </header>
+
+            <div>
+              <div className="relative h-[2px] w-full overflow-hidden rounded-full bg-slate-900/80">
+                <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-rose-500/40 via-rose-300/25 to-emerald-400/40 opacity-60" />
+                <div
+                  className="absolute -top-[6px] h-3 w-3 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(248,113,113,0.9)]"
+                  style={{
+                    left: `${raceProgress * 100}%`,
+                    transform: "translateX(-50%)",
+                  }}
+                />
+              </div>
+              <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                <span>Départ</span>
+                <span>10 000 pts</span>
+              </div>
+            </div>
+
+            {status === "loading" && (
+              <p className="text-sm text-slate-200/80">Chargement…</p>
+            )}
+
+            {status === "error" && (
+              <p className="text-sm text-rose-300">Impossible de charger une question.</p>
+            )}
+
+            {phase === "finished" && (
+              <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-6 py-5 text-sm text-emerald-100 shadow-[0_0_40px_rgba(16,185,129,0.25)]">
+                <div className="text-xs uppercase tracking-[0.3em] text-emerald-300">
+                  Course terminée
+                </div>
+                <div className="mt-2 text-lg font-semibold">
+                  Objectif des 10 000 points atteint 🎉
+                </div>
+                <div className="mt-2 text-[13px] text-emerald-100/80">
+                  Score final :{" "}
+                  <span className="font-semibold">{Math.floor(points)} pts</span>
+                </div>
+              </div>
+            )}
+
+            {status === "ready" && question && phase !== "finished" && (
               <QuestionPanel
                 question={{
                   id: question.id,
@@ -492,11 +481,16 @@ export default function RacePage() {
                 selectedChoice={selectedChoice}
                 correctChoiceId={correctChoiceId}
                 onSelectChoice={onSelectChoice}
-                questionProgress={[]} // Pas de barre des 15 questions en mode course
+                questionProgress={[]}
               />
-            </div>
+            )}
           </div>
-        )}
+
+          {/* COLONNE DROITE */}
+          <div className="flex items-start justify-end">
+            <div className="w-full max-w-xs rounded-2xl border border-slate-800/70 bg-black/30" />
+          </div>
+        </div>
       </div>
     </div>
   );
