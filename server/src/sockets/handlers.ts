@@ -3,6 +3,7 @@ import { Server } from "socket.io";
 import type { Client, GameState } from "../types";
 import { prisma } from "../infra/prisma";
 import { CFG } from "../config";
+import { randomUUID } from "crypto";
 
 // Domain services
 import { getOrCreateCurrentGame, clientsInRoom } from "../domain/room/room.service";
@@ -21,6 +22,13 @@ import { ensurePlayerForUser } from "../domain/player/player.service";
  * - io.use(...) (auth) est fait dans app.ts pour garder ce fichier centré sur les events.
  */
 export function registerSocketHandlers( io: Server, clients: Map<string, Client>, gameStates: Map<string, GameState> ) {
+  const raceLobby = new Map<string, { socketId: string; userId: string; name: string }>();
+
+  const emitRaceLobbyUpdate = () => {
+    io.to("race_lobby").emit("race_lobby_update", {
+      players: Array.from(raceLobby.values()).map(({ userId, name }) => ({ id: userId, name })),
+    });
+  };
   // Daily challenge sessions are scoped to a single socket (solo mode)
   type DailySession = {
     date: string;
@@ -146,6 +154,40 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
   io.on("connection", (socket) => {
     socket.emit("welcome", { id: socket.id });
+  
+    socket.on("race_lobby_join", async (_p: unknown, ack?: (res: { ok: boolean; reason?: string; players?: { id: string; name: string }[] }) => void) => {
+      try {
+        const userId = socket.data.userId as string | undefined;
+        if (!userId) return ack?.({ ok: false, reason: "unauthorized" });
+
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { displayName: true } });
+        const name = user?.displayName || "Joueur";
+
+        raceLobby.set(socket.id, { socketId: socket.id, userId, name });
+        socket.join("race_lobby");
+        emitRaceLobbyUpdate();
+        ack?.({ ok: true, players: Array.from(raceLobby.values()).map(({ userId: id, name: n }) => ({ id, name: n })) });
+      } catch (err) {
+        console.error("[race_lobby_join]", err);
+        ack?.({ ok: false, reason: "server-error" });
+      }
+    });
+
+    socket.on("race_lobby_start", (_p: unknown, ack?: (res: { ok: boolean; reason?: string; raceId?: string }) => void) => {
+      if (!raceLobby.has(socket.id)) {
+        return ack?.({ ok: false, reason: "not-in-lobby" });
+      }
+      const raceId = randomUUID();
+      io.to("race_lobby").emit("race_lobby_started", { raceId, startedBy: raceLobby.get(socket.id)?.userId ?? null });
+      ack?.({ ok: true, raceId });
+    });
+
+    socket.on("disconnect", () => {
+      if (raceLobby.has(socket.id)) {
+        raceLobby.delete(socket.id);
+        emitRaceLobbyUpdate();
+      }
+    });
 
     /* ---------------- DAILY CHALLENGE (solo) ---------------- */
     socket.on("join_daily", async (p: { date: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
