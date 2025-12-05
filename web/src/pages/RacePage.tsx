@@ -2,7 +2,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import QuestionPanel from "../components/QuestionPanel";
-import Cursor from "../assets/cursor.png"; // image curseur
+import CursorBlue from "../assets/cursor_blue.png";
+import CursorGreen from "../assets/cursor_green.png";
+import CursorOrange from "../assets/cursor_orange.png";
+import CursorPink from "../assets/cursor_pink.png";
+import CursorYellow from "../assets/cursor_yellow.png";
+
+const CURSOR_COLORS = ["blue", "green", "orange", "pink", "yellow"] as const;
+type CursorColor = (typeof CURSOR_COLORS)[number];
+
+const CURSOR_BY_COLOR: Record<CursorColor, string> = {
+  blue: CursorBlue,
+  green: CursorGreen,
+  orange: CursorOrange,
+  pink: CursorPink,
+  yellow: CursorYellow,
+};
 
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -18,6 +33,19 @@ const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
 const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL ??
   (typeof window !== "undefined" ? window.location.origin : "");
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+
+const getCursorColor = (playerId: string): CursorColor => {
+  let hash = 0;
+  for (let i = 0; i < playerId.length; i++) {
+    hash = (hash << 5) - hash + playerId.charCodeAt(i);
+    hash |= 0; // Keep 32 bits
+  }
+
+  const index = Math.abs(hash) % CURSOR_COLORS.length;
+  return CURSOR_COLORS[index];
+};
 
 export type Choice = { id: string; label: string };
 
@@ -228,13 +256,8 @@ export default function RacePage() {
 
   const timerProgress = useMemo(() => {
     if (remainingSeconds === null) return 1;
-    return Math.max(0, Math.min(1, remainingSeconds / (QUESTION_DURATION_MS / 1000)));
+    return clamp01(remainingSeconds / (QUESTION_DURATION_MS / 1000));
   }, [remainingSeconds]);
-
-  const raceProgress = useMemo(
-    () => Math.max(0, Math.min(1, points / MAX_POINTS)),
-    [points],
-  );
 
   const speed = useMemo(() => {
     const inner = 0.1 * energy - 3;
@@ -244,6 +267,22 @@ export default function RacePage() {
     if (!Number.isFinite(raw) || raw < 0) return 0;
     return raw;
   }, [energy]);
+
+  const miniMapPlayers = useMemo(() => {
+    const players = leaderboard.length
+      ? leaderboard
+      : [{ id: "local", name: "Vous", points }];
+
+    return players.map((player) => {
+      const color = getCursorColor(player.id);
+      return {
+        ...player,
+        color,
+        cursor: CURSOR_BY_COLOR[color],
+        progress: clamp01(player.points / MAX_POINTS),
+      };
+    });
+  }, [leaderboard, points]);
 
   useEffect(() => {
     speedRef.current = speed;
@@ -469,15 +508,19 @@ export default function RacePage() {
               <div className="relative h-[2px] w-full rounded-full bg-slate-900/80">
                 <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-rose-500/40 via-rose-300/25 to-emerald-400/40 opacity-60" />
 
-                {/* Curseur image AU-DESSUS de la barre, légèrement réduit */}
-                <img
-                  src={Cursor}
-                  alt=""
-                  className="pointer-events-none select-none absolute -top-6 h-6 w-auto -translate-x-1/2"
-                  style={{
-                    left: `${raceProgress * 100}%`,
-                  }}
-                />
+                {/* Curseurs des joueurs */}
+                {miniMapPlayers.map((player, index) => (
+                  <img
+                    key={player.id}
+                    src={player.cursor}
+                    alt={player.name}
+                    className="pointer-events-none select-none absolute -top-6 h-6 w-auto -translate-x-1/2"
+                    style={{
+                      left: `${player.progress * 100}%`,
+                      zIndex: miniMapPlayers.length - index,
+                    }}
+                  />
+                ))}
               </div>
 
               <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
