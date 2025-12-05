@@ -47,7 +47,10 @@ export default function LobbyRacePage() {
     s.on("race_lobby_update", (payload: { players?: RaceLobbyPlayer[] }) => {
       setPlayers(payload.players ?? []);
     });
-    s.on("race_lobby_started", () => {
+    s.on("race_lobby_started", (payload: { raceId?: string }) => {
+      if (payload?.raceId) {
+        sessionStorage.setItem("race_id", payload.raceId);
+      }
       navigate("/multi/race/play", { replace: true });
     });
 
@@ -59,7 +62,8 @@ export default function LobbyRacePage() {
   const handleStart = () => {
     if (!socket) return;
     setStarting(true);
-    socket.emit("race_lobby_start", {}, (res: { ok: boolean }) => {
+    socket.emit("race_lobby_start", {}, (res: { ok: boolean; raceId?: string }) => {
+      if (res?.raceId) sessionStorage.setItem("race_id", res.raceId);
       if (!res?.ok) setStarting(false);
     });
   };

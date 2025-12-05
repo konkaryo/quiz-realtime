@@ -1,5 +1,6 @@
 // web/src/pages/RacePage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import { io, Socket } from "socket.io-client";
 import QuestionPanel from "../components/QuestionPanel";
 import Cursor from "../assets/cursor.png"; // image curseur
 
@@ -14,6 +15,9 @@ function shuffleArray<T>(arr: T[]): T[] {
 
 const QUESTION_DURATION_MS = Number(import.meta.env.VITE_DAILY_ROUND_MS ?? 20000);
 const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL ??
+  (typeof window !== "undefined" ? window.location.origin : "");
 
 export type Choice = { id: string; label: string };
 
@@ -34,6 +38,8 @@ export type AnswerResponse = {
   correctChoiceId: string | null;
   correctLabel: string | null;
 };
+
+type RaceLeaderboardEntry = { id: string; name: string; points: number; speed: number };
 
 // l’énergie gagnée par bonne réponse
 const ENERGY_BASE = 120;
@@ -60,6 +66,11 @@ export default function RacePage() {
   const [points, setPoints] = useState(0);
   const [questionCounter, setQuestionCounter] = useState(0);
   const [energy, setEnergy] = useState(0);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [raceId, setRaceId] = useState<string | null>(() =>
+    typeof window !== "undefined" ? sessionStorage.getItem("race_id") : null,
+  );
+  const [leaderboard, setLeaderboard] = useState<RaceLeaderboardEntry[]>([]);
 
   const phaseRef = useRef<"idle" | "playing" | "reveal" | "finished">("idle");
   const revealTimeoutRef = useRef<number | null>(null);
@@ -76,6 +87,39 @@ export default function RacePage() {
       if (revealTimeoutRef.current !== null) {
         window.clearTimeout(revealTimeoutRef.current);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    const storedRaceId = typeof window !== "undefined" ? sessionStorage.getItem("race_id") : null;
+    if (storedRaceId) setRaceId(storedRaceId);
+
+    const s = io(SOCKET_URL, {
+      path: "/socket.io",
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+    });
+
+    setSocket(s);
+
+    s.on("connect", () => {
+      const currentRaceId = typeof window !== "undefined" ? sessionStorage.getItem("race_id") : null;
+      if (currentRaceId) {
+        s.emit("race_join", { raceId: currentRaceId }, (res: { ok: boolean; players?: RaceLeaderboardEntry[] }) => {
+          if (res?.ok) {
+            setRaceId(currentRaceId);
+            setLeaderboard(res.players ?? []);
+          }
+        });
+      }
+    });
+
+    s.on("race_leaderboard", (payload: { players?: RaceLeaderboardEntry[] }) => {
+      setLeaderboard(payload.players ?? []);
+    });
+
+    return () => {
+      s.close();
     };
   }, []);
 
@@ -204,6 +248,17 @@ export default function RacePage() {
   useEffect(() => {
     speedRef.current = speed;
   }, [speed]);
+
+  useEffect(() => {
+    if (!socket || !raceId) return;
+
+    const id = window.setInterval(() => {
+      socket.emit("race_progress", { raceId, points: Math.floor(points), speed });
+    }, 1000);
+
+    return () => window.clearInterval(id);
+  }, [socket, raceId, points, speed]);
+
 
   const scheduleNextQuestion = () => {
     if (phaseRef.current === "finished") return;
@@ -364,30 +419,46 @@ export default function RacePage() {
           {/* COLONNE GAUCHE */}
           <div className="flex items-start justify-start">
             <aside className="w-full max-w-xs rounded-2xl border border-slate-800/80 bg-black/60 px-4 py-4 text-sm text-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
-              {/* SCORE déplacé ici */}
-              <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
-                Score
-              </div>
-              <div className="mt-2 text-3xl font-bold tabular-nums text-rose-300">
-                {Math.floor(points)} <span className="text-sm font-semibold">pts</span>
-              </div>
-
-              <div className="mt-6 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
-                Vitesse
-              </div>
-              <div className="mt-2 text-2xl font-bold tabular-nums text-rose-300">
-                {speed.toFixed(1)} <span className="text-sm font-semibold">pts/s</span>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
+                    Classement
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400">Actualisé toutes les secondes</p>
+                </div>
+                <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-rose-200">
+                  {leaderboard.length} joueurs
+                </div>
               </div>
 
-              <div className="mt-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
-                Énergie
+              <div className="mt-4 flex flex-col gap-3">
+                {leaderboard.map((player, index) => (
+                  <div
+                    key={player.id}
+                    className="flex items-center justify-between rounded-xl border border-slate-800/70 bg-gradient-to-r from-slate-900/80 via-slate-900/40 to-slate-900/80 px-3 py-2 shadow-inner shadow-black/30"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-500/15 text-xs font-semibold text-rose-100">
+                        #{index + 1}
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-slate-50">{player.name}</div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{player.speed.toFixed(1)} pts/s</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold tabular-nums text-rose-300">{player.points}</div>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Points</div>
+                    </div>
+                  </div>
+                ))}
+
+                {!leaderboard.length && (
+                  <div className="rounded-xl border border-dashed border-slate-800/70 bg-slate-900/50 px-4 py-5 text-center text-xs text-slate-400">
+                    En attente des premiers joueurs…
+                  </div>
+                )}
               </div>
-              <div className="mt-1 text-lg font-semibold tabular-nums text-slate-50">
-                {Math.floor(energy)}
-              </div>
-              <p className="mt-3 text-[11px] leading-snug text-slate-400">
-                Plus vous avez d&apos;énergie, plus votre vitesse de gain de points augmente.
-              </p>
             </aside>
           </div>
 

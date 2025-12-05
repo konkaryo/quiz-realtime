@@ -16,6 +16,14 @@ import { getChallengeByDate } from "../domain/daily/daily.service";
 import { recordDailyScoreIfFirst } from "../domain/daily/daily-score.service";
 import { ensurePlayerForUser } from "../domain/player/player.service";
 
+type RacePlayerState = {
+  userId: string;
+  name: string;
+  socketId: string;
+  points: number;
+  speed: number;
+};
+
 
 /**
  * Enregistre tous les handlers Socket.IO.
@@ -23,11 +31,29 @@ import { ensurePlayerForUser } from "../domain/player/player.service";
  */
 export function registerSocketHandlers( io: Server, clients: Map<string, Client>, gameStates: Map<string, GameState> ) {
   const raceLobby = new Map<string, { socketId: string; userId: string; name: string }>();
+  const ongoingRaces = new Map<string, { players: Map<string, RacePlayerState> }>();
+  const raceMembershipBySocket = new Map<string, { raceId: string; userId: string }>();
 
   const emitRaceLobbyUpdate = () => {
     io.to("race_lobby").emit("race_lobby_update", {
       players: Array.from(raceLobby.values()).map(({ userId, name }) => ({ id: userId, name })),
     });
+  };
+
+  const emitRaceLeaderboard = (raceId: string) => {
+    const race = ongoingRaces.get(raceId);
+    if (!race) return;
+
+    const players = Array.from(race.players.values())
+      .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
+      .map((p) => ({
+        id: p.userId,
+        name: p.name,
+        points: Math.round(p.points),
+        speed: Number.isFinite(p.speed) ? Number(p.speed.toFixed(1)) : 0,
+      }));
+
+    io.to(`race:${raceId}`).emit("race_leaderboard", { players });
   };
   // Daily challenge sessions are scoped to a single socket (solo mode)
   type DailySession = {
@@ -178,9 +204,79 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         return ack?.({ ok: false, reason: "not-in-lobby" });
       }
       const raceId = randomUUID();
+      const players = Array.from(raceLobby.values()).map((p) => ({
+        userId: p.userId,
+        name: p.name,
+        socketId: p.socketId,
+        points: 0,
+        speed: 0,
+      }));
+      ongoingRaces.set(raceId, { players: new Map(players.map((p) => [p.userId, p])) });
       io.to("race_lobby").emit("race_lobby_started", { raceId, startedBy: raceLobby.get(socket.id)?.userId ?? null });
       ack?.({ ok: true, raceId });
     });
+
+    socket.on(
+      "race_join",
+      (
+        payload: { raceId?: string },
+        ack?: (res: { ok: boolean; reason?: string; players?: { id: string; name: string; points: number; speed: number }[] }) => void,
+      ) => {
+        const raceId = (payload?.raceId || "").trim();
+        const userId = socket.data.userId as string | undefined;
+        if (!raceId) return ack?.({ ok: false, reason: "invalid-race" });
+        if (!userId) return ack?.({ ok: false, reason: "unauthorized" });
+
+        const race = ongoingRaces.get(raceId);
+        if (!race) return ack?.({ ok: false, reason: "not-found" });
+
+        const knownPlayer = race.players.get(userId);
+        const lobbyPlayer = raceLobby.get(socket.id);
+
+        const entry: RacePlayerState = {
+          userId,
+          name: knownPlayer?.name ?? lobbyPlayer?.name ?? "Joueur",
+          socketId: socket.id,
+          points: knownPlayer?.points ?? 0,
+          speed: knownPlayer?.speed ?? 0,
+        };
+
+        socket.join(`race:${raceId}`);
+        raceMembershipBySocket.set(socket.id, { raceId, userId });
+        race.players.set(userId, entry);
+
+        emitRaceLeaderboard(raceId);
+        ack?.({ ok: true, players: Array.from(race.players.values()).map((p) => ({ id: p.userId, name: p.name, points: p.points, speed: p.speed })) });
+      },
+    );
+
+    socket.on(
+      "race_progress",
+      (payload: { raceId?: string; points?: number; speed?: number }) => {
+        const raceId = (payload?.raceId || "").trim();
+        const userId = socket.data.userId as string | undefined;
+        if (!raceId || !userId) return;
+
+        const race = ongoingRaces.get(raceId);
+        if (!race) return;
+
+        const current = race.players.get(userId);
+        const lobbyPlayer = raceLobby.get(socket.id);
+        const points = Number(payload?.points);
+        const speed = Number(payload?.speed);
+
+        const next: RacePlayerState = {
+          userId,
+          name: current?.name ?? lobbyPlayer?.name ?? "Joueur",
+          socketId: socket.id,
+          points: Number.isFinite(points) ? points : current?.points ?? 0,
+          speed: Number.isFinite(speed) ? speed : current?.speed ?? 0,
+        };
+
+        race.players.set(userId, next);
+        emitRaceLeaderboard(raceId);
+      },
+    );
 
     socket.on("disconnect", () => {
       if (raceLobby.has(socket.id)) {
@@ -188,6 +284,17 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         emitRaceLobbyUpdate();
       }
     });
+
+      const raceMembership = raceMembershipBySocket.get(socket.id);
+      if (raceMembership) {
+        const { raceId, userId } = raceMembership;
+        raceMembershipBySocket.delete(socket.id);
+        const race = ongoingRaces.get(raceId);
+        if (race) {
+          race.players.delete(userId);
+          emitRaceLeaderboard(raceId);
+        }
+      }
 
     /* ---------------- DAILY CHALLENGE (solo) ---------------- */
     socket.on("join_daily", async (p: { date: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
