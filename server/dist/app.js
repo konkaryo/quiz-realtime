@@ -16,6 +16,7 @@ const prisma_1 = require("./infra/prisma");
 const cookies_1 = require("./infra/cookies");
 const auth_1 = require("./routes/auth");
 const daily_1 = require("./routes/daily");
+const race_1 = require("./routes/race");
 const handlers_1 = require("./sockets/handlers");
 const room_service_1 = require("./domain/room/room.service");
 const client_1 = require("@prisma/client");
@@ -42,6 +43,7 @@ async function main() {
     await app.register(cookie_1.default, { secret: process.env.COOKIE_SECRET || "dev-secret", hook: "onRequest" });
     await app.register((0, auth_1.authRoutes)({ prisma: prisma_1.prisma }), { prefix: "/auth" });
     await app.register((0, daily_1.dailyRoutes)({ prisma: prisma_1.prisma }), { prefix: "/daily" });
+    await app.register((0, race_1.raceRoutes)({ prisma: prisma_1.prisma }), { prefix: "/race" });
     app.get("/health", async () => ({ ok: true }));
     // ---------- HTTP: Rooms ----------
     app.post("/rooms", async (req, reply) => {

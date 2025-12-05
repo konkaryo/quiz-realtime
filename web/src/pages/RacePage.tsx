@@ -1,7 +1,7 @@
 // web/src/pages/RacePage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import QuestionPanel from "../components/QuestionPanel";
+import Cursor from "../assets/cursor.png"; // image curseur
 
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -41,8 +41,6 @@ const ENERGY_TIME_BONUS = 8;
 const MAX_POINTS = 10000;
 
 export default function RacePage() {
-  const navigate = useNavigate();
-
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [question, setQuestion] = useState<RaceQuestion | null>(null);
   const [phase, setPhase] = useState<"idle" | "playing" | "reveal" | "finished">("idle");
@@ -125,6 +123,7 @@ export default function RacePage() {
     setFeedback(null);
     setFeedbackWasCorrect(null);
     setFeedbackCorrectLabel(null);
+    setFeedbackResponseMs(null);
     setSelectedChoice(null);
     setCorrectChoiceId(null);
     setTextAnswer("");
@@ -134,30 +133,40 @@ export default function RacePage() {
     setChoices(null);
 
     try {
-      const res = await fetch(`/race/question`, { credentials: "include" });
-      if (!res.ok) throw new Error("question-fetch");
+      while (true) {
+        const res = await fetch(`/race/question?speed=${encodeURIComponent(speedRef.current ?? 0)}`, {
+          credentials: "include",
+        });
 
-      const data = (await res.json()) as { question: RaceQuestion };
-      const q = data.question;
+        if (res.status === 503) {
+          await new Promise((resolve) => setTimeout(resolve, 750));
+          continue;
+        }
 
-      setQuestion(q);
-      setChoices(shuffleArray(q.choices));   // <-- SHUFFLE APPLIQUÉ ICI
+        if (!res.ok) throw new Error("question-fetch");
 
-      setPhase("playing");
-      phaseRef.current = "playing";
+        const data = (await res.json()) as { question: RaceQuestion };
+        const q = data.question;
 
-      setQuestionCounter((prev) => prev + 1);
+        setQuestion(q);
+        setChoices(shuffleArray(q.choices)); // <-- SHUFFLE APPLIQUÉ ICI
+        setPhase("playing");
+        phaseRef.current = "playing";
 
-      const now = Date.now();
-      roundStartRef.current = now;
+        setQuestionCounter((prev) => prev + 1);
 
-      const end = now + QUESTION_DURATION_MS;
-      setEndsAt(end);
-      setRemainingSeconds(Math.ceil(QUESTION_DURATION_MS / 1000));
+        const now = Date.now();
+        roundStartRef.current = now;
 
-      setStatus("ready");
+        const end = now + QUESTION_DURATION_MS;
+        setEndsAt(end);
+        setRemainingSeconds(Math.ceil(QUESTION_DURATION_MS / 1000));
 
-      window.setTimeout(() => inputRef.current?.focus(), 60);
+        setStatus("ready");
+
+        window.setTimeout(() => inputRef.current?.focus(), 60);
+        break;
+      }
     } catch (err) {
       console.error("[race-question]", err);
       setStatus("error");
@@ -355,12 +364,21 @@ export default function RacePage() {
           {/* COLONNE GAUCHE */}
           <div className="flex items-start justify-start">
             <aside className="w-full max-w-xs rounded-2xl border border-slate-800/80 bg-black/60 px-4 py-4 text-sm text-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
+              {/* SCORE déplacé ici */}
               <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
-                Vitesse
+                Score
               </div>
               <div className="mt-2 text-3xl font-bold tabular-nums text-rose-300">
+                {Math.floor(points)} <span className="text-sm font-semibold">pts</span>
+              </div>
+
+              <div className="mt-6 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
+                Vitesse
+              </div>
+              <div className="mt-2 text-2xl font-bold tabular-nums text-rose-300">
                 {speed.toFixed(1)} <span className="text-sm font-semibold">pts/s</span>
               </div>
+
               <div className="mt-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
                 Énergie
               </div>
@@ -375,49 +393,22 @@ export default function RacePage() {
 
           {/* COLONNE CENTRALE */}
           <div className="flex flex-col gap-6 px-4 lg:px-8 xl:px-12">
-            <header className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-rose-400 shadow-[0_0_12px_rgba(248,113,113,0.7)]">
-                  <span className="text-lg font-black tracking-tight">⚡</span>
-                </div>
-                <div className="leading-tight">
-                  <div className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-300">
-                    Mode course
-                  </div>
-                  <div className="text-sm font-semibold text-slate-100">
-                    Questions infinies
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">
-                <span className="text-[10px] text-slate-400">Score</span>
-                <span className="mt-1 text-sm tabular-nums text-rose-300">
-                  {Math.floor(points)} pts
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-2 rounded-[12px] border border-slate-800/80 bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-100 transition hover:border-rose-400 hover:text-white"
-              >
-                <span className="text-xs">←</span>
-                <span>Retour</span>
-              </button>
-            </header>
-
+            {/* BARRE DE PROGRESSION */}
             <div>
-              <div className="relative h-[2px] w-full overflow-hidden rounded-full bg-slate-900/80">
+              <div className="relative h-[2px] w-full rounded-full bg-slate-900/80">
                 <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-rose-500/40 via-rose-300/25 to-emerald-400/40 opacity-60" />
-                <div
-                  className="absolute -top-[6px] h-3 w-3 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(248,113,113,0.9)]"
+
+                {/* Curseur image AU-DESSUS de la barre, légèrement réduit */}
+                <img
+                  src={Cursor}
+                  alt=""
+                  className="pointer-events-none select-none absolute -top-6 h-6 w-auto -translate-x-1/2"
                   style={{
                     left: `${raceProgress * 100}%`,
-                    transform: "translateX(-50%)",
                   }}
                 />
               </div>
+
               <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
                 <span>Départ</span>
                 <span>10 000 pts</span>
