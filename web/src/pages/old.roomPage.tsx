@@ -5,7 +5,6 @@ import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
 import Background from "../components/Background";
-import QuestionPanel, { Choice as QuestionPanelChoice, QuestionProgress as QuestionPanelProgress } from "../components/QuestionPanel";
 
 const API_BASE   = import.meta.env.VITE_API_BASE    ?? (typeof window !== "undefined" ? window.location.origin : "");
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL  ?? (typeof window !== "undefined" ? window.location.origin : "");
@@ -32,6 +31,13 @@ type RecapItem = {
 };
 
 /* ---------- UI helpers ---------- */
+function Lives({ lives, total }: { lives: number; total: number }) {
+  const full = Array.from({ length: lives }).map((_, i) => <span key={`f${i}`}>❤️</span>);
+  const empty = Array.from({ length: Math.max(0, total - lives) }).map((_, i) => (
+    <span key={`e${i}`} className="opacity-30">❤️</span>
+  ));
+  return <div className="flex justify-start gap-1 text-[20px]">{full}{empty}</div>;
+}
 
 function TimerBadge({ seconds }: { seconds: number | null }) {
   const s = seconds ?? 0;
@@ -55,6 +61,26 @@ function TimerBadge({ seconds }: { seconds: number | null }) {
   );
 }
 
+type ThemeMeta = { label: string; color: string };
+const THEMES: Record<string, ThemeMeta> = {
+  CINEMA_SERIES:       { label: "Cinéma & Séries",        color: "#14B8A6" },
+  ARTS_CULTURE:        { label: "Arts & Culture",         color: "#F59E0B" },
+  JEUX_BD:             { label: "Jeux & BD",              color: "#EAB308" },
+  GEOGRAPHIE:          { label: "Géographie",             color: "#22D3EE" },
+  LANGUES_LITTERATURE: { label: "Langues & Littérature",  color: "#D946EF" },
+  ECONOMIE_POLITIQUE:  { label: "Économie & Politique",   color: "#3B82F6" },
+  GASTRONOMIE:         { label: "Gastronomie",            color: "#F97316" },
+  CROYANCES:           { label: "Croyances",              color: "#818CF8" },
+  SPORT:               { label: "Sport",                  color: "#84CC16" },
+  HISTOIRE:            { label: "Histoire",               color: "#FAFAFA" },
+  SCIENCES_NATURELLES: { label: "Sciences naturelles",    color: "#22C55E" },
+  SCIENCES_TECHNIQUES: { label: "Sciences & Techniques",  color: "#EF4444" },
+  MUSIQUE:             { label: "Musique",                color: "#EC4899" },
+  ACTUALITES_MEDIAS:   { label: "Actualités & Médias",    color: "#F43F5E" },
+  DIVERS:              { label: "Divers",                 color: "#A3A3A3" },
+};
+const themeMeta = (t?: string | null): ThemeMeta => THEMES[(t ?? "DIVERS").toUpperCase()] ?? THEMES.DIVERS;
+
 /* ============================== PAGE ============================== */
 export default function RoomPage() {
   const nav = useNavigate();
@@ -73,12 +99,11 @@ export default function RoomPage() {
   const [correctId, setCorrectId] = useState<string | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [answerMode, setAnswerMode] = useState<"text" | "choice" | null>(null);
-  const [choicesRevealed, setChoicesRevealed] = useState(false);
   const [pending, setPending]   = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [lives, setLives] = useState<number>(TEXT_LIVES);
+  const [revealAnswer, setRevealAnswer] = useState<boolean>(false);
 
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
   const [selfId, setSelfId] = useState<string | null>(null);
@@ -104,30 +129,38 @@ export default function RoomPage() {
   /* -------- timer bar (inversée) -------- */
   const [skew, setSkew] = useState(0);
   const nowServer = () => Date.now() + skew;
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const resetTimerBarToEndsAt = (endsAtMs: number) => {
+    const el = barRef.current; if (!el) return;
+    const remaining = Math.max(0, endsAtMs - nowServer());
+
+    el.style.transition = "none";
+    el.style.transformOrigin = "left";
+    el.style.transform = "scaleX(1)";
+
+    requestAnimationFrame(() => {
+      el.style.transition = `transform ${remaining}ms linear`;
+      el.style.transform = "scaleX(0)";
+    });
+  };
+  const stopTimerBar = () => {
+    const el = barRef.current; if (!el) return;
+    el.style.transition = "none";
+    el.style.transform = "scaleX(0)";
+  };
 
   // timing
   const [endsAt, setEndsAt] = useState<number | null>(null);
-  const [roundDuration, setRoundDuration] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
   const remaining = useMemo(
     () => (endsAt ? Math.max(0, Math.ceil((endsAt - nowServer()) / 1000)) : null),
     [endsAt, nowTick, skew]
   );
-  const timerProgress = useMemo(() => {
-    if (!endsAt || !roundDuration) return 0;
-    const remainingMs = Math.max(0, endsAt - nowServer());
-    const progress = remainingMs / roundDuration;
-    return Math.min(1, Math.max(0, progress));
-  }, [endsAt, roundDuration, nowTick, skew]);
   useEffect(() => {
     if (!endsAt) return;
-    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    const id = setInterval(() => setNowTick(Date.now()), 500);
     return () => clearInterval(id);
   }, [endsAt]);
-
-  useEffect(() => {
-    if (mcChoices) setChoicesRevealed(true);
-  }, [mcChoices]);
 
   /* ----------------------------- effects ----------------------------- */
   useEffect(() => {
@@ -144,6 +177,14 @@ export default function RoomPage() {
   }, []);
 
   useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === "visible" && endsAt) { resetTimerBarToEndsAt(endsAt); }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [endsAt, skew]);
+
+  useEffect(() => {
     if (!roomId) return;
     const s = io(SOCKET_URL, { path: "/socket.io", withCredentials: true, transports: ["websocket", "polling"] });
     setSocket(s);
@@ -155,17 +196,16 @@ export default function RoomPage() {
       if (typeof p.serverNow === "number") { setSkew(p.serverNow - Date.now()); }
       setPhase("playing");
       setIndex(p.index); setTotal(p.total); setEndsAt(p.endsAt);
-      const serverNow = nowServer();
-      setRoundDuration(Math.max(0, p.endsAt - serverNow));
       setQuestion(p.question);
       setAnsweredByPg({});
       setSelected(null); setCorrectId(null);
       setMcChoices(null); setTextAnswer("");
       setFeedback(null);
-      setAnswerMode(null);
-      setChoicesRevealed(false);
       setLives(TEXT_LIVES);
+      setRevealAnswer(false);
       setFinalRecap(null);
+      if (p.endsAt - nowServer() >= 50) { resetTimerBarToEndsAt(p.endsAt); }
+      else { stopTimerBar(); }
       initSfx();
     });
 
@@ -175,11 +215,12 @@ export default function RoomPage() {
       setFeedback({ ok: p.correct, correctLabel: p.correctLabel ?? null, responseMs: p.responseMs });
       if (p.correctChoiceId) setCorrectId(p.correctChoiceId);
       if (mcChoices === null) {
-        if (p.correct) { setLives(0); }
+        if (p.correct) { setLives(0); setRevealAnswer(true); }
         else {
           setLives((prev) => {
             const next = Math.max(0, prev - 1);
             if (next > 0) { setTextAnswer(""); requestAnimationFrame(() => inputRef.current?.focus()); }
+            else { setRevealAnswer(true); }
             return next;
           });
         }
@@ -201,8 +242,9 @@ export default function RoomPage() {
         correctLabel: p.correctLabel ?? prev?.correctLabel ?? null,
         responseMs: prev?.responseMs,
       }));
+      setRevealAnswer(true);
       setEndsAt(null);
-      setRoundDuration(null);
+      stopTimerBar();
     });
 
     s.on("leaderboard_update", (p: { leaderboard: LeaderRow[] }) => {
@@ -218,10 +260,9 @@ export default function RoomPage() {
       setTextAnswer("");
       setCorrectId(null);
       setFeedback(null);
-      setAnswerMode(null);
-      setChoicesRevealed(false);
+      setRevealAnswer(false);
       setEndsAt(null);
-      setRoundDuration(null);
+      stopTimerBar();
     });
 
     /* récapitulatif individuel de la partie (unicast) */
@@ -229,7 +270,7 @@ export default function RoomPage() {
       setFinalRecap(Array.isArray(p.summary) ? p.summary : []);
     });
 
-    s.on("game_over", () => { setPhase("between"); setQuestion(null); setEndsAt(null); setRoundDuration(null); });
+    s.on("game_over", () => { setPhase("between"); setQuestion(null); setEndsAt(null); stopTimerBar(); });
 
     (async () => {
       try {
@@ -255,21 +296,18 @@ export default function RoomPage() {
     const t = (textAnswer || "").trim();
     if (!t) return;
     setPending(true);
-    setAnswerMode("text");
     socket.emit("submit_answer_text", { text: t }, (res: { ok: boolean; reason?: string }) => {
       setPending(false);
-      if (!res?.ok && res?.reason === "no-lives") { setLives(0); }
+      if (!res?.ok && res?.reason === "no-lives") { setLives(0); setRevealAnswer(true); }
     });
   };
   const showMultipleChoice = () => {
     if (!socket || phase !== "playing" || lives <= 0 || !!feedback?.ok) return;
-    setChoicesRevealed(true);
     socket.emit("request_choices");
   };
   const answerByChoice = (choiceId: string) => {
     if (!socket || phase !== "playing" || !question || selected) return;
     setSelected(choiceId);
-      setAnswerMode("choice");
     socket.emit("submit_answer", { code: "N/A", choiceId });
   };
 
@@ -279,40 +317,6 @@ export default function RoomPage() {
     phase === "idle"    ? "En attente des joueurs…" :
     phase === "final"   ? "Fin de partie" :
                           "En cours…";
-
-  const normalizedQuestion = useMemo(() => {
-    if (!question) return null;
-    const img = question.img
-      ? (question.img.startsWith("http") || question.img.startsWith("/")
-        ? question.img
-        : "/" + question.img.replace(/^\.?\//, ""))
-      : null;
-    return {
-      id: question.id,
-      text: question.text,
-      theme: question.theme ?? null,
-      difficulty: question.difficulty !== null && question.difficulty !== undefined
-        ? String(question.difficulty)
-        : null,
-      img,
-      slotLabel: null,
-    };
-  }, [question]);
-
-  const feedbackText = useMemo(() => {
-    if (feedback) return feedback.ok ? "Bravo !" : "Réponse incorrecte";
-    if (phase === "reveal" && remaining === 0) return "Temps écoulé !";
-    return null;
-  }, [feedback, phase, remaining]);
-
-  const choicesForPanel = useMemo(() => (
-    mcChoices ? mcChoices.map<QuestionPanelChoice>((c) => ({ id: c.id, label: c.label })) : null
-  ), [mcChoices]);
-
-  const questionProgress: QuestionPanelProgress[] = [];
-  const isPlaying = phase === "playing" && lives > 0;
-  const showChoices = !!mcChoices;
-
 
   return (
     <>
@@ -468,50 +472,175 @@ export default function RoomPage() {
   </div>
 </aside>
 
-          {/* CENTRE — QuestionPanel */}
+          {/* CENTER — 4 conteneurs invisibles à tailles fixes */}
           <section className="mt-5 min-w-0 md:order-2 md:mx-8 xl:mx-12">
-            <div className="flex flex-col gap-6">
-              {phase === "final" ? (
-                <FinalLeaderboard rows={leaderboard} selfId={selfId} selfName={selfName} />
-              ) : normalizedQuestion ? (
-                <QuestionPanel
-                  question={normalizedQuestion}
-                  index={index}
-                  totalQuestions={total}
-                  lives={lives}
-                  totalLives={TEXT_LIVES}
-                  remainingSeconds={remaining}
-                  timerProgress={timerProgress}
-                  isReveal={phase === "reveal" && (remaining ?? 0) === 0}
-                  isPlaying={isPlaying}
-                  inputRef={inputRef}
-                  textAnswer={textAnswer}
-                  onChangeText={setTextAnswer}
-                  onSubmitText={sendText}
-                  onShowChoices={showMultipleChoice}
-                  feedback={feedbackText}
-                  feedbackResponseMs={feedback?.responseMs ?? null}
-                  feedbackWasCorrect={feedback?.ok ?? null}
-                  feedbackCorrectLabel={feedback?.correctLabel ?? null}
-                  answerMode={answerMode}
-                  choicesRevealed={choicesRevealed}
-                  showChoices={showChoices}
-                  choices={choicesForPanel}
-                  selectedChoice={selected}
-                  correctChoiceId={correctId}
-                  onSelectChoice={(choice) => answerByChoice(choice.id)}
-                  questionProgress={questionProgress}
+            {/* 1) TIMER */}
+            <div className="h-[70px] flex flex-col justify-start items-center">
+              <div className="h-[8px] w-full max-w-[720px] rounded-full bg-white/15 overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,.35)]">
+                <div
+                  ref={barRef}
+                  className="h-full bg-[linear-gradient(90deg,#fff_0%,#ffe8fb_60%,#ffd6f9_100%)]"
+                  style={{ transform: "scaleX(1)", transformOrigin: "left", willChange: "transform" }}
+                  aria-label="Temps restant"
                 />
-              ) : (
-                <div className="rounded-2xl border border-white/10 bg-black/40 px-4 py-6 text-center text-sm text-white/80 backdrop-blur-md">
-                  {phase === "between" ? "" :
-                   phase === "idle"    ? "En attente des joueurs…" :
-                                          "Préparation du prochain round…"}
+              </div>
+              <div className="mt-2">
+                <TimerBadge seconds={remaining} />
+              </div>
+            </div>
+
+            {phase === "final" ? (
+              <FinalLeaderboard rows={leaderboard} selfId={selfId} selfName={selfName} />
+            ) : (
+              <>
+                {/* 2) QUESTION */}
+                <div className="mt-2 h-[100px] sm:h-[175px] md:h-[170px] overflow-hidden">
+                  {question && (() => {
+                    const meta = themeMeta(question.theme);
+                    return (
+                      <div className="rounded-2xl border border-white/15 bg-black/70 px-5 py-3 backdrop-blur-md shadow-[0_12px_24px_rgba(0,0,0,.35)] max-h-full">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span aria-hidden className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: meta.color }} />
+                            <span className="text-[12px] tracking-wider uppercase opacity-80">{meta.label}</span>
+                          </div>
+                          <span className="text-[12px] opacity-80 tabular-nums">
+                            {Math.max(1, index + 1)}/{Math.max(total, index + 1)}
+                          </span>
+                        </div>
+                        <div className="mt-2 max-h-[calc(100%-22px)] overflow-auto pr-1 font-medium leading-snug tracking-[0.2px] text-[18px]">
+                          {question.text}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
+                {/* 3) IMAGE */}
+                <div className="mt-1 h-[300px] overflow-hidden">
+                  <div className="w-full h-full flex items-center justify-center">
+                    {question?.img ? (() => {
+                      const imgSrc = question.img!.startsWith("http") || question.img!.startsWith("/")
+                        ? question.img! : "/" + question.img!.replace(/^\.?\//, "");
+                      return (
+                        <figure className="inline-block rounded-[22px] p-[2px] bg-[linear-gradient(135deg,rgba(255,255,255,.75),rgba(255,255,255,.20))] shadow-[0_18px_48px_rgba(0,0,0,.55)] max-w-full max-h-full">
+                          <div className="rounded-[20px] bg-black/85 border border-white/10 overflow-hidden max-w-full max-h-full">
+                            <img
+                              src={imgSrc}
+                              alt=""
+                              className="block w-full h-auto max-h-[240px] object-contain select-none"
+                              draggable={false}
+                            />
+                          </div>
+                        </figure>
+                      );
+                    })() : null}
+                  </div>
+                </div>
 
-              )}
-            </div>
+                {/* 4) INPUTS */}
+                <div className="mt-2">
+                  {question && (
+                    <>
+                      <Lives lives={lives} total={TEXT_LIVES} />
+
+                      {mcChoices ? (
+                        <>
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            {mcChoices.map((c) => {
+                              const isSel = selected === c.id;
+                              const isOk = !!correctId && c.id === correctId;
+                              const disabled = phase !== "playing";
+                              return (
+<button
+  key={c.id}
+  onMouseDown={(e) => e.preventDefault()}
+  onClick={() => answerByChoice(c.id)}
+  disabled={disabled}
+  className={[
+    "px-4 py-3 rounded-xl border text-left transition-all duration-200 ease-out",
+    "backdrop-blur-[2px]",
+    disabled ? "cursor-default opacity-60" : "cursor-pointer",
+    !disabled && !isSel && !isOk ? "hover:border-white/70 hover:bg-white/10" : "",
+    isOk
+      ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300 ring-2 ring-emerald-500/40"
+      : isSel && !correctId
+      ? "border-blue-500/60 bg-blue-500/15 text-blue-300"
+      : selected && selected === c.id && !isOk
+      ? "border-rose-500/60 bg-rose-500/15 text-rose-300 ring-2 ring-rose-500/40"
+      : "border-white/35 bg-white/6 text-white"
+  ].join(" ")}
+>
+  {c.label}
+</button>
+                              );
+                            })}
+                          </div>
+                          {typeof feedback?.responseMs === "number" && (
+                            <div className="mt-1.5 text-right opacity-85 tabular-nums">{feedback.responseMs} ms</div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="mt-3 grid grid-cols-[1fr_auto_auto] items-center gap-3">
+                          <input
+                            ref={inputRef}
+                            placeholder="Tape ta réponse…"
+                            value={textAnswer}
+                            onChange={(e) => setTextAnswer(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") { e.preventDefault(); sendText(); }
+                              if (e.key === "Tab")   { e.preventDefault(); showMultipleChoice(); }
+                            }}
+                            disabled={phase !== "playing" || !!selected || lives <= 0}
+                            className="px-3.5 py-3 rounded-xl border border-white/25 bg-white/10 text-white placeholder-white/60 backdrop-blur-[2px] focus:outline-none focus:border-white/70"
+                          />
+                          <button
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={sendText}
+                            disabled={phase !== "playing" || lives <= 0}
+                            className="px-4 py-3 rounded-xl border border-white bg-white text-[#2a0f3a] font-extrabold disabled:cursor-default"
+                          >
+                            Envoyer
+                          </button>
+                          <button
+                            onClick={showMultipleChoice}
+                            disabled={phase !== "playing" || lives <= 0 || !!feedback?.ok}
+                            className="px-4 py-3 rounded-xl border border-dashed border-white/75 text-white font-extrabold disabled:opacity-60"
+                          >
+                            Choix multiple
+                          </button>
+
+                          {pending && !feedback && (
+                            <div className="col-span-3 mt-1 opacity-85">Réponse envoyée…</div>
+                          )}
+                          {feedback && (
+                            <div className="col-span-3 mt-2 font-semibold relative">
+                              <span>{feedback.ok ? "✔" : "✘"}</span>
+                              {revealAnswer && typeof feedback.correctLabel === "string" && (
+                                <> — <span className="opacity-90">Réponse : {feedback.correctLabel}</span></>
+                              )}
+                              {typeof feedback.responseMs === "number" && (
+                                <span className="absolute right-0 top-0 opacity-85 tabular-nums" title="Temps de réponse">
+                                  {feedback.responseMs} ms
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {!question && (
+                    <div className="opacity-90 p-2">
+                      {phase === "between" ? "" :
+                       phase === "idle"    ? "En attente des joueurs…" :
+                                              "Préparation du prochain round…"}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </section>
 
           {/* RIGHT — Panneau Room (inchangé) */}

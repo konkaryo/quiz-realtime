@@ -216,19 +216,18 @@ export default function DailyQuestionPanel(props: Props) {
                 {question.text}
               </p>
             </div>
-            {question.img && (
-              <div className="md:w-2/5">
-                <div className="relative h-full">
-                  <div className="absolute inset-0 rounded-[26px] bg-gradient-to-br from-white/20 to-transparent opacity-40 mix-blend-screen" />
-                  <img
-                    src={question.img}
-                    alt=""
-                    className="relative max-h-56 w-full rounded-[26px] object-cover shadow-[0_20px_50px_rgba(0,0,0,0.95)]"
-                    loading="lazy"
-                  />
-                </div>
-              </div>
-            )}
+{question.img && (
+  <div className="md:w-2/5">
+    <div className="relative h-full">
+      <img
+        src={question.img}
+        alt=""
+        className="relative max-h-56 w-full rounded-[26px] object-cover shadow-[0_20px_50px_rgba(0,0,0,0.95)]"
+        loading="lazy"
+      />
+    </div>
+  </div>
+)}
           </div>
 
           {/* zone saisie & boutons */}
