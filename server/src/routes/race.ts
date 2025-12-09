@@ -26,7 +26,8 @@ const DIFFICULTIES = ["1", "2", "3", "4"];
 const STACK_SIZE = 50;
 
 const raceSessions = new Map<string, RaceStacks>();
-const buildingSessions = new Map<string, Promise<RaceStacks>>();
+let sharedStacks: RaceStacks | null = null;
+let sharedStacksBuild: Promise<RaceStacks> | null = null;
 
 class StackBuildError extends Error {
   public readonly code: "empty-stack" | "build-failed";
@@ -185,16 +186,16 @@ const buildStack = async (prisma: PrismaClient, difficulty: string): Promise<Rac
   return shuffleWithoutConsecutiveThemes(formatted);
 };
 
-const getOrCreateRaceSession = async (prisma: PrismaClient, token: string): Promise<RaceStacks> => {
-  if (raceSessions.has(token)) return raceSessions.get(token)!;
-  if (buildingSessions.has(token)) return buildingSessions.get(token)!;
+const getSharedStacks = async (prisma: PrismaClient): Promise<RaceStacks> => {
+  if (sharedStacks) return sharedStacks;
+  if (sharedStacksBuild) return sharedStacksBuild;
 
-  const buildPromise = (async (): Promise<RaceStacks> => {
+  sharedStacksBuild = (async (): Promise<RaceStacks> => {
     const stacks: RaceStacks = {};
     for (const difficulty of DIFFICULTIES) {
       stacks[difficulty] = await buildStack(prisma, difficulty);
     }
-    raceSessions.set(token, stacks);
+    sharedStacks = stacks;
     return stacks;
   })()
     .catch((err) => {
@@ -202,11 +203,31 @@ const getOrCreateRaceSession = async (prisma: PrismaClient, token: string): Prom
       throw new StackBuildError("build-failed", err instanceof Error ? err.message : String(err));
     })
     .finally(() => {
-      buildingSessions.delete(token);
+      sharedStacksBuild = null;
     });
 
-  buildingSessions.set(token, buildPromise);
-  return buildPromise;
+  return sharedStacksBuild;
+};
+
+const cloneSharedStacks = (templates: RaceStacks): RaceStacks => {
+  const stacks: RaceStacks = {};
+  for (const difficulty of DIFFICULTIES) {
+    stacks[difficulty] = [...templates[difficulty]];
+  }
+  return stacks;
+};
+
+const createRaceSession = async (prisma: PrismaClient, token: string): Promise<RaceStacks> => {
+
+  const templates = await getSharedStacks(prisma);
+  const stacks = cloneSharedStacks(templates);
+  raceSessions.set(token, stacks);
+  return stacks;
+};
+
+const getOrCreateRaceSession = async (prisma: PrismaClient, token: string): Promise<RaceStacks> => {
+  if (raceSessions.has(token)) return raceSessions.get(token)!;
+  return createRaceSession(prisma, token);
 };
 
 export function raceRoutes({ prisma }: { prisma: PrismaClient }) {
@@ -215,9 +236,19 @@ export function raceRoutes({ prisma }: { prisma: PrismaClient }) {
       try {
         const speedRaw = Number((req.query as any)?.speed ?? 0);
         const speed = Number.isFinite(speedRaw) ? Math.max(0, Math.min(100, speedRaw)) : 0;
-        const sessionToken = (req.cookies as any)?.raceSession ?? randomUUID();
+        const wantsReset = String((req.query as any)?.reset ?? "") === "1";
 
-        const stacks = await getOrCreateRaceSession(prisma, sessionToken);
+        const existingToken = (req.cookies as any)?.raceSession ?? null;
+        const sessionToken = wantsReset || !existingToken ? randomUUID() : existingToken;
+
+        if (wantsReset && existingToken) {
+          raceSessions.delete(existingToken);
+        }
+
+        const stacks = wantsReset || !existingToken
+          ? await createRaceSession(prisma, sessionToken)
+          : await getOrCreateRaceSession(prisma, sessionToken);
+
         reply.setCookie("raceSession", sessionToken, {
           path: "/",
           maxAge: 60 * 60 * 24 * 30,
@@ -227,7 +258,12 @@ export function raceRoutes({ prisma }: { prisma: PrismaClient }) {
         const difficulty = difficultyForSpeed(speed);
 
         if (!stacks[difficulty] || !stacks[difficulty].length) {
-          stacks[difficulty] = await buildStack(prisma, difficulty);
+          const templates = await getSharedStacks(prisma);
+          if (!templates[difficulty] || !templates[difficulty].length) {
+            templates[difficulty] = await buildStack(prisma, difficulty);
+          }
+
+          stacks[difficulty] = [...templates[difficulty]];
         }
 
         const q = stacks[difficulty].shift();

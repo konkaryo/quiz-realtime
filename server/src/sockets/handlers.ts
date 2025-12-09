@@ -22,6 +22,8 @@ type RacePlayerState = {
   socketId: string;
   points: number;
   speed: number;
+  energy: number;
+  finished: boolean;
 };
 
 
@@ -31,8 +33,96 @@ type RacePlayerState = {
  */
 export function registerSocketHandlers( io: Server, clients: Map<string, Client>, gameStates: Map<string, GameState> ) {
   const raceLobby = new Map<string, { socketId: string; userId: string; name: string }>();
-  const ongoingRaces = new Map<string, { players: Map<string, RacePlayerState> }>();
+  const ongoingRaces = new Map<string, { players: Map<string, RacePlayerState>; lastTickMs: number }>();
   const raceMembershipBySocket = new Map<string, { raceId: string; userId: string }>();
+  const RACE_MAX_POINTS = 10_000;
+  const RACE_TICK_MS = 1_000;
+  const ENERGY_DECAY_PER_SECOND = 0.98;
+  const MAX_DELTA_ENERGY = 120;
+  const MIN_DELTA_ENERGY = -40;
+
+  const speedFromEnergy = (energy: number) => {
+    const inner = 0.1 * energy - 3;
+    if (inner <= 0) return 0;
+    const base = Math.sqrt(inner) - 0.5;
+    const raw = 10 * base;
+    if (!Number.isFinite(raw) || raw < 0) return 0;
+    return raw;
+  };
+
+  const applyRaceProgress = (
+    race: { players: Map<string, RacePlayerState>; lastTickMs: number },
+    now = Date.now(),
+  ) => {
+    const deltaSeconds = Math.max(0, (now - race.lastTickMs) / 1000);
+    if (deltaSeconds <= 0) return { changed: false, newlyFinished: [] as RacePlayerState[] };
+
+    race.lastTickMs = now;
+    let changed = false;
+    const newlyFinished: RacePlayerState[] = [];
+
+    const decayFactor = Math.pow(ENERGY_DECAY_PER_SECOND, deltaSeconds);
+
+    for (const [userId, player] of race.players) {
+      if (player.finished) {
+        const normalized: RacePlayerState = {
+          ...player,
+          points: RACE_MAX_POINTS,
+          speed: 0,
+          energy: 0,
+        };
+        if (
+          normalized.points !== player.points ||
+          normalized.speed !== player.speed ||
+          normalized.energy !== player.energy
+        ) {
+          changed = true;
+        }
+        race.players.set(userId, normalized);
+        continue;
+      }
+
+      const decayedEnergy = player.energy * decayFactor;
+      const candidateSpeed = speedFromEnergy(decayedEnergy);
+      const candidatePoints = player.points + candidateSpeed * deltaSeconds;
+      const reachedGoal = candidatePoints >= RACE_MAX_POINTS;
+      const nextPoints = reachedGoal ? RACE_MAX_POINTS : candidatePoints;
+      const nextSpeed = reachedGoal ? 0 : candidateSpeed;
+      const nextEnergy = reachedGoal ? 0 : decayedEnergy;
+
+      if (nextPoints !== player.points || nextSpeed !== player.speed || nextEnergy !== player.energy) {
+        changed = true;
+      }
+
+      const finished = player.finished || reachedGoal;
+      const nextPlayer: RacePlayerState = {
+        ...player,
+        points: nextPoints,
+        speed: nextSpeed,
+        energy: nextEnergy,
+        finished,
+      };
+
+      if (finished && !player.finished) {
+        newlyFinished.push(nextPlayer);
+      }
+
+      race.players.set(userId, {
+        ...nextPlayer,
+      });
+    }
+
+    return { changed, newlyFinished };
+  };
+
+  const notifyRaceFinished = (raceId: string, players: RacePlayerState[]) => {
+    for (const player of players) {
+      io.to(player.socketId).emit("race_finished", {
+        raceId,
+        points: Math.round(player.points),
+      });
+    }
+  };
 
   const emitRaceLobbyUpdate = () => {
     io.to("race_lobby").emit("race_lobby_update", {
@@ -40,9 +130,14 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     });
   };
 
-  const emitRaceLeaderboard = (raceId: string) => {
+  const emitRaceLeaderboard = (raceId: string, skipProgress = false) => {
     const race = ongoingRaces.get(raceId);
     if (!race) return;
+
+    if (!skipProgress) {
+      const { newlyFinished } = applyRaceProgress(race);
+      if (newlyFinished.length) notifyRaceFinished(raceId, newlyFinished);
+    }
 
     const players = Array.from(race.players.values())
       .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
@@ -55,6 +150,18 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
     io.to(`race:${raceId}`).emit("race_leaderboard", { players });
   };
+
+  setInterval(() => {
+    const now = Date.now();
+
+    for (const [raceId, race] of ongoingRaces) {
+      const { changed, newlyFinished } = applyRaceProgress(race, now);
+      if (newlyFinished.length) notifyRaceFinished(raceId, newlyFinished);
+      if (changed) {
+        emitRaceLeaderboard(raceId, true);
+      }
+    }
+  }, RACE_TICK_MS);
   // Daily challenge sessions are scoped to a single socket (solo mode)
   type DailySession = {
     date: string;
@@ -210,8 +317,10 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         socketId: p.socketId,
         points: 0,
         speed: 0,
+        energy: 0,
+        finished: false,
       }));
-      ongoingRaces.set(raceId, { players: new Map(players.map((p) => [p.userId, p])) });
+      ongoingRaces.set(raceId, { players: new Map(players.map((p) => [p.userId, p])), lastTickMs: Date.now() });
       io.to("race_lobby").emit("race_lobby_started", { raceId, startedBy: raceLobby.get(socket.id)?.userId ?? null });
       ack?.({ ok: true, raceId });
     });
@@ -230,6 +339,9 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         const race = ongoingRaces.get(raceId);
         if (!race) return ack?.({ ok: false, reason: "not-found" });
 
+        const { newlyFinished } = applyRaceProgress(race);
+        if (newlyFinished.length) notifyRaceFinished(raceId, newlyFinished);
+
         const knownPlayer = race.players.get(userId);
         const lobbyPlayer = raceLobby.get(socket.id);
 
@@ -238,7 +350,9 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           name: knownPlayer?.name ?? lobbyPlayer?.name ?? "Joueur",
           socketId: socket.id,
           points: knownPlayer?.points ?? 0,
-          speed: knownPlayer?.speed ?? 0,
+          energy: knownPlayer?.energy ?? 0,
+          speed: knownPlayer?.speed ?? speedFromEnergy(knownPlayer?.energy ?? 0),
+          finished: knownPlayer?.finished ?? false,
         };
 
         socket.join(`race:${raceId}`);
@@ -252,7 +366,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
     socket.on(
       "race_progress",
-      (payload: { raceId?: string; points?: number; speed?: number }) => {
+      (payload: { raceId?: string; deltaEnergy?: number }) => {
         const raceId = (payload?.raceId || "").trim();
         const userId = socket.data.userId as string | undefined;
         if (!raceId || !userId) return;
@@ -260,21 +374,44 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         const race = ongoingRaces.get(raceId);
         if (!race) return;
 
+        const now = Date.now();
+        const { newlyFinished } = applyRaceProgress(race, now);
+        if (newlyFinished.length) notifyRaceFinished(raceId, newlyFinished);
+
         const current = race.players.get(userId);
         const lobbyPlayer = raceLobby.get(socket.id);
-        const points = Number(payload?.points);
-        const speed = Number(payload?.speed);
+        const currentEntry: RacePlayerState = current ?? {
+          userId,
+          name: lobbyPlayer?.name ?? "Joueur",
+          socketId: socket.id,
+          points: 0,
+          speed: 0,
+          energy: 0,
+          finished: false,
+        };
+
+        if (currentEntry.finished) {
+          race.players.set(userId, { ...currentEntry, socketId: socket.id, speed: 0, energy: 0 });
+          return;
+        }
+
+        const deltaEnergyRaw = Number(payload?.deltaEnergy ?? 0);
+        const deltaEnergy = Number.isFinite(deltaEnergyRaw)
+          ? Math.max(MIN_DELTA_ENERGY, Math.min(MAX_DELTA_ENERGY, deltaEnergyRaw))
+          : 0;
+
+        const updatedEnergy = Math.max(0, currentEntry.energy + deltaEnergy);
+        const nextSpeed = speedFromEnergy(updatedEnergy);
 
         const next: RacePlayerState = {
-          userId,
-          name: current?.name ?? lobbyPlayer?.name ?? "Joueur",
+          ...currentEntry,
           socketId: socket.id,
-          points: Number.isFinite(points) ? points : current?.points ?? 0,
-          speed: Number.isFinite(speed) ? speed : current?.speed ?? 0,
+          speed: nextSpeed,
+          energy: updatedEnergy,
+          finished: false,
         };
 
         race.players.set(userId, next);
-        emitRaceLeaderboard(raceId);
       },
     );
 

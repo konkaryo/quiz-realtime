@@ -36,15 +36,15 @@ const SOCKET_URL =
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
-const getCursorColor = (playerId: string): CursorColor => {
-  let hash = 0;
-  for (let i = 0; i < playerId.length; i++) {
-    hash = (hash << 5) - hash + playerId.charCodeAt(i);
-    hash |= 0; // Keep 32 bits
-  }
+const buildCursorColorMap = (playerIds: string[]): Record<string, CursorColor> => {
+  const uniqueIds = [...new Set(playerIds)].sort();
+  const colorMap: Record<string, CursorColor> = {};
 
-  const index = Math.abs(hash) % CURSOR_COLORS.length;
-  return CURSOR_COLORS[index];
+  uniqueIds.forEach((id, idx) => {
+    const color = CURSOR_COLORS[idx % CURSOR_COLORS.length];
+    colorMap[id] = color;
+  });
+  return colorMap;
 };
 
 export type Choice = { id: string; label: string };
@@ -73,6 +73,7 @@ type RaceLeaderboardEntry = { id: string; name: string; points: number; speed: n
 const ENERGY_BASE = 120;
 const ENERGY_TIME_BONUS = 8;
 const MAX_POINTS = 10000;
+const ENERGY_DECAY_PER_SECOND = 0.98;
 
 export default function RacePage() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -105,6 +106,8 @@ export default function RacePage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const roundStartRef = useRef<number | null>(null);
   const speedRef = useRef(0);
+  const socketRef = useRef<Socket | null>(null);
+  const raceIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -119,9 +122,6 @@ export default function RacePage() {
   }, []);
 
   useEffect(() => {
-    const storedRaceId = typeof window !== "undefined" ? sessionStorage.getItem("race_id") : null;
-    if (storedRaceId) setRaceId(storedRaceId);
-
     const s = io(SOCKET_URL, {
       path: "/socket.io",
       transports: ["websocket", "polling"],
@@ -131,14 +131,19 @@ export default function RacePage() {
     setSocket(s);
 
     s.on("connect", () => {
-      const currentRaceId = typeof window !== "undefined" ? sessionStorage.getItem("race_id") : null;
+      const currentRaceId =
+        typeof window !== "undefined" ? sessionStorage.getItem("race_id") : null;
       if (currentRaceId) {
-        s.emit("race_join", { raceId: currentRaceId }, (res: { ok: boolean; players?: RaceLeaderboardEntry[] }) => {
-          if (res?.ok) {
-            setRaceId(currentRaceId);
-            setLeaderboard(res.players ?? []);
-          }
-        });
+        s.emit(
+          "race_join",
+          { raceId: currentRaceId },
+          (res: { ok: boolean; players?: RaceLeaderboardEntry[] }) => {
+            if (res?.ok) {
+              setRaceId(currentRaceId);
+              setLeaderboard(res.players ?? []);
+            }
+          },
+        );
       }
     });
 
@@ -146,7 +151,19 @@ export default function RacePage() {
       setLeaderboard(payload.players ?? []);
     });
 
+    s.on("race_finished", (payload: { raceId?: string; points?: number }) => {
+      setPoints(payload?.points ?? MAX_POINTS);
+      setPhase("finished");
+      phaseRef.current = "finished";
+      setEndsAt(null);
+      setRemainingSeconds(null);
+      setEnergy(0);
+      speedRef.current = 0;
+      setFeedback("Bravo ! Objectif des 10 000 points atteint 🎉");
+    });
+
     return () => {
+      s.off("race_finished");
       s.close();
     };
   }, []);
@@ -184,12 +201,7 @@ export default function RacePage() {
   };
 
   const loadQuestion = async () => {
-    if (points >= MAX_POINTS) {
-      setPhase("finished");
-      phaseRef.current = "finished";
-      setStatus("ready");
-      return;
-    }
+    if (phaseRef.current === "finished") return;
 
     setStatus("loading");
     setFeedback(null);
@@ -206,9 +218,15 @@ export default function RacePage() {
 
     try {
       while (true) {
-        const res = await fetch(`/race/question?speed=${encodeURIComponent(speedRef.current ?? 0)}`, {
-          credentials: "include",
-        });
+        const isFirstQuestion = questionCounter === 0;
+        const res = await fetch(
+          `/race/question?speed=${encodeURIComponent(
+            speedRef.current ?? 0,
+          )}&reset=${isFirstQuestion ? 1 : 0}`,
+          {
+            credentials: "include",
+          },
+        );
 
         if (res.status === 503) {
           await new Promise((resolve) => setTimeout(resolve, 750));
@@ -269,12 +287,12 @@ export default function RacePage() {
   }, [energy]);
 
   const miniMapPlayers = useMemo(() => {
-    const players = leaderboard.length
-      ? leaderboard
-      : [{ id: "local", name: "Vous", points }];
+    const players = leaderboard.length ? leaderboard : [{ id: "local", name: "Vous", points }];
+
+    const colorMap = buildCursorColorMap(players.map((player) => player.id));
 
     return players.map((player) => {
-      const color = getCursorColor(player.id);
+      const color = colorMap[player.id];
       return {
         ...player,
         color,
@@ -289,15 +307,12 @@ export default function RacePage() {
   }, [speed]);
 
   useEffect(() => {
-    if (!socket || !raceId) return;
+    socketRef.current = socket;
+  }, [socket]);
 
-    const id = window.setInterval(() => {
-      socket.emit("race_progress", { raceId, points: Math.floor(points), speed });
-    }, 1000);
-
-    return () => window.clearInterval(id);
-  }, [socket, raceId, points, speed]);
-
+  useEffect(() => {
+    raceIdRef.current = raceId;
+  }, [raceId]);
 
   const scheduleNextQuestion = () => {
     if (phaseRef.current === "finished") return;
@@ -328,10 +343,10 @@ export default function RacePage() {
     setFeedback(res.correct ? "Bravo !" : "Mauvaise réponse !");
 
     if (res.correct) {
-      if (mode === "text") setEnergy((prev) => prev + 100);
-      else if (mode === "choice") setEnergy((prev) => prev + 60);
+      if (mode === "text") applyEnergyDelta(100);
+      else if (mode === "choice") applyEnergyDelta(60);
     } else {
-      setEnergy((prev) => Math.max(0, prev - 20));
+      applyEnergyDelta(-20);
     }
 
     scheduleNextQuestion();
@@ -411,29 +426,32 @@ export default function RacePage() {
     setShowChoices(true);
   };
 
+  const pushEnergyDelta = (delta: number) => {
+    const currentSocket = socketRef.current;
+    const currentRaceId = raceIdRef.current;
+    if (currentSocket && currentRaceId) {
+      currentSocket.emit("race_progress", { raceId: currentRaceId, deltaEnergy: delta });
+    }
+  };
+
+  const applyEnergyDelta = (delta: number) => {
+    setEnergy((prev) => Math.max(0, prev + delta));
+    pushEnergyDelta(delta);
+  };
+
   useEffect(() => {
     const id = window.setInterval(() => {
+      setEnergy((prev) => {
+        if (phaseRef.current === "finished" || prev <= 0) return prev;
+        const next = prev * ENERGY_DECAY_PER_SECOND;
+        return next < 0.001 ? 0 : next;
+      });
       setPoints((prev) => {
         if (phaseRef.current === "finished") return prev;
 
-        const next = prev + speedRef.current;
-
-        if (next >= MAX_POINTS) {
-          setPhase("finished");
-          phaseRef.current = "finished";
-          setEndsAt(null);
-          setRemainingSeconds(null);
-          setFeedback("Bravo ! Objectif des 10 000 points atteint 🎉");
-          return MAX_POINTS;
-        }
+        const next = Math.min(MAX_POINTS, prev + speedRef.current);
 
         return next;
-      });
-
-      setEnergy((prev) => {
-        if (phaseRef.current === "finished" || prev <= 0) return prev;
-        const next = prev * 0.98;
-        return next < 0.001 ? 0 : next;
       });
     }, 1000);
 
@@ -454,7 +472,6 @@ export default function RacePage() {
 
       <div className="relative z-10 mx-auto w-full max-w-none px-4 pb-16 pt-8 sm:px-8 lg:px-10 xl:px-14">
         <div className="grid gap-6 lg:grid-cols-[minmax(260px,22vw)_minmax(0,1fr)_minmax(240px,20vw)] xl:gap-8 2xl:gap-10">
-
           {/* COLONNE GAUCHE */}
           <div className="flex items-start justify-start">
             <aside className="w-full max-w-xs rounded-2xl border border-slate-800/80 bg-black/60 px-4 py-4 text-sm text-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
@@ -482,12 +499,18 @@ export default function RacePage() {
                       </div>
                       <div>
                         <div className="text-sm font-semibold text-slate-50">{player.name}</div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{player.speed.toFixed(1)} pts/s</div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                          {player.speed.toFixed(1)} pts/s
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xl font-bold tabular-nums text-rose-300">{player.points}</div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Points</div>
+                      <div className="text-xl font-bold tabular-nums text-rose-300">
+                        {player.points}
+                      </div>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        Points
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -546,8 +569,7 @@ export default function RacePage() {
                   Objectif des 10 000 points atteint 🎉
                 </div>
                 <div className="mt-2 text-[13px] text-emerald-100/80">
-                  Score final :{" "}
-                  <span className="font-semibold">{Math.floor(points)} pts</span>
+                  Score final : <span className="font-semibold">{Math.floor(points)} pts</span>
                 </div>
               </div>
             )}
