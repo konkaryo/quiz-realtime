@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
+import Background from "../components/Background";
 
 const API_BASE   = import.meta.env.VITE_API_BASE    ?? (typeof window !== "undefined" ? window.location.origin : "");
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL  ?? (typeof window !== "undefined" ? window.location.origin : "");
@@ -311,11 +312,6 @@ export default function RoomPage() {
   };
 
   /* ----------------------------- UI ----------------------------- */
-  const bg =
-    "fixed inset-0 z-0 bg-[radial-gradient(1200px_800px_at_20%_10%,#191736_0%,transparent_60%),radial-gradient(900px_600px_at_80%_30%,#3e0f64_0%,transparent_55%),linear-gradient(180deg,#070611_0%,#120d21_45%,#0a0815_100%)]";
-  const grain =
-    "fixed inset-0 z-0 pointer-events-none opacity-[0.28] mix-blend-soft-light bg-[radial-gradient(circle,rgba(255,255,255,0.18)_0.5px,transparent_0.5px)] bg-[length:4px_4px] [mask-image:linear-gradient(to_bottom,rgba(0,0,0,.95),rgba(0,0,0,.6)_60%,transparent_100%)]";
-
   const statusText =
     phase === "between" ? "Transition…" :
     phase === "idle"    ? "En attente des joueurs…" :
@@ -324,8 +320,7 @@ export default function RoomPage() {
 
   return (
     <>
-      <div aria-hidden className={bg} />
-      <div aria-hidden className={grain} />
+      <Background />
 
       <div className="relative z-10 text-white mx-auto w-full px-4 min-h-[calc(100dvh-64px)] pt-2">
         {/* Grille principale : leaderboard / centre / room */}

@@ -7,6 +7,7 @@ import CursorGreen from "../assets/cursor_green.png";
 import CursorOrange from "../assets/cursor_orange.png";
 import CursorPink from "../assets/cursor_pink.png";
 import CursorYellow from "../assets/cursor_yellow.png";
+import Background from "../components/Background";
 
 const CURSOR_COLORS = ["blue", "green", "orange", "pink", "yellow"] as const;
 type CursorColor = (typeof CURSOR_COLORS)[number];
@@ -460,15 +461,7 @@ export default function RacePage() {
 
   return (
     <div className="relative text-slate-50">
-      {/* BACKGROUND */}
-      <div
-        aria-hidden
-        className="fixed inset-0 z-0 bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(15,23,42,0.95),#020617)]"
-      />
+      <Background />
 
       <div className="relative z-10 mx-auto w-full max-w-none px-4 pb-16 pt-8 sm:px-8 lg:px-10 xl:px-14">
         <div className="grid gap-6 lg:grid-cols-[minmax(260px,22vw)_minmax(0,1fr)_minmax(240px,20vw)] xl:gap-8 2xl:gap-10">

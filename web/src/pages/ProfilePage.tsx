@@ -1,6 +1,7 @@
 // web/src/pages/ProfilePage.tsx
 
 import type { ReactNode } from "react";
+import Background from "../components/Background";
 
 import {
   ArrowUpRight,
@@ -202,26 +203,7 @@ function SectionCard({ title, children, right, className }: SectionCardProps) {
 export default function ProfilePage() {
   return (
     <div className="relative text-slate-50">
-      {/* BACKGROUND */}
-      <div aria-hidden className="fixed inset-0 z-0 bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308]" />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(15,23,42,0.95),#020617)]"
-      />
-      {/* STARS */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-        {[...Array(18)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute h-[3px] w-[3px] rounded-full bg-rose-200/40"
-            style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              opacity: 0.55,
-            }}
-          />
-        ))}
-      </div>
+      <Background />
 
       {/* CONTENT */}
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-12 sm:px-8 lg:px-10">

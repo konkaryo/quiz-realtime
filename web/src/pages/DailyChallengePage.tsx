@@ -5,8 +5,8 @@ import BronzeMedal from "../assets/bronze-feather.png";
 import SilverMedal from "../assets/silver-feather.png";
 import GoldMedal from "../assets/gold-feather.png";
 import EliteMedal from "../assets/elite-feather.png";
-import OwlEdge from "../assets/owledge.png";
 import { User } from "lucide-react";
+import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -403,39 +403,16 @@ export default function DailyChallengePage() {
 
   return (
     <div className="relative text-slate-50">
-      {/* BACKGROUND GLOBAL (comme "wrapper background", mais en fixed pleine page) */}
-      <div
-        aria-hidden
-        className="fixed inset-0 z-0 bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308]"
-      />
-      {/* halo + gradient additionnel, aligné avec la page de jeu */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(15,23,42,0.95),#020617)]"
-      />
-      {/* petites particules lumineuses */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-        {[...Array(18)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute h-[3px] w-[3px] rounded-full bg-rose-200/40"
-            style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              opacity: 0.55,
-            }}
-          />
-        ))}
-      </div>
+      <Background />
 
       {/* CONTENU : même pattern que Home → relative + z-10, pas de min-h-screen */}
-      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-6 sm:px-8 lg:px-10">
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-10 sm:px-8 lg:px-10">
         {/* HEADER simplifié : titre centré */}
         <header className="mb-3 text-center">
-          <h1 className="text-xl font-brutal text-slate-50 sm:text-2xl">DÉFI DU JOUR</h1>
+          <h1 className="text-5xl font-brand text-slate-50">DÉFI DU JOUR</h1>
         </header>
 
-        <div className="mb-3 text-sm text-slate-200/80">
+        <div className="mb-6 text-sm text-slate-200/80">
           {loading && <span>Chargement des défis…</span>}
           {!loading && error && <span className="text-rose-200">{error}</span>}
         </div>

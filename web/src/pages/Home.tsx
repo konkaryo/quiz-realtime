@@ -1,6 +1,7 @@
 // web/src/pages/Home.tsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -22,11 +23,20 @@ export default function Home() {
   const [err, setErr] = useState<string | null>(null);
 
   async function fetchJSON(path: string, init?: RequestInit) {
-    const res = await fetch(`${API_BASE}${path}`, { credentials: "include", ...init });
+    const res = await fetch(`${API_BASE}${path}`, {
+      credentials: "include",
+      ...init,
+    });
     const ct = res.headers.get("content-type") || "";
     const isJson = ct.includes("application/json");
     const data = isJson ? await res.json() : undefined;
-    if (!res.ok) throw new Error((data as any)?.error || (data as any)?.message || `HTTP ${res.status}`);
+    if (!res.ok) {
+      throw new Error(
+        (data as any)?.error ||
+          (data as any)?.message ||
+          `HTTP ${res.status}`,
+      );
+    }
     return data;
   }
 
@@ -52,7 +62,9 @@ export default function Home() {
       const data = (await fetchJSON(`/rooms/${roomId}`)) as { room: RoomDetail };
       const code = (data.room?.code ?? "").trim();
       if (!code) return nav(`/room/${roomId}`);
-      const userCode = (prompt("Cette room est privée. Entrez le code :") || "").trim().toUpperCase();
+      const userCode = (prompt("Cette room est privée. Entrez le code :") || "")
+        .trim()
+        .toUpperCase();
       if (!userCode) return;
       if (userCode === code.toUpperCase()) nav(`/room/${roomId}`);
       else alert("Code invalide.");
@@ -67,42 +79,25 @@ export default function Home() {
     }
   }
 
+  const headerFont = "system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+
   return (
     <div className="relative">
-      {/* ====== Dégradé (même que Campagne) ====== */}
-      <div
-        aria-hidden
-        className="
-          fixed inset-0 z-0
-          bg-[linear-gradient(to_bottom,_#4A1557_0%,_#2E0F40_33%,_#1A0A2B_66%,_#0A0616_100%)]
-        "
-      />
-      {/* ====== Grain anti-banding ====== */}
-      <div
-        aria-hidden
-        className="
-          fixed inset-0 z-0 pointer-events-none
-          mix-blend-soft-light opacity-[0.35]
-          bg-[radial-gradient(circle,_rgba(255,255,255,0.16)_0.5px,_transparent_0.5px)]
-          bg-[length:4px_4px]
-          [mask-image:linear-gradient(to_bottom,rgba(0,0,0,.8),rgba(0,0,0,.5)_60%,transparent_100%)]
-          [-webkit-mask-image:linear-gradient(to_bottom,rgba(0,0,0,.8),rgba(0,0,0,.5)_60%,transparent_100%)]
-        "
-      />
+      <Background />
 
       {/* ====== Contenu ====== */}
       <div
         style={{
-          maxWidth: 820,
+          maxWidth: 980,
           margin: "40px auto",
           padding: 16,
-          fontFamily: "system-ui, sans-serif",
+          fontFamily: headerFont,
           position: "relative",
           zIndex: 1,
           color: "#fff",
         }}
       >
-        {/* Titre + bouton refresh à gauche (texte “Rooms” ne bouge pas) */}
+        {/* Titre + bouton refresh */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ width: 32, height: 32, display: "inline-flex" }}>
             <button
@@ -139,113 +134,235 @@ export default function Home() {
         </div>
 
         {loading && <div style={{ marginTop: 16 }}>Chargement…</div>}
-        {err && <div style={{ marginTop: 16, color: "#fca5a5" }}>{err}</div>}
-        {!loading && !err && rooms.length === 0 && <div style={{ marginTop: 16 }}>Aucune room.</div>}
+        {err && (
+          <div style={{ marginTop: 16, color: "#fca5a5" }}>{err}</div>
+        )}
 
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12, marginTop: 16 }}>
-          {rooms.map((r) => {
-            const ownerName = r.owner?.displayName || "—";
-            const diff = typeof r.difficulty === "number" ? r.difficulty : undefined;
-            const pc = typeof r.playerCount === "number" ? r.playerCount : undefined;
-
-            return (
-              <li key={r.id}>
-                <button
-                  onClick={() => openRoom(r.id)}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: 14,
-                    borderRadius: 12,
-                    border: "1px solid #e5e7eb",
-                    background: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 14,
-                    cursor: "pointer",
-                    color: "#111827",
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        marginBottom: 4,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      Room #{r.id.slice(0, 6)}
-                    </div>
-                    <div style={{ display: "flex", gap: 12, fontSize: 12, opacity: 0.75 }}>
-                      {r.createdAt && <span>{new Date(r.createdAt).toLocaleString()}</span>}
-                      <span>•</span>
-                      <span>Créateur: {ownerName}</span>
-                      {diff !== undefined && (
-                        <>
-                          <span>•</span>
-                          <span>Difficulté: {diff}/10</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div
-                    title="Joueurs connectés"
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      padding: "4px 8px",
-                      borderRadius: 999,
-                      border: "1px solid #d1d5db",
-                      background: "#f8fafc",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {pc !== undefined ? `${pc} joueur${pc > 1 ? "s" : ""}` : "—"}
-                  </div>
-                </button>
-              </li>
-            );
-          })}
-
-          {/* CTA — pointillés plus fins, texte blanc, fond transparent */}
-          <li>
-            <button
-              onClick={() => nav("/rooms/new")}
-              title=""
-              aria-label=""
+        {!loading && !err && (
+          <>
+            {/* ====== TABLEAU DES ROOMS ====== */}
+            <div
               style={{
-                width: "100%",
-                padding: 20,
-                borderRadius: 12,
-                border: "1px dashed #d1d5db",   // ✅ plus fin (1px)
-                background: "transparent",       // ✅ fond transparent
-                color: "#ffffff",                // ✅ texte en blanc
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "transform .12s ease, box-shadow .12s ease",
-                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.04)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(0px)";
-                e.currentTarget.style.boxShadow = "0 10px 24px rgba(0,0,0,.25), inset 0 0 0 1px rgba(255,255,255,0.10)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "inset 0 0 0 1px rgba(255,255,255,0.04)";
+                marginTop: 20,
+                borderRadius: 14,
+                overflow: "hidden",
+                border: "1px solid rgba(255,255,255,.08)",
+                boxShadow:
+                  "0 30px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04)",
+                background:
+                  "linear-gradient(180deg, rgba(15,23,42,.88), rgba(2,6,23,.92))",
+                backdropFilter: "blur(6px)",
               }}
             >
-              <span style={{ fontSize: 18, lineHeight: 1 }}>＋</span>
-              <span>Créer un salon privé</span>
-            </button>
-          </li>
-        </ul>
+              {/* En-têtes */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "2.2fr 1.4fr 1fr 1fr 1.6fr 1fr",
+                  fontSize: 11,
+                  textTransform: "uppercase",
+                  letterSpacing: 1.2,
+                  padding: "12px 18px",
+                  background:
+                    "linear-gradient(180deg, rgba(30,41,59,.95), rgba(15,23,42,.95))",
+                  borderBottom: "1px solid rgba(255,255,255,.08)",
+                  color: "#94a3b8",
+                  fontWeight: 700,
+                }}
+              >
+                <span>Salon</span>
+                <span>Créateur</span>
+                <span>Joueurs</span>
+                <span>Difficulté</span>
+                <span>Créé le</span>
+                <span style={{ textAlign: "right" }}>Statut</span>
+              </div>
+
+              {/* Lignes */}
+              <div style={{ maxHeight: 420, overflowY: "auto" }}>
+                {rooms.length === 0 && (
+                  <div
+                    style={{
+                      padding: "16px 18px",
+                      fontSize: 13,
+                      color: "#9ca3af",
+                    }}
+                  >
+                    Aucune room pour le moment.
+                  </div>
+                )}
+
+                {rooms.map((r, index) => {
+                  const ownerName = r.owner?.displayName || "—";
+                  const diffNum =
+                    typeof r.difficulty === "number" ? r.difficulty : undefined;
+                  const diffLabel =
+                    diffNum !== undefined ? `${diffNum}/10` : "—";
+
+                  const pcNum =
+                    typeof r.playerCount === "number" ? r.playerCount : undefined;
+                  const pcLabel =
+                    pcNum !== undefined
+                      ? `${pcNum} joueur${pcNum > 1 ? "s" : ""}`
+                      : "—";
+
+                  const created =
+                    r.createdAt && !Number.isNaN(Date.parse(r.createdAt))
+                      ? new Intl.DateTimeFormat("fr-FR", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                          hour12: false,
+                        }).format(new Date(r.createdAt))
+                      : "—";
+
+                  const baseBg =
+                    index % 2 === 0
+                      ? "rgba(15,23,42,.75)"
+                      : "rgba(2,6,23,.75)";
+
+                  let diffColor = "#9ca3af";
+                  if (diffNum !== undefined) {
+                    if (diffNum <= 3) diffColor = "#22c55e";
+                    else if (diffNum <= 6) diffColor = "#facc15";
+                    else diffColor = "#ef4444";
+                  }
+
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => openRoom(r.id)}
+                      style={{
+                        width: "100%",
+                        display: "grid",
+                        gridTemplateColumns:
+                          "2.2fr 1.4fr 1fr 1fr 1.6fr 1fr",
+                        alignItems: "center",
+                        padding: "12px 18px",
+                        border: "none",
+                        background: baseBg,
+                        cursor: "pointer",
+                        color: "#e5e7eb",
+                        fontSize: 13,
+                        textAlign: "left",
+                        transition: "all .15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background =
+                          "linear-gradient(90deg, rgba(59,130,246,.18), rgba(15,23,42,.95))";
+                        e.currentTarget.style.boxShadow =
+                          "inset 0 0 0 1px rgba(59,130,246,.5)";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = baseBg;
+                        e.currentTarget.style.boxShadow = "none";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      {/* Salon */}
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "#e0e7ff",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        Room #{r.id.slice(0, 6)}
+                      </span>
+
+                      {/* Créateur */}
+                      <span
+                        style={{
+                          opacity: 0.85,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {ownerName}
+                      </span>
+
+                      {/* Joueurs */}
+                      <span style={{ fontWeight: 700, color: "#bfdbfe" }}>
+                        {pcLabel}
+                      </span>
+
+                      {/* Difficulté */}
+                      <span style={{ fontWeight: 700, color: diffColor }}>
+                        {diffLabel}
+                      </span>
+
+                      {/* Créé le */}
+                      <span style={{ opacity: 0.75 }}>{created}</span>
+
+                      {/* Statut */}
+                      <span
+                        style={{
+                          justifySelf: "end",
+                          padding: "6px 14px",
+                          borderRadius: 999,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          background:
+                            "linear-gradient(135deg, #2563eb, #06b6d4)",
+                          color: "#fff",
+                          boxShadow: "0 6px 18px rgba(0,0,0,.4)",
+                        }}
+                      >
+                        Rejoindre
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+{/* CTA créer un salon privé — fond uni */}
+<div
+  style={{
+    marginTop: 14,
+    display: "flex",
+    justifyContent: "flex-end",
+  }}
+>
+  <button
+    onClick={() => nav("/rooms/new")}
+    style={{
+      padding: "10px 18px",
+      borderRadius: 10,
+      border: "1px solid rgba(255,255,255,.25)",
+      background: "#DC004B", // ✅ rose uni (tu peux mettre #8b5cf6 ou #ef4444 aussi)
+      color: "#fff",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      fontWeight: 800,
+      fontSize: 13,
+      cursor: "pointer",
+      transition: "all .15s ease",
+      boxShadow: "0 8px 24px rgba(0,0,0,.45)",
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = "translateY(-1px)";
+      e.currentTarget.style.boxShadow =
+        "0 12px 32px rgba(0,0,0,.65)";
+      e.currentTarget.style.background = "#DC004B"; // ✅ hover plus clair
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = "translateY(0)";
+      e.currentTarget.style.boxShadow =
+        "0 8px 24px rgba(0,0,0,.45)";
+      e.currentTarget.style.background = "#DC004B"; // ✅ retour à la couleur unie
+    }}
+  >
+    <span style={{ fontSize: 16, lineHeight: 1 }}>＋</span>
+    <span>Créer un salon privé</span>
+  </button>
+</div>
+          </>
+        )}
       </div>
     </div>
   );

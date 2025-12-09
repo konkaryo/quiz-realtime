@@ -1,7 +1,7 @@
 // web/src/AppShell.tsx
 import { useEffect, useState, useRef } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import logoUrl from "@/assets/owledge.png";
+import logoUrl from "@/assets/synapz.svg";
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
@@ -16,7 +16,7 @@ function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
       to={to}
       style={{
         display: "block",
-        borderRadius: 16,
+        borderRadius: 16, 
         padding: 12,
         border: "1px solid rgba(255,255,255,.08)",
         background: "rgba(255,255,255,.05)",
