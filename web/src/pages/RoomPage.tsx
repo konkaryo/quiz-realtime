@@ -29,6 +29,7 @@ type QuestionLite = {
 type Phase = "idle" | "playing" | "reveal" | "between" | "final";
 type LeaderRow = { id: string; name: string; score: number; img?: string | null };
 type RoomMeta = { id: string; code: string | null; visibility: "PUBLIC" | "PRIVATE" };
+type RoomInfoItem = { label: string; value: string | number };
 
 /* Récapitulatif final (affiché à gauche uniquement en phase 'final') */
 type RecapItem = {
@@ -43,30 +44,6 @@ type RecapItem = {
   points: number;
 };
 
-/* ---------- UI helpers ---------- */
-
-function TimerBadge({ seconds }: { seconds: number | null }) {
-  const s = seconds ?? 0;
-  const display = String(Math.max(0, s)).padStart(2, "0");
-  const urgent = s <= 5;
-  return (
-    <div
-      aria-live="polite"
-      title="Temps restant"
-      className={[
-        "relative inline-flex items-center justify-center h-[28px] min-w-[52px] px-2 rounded-full",
-        "border border-white/15 bg-black/60 backdrop-blur-[2px]",
-        "shadow-[0_8px_24px_rgba(0,0,0,.4),inset_0_1px_0_rgba(255,255,255,.06)]",
-        urgent ? "animate-pulse" : "",
-      ].join(" ")}
-    >
-      <span className="font-semibold tabular-nums tracking-wide">
-        {display}
-        <span className="text-[11px] opacity-85 ml-0.5">s</span>
-      </span>
-    </div>
-  );
-}
 
 /* ============================== PAGE ============================== */
 export default function RoomPage() {
@@ -104,6 +81,7 @@ export default function RoomPage() {
   const [selfName, setSelfName] = useState<string | null>(null);
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
+  const [roomInfoOpen, setRoomInfoOpen] = useState(true);
 
   /* ---- recap des questions reçu en fin de partie ---- */
   const [finalRecap, setFinalRecap] = useState<RecapItem[] | null>(null);
@@ -374,8 +352,6 @@ export default function RoomPage() {
   };
 
   /* ----------------------------- UI ----------------------------- */
-  const statusText =
-    phase === "between" ? "Transition…" : phase === "idle" ? "En attente des joueurs…" : phase === "final" ? "Fin de partie" : "En cours…";
 
   const normalizedQuestion = useMemo(() => {
     if (!question) return null;
@@ -409,6 +385,15 @@ export default function RoomPage() {
   const isPlaying = phase === "playing" && lives > 0;
   const showChoices = !!mcChoices;
   const textLocked = choicesRevealed || showChoices;
+
+  const visibilityLabel =
+    roomMeta?.visibility === "PUBLIC" ? "Public" : roomMeta?.visibility === "PRIVATE" ? "Privé" : "—";
+  const roomInfoItems: RoomInfoItem[] = [
+    { label: "ID du salon", value: roomMeta?.id ?? roomId ?? "—" },
+    { label: "Public / Privé", value: visibilityLabel },
+    { label: "Code du salon", value: roomMeta?.code ?? "—" },
+    { label: "Nombre de joueurs", value: Math.max(leaderboard.length, 1) },
+  ];
 
   return (
     <>
@@ -587,63 +572,144 @@ export default function RoomPage() {
             </div>
           </section>
 
-          {/* RIGHT — Panneau Room (inchangé) */}
-          <aside className="min-w-0 md:order-3">
-            <div
-              className={[
-                "relative rounded-[18px] overflow-hidden",
-                "bg-black/45 backdrop-blur-md border border-white/10",
-                "shadow-[0_10px_28px_rgba(0,0,0,.38)]",
-              ].join(" ")}
-            >
-              <div className="pointer-events-none absolute inset-0 rounded-[18px] [mask:linear-gradient(#000,transparent_70%)]">
-                <div className="absolute inset-0 rounded-[18px] border border-transparent [border-image:linear-gradient(90deg,rgba(255,255,255,.35),rgba(255,255,255,.06))_1]" />
-              </div>
+{/* RIGHT — Infos Room (table + entête toggle) */}
+<aside className="min-w-0 md:order-3">
+  <div className="relative mt-12 mr-8 lg:mr-12">
+    <div className="ml-auto w-full md:w-[84%] lg:w-[76%]">
+      {/* Titre aligné sur la bordure droite */}
+      <div className="mb-6 text-right pr-5">
+        <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+          Salon
+        </p>
+        <h3 className="m-0 text-[16px] font-semibold leading-tight text-slate-50">
+          Albert EINSTEIN
+        </h3>
+      </div>
 
-              <div className="flex items-center justify-between px-4 pt-3 pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-white/70 shadow-[0_0_8px_rgba(255,255,255,.6)]" aria-hidden />
-                  <h3 className="m-0 text-[15px] font-semibold tracking-wide">Room</h3>
-                </div>
-                <span className="inline-flex items-center px-2 py-[2px] rounded-full text-[11px] uppercase tracking-wide border border-white/20 bg-white/10">
-                  {roomMeta?.visibility ?? "—"}
-                </span>
-              </div>
+      {/* ✅ Le conteneur porte le background du QuestionPanel */}
+      <div
+        className={[
+          "overflow-hidden rounded-[8px]",
+          "border border-slate-500/45", // bordure un peu plus visible
+          "shadow-[0_12px_36px_rgba(0,0,0,.55)]",
+          "bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)]",
+        ].join(" ")}
+      >
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>
+              <th colSpan={2} className="p-0">
+                <button
+                  type="button"
+                  onClick={() => setRoomInfoOpen((v) => !v)}
+                  className={[
+                    "w-full flex items-center justify-between",
+                    "px-5 py-3",
+                    // entête distincte, mais cohérente (plus sombre, pas “plate”)
+                    "bg-black/55",
+                    "border-b border-white/10",
+                    "focus:outline-none",
+                  ].join(" ")}
+                  aria-expanded={roomInfoOpen}
+                >
+                  {/* ✅ autre police entête */}
+                  <span className="font-mono text-[12px] tracking-[0.18em] text-slate-100">
+                    INFORMATIONS
+                  </span>
 
-              <div className="px-4 pb-4 relative">
-                <div className="pointer-events-none absolute inset-0 opacity-[0.12] bg-[radial-gradient(circle,rgba(255,255,255,.6)_1px,transparent_1px)] bg-[length:14px_14px]" />
-                <dl className="relative grid grid-cols-2 gap-x-3 gap-y-3 text-[13px]">
-                  <div className="col-span-2 h-[1px] bg-white/10" />
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                    className={[
+                      "transition-transform duration-200",
+                      roomInfoOpen ? "rotate-180" : "rotate-0",
+                      "text-slate-200/80",
+                    ].join(" ")}
+                    fill="none"
+                  >
+                    <path
+                      d="M6 9l6 6 6-6"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </th>
+            </tr>
+          </thead>
 
-                  <div className="opacity-70">ID</div>
-                  <div className="tabular-nums truncate text-right">{roomMeta?.id ?? roomId ?? "—"}</div>
+          {roomInfoOpen && (
+            <tbody>
+              {roomInfoItems.map((item, idx) => (
+                <tr
+                  key={item.label}
+                  className={[
+                    // ✅ fond plein (pas transparent) + alternance
+                    idx % 2 === 0 ? "bg-black/25" : "bg-black/10",
+                    // séparateurs plus doux que des bordures “dures”
+                    "border-t border-white/10",
+                  ].join(" ")}
+                >
+                  <td className="py-3 pl-5 pr-3">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-300/80">
+                      {item.label}
+                    </div>
+                  </td>
 
-                  {roomMeta?.code ? (
-                    <>
-                      <div className="opacity-70">Code</div>
-                      <div className="text-right font-semibold">{roomMeta.code}</div>
-                    </>
-                  ) : null}
+                  <td className="py-3 pr-5 pl-3 text-right">
+                    <div className="text-[13px] font-medium tabular-nums text-slate-50 truncate">
+                      {item.value}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          )}
+        </table>
+      </div>
+{/* Action — Inviter */}
+<div className="mt-4 flex justify-end pr-1">
+  <button
+    type="button"
+     // à brancher
+    className={[
+      "inline-flex items-center gap-2",
+      "rounded-[10px] px-4 py-2",
+      "text-[11px] font-semibold uppercase tracking-[0.18em]",
+      "border border-slate-600/60",
+      "bg-black/40 text-slate-100",
+      "transition hover:border-white/60 hover:text-white hover:brightness-110",
+      "shadow-[0_0_6px_rgba(255,255,255,0.08)]",
+    ].join(" ")}
+  >
+    {/* Icône + */}
+    <span
+      aria-hidden
+      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-500/60 text-[14px] leading-none"
+    >
+      +
+    </span>
+    Inviter
+  </button>
+</div>
 
-                  <div className="opacity-70">Statut</div>
-                  <div className="text-right">{statusText}</div>
 
-                  <div className="opacity-70">Question</div>
-                  <div className="text-right tabular-nums">
-                    {Math.max(1, index + 1)}/{Math.max(total, index + 1)}
-                  </div>
 
-                  <div className="opacity-70">Temps restant</div>
-                  <div className="text-right">
-                    <TimerBadge seconds={remaining} />
-                  </div>
+    </div>
+  </div>
+</aside>
 
-                  <div className="opacity-70">Joueurs</div>
-                  <div className="text-right tabular-nums">{Math.max(leaderboard.length, 1)}</div>
-                </dl>
-              </div>
-            </div>
-          </aside>
+
+
+
+
+
+
+
         </div>
       </div>
     </>
