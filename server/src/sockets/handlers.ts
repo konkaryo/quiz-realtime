@@ -182,6 +182,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     score: number;
     attempts: number;
     answered: boolean;
+    mcMode: boolean;
     endsAt: number | null;
     roundStartMs: number | null;
     timer: NodeJS.Timeout | null;
@@ -234,6 +235,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     sess.index = nextIndex;
     sess.attempts = 0;
     sess.answered = false;
+    sess.mcMode = false;
     sess.roundStartMs = Date.now();
     sess.endsAt = sess.roundStartMs + DAILY_ROUND_MS;
     sess.timer = setTimeout(() => {
@@ -456,6 +458,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           score: 0,
           attempts: 0,
           answered: false,
+          mcMode: false,
           endsAt: null,
           roundStartMs: null,
           timer: null,
@@ -475,6 +478,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       if (!sess || sess.answered) return;
       const q = sess.questions[sess.index];
       if (!q) return;
+      sess.mcMode = true;
       const choices = [...q.choices].map(({ id, label }) => ({ id, label })).sort(() => Math.random() - 0.5);
       socket.emit("daily_multiple_choice", { choices });
     });
@@ -571,6 +575,8 @@ socket.on(
 
     const q = sess.questions[sess.index];
     if (!q) return ack?.({ ok: false, reason: "no-question" });
+
+    if (sess.mcMode) return ack?.({ ok: false, reason: "mc-mode" });
 
     const raw = (p?.text || "").trim();
     const userNorm = norm(raw);
@@ -847,6 +853,10 @@ socket.on(
         const q = st.questions[st.index];
         if (!q) return ack?.({ ok: false, reason: "no-question" });
 
+        if (st.mcModePgIds?.has(client.playerGameId)) {
+          return ack?.({ ok: false, reason: "mc-mode" });
+        }
+
         const start = st.roundStartMs ?? Date.now();
         const responseMs = Math.max(0, Date.now() - start);
 
@@ -939,6 +949,8 @@ socket.on(
 
       const client = clients.get(socket.id);
       if (!client) return;
+
+      st.mcModePgIds.add(client.playerGameId);
 
       const choices = getShuffledChoicesForSocket(st, socket.id);
       socket.emit("multiple_choice", { choices });

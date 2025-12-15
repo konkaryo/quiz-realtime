@@ -20,11 +20,12 @@ export type GameState = {
   answeredThisRound: Set<string>;
   answeredOrderText: string[];
   answeredOrder: string[];
+  mcModePgIds: Set<string>;
   roundSeq: number;
   roundUid?: string;
-  pgIds: Set<string>;  
+  pgIds: Set<string>;
   attemptsThisRound: Map<string, number>;
-  roundMs: number;  
+  roundMs: number;
   finished?: boolean;
 };
 export type Client = {

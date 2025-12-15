@@ -138,6 +138,7 @@ export async function startGameForRoom(
     answeredThisRound: new Set<string>(),
     answeredOrderText: [],
     answeredOrder: [],
+    mcModePgIds: new Set<string>(),
     pgIds: new Set(pgs.map((p) => p.id)),
     attemptsThisRound: new Map<string, number>(),
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
@@ -203,6 +204,7 @@ async function startRound(
   st.answeredThisRound.clear();
   st.answeredOrderText = [];
   st.attemptsThisRound = new Map();
+  st.mcModePgIds = new Set<string>();
   st.roundStartMs = Date.now();
   st.endsAt = st.roundStartMs + ROUND_MS;
 
