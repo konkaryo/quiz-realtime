@@ -1,6 +1,6 @@
 // /server/src/domain/sockets/handlers.ts
 import { Server } from "socket.io";
-import type { Client, GameState } from "../types";
+import type { Client, GameState, StoredAnswer } from "../types";
 import { prisma } from "../infra/prisma";
 import { CFG } from "../config";
 import { randomUUID } from "crypto";
@@ -40,6 +40,27 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
   const ENERGY_DECAY_PER_SECOND = 0.98;
   const MAX_DELTA_ENERGY = 120;
   const MIN_DELTA_ENERGY = -40;
+
+  const ensurePlayerData = (st: GameState, pgId: string, name?: string, img?: string | null) => {
+    if (!st.playerData) st.playerData = new Map();
+    let entry = st.playerData.get(pgId);
+    if (!entry) {
+      entry = { score: 0, answers: [], name, img };
+      st.playerData.set(pgId, entry);
+    }
+    if (name && !entry.name) entry.name = name;
+    if (img !== undefined && entry.img === undefined) entry.img = img;
+    return entry;
+  };
+
+  const recordAnswer = (st: GameState, pgId: string, answer: StoredAnswer, gained: number, name?: string, img?: string | null) => {
+    const entry = ensurePlayerData(st, pgId, name, img);
+    entry.answers.push(answer);
+    if (gained > 0) {
+      entry.score += gained;
+    }
+  };
+
 
   const speedFromEnergy = (energy: number) => {
     const inner = 0.1 * energy - 3;
@@ -714,6 +735,7 @@ socket.on(
         const st = gameStates.get(room.id);
         if (st && st.gameId === game.id) {
             st.pgIds.add(pg.id);
+            ensurePlayerData(st, pg.id, player.name);
             const gameRoom = `game:${st.gameId}`;
             io.sockets.sockets.get(socket.id)?.join(gameRoom);
             st.attemptsThisRound.set(pg.id, 0);
@@ -794,24 +816,19 @@ socket.on(
         st.answeredThisRound.add(client.playerGameId);
         st.answeredOrder.push(client.playerGameId);
 
-        await prisma.$transaction(async (tx) => {
-          await tx.answer.create({
-            data: {
-              playerGameId: client.playerGameId,
-              questionId: q.id,
-              text: choice.label,
-              correct: choice.isCorrect,
-              mode: 'mc',
-              responseMs
-            },
-          });
-          await tx.playerGame.update({
-            where: { id: client.playerGameId },
-            data: {
-              score: { increment: choice.isCorrect ? CFG.MC_ANSWER_POINTS_GAIN : 0 },
-            },
-          });
-        });
+        const gained = choice.isCorrect ? CFG.MC_ANSWER_POINTS_GAIN : 0;
+        recordAnswer(
+          st,
+          client.playerGameId,
+          {
+            questionId: q.id,
+            text: choice.label,
+            correct: !!choice.isCorrect,
+            mode: "mc",
+            responseMs,
+          },
+          gained,
+        );
 
         const lb = await buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
         io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });
@@ -895,27 +912,19 @@ socket.on(
             }
         }
 
-        await prisma.$transaction(async (tx) => {
-          await tx.answer.create({
-            data: {
-              playerGameId: client.playerGameId,
-              questionId:   q.id, 
-              text: raw,
-              correct,
-              mode: 'text',
-              responseMs
-            },
-          });
-          if (correct) {
-            const increment = CFG.TXT_ANSWER_POINTS_GAIN + speedBonus; // 100 + bonus
-            await tx.playerGame.update({
-              where: { id: client.playerGameId },
-              data: {
-                score: { increment }
-              },
-            });
-          }
-        });
+        const gained = correct ? CFG.TXT_ANSWER_POINTS_GAIN + speedBonus : 0;
+        recordAnswer(
+          st,
+          client.playerGameId,
+          {
+            questionId: q.id,
+            text: raw,
+            correct,
+            mode: "text",
+            responseMs,
+          },
+          gained,
+        );
 
         const lb = await buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
         io.to(client.roomId).emit("leaderboard_update", { leaderboard: lb });

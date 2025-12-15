@@ -7,7 +7,14 @@ export type RoundQuestion = {
   img: string | null;
   choices: RoundChoice[];
   acceptedNorms: string[];
-  correctLabel: string; 
+  correctLabel: string;
+};
+export type StoredAnswer = {
+  questionId: string;
+  text: string;
+  correct: boolean;
+  mode: "mc" | "text";
+  responseMs: number;
 };
 export type GameState = {
   roomId: string;
@@ -27,6 +34,16 @@ export type GameState = {
   attemptsThisRound: Map<string, number>;
   roundMs: number;
   finished?: boolean;
+  playerData: Map<
+    string,
+    {
+      score: number;
+      answers: StoredAnswer[];
+      name?: string;
+      img?: string | null;
+    }
+  >;
+  persistedResults?: boolean;
 };
 export type Client = {
   socketId: string;

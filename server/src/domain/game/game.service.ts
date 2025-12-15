@@ -1,6 +1,6 @@
 //server/src/domain/game/game.service.ts
-import { PrismaClient, Prisma, Theme } from "@prisma/client";
-import type { Client, RoundQuestion, GameState } from "../../types";
+import { PrismaClient, Prisma, Theme, AnswerMode } from "@prisma/client";
+import type { Client, RoundQuestion, GameState, StoredAnswer } from "../../types";
 import { Server } from "socket.io";
 import * as room_service from "../room/room.service";
 import * as media_service from "../media/media.service";
@@ -24,7 +24,17 @@ export async function startGameForRoom(
   const running = gameStates.get(roomId);
   if (running && !running.finished) {
     const refreshed = await room_service.ensurePlayerGamesForRoom(clients, running.gameId, io, prisma, roomId);
+    const missing = refreshed.filter((pg) => !running.pgIds.has(pg.id));
     for (const pg of refreshed) { running.pgIds.add(pg.id); }
+    if (missing.length) {
+      const meta = await prisma.playerGame.findMany({
+        where: { id: { in: missing.map((m) => m.id) } },
+        select: { id: true, player: { select: { name: true, img: true } } },
+      });
+      for (const pg of meta) {
+        running.playerData.set(pg.id, { score: 0, answers: [], name: pg.player.name, img: pg.player.img });
+      }
+    }
     return;
   }
 
@@ -33,6 +43,20 @@ export async function startGameForRoom(
 
   const game = await room_service.getOrCreateCurrentGame(prisma, room.id);
   let pgs = await room_service.ensurePlayerGamesForRoom(clients, game.id, io, prisma, room.id);
+
+  const playersMeta = await prisma.playerGame.findMany({
+    where: { id: { in: pgs.map((p) => p.id) } },
+    select: { id: true, player: { select: { name: true, img: true } } },
+  });
+  const playerData = new Map<string, { score: number; answers: StoredAnswer[]; name?: string; img?: string | null }>();
+  playersMeta.forEach((pg) => {
+    playerData.set(pg.id, {
+      score: 0,
+      answers: [],
+      name: pg.player.name,
+      img: pg.player.img,
+    });
+  });
 
   type Row = { id: string };
   const QUESTION_COUNT =
@@ -144,6 +168,8 @@ export async function startGameForRoom(
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
     roundSeq: 0,
     finished: false,
+    playerData,
+    persistedResults: false,
   };
   gameStates.set(room.id, st);
 
@@ -169,6 +195,14 @@ export async function stopGameForRoom(
   const st = gameStates.get(roomId);
   if (st?.timer) clearTimeout(st.timer);
 
+  if (st) {
+    try {
+      await persistGameResults(prisma, st);
+    } catch (err) {
+      console.error("[stopGameForRoom persist]", err);
+    }
+  }
+
   if (st) st.finished = true;
 
   gameStates.delete(roomId);
@@ -180,6 +214,40 @@ export async function stopGameForRoom(
   io.to(roomId).emit("game_stopped");
 }
 /* ---------------------------------------------------------------------------------------- */
+
+async function persistGameResults(prisma: PrismaClient, st: GameState) {
+  if (st.persistedResults || !st.playerData) return;
+
+  const answers: Array<{ playerGameId: string; questionId: string; text: string; correct: boolean; mode: AnswerMode; responseMs: number }> = [];
+  const scores: Array<{ id: string; score: number }> = [];
+
+  for (const [pgId, data] of st.playerData.entries()) {
+    scores.push({ id: pgId, score: data.score });
+    for (const ans of data.answers) {
+      answers.push({
+        playerGameId: pgId,
+        questionId: ans.questionId,
+        text: ans.text,
+        correct: ans.correct,
+        mode: ans.mode === "mc" ? AnswerMode.mc : AnswerMode.text,
+        responseMs: ans.responseMs,
+      });
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (answers.length) {
+      await tx.answer.createMany({ data: answers });
+    }
+    for (const entry of scores) {
+      await tx.playerGame.update({ where: { id: entry.id }, data: { score: entry.score } });
+    }
+  });
+
+  st.persistedResults = true;
+}
+/* ---------------------------------------------------------------------------------------- */
+
 
 async function startRound(
   clients: Map<string, Client>,
@@ -295,6 +363,8 @@ async function finalizeGameAfterReveal(
   leaderboard: Leaderboard,
 ) {
   st.timer = undefined;
+
+  await persistGameResults(prisma, st);
 
   await prisma.game.update({ where: { id: st.gameId }, data: { state: "ended" } });
 

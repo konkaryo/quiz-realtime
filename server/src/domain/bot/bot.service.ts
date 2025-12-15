@@ -1,7 +1,7 @@
 // server/src/domain/bot/bot.service.ts
-import { PrismaClient, AnswerMode } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import type { Server } from "socket.io";
-import type { Client, GameState } from "../../types";
+import type { Client, GameState, StoredAnswer } from "../../types";
 import { CFG } from "../../config";
 import * as lb_service from "../game/leaderboard.service";
 import { computeSpeedBonus } from "../player/scoring.service";
@@ -54,6 +54,22 @@ const DIFF_THRESHOLD: Record<number, number> = {
   2: 45,
   3: 65,
   4: 85,
+};
+
+const ensurePlayerData = (st: GameState, pgId: string) => {
+  if (!st.playerData) st.playerData = new Map();
+  let entry = st.playerData.get(pgId);
+  if (!entry) {
+    entry = { score: 0, answers: [] as StoredAnswer[] };
+    st.playerData.set(pgId, entry);
+  }
+  return entry;
+};
+
+const recordAnswer = (st: GameState, pgId: string, answer: StoredAnswer, gained: number) => {
+  const entry = ensurePlayerData(st, pgId);
+  entry.answers.push(answer);
+  if (gained > 0) entry.score += gained;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -268,8 +284,8 @@ export async function scheduleBotAnswers(
 /* -------------------------------------------------------------------------- */
 
 async function botApplyMcScoring(
-  prisma: PrismaClient,
-  _st: GameState,
+  _prisma: PrismaClient,
+  st: GameState,
   client: Client,
   questionId: string,
   label: string,
@@ -278,24 +294,17 @@ async function botApplyMcScoring(
 ) {
 
 
-  await prisma.$transaction(async (tx) => {
-    await tx.answer.create({
-      data: { playerGameId: client.playerGameId, questionId, text: label, correct, mode: AnswerMode.mc, responseMs },
-    });
-    if (correct) {
-      await tx.playerGame.update({
-        where: { id: client.playerGameId },
-        data: { score: { increment: CFG.MC_ANSWER_POINTS_GAIN } },
-      });
-    }
-  });
-
-  const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true } });
+  recordAnswer(
+    st,
+    client.playerGameId,
+    { questionId, text: label, correct, mode: "mc", responseMs },
+    correct ? CFG.MC_ANSWER_POINTS_GAIN : 0,
+  );
 }
 
 async function botApplyTextScoring(
-  prisma: PrismaClient,
-  _st: GameState,
+  _prisma: PrismaClient,
+  st: GameState,
   client: Client,
   q: { id: string },
   rawText: string,
@@ -304,18 +313,11 @@ async function botApplyTextScoring(
   speedBonus = 0
 ) {
 
-  await prisma.$transaction(async (tx) => {
-    await tx.answer.create({
-      data: { playerGameId: client.playerGameId, questionId: q.id, text: rawText, correct, mode: AnswerMode.text, responseMs },
-    });
-    if (correct) {
-      const baseWithBonus = CFG.TXT_ANSWER_POINTS_GAIN + speedBonus; // 100 + bonus
-      await tx.playerGame.update({
-        where: { id: client.playerGameId },
-        data: { score: { increment: baseWithBonus } },
-      });
-    }
-  });
-
-  const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true } });
+  const gained = correct ? CFG.TXT_ANSWER_POINTS_GAIN + speedBonus : 0;
+  recordAnswer(
+    st,
+    client.playerGameId,
+    { questionId: q.id, text: rawText, correct, mode: "text", responseMs },
+    gained,
+  );
 }
