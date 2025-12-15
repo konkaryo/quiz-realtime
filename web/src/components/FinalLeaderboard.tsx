@@ -84,7 +84,7 @@ export function FinalLeaderboard({
                   <div
                     className={[
                       "relative w-full max-w-[260px] rounded-t-xl",
-                      "bg-[#1D192C]",
+                      "bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)]",
                       "border-x border-t border-white/10",
                       "shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_16px_40px_rgba(0,0,0,.55)]",
                     ].join(" ")}
@@ -145,7 +145,7 @@ export function FinalLeaderboard({
                       "text-[13px] leading-tight",
                       isSelf
                         ? "bg-gradient-to-r from-[#D30E72] to-[#770577] text-white border-transparent"
-                        : "bg-[#1D192C] text-white border-white/10",
+                        : "bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)] text-white border-white/10",
                     ].join(" ")}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">

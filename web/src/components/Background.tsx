@@ -13,7 +13,7 @@ export default function Background({
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(15,23,42,0.95),#020617)]"
+        className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(12,18,34,0.95),#020617)]"
       />
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
         {Array.from({ length: particleCount }).map((_, index) => (

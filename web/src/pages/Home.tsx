@@ -30,6 +30,7 @@ export default function Home() {
     const ct = res.headers.get("content-type") || "";
     const isJson = ct.includes("application/json");
     const data = isJson ? await res.json() : undefined;
+
     if (!res.ok) {
       throw new Error(
         (data as any)?.error ||
@@ -61,11 +62,15 @@ export default function Home() {
     try {
       const data = (await fetchJSON(`/rooms/${roomId}`)) as { room: RoomDetail };
       const code = (data.room?.code ?? "").trim();
+
       if (!code) return nav(`/room/${roomId}`);
+
       const userCode = (prompt("Cette room est privée. Entrez le code :") || "")
         .trim()
         .toUpperCase();
+
       if (!userCode) return;
+
       if (userCode === code.toUpperCase()) nav(`/room/${roomId}`);
       else alert("Code invalide.");
     } catch (e: any) {
@@ -85,7 +90,7 @@ export default function Home() {
     <div className="relative">
       <Background />
 
-      {/* ====== Contenu ====== */}
+      {/* CONTAINER */}
       <div
         style={{
           maxWidth: 980,
@@ -97,7 +102,7 @@ export default function Home() {
           color: "#fff",
         }}
       >
-        {/* Titre + bouton refresh */}
+        {/* HEADER */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ width: 32, height: 32, display: "inline-flex" }}>
             <button
@@ -129,18 +134,16 @@ export default function Home() {
           </span>
 
           <h1 className="font-brand" style={{ margin: 0, lineHeight: 1 }}>
-            LISTE DES SALONS PUBLICS
+            SALONS MULTIJOUEURS
           </h1>
         </div>
 
         {loading && <div style={{ marginTop: 16 }}>Chargement…</div>}
-        {err && (
-          <div style={{ marginTop: 16, color: "#fca5a5" }}>{err}</div>
-        )}
+        {err && <div style={{ marginTop: 16, color: "#fca5a5" }}>{err}</div>}
 
         {!loading && !err && (
           <>
-            {/* ====== TABLEAU DES ROOMS ====== */}
+            {/* TABLEAU */}
             <div
               style={{
                 marginTop: 20,
@@ -154,7 +157,7 @@ export default function Home() {
                 backdropFilter: "blur(6px)",
               }}
             >
-              {/* En-têtes */}
+              {/* EN-TÊTES */}
               <div
                 style={{
                   display: "grid",
@@ -178,7 +181,7 @@ export default function Home() {
                 <span style={{ textAlign: "right" }}>Statut</span>
               </div>
 
-              {/* Lignes */}
+              {/* LIGNES */}
               <div style={{ maxHeight: 420, overflowY: "auto" }}>
                 {rooms.length === 0 && (
                   <div
@@ -194,13 +197,33 @@ export default function Home() {
 
                 {rooms.map((r, index) => {
                   const ownerName = r.owner?.displayName || "—";
+
+                  // ----------- DIFFICULTÉ → ÉTOILES 1 à 5 ------------
                   const diffNum =
                     typeof r.difficulty === "number" ? r.difficulty : undefined;
+
                   const diffLabel =
                     diffNum !== undefined ? `${diffNum}/10` : "—";
 
+                  let starCount: number | null = null;
+                  
+                  if (diffNum !== undefined) {
+                    if (diffNum <= 2) starCount = 1;      // 1–2
+                    else if (diffNum <= 4) starCount = 2; // 3–4
+                    else if (diffNum <= 6) starCount = 3; // 5–6
+                    else if (diffNum <= 8) starCount = 4; // 7–8
+                    else starCount = 5;                   // 9–10
+                  }
+
+                  const diffStars =
+                    starCount !== null ? "★".repeat(starCount) : "—";
+                  // --------------------------------------------------
+
                   const pcNum =
-                    typeof r.playerCount === "number" ? r.playerCount : undefined;
+                    typeof r.playerCount === "number"
+                      ? r.playerCount
+                      : undefined;
+
                   const pcLabel =
                     pcNum !== undefined
                       ? `${pcNum} joueur${pcNum > 1 ? "s" : ""}`
@@ -219,13 +242,6 @@ export default function Home() {
                     index % 2 === 0
                       ? "rgba(15,23,42,.75)"
                       : "rgba(2,6,23,.75)";
-
-                  let diffColor = "#9ca3af";
-                  if (diffNum !== undefined) {
-                    if (diffNum <= 3) diffColor = "#22c55e";
-                    else if (diffNum <= 6) diffColor = "#facc15";
-                    else diffColor = "#ef4444";
-                  }
 
                   return (
                     <button
@@ -289,9 +305,9 @@ export default function Home() {
                         {pcLabel}
                       </span>
 
-                      {/* Difficulté */}
-                      <span style={{ fontWeight: 700, color: diffColor }}>
-                        {diffLabel}
+                      {/* Difficulté → Étoiles */}
+                      <span style={{ fontWeight: 700 }} title={diffLabel}>
+                        {diffStars}
                       </span>
 
                       {/* Créé le */}
@@ -319,48 +335,35 @@ export default function Home() {
               </div>
             </div>
 
-{/* CTA créer un salon privé — fond uni */}
-<div
-  style={{
-    marginTop: 14,
-    display: "flex",
-    justifyContent: "flex-end",
-  }}
->
-  <button
-    onClick={() => nav("/rooms/new")}
-    style={{
-      padding: "10px 18px",
-      borderRadius: 10,
-      border: "1px solid rgba(255,255,255,.25)",
-      background: "#DC004B", // ✅ rose uni (tu peux mettre #8b5cf6 ou #ef4444 aussi)
-      color: "#fff",
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      fontWeight: 800,
-      fontSize: 13,
-      cursor: "pointer",
-      transition: "all .15s ease",
-      boxShadow: "0 8px 24px rgba(0,0,0,.45)",
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.transform = "translateY(-1px)";
-      e.currentTarget.style.boxShadow =
-        "0 12px 32px rgba(0,0,0,.65)";
-      e.currentTarget.style.background = "#DC004B"; // ✅ hover plus clair
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.transform = "translateY(0)";
-      e.currentTarget.style.boxShadow =
-        "0 8px 24px rgba(0,0,0,.45)";
-      e.currentTarget.style.background = "#DC004B"; // ✅ retour à la couleur unie
-    }}
-  >
-    <span style={{ fontSize: 16, lineHeight: 1 }}>＋</span>
-    <span>Créer un salon privé</span>
-  </button>
-</div>
+            {/* CTA : créer un salon */}
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                onClick={() => nav("/rooms/new")}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(255,255,255,.25)",
+                  background: "#DA026F",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontWeight: 800,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  transition: "all .15s ease",
+                }}
+              >
+                <span style={{ fontSize: 16, lineHeight: 1 }}>＋</span>
+                <span>Créer un salon privé</span>
+              </button>
+            </div>
           </>
         )}
       </div>

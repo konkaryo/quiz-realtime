@@ -256,9 +256,8 @@ export default function DailyQuestionPanel(props: Props) {
                   "inline-flex items-center justify-center rounded-[12px] px-5 py-2.5",
                   "text-[11px] font-semibold uppercase tracking-[0.18em]",
                   "bg-[#2563ff] text-slate-50",
-                  "shadow-[0_0_0px_rgba(37,99,235,0.45)]",
                   "transition duration-150 hover:brightness-110",
-                  !isPlaying ? "opacity-60" : "shadow-[0_0_20px_rgba(37,99,235,0.45)]",
+                  !isPlaying ? "opacity-60" : "shadow-[0_0_5px_rgba(37,99,235,0.45)]",
                 ].join(" ")}
               >
                 <img src={enterKey} alt="Entrée" className="mr-2 h-5 w-5" />
@@ -273,10 +272,13 @@ export default function DailyQuestionPanel(props: Props) {
                 className={[
                   "inline-flex items-center justify-center rounded-[12px] px-4 py-2.5",
                   "text-[11px] font-semibold uppercase tracking-[0.18em]",
-                  "border border-slate-700 bg-slate-900/70",
-                  "text-slate-200",
-                  "transition duration-150 hover:border-white/70 hover:text-white",
-                  !isPlaying ? "opacity-60" : "",
+                  "bg-violet-700/90 text-violet-50",
+                  "shadow-[0_0_6px_rgba(139,92,246,0.55)]",
+                  "transition duration-150 hover:brightness-110",
+                  //"border border-slate-700 bg-slate-900/70",
+                  //"text-slate-200",
+                  //"transition duration-150 hover:border-white/70 hover:text-white",
+                  !isPlaying ? "opacity-60" : "shadow-[0_0_5px_rgba(139,92,246,0.55)]",
                 ].join(" ")}
               >
                 <img src={tabKey} alt="Tab" className="mr-2 h-5 w-5" />

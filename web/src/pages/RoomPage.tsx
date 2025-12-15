@@ -15,7 +15,6 @@ type ChoiceLite   = { id: string; label: string };
 type QuestionLite = { id: string; text: string; img?: string | null; theme?: string | null; difficulty?: number | null };
 type Phase        = "idle" | "playing" | "reveal" | "between" | "final";
 type LeaderRow    = { id: string; name: string; score: number; img?: string | null };
-type Feedback     = { ok: boolean; correctLabel: string | null; responseMs?: number };
 type RoomMeta     = { id: string; code: string | null; visibility: "PUBLIC" | "PRIVATE" };
 
 /* Récapitulatif final (affiché à gauche uniquement en phase 'final') */
@@ -72,13 +71,19 @@ export default function RoomPage() {
   const [selected, setSelected]   = useState<string | null>(null);
   const [correctId, setCorrectId] = useState<string | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackResponseMs, setFeedbackResponseMs] = useState<number | null>(null);
+  const [feedbackWasCorrect, setFeedbackWasCorrect] = useState<boolean | null>(null);
+  const [feedbackCorrectLabel, setFeedbackCorrectLabel] = useState<string | null>(null);
   const [answerMode, setAnswerMode] = useState<"text" | "choice" | null>(null);
   const [choicesRevealed, setChoicesRevealed] = useState(false);
   const [pending, setPending]   = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [lives, setLives] = useState<number>(TEXT_LIVES);
+  const livesRef = useRef<number>(TEXT_LIVES);
+
+  const mcChoicesRef = useRef<ChoiceLite[] | null>(null);
 
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
   const [selfId, setSelfId] = useState<string | null>(null);
@@ -160,30 +165,66 @@ export default function RoomPage() {
       setQuestion(p.question);
       setAnsweredByPg({});
       setSelected(null); setCorrectId(null);
-      setMcChoices(null); setTextAnswer("");
+      setMcChoices(() => {
+        mcChoicesRef.current = null;
+        return null;
+      });
+      setTextAnswer("");
       setFeedback(null);
+      setFeedbackResponseMs(null);
+      setFeedbackWasCorrect(null);
+      setFeedbackCorrectLabel(null);
       setAnswerMode(null);
       setChoicesRevealed(false);
-      setLives(TEXT_LIVES);
+      setLives(() => {
+        livesRef.current = TEXT_LIVES;
+        return TEXT_LIVES;
+      });
       setFinalRecap(null);
       initSfx();
     });
 
-    s.on("multiple_choice", (p: { choices: ChoiceLite[] }) => { setMcChoices(p.choices); setTextAnswer(""); });
+    s.on("multiple_choice", (p: { choices: ChoiceLite[] }) => {
+      setMcChoices(() => {
+        mcChoicesRef.current = p.choices;
+        return p.choices;
+      });
+      setTextAnswer("");
+    });
 
     s.on("answer_feedback", (p: { correct: boolean; correctChoiceId: string | null; correctLabel: string | null; responseMs?: number }) => {
-      setFeedback({ ok: p.correct, correctLabel: p.correctLabel ?? null, responseMs: p.responseMs });
+      if (typeof p.responseMs === "number") setFeedbackResponseMs(p.responseMs);
+      if (typeof p.correct === "boolean") setFeedbackWasCorrect(p.correct);
+      if (typeof p.correctLabel === "string" && p.correctLabel) setFeedbackCorrectLabel(p.correctLabel);
       if (p.correctChoiceId) setCorrectId(p.correctChoiceId);
-      if (mcChoices === null) {
-        if (p.correct) { setLives(0); }
-        else {
-          setLives((prev) => {
-            const next = Math.max(0, prev - 1);
-            if (next > 0) { setTextAnswer(""); requestAnimationFrame(() => inputRef.current?.focus()); }
-            return next;
+
+      let nextLives = livesRef.current;
+      if (mcChoicesRef.current === null) {
+        if (p.correct) {
+          setLives(() => {
+            livesRef.current = 0;
+            return 0;
           });
+          nextLives = 0;
+        } else {
+          let computedLives = livesRef.current;
+          setLives((prev) => {
+            const updated = Math.max(0, prev - 1);
+            computedLives = updated;
+            livesRef.current = updated;
+            if (updated > 0) {
+              setTextAnswer("");
+              requestAnimationFrame(() => inputRef.current?.focus());
+            }
+            return updated;
+          });
+          nextLives = computedLives;
         }
       }
+
+      if (p.correct) setFeedback("Bravo !");
+      else if (mcChoicesRef.current === null && (nextLives ?? 0) > 0) setFeedback("Mauvaise réponse, essayez encore !");
+      else setFeedback("Mauvaise réponse !");
       try { if (p.correct) playCorrect(); } catch {}
     });
 
@@ -196,11 +237,8 @@ export default function RoomPage() {
       setPhase("reveal");
       setCorrectId(p.correctChoiceId);
       if (Array.isArray(p.leaderboard)) setLeaderboard(p.leaderboard);
-      setFeedback(prev => ({
-        ok: prev?.ok ?? false,
-        correctLabel: p.correctLabel ?? prev?.correctLabel ?? null,
-        responseMs: prev?.responseMs,
-      }));
+      setFeedback((prev) => prev ?? "Temps écoulé !");
+      if (p.correctLabel) setFeedbackCorrectLabel(p.correctLabel);
       setEndsAt(null);
       setRoundDuration(null);
     });
@@ -218,6 +256,9 @@ export default function RoomPage() {
       setTextAnswer("");
       setCorrectId(null);
       setFeedback(null);
+      setFeedbackResponseMs(null);
+      setFeedbackWasCorrect(null);
+      setFeedbackCorrectLabel(null);
       setAnswerMode(null);
       setChoicesRevealed(false);
       setEndsAt(null);
@@ -248,6 +289,8 @@ export default function RoomPage() {
   }, [roomId, nav]);
 
   useEffect(() => { if (phase === "playing") inputRef.current?.focus(); }, [phase, question]);
+  useEffect(() => { livesRef.current = lives; }, [lives]);
+  useEffect(() => { mcChoicesRef.current = mcChoices; }, [mcChoices]);
 
   /* --------------------------- actions --------------------------- */
   const sendText = () => {
@@ -262,7 +305,7 @@ export default function RoomPage() {
     });
   };
   const showMultipleChoice = () => {
-    if (!socket || phase !== "playing" || lives <= 0 || !!feedback?.ok) return;
+    if (!socket || phase !== "playing" || lives <= 0 || feedbackWasCorrect === true) return;
     setChoicesRevealed(true);
     socket.emit("request_choices");
   };
@@ -300,7 +343,7 @@ export default function RoomPage() {
   }, [question]);
 
   const feedbackText = useMemo(() => {
-    if (feedback) return feedback.ok ? "Bravo !" : "Réponse incorrecte";
+    if (feedback) return feedback;
     if (phase === "reveal" && remaining === 0) return "Temps écoulé !";
     return null;
   }, [feedback, phase, remaining]);
@@ -320,7 +363,7 @@ export default function RoomPage() {
 
       <div className="relative z-10 text-white mx-auto w-full px-4 min-h-[calc(100dvh-64px)] pt-2">
         {/* Grille principale : leaderboard / centre / room */}
-        <div className="grid gap-6 items-start grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div className="grid gap-6 items-start grid-cols-1 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)_minmax(0,0.85fr)]">
           
 {/* LEFT — Leaderboard (inchangé visuellement ; récap en phase finale) */}
 <aside className="min-w-0 md:order-1 relative md:pt-[98px]">
@@ -355,7 +398,7 @@ export default function RoomPage() {
 
                 const pillBase =
                   "flex items-center justify-between rounded-xl px-3.5 py-1.5 text-[14px] shadow-[0_6px_14px_rgba(0,0,0,.25)] border";
-                const pillDark = "bg-[#0f1420]/90 text-white border-white/10";
+                const pillDark = "bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)] text-white border-white/10";
                 const pillActive =
                   "bg-gradient-to-r from-[#D30E72] to-[#770577] text-white border-transparent";
 
@@ -469,7 +512,7 @@ export default function RoomPage() {
 </aside>
 
           {/* CENTRE — QuestionPanel */}
-          <section className="mt-5 min-w-0 md:order-2 md:mx-8 xl:mx-12">
+          <section className="mt-14 min-w-0 md:order-2 md:mx-8 xl:mx-12">
             <div className="flex flex-col gap-6">
               {phase === "final" ? (
                 <FinalLeaderboard rows={leaderboard} selfId={selfId} selfName={selfName} />
@@ -490,9 +533,9 @@ export default function RoomPage() {
                   onSubmitText={sendText}
                   onShowChoices={showMultipleChoice}
                   feedback={feedbackText}
-                  feedbackResponseMs={feedback?.responseMs ?? null}
-                  feedbackWasCorrect={feedback?.ok ?? null}
-                  feedbackCorrectLabel={feedback?.correctLabel ?? null}
+                  feedbackResponseMs={feedbackResponseMs}
+                  feedbackWasCorrect={feedbackWasCorrect}
+                  feedbackCorrectLabel={feedbackCorrectLabel}
                   answerMode={answerMode}
                   choicesRevealed={choicesRevealed}
                   showChoices={showChoices}

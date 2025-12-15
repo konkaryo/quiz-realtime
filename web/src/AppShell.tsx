@@ -1,7 +1,7 @@
 // web/src/AppShell.tsx
 import { useEffect, useState, useRef } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import logoUrl from "@/assets/synapz.svg";
+import logoUrl from "@/assets/synapz.png";
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
@@ -233,8 +233,8 @@ export default function AppShell() {
           <img
             src={logoUrl}
             alt="Synapz"
-            width={50}
-            height={50}
+            width={160}
+            height={160}
             style={{ display: "block", cursor: "pointer" }}
           />
         </Link>
