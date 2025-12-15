@@ -287,7 +287,7 @@ export default function DailyQuestionPanel(props: Props) {
               <button
                 type="button"
                 onClick={onShowChoices}
-                disabled={!isPlaying}
+                disabled={textInputDisabled}
                 className={[
                   "inline-flex items-center justify-center rounded-[12px] px-4 py-2.5",
                   "text-[11px] font-semibold uppercase tracking-[0.18em]",
@@ -297,7 +297,7 @@ export default function DailyQuestionPanel(props: Props) {
                   //"border border-slate-700 bg-slate-900/70",
                   //"text-slate-200",
                   //"transition duration-150 hover:border-white/70 hover:text-white",
-                  !isPlaying ? "opacity-60" : "shadow-[0_0_5px_rgba(139,92,246,0.55)]",
+                  textInputDisabled ? "opacity-60" : "shadow-[0_0_5px_rgba(139,92,246,0.55)]",
                 ].join(" ")}
               >
                 <img src={tabKey} alt="Tab" className="mr-2 h-5 w-5" />
@@ -368,6 +368,10 @@ export default function DailyQuestionPanel(props: Props) {
               {choices.map((choice) => {
                 const isSelected = selectedChoice === choice.id;
                 const isCorrect = correctChoiceId === choice.id;
+                const hoverClasses =
+                  selectedChoice === null
+                    ? "hover:border-white hover:bg-slate-900"
+                    : "";
 
                 return (
                   <button
@@ -382,7 +386,7 @@ export default function DailyQuestionPanel(props: Props) {
                         ? "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]"
                         : isSelected
                         ? "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]"
-                        : "border-slate-700/90 bg-black/75 text-slate-50 hover:border-white hover:bg-slate-900",
+                        : `border-slate-700/90 bg-black/75 text-slate-50 ${hoverClasses}`,
                       !isPlaying ? "cursor-default" : "",
                     ].join(" ")}
                   >
