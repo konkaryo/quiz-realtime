@@ -40,7 +40,6 @@ const client_1 = require("@prisma/client");
 const config_1 = require("../../config");
 const lb_service = __importStar(require("../game/leaderboard.service"));
 const scoring_service_1 = require("../player/scoring.service");
-const botLogger_1 = require("../../utils/botLogger");
 const THEME_FALLBACK = "DIVERS";
 /* -------------------------------------------------------------------------- */
 /* Utils                                                                       */
@@ -205,7 +204,6 @@ async function scheduleBotAnswers(prisma, io, clients, st, roundUid) {
                         name: pg.player.name ?? "Bot",
                     };
                     clients.set(fakeSocketId, client);
-                    (0, botLogger_1.logBot)("attach", { pgId: pg.id, name: client.name, reason: "created-ephemeral-client" });
                 }
                 const responseMs = Math.max(0, Date.now() - (st.roundStartMs ?? Date.now()));
                 // ==== Appliquer la réponse / scoring ====
@@ -267,7 +265,7 @@ async function scheduleBotAnswers(prisma, io, clients, st, roundUid) {
     }
 }
 /* -------------------------------------------------------------------------- */
-/* Scoring + logs détaillés                                                    */
+/* Scoring                                                                    */
 /* -------------------------------------------------------------------------- */
 async function botApplyMcScoring(prisma, _st, client, questionId, label, correct, responseMs) {
     await prisma.$transaction(async (tx) => {
@@ -282,7 +280,6 @@ async function botApplyMcScoring(prisma, _st, client, questionId, label, correct
         }
     });
     const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true } });
-    (0, botLogger_1.logBot)(`mc\tpg=${client.playerGameId}\tcorr=${correct ? 1 : 0}\tq=${questionId}\tS=${after?.score ?? "?"}\t${responseMs}ms`);
 }
 async function botApplyTextScoring(prisma, _st, client, q, rawText, correct, responseMs, speedBonus = 0) {
     await prisma.$transaction(async (tx) => {
@@ -298,6 +295,4 @@ async function botApplyTextScoring(prisma, _st, client, q, rawText, correct, res
         }
     });
     const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true } });
-    (0, botLogger_1.logBot)(`text\tpg=${client.playerGameId}\tcorr=${correct ? 1 : 0}\tq=${q.id}\tbonus=${speedBonus}` +
-        `\tS=${after?.score ?? "?"}\t${responseMs}ms`);
 }

@@ -5,7 +5,6 @@ import type { Client, GameState } from "../../types";
 import { CFG } from "../../config";
 import * as lb_service from "../game/leaderboard.service";
 import { computeSpeedBonus } from "../player/scoring.service";
-import { logBot } from "../../utils/botLogger";
 
 const THEME_FALLBACK = "DIVERS" as const;
 
@@ -206,7 +205,6 @@ export async function scheduleBotAnswers(
             name:         pg.player.name ?? "Bot",
           };
           clients.set(fakeSocketId, client);
-          logBot("attach", { pgId: pg.id, name: client.name, reason: "created-ephemeral-client" });
         }
 
         const responseMs = Math.max(0, Date.now() - (st.roundStartMs ?? Date.now()));
@@ -266,7 +264,7 @@ export async function scheduleBotAnswers(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Scoring + logs détaillés                                                    */
+/* Scoring                                                                    */
 /* -------------------------------------------------------------------------- */
 
 async function botApplyMcScoring(
@@ -293,7 +291,6 @@ async function botApplyMcScoring(
   });
 
   const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true } });
-  logBot(`mc\tpg=${client.playerGameId}\tcorr=${correct ? 1 : 0}\tq=${questionId}\tS=${after?.score ?? "?"}\t${responseMs}ms`);
 }
 
 async function botApplyTextScoring(
@@ -321,8 +318,4 @@ async function botApplyTextScoring(
   });
 
   const after = await prisma.playerGame.findUnique({ where: { id: client.playerGameId }, select: { score: true } });
-  logBot(
-    `text\tpg=${client.playerGameId}\tcorr=${correct ? 1 : 0}\tq=${q.id}\tbonus=${speedBonus}` +
-    `\tS=${after?.score ?? "?"}\t${responseMs}ms`
-  );
 }
