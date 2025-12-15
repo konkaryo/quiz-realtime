@@ -278,6 +278,8 @@ export default function RacePage() {
     return clamp01(remainingSeconds / (QUESTION_DURATION_MS / 1000));
   }, [remainingSeconds]);
 
+  const textLocked = showChoices;
+
   const speed = useMemo(() => {
     const inner = 0.1 * energy - 3;
     if (inner <= 0) return 0;
@@ -355,6 +357,7 @@ export default function RacePage() {
 
   const submitText = async () => {
     if (phaseRef.current !== "playing" || !question) return;
+    if (showChoices) return;
 
     const value = textAnswer.trim();
     if (!value) return;
@@ -587,6 +590,7 @@ export default function RacePage() {
                 isPlaying={phase === "playing"}
                 inputRef={inputRef}
                 textAnswer={textAnswer}
+                textLocked={textLocked}
                 onChangeText={setTextAnswer}
                 onSubmitText={submitText}
                 onShowChoices={showMultipleChoice}

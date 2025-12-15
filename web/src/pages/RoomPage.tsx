@@ -295,6 +295,7 @@ export default function RoomPage() {
   /* --------------------------- actions --------------------------- */
   const sendText = () => {
     if (!socket || phase !== "playing" || !question || lives <= 0) return;
+    if (choicesRevealed || mcChoicesRef.current) return;
     const t = (textAnswer || "").trim();
     if (!t) return;
     setPending(true);
@@ -355,7 +356,7 @@ export default function RoomPage() {
   const questionProgress: QuestionPanelProgress[] = [];
   const isPlaying = phase === "playing" && lives > 0;
   const showChoices = !!mcChoices;
-
+  const textLocked = choicesRevealed || showChoices;
 
   return (
     <>
@@ -529,6 +530,7 @@ export default function RoomPage() {
                   isPlaying={isPlaying}
                   inputRef={inputRef}
                   textAnswer={textAnswer}
+                  textLocked={textLocked}
                   onChangeText={setTextAnswer}
                   onSubmitText={sendText}
                   onShowChoices={showMultipleChoice}

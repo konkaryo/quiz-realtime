@@ -76,6 +76,7 @@ type Props = {
   // saisie texte
   inputRef: RefObject<HTMLInputElement | null>;
   textAnswer: string;
+  textLocked: boolean;
   onChangeText: (val: string) => void;
   onSubmitText: () => void;
   onShowChoices: () => void;
@@ -112,6 +113,7 @@ export default function DailyQuestionPanel(props: Props) {
     isPlaying,
     inputRef,
     textAnswer,
+    textLocked,
     onChangeText,
     onSubmitText,
     onShowChoices,
@@ -137,7 +139,19 @@ export default function DailyQuestionPanel(props: Props) {
     (answerMode === "text" ||
       (answerMode === null && feedback === "Temps écoulé !" && !choicesRevealed));
 
+  const textInputDisabled = !isPlaying || textLocked;
+  const textPlaceholder = textLocked
+    ? "Choisissez une réponse..."
+    : "Tapez votre réponse ici...";
+  const textInputColorClass = textInputDisabled
+    ? "text-slate-400 caret-slate-600 placeholder:text-slate-500/60"
+    : "text-slate-50 caret-[#cccccc] placeholder:text-slate-500/70";
+
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (textInputDisabled && e.key === "Enter") {
+      e.preventDefault();
+      return;
+    }
     if (e.key === "Enter") {
       e.preventDefault();
       onSubmitText();
@@ -239,9 +253,14 @@ export default function DailyQuestionPanel(props: Props) {
                   value={textAnswer}
                   onChange={(e) => onChangeText(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  disabled={!isPlaying}
-                  className="w-full border-none bg-transparent px-2 py-2 text-[15px] font-medium tracking-[0.02em] text-slate-50 caret-[#cccccc] placeholder:text-slate-500/70 antialiased focus:outline-none focus:ring-0"
-                  placeholder="Tapez votre réponse ici..."
+                  disabled={textInputDisabled}
+                  aria-disabled={textLocked}
+                  className={[
+                    "w-full border-none bg-transparent px-2 py-2 text-[15px] font-medium tracking-[0.02em] antialiased focus:outline-none focus:ring-0",
+                    textInputColorClass,
+                    textInputDisabled ? "opacity-60 cursor-not-allowed" : "",
+                  ].join(" ")}
+                  placeholder={textPlaceholder}
                 />
               </div>
             </div>
@@ -251,13 +270,13 @@ export default function DailyQuestionPanel(props: Props) {
               <button
                 type="button"
                 onClick={onSubmitText}
-                disabled={!isPlaying}
+                disabled={textInputDisabled}
                 className={[
                   "inline-flex items-center justify-center rounded-[12px] px-5 py-2.5",
                   "text-[11px] font-semibold uppercase tracking-[0.18em]",
                   "bg-[#2563ff] text-slate-50",
                   "transition duration-150 hover:brightness-110",
-                  !isPlaying ? "opacity-60" : "shadow-[0_0_5px_rgba(37,99,235,0.45)]",
+                  textInputDisabled ? "opacity-60" : "shadow-[0_0_5px_rgba(37,99,235,0.45)]",
                 ].join(" ")}
               >
                 <img src={enterKey} alt="Entrée" className="mr-2 h-5 w-5" />

@@ -407,8 +407,11 @@ export default function DailyChallengePlayPage() {
     return Math.max(0, Math.min(1, remainingSeconds / (QUESTION_DURATION_MS / 1000)));
   }, [remainingSeconds]);
 
+  const textLocked = choicesRevealed || showChoices;
+
   const submitText = () => {
     if (phaseRef.current !== "playing" || !question || !socket) return;
+    if (choicesRevealed || showChoices) return;
     const value = textAnswer.trim();
     if (!value) return;
     setAnswerMode("text");
@@ -425,6 +428,7 @@ export default function DailyChallengePlayPage() {
   const showMultipleChoice = () => {
     if (!socket || phaseRef.current !== "playing" || lives <= 0 || !!feedback?.includes("Bravo"))
       return;
+    setChoicesRevealed(true);
     socket.emit("daily_request_choices");
   };
 
@@ -515,6 +519,7 @@ export default function DailyChallengePlayPage() {
     isPlaying={phase === "playing" && socketStatus === "connected"}
     inputRef={inputRef}
     textAnswer={textAnswer}
+    textLocked={textLocked}
     onChangeText={setTextAnswer}
     onSubmitText={submitText}
     onShowChoices={showMultipleChoice}
