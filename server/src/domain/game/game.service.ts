@@ -377,7 +377,7 @@ async function finalizeGameAfterReveal(
   for (const [socketId, client] of clients) {
     if (client.roomId !== st.roomId) continue;
 
-    const summary = await buildPlayerSummary(prisma, st.gameId, client.playerGameId);
+    const summary = await buildPlayerSummary(prisma, st.gameId, client.playerGameId, st.questions);
 
     const enriched = summary.map(item => ({
       ...item,
