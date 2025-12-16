@@ -76,8 +76,6 @@ export default function JoinPrivateRoomPage() {
     <div style={{ maxWidth: 620, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
       <h1 style={{ marginTop: 0 }}>Rejoindre un salon privé</h1>
 
-      <div style={{ marginTop: 18, marginBottom: 10, fontWeight: 700, color: "#111827" }}>Code du salon</div>
-
       {/* Zone cliquable qui focus un input caché */}
       <div
         onClick={() => hiddenInput.current?.focus()}
@@ -170,10 +168,6 @@ export default function JoinPrivateRoomPage() {
       </div>
 
       {err && <div style={{ color: "#b00020", marginTop: 6 }}>{err}</div>}
-
-      <p style={{ opacity: 0.7, marginTop: 18, fontSize: 14 }}>
-        Astuce : vous pouvez coller un code (Ctrl/Cmd-V) directement dans les cases.
-      </p>
     </div>
   );
 }
