@@ -15,6 +15,7 @@ export type StoredAnswer = {
   correct: boolean;
   mode: "mc" | "text";
   responseMs: number;
+  points: number;
 };
 export type GameState = {
   roomId: string;

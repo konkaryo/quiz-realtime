@@ -66,6 +66,7 @@ export async function buildPlayerSummary(
       text: true,
       correct: true,
       responseMs: true,
+      points: true,
       question: {
         select: {
           id: true,
@@ -153,6 +154,7 @@ export async function buildPlayerSummary(
     });
 
     const base = a.correct ? (correctChoice ? CFG.MC_ANSWER_POINTS_GAIN : CFG.TXT_ANSWER_POINTS_GAIN) : 0;
+    const gained = typeof a.points === "number" ? a.points : base;
 
     const entry: QuestionRecap = {
       index: meta.index,
@@ -163,7 +165,7 @@ export async function buildPlayerSummary(
       yourAnswer: a.text,
       correct: a.correct,
       responseMs: a.responseMs ?? -1,
-      points: base
+      points: gained
     };
 
     const list = byQuestion.get(q.id);

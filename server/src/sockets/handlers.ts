@@ -53,9 +53,16 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     return entry;
   };
 
-  const recordAnswer = (st: GameState, pgId: string, answer: StoredAnswer, gained: number, name?: string, img?: string | null) => {
+  const recordAnswer = (
+    st: GameState,
+    pgId: string,
+    answer: Omit<StoredAnswer, "points">,
+    gained: number,
+    name?: string,
+    img?: string | null,
+  ) => {
     const entry = ensurePlayerData(st, pgId, name, img);
-    entry.answers.push(answer);
+    entry.answers.push({ ...answer, points: gained });
     if (gained > 0) {
       entry.score += gained;
     }

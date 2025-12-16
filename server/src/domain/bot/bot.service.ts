@@ -66,9 +66,9 @@ const ensurePlayerData = (st: GameState, pgId: string) => {
   return entry;
 };
 
-const recordAnswer = (st: GameState, pgId: string, answer: StoredAnswer, gained: number) => {
+const recordAnswer = (st: GameState, pgId: string, answer: Omit<StoredAnswer, "points">, gained: number) => {
   const entry = ensurePlayerData(st, pgId);
-  entry.answers.push(answer);
+  entry.answers.push({ ...answer, points: gained });
   if (gained > 0) entry.score += gained;
 };
 

@@ -218,7 +218,7 @@ export async function stopGameForRoom(
 async function persistGameResults(prisma: PrismaClient, st: GameState) {
   if (st.persistedResults || !st.playerData) return;
 
-  const answers: Array<{ playerGameId: string; questionId: string; text: string; correct: boolean; mode: AnswerMode; responseMs: number }> = [];
+  const answers: Array<{ playerGameId: string; questionId: string; text: string; correct: boolean; mode: AnswerMode; responseMs: number; points: number }> = [];
   const scores: Array<{ id: string; score: number }> = [];
 
   for (const [pgId, data] of st.playerData.entries()) {
@@ -231,6 +231,7 @@ async function persistGameResults(prisma: PrismaClient, st: GameState) {
         correct: ans.correct,
         mode: ans.mode === "mc" ? AnswerMode.mc : AnswerMode.text,
         responseMs: ans.responseMs,
+        points: ans.points,
       });
     }
   }

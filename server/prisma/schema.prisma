@@ -184,6 +184,7 @@ model Answer {
   correct      Boolean
   createdAt    DateTime    @default(now())
   responseMs   Int         @default(-1)
+  points       Int         @default(0)
 }
 
 model AcceptedAnswer {
