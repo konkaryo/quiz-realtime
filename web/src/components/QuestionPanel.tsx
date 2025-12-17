@@ -288,17 +288,16 @@ export default function DailyQuestionPanel(props: Props) {
                 type="button"
                 onClick={onShowChoices}
                 disabled={textInputDisabled}
-                className={[
-                  "inline-flex items-center justify-center rounded-[12px] px-4 py-2.5",
-                  "text-[11px] font-semibold uppercase tracking-[0.18em]",
-                  "bg-violet-700/90 text-violet-50",
-                  "shadow-[0_0_6px_rgba(139,92,246,0.55)]",
-                  "transition duration-150 hover:brightness-110",
-                  //"border border-slate-700 bg-slate-900/70",
-                  //"text-slate-200",
-                  //"transition duration-150 hover:border-white/70 hover:text-white",
-                  textInputDisabled ? "opacity-60" : "shadow-[0_0_5px_rgba(139,92,246,0.55)]",
-                ].join(" ")}
+className={[
+  "inline-flex items-center justify-center rounded-[12px] px-4 py-2.5",
+  "text-[11px] font-semibold uppercase tracking-[0.18em]",
+  "bg-white text-slate-900",
+  "border border-slate-300",
+  "transition duration-150 hover:bg-slate-100",
+  textInputDisabled
+    ? "opacity-60"
+    : "shadow-[0_2px_6px_rgba(0,0,0,0.15)]",
+].join(" ")}
               >
                 <img src={tabKey} alt="Tab" className="mr-2 h-5 w-5" />
                 Propositions
