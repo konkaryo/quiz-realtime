@@ -90,6 +90,7 @@ model Bot {
   id           String     @id @default(cuid())
   name         String     @unique
   speed        Int        @default(50)
+  regularity   Float      @default(0.2)
   averageSkill Int        @default(50)
   skills       BotSkill[]
   morning      Float      @default(0.1)

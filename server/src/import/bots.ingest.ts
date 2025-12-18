@@ -39,6 +39,7 @@ type ParsedBot = {
   name: string;
   speed: number;
   skills: { theme: Theme; value: number }[];
+  regularity?: number;
   morning?: number;
   afternoon?: number;
   evening?: number;
@@ -102,7 +103,7 @@ async function parseBotsCsv(filePath: string): Promise<ParsedBot[]> {
     // ---- compétences par thème (colonnes “matières”) ----
     const skills: { theme: Theme; value: number }[] = [];
     for (const [header, val] of Object.entries(raw)) {
-      if (["joueur","vitesse","matin","apres_midi","soir","nuit","img"].includes(header)) continue;
+      if (["joueur","vitesse","matin","apres_midi","soir","nuit","img","regularite"].includes(header)) continue;
       const theme = THEME_BY_HEADER[header];
       if (!theme) continue;
       const n = Number(String(val).replace(",", "."));
@@ -114,6 +115,7 @@ async function parseBotsCsv(filePath: string): Promise<ParsedBot[]> {
     let ap = toNum0_1(raw.apres_midi);
     let so = toNum0_1(raw.soir);
     let nu = toNum0_1(raw.nuit);
+    const regularity = toNum0_1(raw.regularite);
 
     // normalise si les 4 sont fournis et ne somment pas ≈ 1
     const norm = normalizeIfNeeded(m, ap, so, nu);
@@ -125,6 +127,7 @@ async function parseBotsCsv(filePath: string): Promise<ParsedBot[]> {
       name: r.joueur.trim(),
       speed: Math.round(r.vitesse),
       skills,
+      regularity,
       morning: m,
       afternoon: ap,
       evening: so,
@@ -153,6 +156,7 @@ export async function importBots(csvAbsPath = path.resolve(__dirname, "../import
         update: {
           speed: b.speed,
           // n’écraser que si fourni (sinon garder les valeurs par défaut DB)
+          ...(typeof b.regularity === "number" ? { regularity: b.regularity } : {}),
           ...(typeof b.morning   === "number" ? { morning:   b.morning   } : {}),
           ...(typeof b.afternoon === "number" ? { afternoon: b.afternoon } : {}),
           ...(typeof b.evening   === "number" ? { evening:   b.evening   } : {}),
@@ -165,6 +169,7 @@ export async function importBots(csvAbsPath = path.resolve(__dirname, "../import
         create: {
           name:  b.name,
           speed: b.speed,
+          ...(typeof b.regularity === "number" ? { regularity: b.regularity } : {}),
           ...(typeof b.morning   === "number" ? { morning:   b.morning   } : {}),
           ...(typeof b.afternoon === "number" ? { afternoon: b.afternoon } : {}),
           ...(typeof b.evening   === "number" ? { evening:   b.evening   } : {}),
