@@ -3,6 +3,12 @@ import { useEffect, useState, useRef } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import logoUrl from "@/assets/synapz.png";
 
+type CurrentUser = {
+  displayName?: string;
+  img?: string | null;
+};
+
+
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
   (typeof window !== "undefined" ? window.location.origin : "");
@@ -135,7 +141,7 @@ function UserMenuItem({
 
 export default function AppShell() {
   const nav = useNavigate();
-  const [user, setUser] = useState<{ displayName?: string } | null>(null);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [openMenu, setOpenMenu] = useState<null | "solo" | "multi" | "private">(null);
@@ -147,8 +153,8 @@ export default function AppShell() {
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
-        const { user } = res.ok ? await res.json() : { user: null };
-        if (mounted) setUser(user);
+        const { user } = (res.ok ? await res.json() : { user: null }) as { user: CurrentUser | null };
+        if (mounted) setUser(user ?? null);
       } catch {
       } finally {
         if (mounted) setLoading(false);
@@ -191,13 +197,7 @@ export default function AppShell() {
     { to: "/private/join", title: "Rejoindre un salon privé", desc: "Entrez un code pour rejoindre.",      icon: "🔑" },
   ];
 
-  const initials =
-    (user?.displayName || "?")
-      .split(" ")
-      .map((p) => p[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
+  const avatarUrl = user?.img || "/img/profiles/0.avif";
 
   const HEADER_H = 64;
 
@@ -378,14 +378,21 @@ export default function AppShell() {
                   width: 28,
                   height: 28,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg,#4f46e5,#22d3ee)",
+                  border: "1px solid rgba(255,255,255,.14)",
+                  overflow: "hidden",
                   display: "grid",
                   placeItems: "center",
-                  fontSize: 12,
-                  fontWeight: 800,
+                  background: "linear-gradient(135deg,#0f172a,#1e293b)",
                 }}
               >
-                {initials}
+                <img
+                  src={avatarUrl}
+                  alt={`Photo de profil de ${user?.displayName ?? "Utilisateur"}`}
+                  onError={(e) => {
+                    e.currentTarget.src = "/img/profiles/0.avif";
+                  }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
               </span>
               <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {user?.displayName ?? "Utilisateur"}

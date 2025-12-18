@@ -11,6 +11,7 @@ import {
   maybeRefreshSession,
   revokeSession,
 } from "../auth";
+import { toProfileUrl } from "../domain/media/media.service";
 
 type Opts = { prisma: PrismaClient };
 
@@ -57,7 +58,13 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       setAuthCookie(reply, token);
 
       return reply.code(201).send({
-        user: { id: user.id, email: user.email, displayName: user.displayName, playerId: user.player?.id ?? null },
+        user: {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          playerId: user.player?.id ?? null,
+          img: toProfileUrl(user.player?.img ?? null),
+        },
         session: { expiresAt: session.expiresAt },
       });
     });
@@ -72,7 +79,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
       const user = await prisma.user.findUnique({
         where: { email },
-        include: { player: { select: { id: true, name: true } } }
+        include: { player: { select: { id: true, name: true, img: true } } }
       });
       if (!user) return reply.code(401).send({ error: "invalid-credentials" });
 
@@ -88,7 +95,8 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           email: user.email,
           displayName: user.displayName,
           playerId: user.player?.id ?? null,
-          playerName: user.player?.name ?? null
+          playerName: user.player?.name ?? null,
+          img: toProfileUrl(user.player?.img ?? null),
         },
         session: { expiresAt: session.expiresAt },
       });
@@ -111,7 +119,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
       const player = await prisma.player.findUnique({
         where: { userId: user.id },
-        select: { id: true, name: true },
+        select: { id: true, name: true, img: true },
       });
 
       return reply.send({
@@ -121,6 +129,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           displayName: user.displayName,
           playerId: player?.id ?? null,
           playerName: player?.name ?? null,
+          img: toProfileUrl(player?.img ?? null),
         },
       });
     });
