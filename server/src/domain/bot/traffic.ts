@@ -42,7 +42,26 @@ const HOUR_TO_DAYPART: Daypart[] = [
   "evening","evening","evening","evening","evening","evening", // 18–23
 ];
 
-const sessionGamesByPgId: Map<string, number> = new Map();
+type SessionCounter = { played: number; target: number };
+
+const sessionGamesByPgId: Map<string, SessionCounter> = new Map();
+
+function sampleGamesBeforeDisconnect(): number {
+  const x = Math.floor(Math.random() * 10001); // 0–10000
+  const p = x / 100;                           // 0–100
+  const normalizedP = Math.min(0.999999, p / 100); // ramené sur [0,1[
+  const n = 3.5 * Math.pow(-Math.log(1 - normalizedP), 1 / 0.9);
+  return Math.max(1, Math.round(n));
+}
+
+function getOrInitSessionCounter(pgId: string): SessionCounter {
+  let counter = sessionGamesByPgId.get(pgId);
+  if (!counter) {
+    counter = { played: 0, target: sampleGamesBeforeDisconnect() };
+    sessionGamesByPgId.set(pgId, counter);
+  }
+  return counter;
+}
 
 /* -------------------------------------------------------------------------- */
 function botHourAvailability(bot: { morning: number; afternoon: number; evening: number; night: number; }, hour: number): number {
@@ -99,16 +118,6 @@ function listConnectedBotPgs(clients: Map<string, Client>, roomId: string): stri
 /* -------------------------------------------------------------------------- */
 
 /* -------------------------------------------------------------------------- */
-// P(deco) qui augmente avec parties jouées + sur-occupation
-function pDisconnect(base: number, gamesPlayed: number, overRatio: number) {
-  // base ~ 0.05…0.15; games -> log; overRatio = (current-target)/max(target,1)
-  const part = Math.min(0.4, Math.log(gamesPlayed + 1) / 8);  // 0 → ~0.3
-  const over = Math.max(0, Math.min(0.5, overRatio * 0.6));   // 0 → 0.5
-  return Math.max(0, Math.min(0.95, base + part + over));
-}
-/* -------------------------------------------------------------------------- */
-
-/* -------------------------------------------------------------------------- */
 // P(connexion) ∝ manque et prob horaire du bot
 function pConnect(need: number, targetRoom: number, botAvail: number) {
   if (need <= 0) return 0;
@@ -137,37 +146,39 @@ export async function rebalanceBotsAfterGame(opts: {
   const roomTarget = splitByRoomsTarget([room], globalTarget)[room.id];
 
   const botPgIds = listConnectedBotPgs(clients, room.id);
-  const current = botPgIds.length;
-  const need = roomTarget - current;
+  let current = botPgIds.length;
 
   // Marque: on note qu'une partie s'est finie → inc pour tous les bots présents
-  for (const pgId of botPgIds) { sessionGamesByPgId.set(pgId, (sessionGamesByPgId.get(pgId) || 0) + 1); }
+  for (const pgId of botPgIds) {
+    const counter = getOrInitSessionCounter(pgId);
+    counter.played += 1;
+  }
 
-  if (need < 0) {
-    // trop de bots → on en fait partir de façon probabiliste
-    const overRatio = (current - roomTarget) / Math.max(1, roomTarget);
-    const base = 0.06 + Math.random() * 0.04;
+  // Les bots sortent dès qu'ils ont atteint leur quota de parties
+  const toDisconnect = botPgIds.filter((pgId) => {
+    const counter = sessionGamesByPgId.get(pgId);
+    return counter ? counter.played >= counter.target : false;
+  });
 
-    const toConsider = [...botPgIds]; // ordre arbitraire
-    let removed = 0;
-    for (const pgId of toConsider) {
-      const games = sessionGamesByPgId.get(pgId) || 0;
-      const p = pDisconnect(base, games, overRatio);
-      if (Math.random() < p) {
-        // on "débranche" le client bot (retire du lobby)
-        for (const [sid, c] of clients) {
-          if (c.playerGameId === pgId) {
-            clients.delete(sid);
-            sessionGamesByPgId.delete(pgId);
-            removed++;
-            break;
-          }
-        }
+  let removed = 0;
+  for (const pgId of toDisconnect) {
+    for (const [sid, c] of clients) {
+      if (c.playerGameId === pgId) {
+        clients.delete(sid);
+        sessionGamesByPgId.delete(pgId);
+        removed++;
+        break;
       }
-      if (current - removed <= roomTarget) break;
     }
-    if (removed > 0) io.to(room.id).emit("lobby_update");
-  } else if (need > 0) {
+  }
+  if (removed > 0) {
+    current -= removed;
+    io.to(room.id).emit("lobby_update");
+  }
+
+  const need = roomTarget - current;
+
+  if (need > 0) {
     // manque de bots → tenter d’en ajouter
     // On pioche des bots au hasard en DB et on filtre par dispo horaire
     const candidates = await prisma.$queryRaw<
@@ -189,8 +200,13 @@ export async function rebalanceBotsAfterGame(opts: {
       const p = pConnect(need - added, roomTarget, avail);
       if (Math.random() < p) {
         // attacher 1 bot (réutilise ta fonction existante)
-        await ensureBotsForRoomIfPublic(prisma, io, clients, { id: room.id, visibility: "PUBLIC" }, { id: gameId}, 1);
-        added++;
+        const attached = await ensureBotsForRoomIfPublic(prisma, io, clients, { id: room.id, visibility: "PUBLIC" }, { id: gameId}, 1);
+        for (const { id } of attached) {
+          if (!sessionGamesByPgId.has(id)) {
+            sessionGamesByPgId.set(id, { played: 0, target: sampleGamesBeforeDisconnect() });
+          }
+        }
+        added += attached.length;
       }
       if (added >= need) break;
     }
