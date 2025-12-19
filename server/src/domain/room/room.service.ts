@@ -2,12 +2,36 @@
 import { PrismaClient, Prisma } from "@prisma/client"; 
 import type { Client } from "../../types";
 import { Server } from "socket.io";
+import { randomInt } from "crypto";
 
 /* ---------------------------------------------------------------------------------------- */
 // génération de code pour une "Room"
 export function genCode(n = 4) {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     return Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
+/* ---------------------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------------------- */
+const ROOM_ID_LENGTH = 16;
+const ROOM_ID_GROUP_SIZE = 4;
+const ROOM_ID_ALPHABET = "abcdefghjkmnpqrstuvwxyz"; // sans i, l, o
+const ROOM_ID_DIGITS = "0123456789";
+
+export function genRoomId() {
+  const chars: string[] = [];
+
+  for (let i = 0; i < ROOM_ID_LENGTH; i++) {
+    const pool = randomInt(2) === 0 ? ROOM_ID_DIGITS : ROOM_ID_ALPHABET;
+    chars.push(pool[randomInt(pool.length)]);
+  }
+
+  const groups: string[] = [];
+  for (let i = 0; i < chars.length; i += ROOM_ID_GROUP_SIZE) {
+    groups.push(chars.slice(i, i + ROOM_ID_GROUP_SIZE).join(""));
+  }
+
+  return groups.join("-");
 }
 /* ---------------------------------------------------------------------------------------- */
 

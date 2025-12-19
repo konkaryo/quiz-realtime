@@ -112,7 +112,7 @@ model BotSkill {
 }
 
 model Room {
-  id            String         @id @default(cuid())
+  id            String         @id @default(dbgenerated("random_room_id()")) @db.Text
   ownerId       String?
   owner         User?          @relation("UserOwnedRooms", fields: [ownerId], references: [id], onDelete: SetNull)
   difficulty    Int            @default(5)

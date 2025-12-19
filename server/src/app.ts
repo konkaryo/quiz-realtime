@@ -14,7 +14,7 @@ import type { Client, GameState } from "./types";
 import { authRoutes } from "./routes/auth";
 import { dailyRoutes } from "./routes/daily";
 import { registerSocketHandlers } from "./sockets/handlers";
-import { clientsInRoom, isCodeValid, genCode } from "./domain/room/room.service";
+import { clientsInRoom, isCodeValid, genCode, genRoomId } from "./domain/room/room.service";
 import { raceRoutes } from "./routes/race";
 import { Theme, RoomVisibility } from "@prisma/client";
 
@@ -79,12 +79,14 @@ async function main() {
 
       const requestedCode = (requestedCodeRaw || "").toUpperCase().trim();
       const useRequested = requestedCode && isCodeValid(requestedCode);
-      let code = useRequested ? requestedCode : "AAAA";
+      const code = useRequested ? requestedCode : "AAAA";
+      const roomId = genRoomId();
 
       // 3) Création room + game (owner = session.userId)
       const result = await prisma.$transaction(async (tx) => {
         const room = await tx.room.create({
           data: {
+            id: roomId,
             code,
             ownerId: session.userId,
             difficulty,
