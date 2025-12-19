@@ -8,6 +8,7 @@ const API_BASE = import.meta.env.VITE_API_BASE as string;
 type OwnerLite = { id: string; displayName: string };
 type RoomListItem = {
   id: string;
+  name?: string | null;
   createdAt?: string;
   playerCount?: number;
   difficulty?: number;
@@ -197,6 +198,7 @@ export default function Home() {
 
                 {rooms.map((r, index) => {
                   const ownerName = r.owner?.displayName || "—";
+                  const roomName = r.name?.trim() || "—";
 
                   // ----------- DIFFICULTÉ → ÉTOILES 1 à 5 ------------
                   const diffNum =
@@ -285,7 +287,7 @@ export default function Home() {
                           textOverflow: "ellipsis",
                         }}
                       >
-                        Room #{r.id.slice(0, 6)}
+                        {roomName}
                       </span>
 
                       {/* Créateur */}

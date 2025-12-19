@@ -35,7 +35,7 @@ type QuestionLite = {
 };
 type Phase = "idle" | "playing" | "reveal" | "between" | "final";
 type LeaderRow = { id: string; name: string; score: number; img?: string | null };
-type RoomMeta = { id: string; code: string | null; visibility: "PUBLIC" | "PRIVATE" };
+type RoomMeta = { id: string; code: string | null; visibility: "PUBLIC" | "PRIVATE"; name?: string | null };
 type RoomInfoItem = { label: string; value: string | number };
 
 /* Récapitulatif final (affiché à gauche uniquement en phase 'final') */
@@ -530,7 +530,7 @@ export default function RoomPage() {
   const selfRow = selfIndex >= 0 ? leaderboard[selfIndex] : null;
 
   // ✅ Nom du salon affiché en gros à droite
-  const roomDisplayName = (roomMeta?.code && String(roomMeta.code).trim()) || "Albert EINSTEIN";
+  const roomDisplayName = roomMeta?.name?.trim() || "-";
 
   const roomInfoItems: RoomInfoItem[] = [
     { label: "Public", value: visibilityLabel },

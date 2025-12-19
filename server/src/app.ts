@@ -14,7 +14,7 @@ import type { Client, GameState } from "./types";
 import { authRoutes } from "./routes/auth";
 import { dailyRoutes } from "./routes/daily";
 import { registerSocketHandlers } from "./sockets/handlers";
-import { clientsInRoom, isCodeValid, genCode, genRoomId } from "./domain/room/room.service";
+import { clientsInRoom, isCodeValid, genCode, genRoomId, getRandomPublicRoomName } from "./domain/room/room.service";
 import { raceRoutes } from "./routes/race";
 import { Theme, RoomVisibility } from "@prisma/client";
 
@@ -69,11 +69,19 @@ async function main() {
         bannedThemes:  z.array(z.nativeEnum(Theme)).optional(),
         questionCount: z.number().int().min(10).max(30).optional(),
         roundSeconds:  z.number().int().min(10).max(30).optional(),
-        code:          z.string().trim().toUpperCase().optional()
+        code:          z.string().trim().toUpperCase().optional(),
+        visibility:    z.nativeEnum(RoomVisibility).optional(),
       });
       const parsed = Body.safeParse(req.body);
       if (!parsed.success) { return reply.code(400).send({ error: parsed.error.message }); }
-      const { difficulty = 5, bannedThemes = [], questionCount = 10, roundSeconds = 10, code: requestedCodeRaw} = parsed.data;
+      const {
+        difficulty = 5,
+        bannedThemes = [],
+        questionCount = 10,
+        roundSeconds = 10,
+        code: requestedCodeRaw,
+        visibility = RoomVisibility.PRIVATE,
+      } = parsed.data;
 
       const roundMs = roundSeconds * 1000;
 
@@ -82,6 +90,16 @@ async function main() {
       const code = useRequested ? requestedCode : "AAAA";
       const roomId = genRoomId();
 
+      const user = await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { displayName: true },
+      });
+      if (!user) return reply.code(401).send({ error: "Unauthorized" });
+
+      const privateName = user.displayName.trim();
+      const publicName = await getRandomPublicRoomName(prisma);
+      const roomName = visibility === "PUBLIC" ? publicName ?? "Salon public" : privateName;
+
       // 3) Création room + game (owner = session.userId)
       const result = await prisma.$transaction(async (tx) => {
         const room = await tx.room.create({
@@ -89,11 +107,12 @@ async function main() {
             id: roomId,
             code,
             ownerId: session.userId,
+            name: roomName,
             difficulty,
             bannedThemes,
             questionCount,
             roundMs,
-            visibility: 'PRIVATE'
+            visibility
           },
           select: { id: true },
         });
@@ -114,7 +133,7 @@ async function main() {
     const id = (req.params as any).id as string;
     const room = await prisma.room.findUnique({
       where: { id },
-      select: { id: true, code: true, status: true, visibility: true },
+      select: { id: true, code: true, status: true, visibility: true, name: true },
     });
     if (!room) return reply.code(404).send({ error: "Room not found" });
     if (room.status === "CLOSED") { return reply.code(410).send({ error: "Room closed" }); }
@@ -180,6 +199,7 @@ async function main() {
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
+        name: true,
         createdAt: true,
         difficulty: true,
         owner: { select: { id: true, displayName: true } },
