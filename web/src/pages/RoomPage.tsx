@@ -542,7 +542,10 @@ export default function RoomPage() {
 
   return (
     <>
-      <Background />
+      <div
+        aria-hidden
+        className="fixed inset-0 bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308]"
+      />
 
       {/* ✅ Scrollbar style (ancienne vibe) pour le classement */}
       <style>{`
@@ -571,22 +574,26 @@ export default function RoomPage() {
       {/* Overlay global sombre (uniforme) */}
       <div className="fixed inset-0 bg-slate-950/70 pointer-events-none" />
 
-      <div className="relative z-10 min-h-[calc(100dvh-64px)] text-white">
+      <div className="relative z-10 min-h-[calc(100dvh-64px)] text-white lg:overflow-hidden">
         {/* STRUCTURE GLOBALE — 3 zones + séparateurs continus */}
         <div className="relative">
           {/* séparateurs (continus, un peu plus épais) */}
-          <div className="hidden lg:block absolute inset-y-0 w-[2px] bg-white/15" style={{ left: leftW }} aria-hidden />
-          <div className="hidden lg:block absolute inset-y-0 w-[2px] bg-white/15" style={{ right: rightW }} aria-hidden />
 
           <div
-            className="grid grid-cols-1"
-            style={{
-              gridTemplateColumns: `minmax(0, ${leftW}px) minmax(0, 1fr) minmax(0, ${rightW}px)`,
-            }}
-          >
+            className="hidden lg:block fixed top-16 bottom-0 w-[2px] bg-white/15 z-30"
+            style={{ left: leftW }}
+            aria-hidden
+          />
+          <div
+            className="hidden lg:block fixed top-16 bottom-0 w-[2px] bg-white/15 z-30"
+            style={{ right: rightW }}
+            aria-hidden
+          />
+
+          <div className="relative grid grid-cols-1 lg:block">
             {/* LEFT */}
-            <aside className="hidden lg:block overflow-x-hidden">
-              <div className="min-h-[calc(100dvh-64px)] px-6 py-6 flex flex-col overflow-x-hidden">
+            <aside className="hidden lg:block fixed top-16 bottom-0 left-0 w-[280px] z-20 overflow-x-hidden">
+              <div className="h-full px-6 py-6 flex flex-col overflow-x-hidden">
                 <SectionTitle right={`${Math.max(leaderboard.length, 1)} joueurs`}>Classement</SectionTitle>
 
                 <div className="mt-4 flex-1 min-h-0 overflow-x-hidden">
@@ -642,18 +649,20 @@ export default function RoomPage() {
             </aside>
 
             {/* CENTER (zone complète) */}
-            <main
-              className="relative bg-slate-900/40"
-              style={{
-                backgroundImage: `url(${CENTER_BG_URL})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundRepeat: "no-repeat",
-              }}
-            >
-              <div className="absolute inset-0 bg-slate-900/40" aria-hidden />
+            <div className="lg:ml-[280px] lg:mr-[300px] lg:h-[calc(100dvh-64px)] lg:overflow-y-auto lb-scroll">
+              <main
+                className="relative overflow-hidden bg-slate-900/40"
+                style={{
+                  backgroundImage: `url(${CENTER_BG_URL})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                }}
+              >
+                <Background position="absolute" />
+                <div className="absolute inset-0 bg-slate-900/40" aria-hidden />
 
-              <div className="relative min-h-[calc(100dvh-64px)] px-5 md:px-10 py-10">
+                <div className="relative min-h-[calc(100dvh-64px)] px-5 md:px-10 py-10">
                 <div className="flex min-h-[calc(100dvh-64px-80px)] items-start justify-center pt-10">
                   <div className="w-full max-w-[900px]">
                     {phase === "final" ? (
@@ -706,11 +715,12 @@ export default function RoomPage() {
                   </div>
                 </div>
               </div>
-            </main>
+              </main>
+            </div>
 
             {/* RIGHT */}
-            <aside className="hidden lg:block">
-              <div className="min-h-[calc(100dvh-64px)] px-6 py-6">
+            <aside className="hidden lg:block fixed top-16 bottom-0 right-0 w-[300px] z-20">
+              <div className="h-full px-6 py-6">
                 <SectionTitle>Salon</SectionTitle>
 
                 {/* ✅ nom du salon en gros, sous "SALON" */}

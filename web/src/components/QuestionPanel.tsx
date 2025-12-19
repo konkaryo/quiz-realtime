@@ -274,9 +274,9 @@ export default function DailyQuestionPanel(props: Props) {
                 className={[
                   "inline-flex items-center justify-center rounded-[12px] px-5 py-2.5",
                   "text-[11px] font-semibold uppercase tracking-[0.18em]",
-                  "bg-[#2563ff] text-slate-50",
+                  "bg-[#421D9E] text-slate-50",
                   "transition duration-150 hover:brightness-110",
-                  textInputDisabled ? "opacity-60" : "shadow-[0_0_5px_rgba(37,99,235,0.45)]",
+                  textInputDisabled ? "opacity-60" : "shadow-[0_0_5px_rgba(121,58,198,0.45)]",
                 ].join(" ")}
               >
                 <img src={enterKey} alt="Entrée" className="mr-2 h-5 w-5" />
@@ -291,12 +291,11 @@ export default function DailyQuestionPanel(props: Props) {
 className={[
   "inline-flex items-center justify-center rounded-[12px] px-4 py-2.5",
   "text-[11px] font-semibold uppercase tracking-[0.18em]",
-  "bg-white text-slate-900",
-  "border border-slate-300",
+  "bg-[#223F81] text-slate-50",
   "transition duration-150 hover:bg-slate-100",
   textInputDisabled
     ? "opacity-60"
-    : "shadow-[0_2px_6px_rgba(0,0,0,0.15)]",
+    : "shadow-[0_2px_6px_rgba(34,63,129,0.45)]",
 ].join(" ")}
               >
                 <img src={tabKey} alt="Tab" className="mr-2 h-5 w-5" />
