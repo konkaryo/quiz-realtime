@@ -38,23 +38,39 @@ function clientForPg(clients: Map<string, Client>, pgId: string): Client | undef
   return undefined;
 }
 
-/** tirage gaussien (Box–Muller), centré sur mean, borné [0,100] */
-function sampleNormalClamped(mean: number, sigma = 18): number {
-  let u = 0, v = 0;
-  while (u === 0) u = Math.random();
-  while (v === 0) v = Math.random();
-  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v); // N(0,1)
-  const x = mean + sigma * z;
-  return Math.max(0, Math.min(100, x));
+type DifficultyParams = {
+  pMin: number;
+  pMax: number;
+  t: number;
+  s: number;
+  k: number;
+};
+
+const TEXT_SUCCESS_PARAMS: Record<number, DifficultyParams> = {
+  1: { pMin: 0.20, pMax: 0.98, t: 28, s: 22, k: 1.10 },
+  2: { pMin: 0.13, pMax: 0.90, t: 52, s: 18, k: 1.15 },
+  3: { pMin: 0.03, pMax: 0.85, t: 67, s: 15, k: 1.20 },
+  4: { pMin: 0.0005, pMax: 0.85, t: 60, s: 18, k: 3.00 },
+};
+
+const MC_SUCCESS_PARAMS: Record<number, DifficultyParams> = {
+  1: { pMin: 0.25, pMax: 0.80, t: 55, s: 20, k: 1.30 },
+  2: { pMin: 0.25, pMax: 0.68, t: 60, s: 18, k: 1.40 },
+  3: { pMin: 0.25, pMax: 0.62, t: 65, s: 17, k: 1.50 },
+  4: { pMin: 0.25, pMax: 0.55, t: 70, s: 16, k: 1.70 },
+};
+
+function computeSuccessProbability(level: number, params: DifficultyParams): number {
+  const exponent = -(level - params.t) / params.s;
+  const sigmoid = 1 / (1 + Math.exp(exponent));
+  const probability = params.pMin + (params.pMax - params.pMin) * Math.pow(sigmoid, params.k);
+  return Math.min(1, Math.max(0, probability));
 }
 
-/** seuils par difficulté (seuils utilisés par la logique de décision) */
-const DIFF_THRESHOLD: Record<number, number> = {
-  1: 25,
-  2: 45,
-  3: 65,
-  4: 85,
-};
+function drawRandom(): number {
+  return Number(Math.random().toFixed(5));
+}
+
 
 const ensurePlayerData = (st: GameState, pgId: string) => {
   if (!st.playerData) st.playerData = new Map();
@@ -182,18 +198,20 @@ export async function scheduleBotAnswers(
       pg.player.bot?.skills.find((s) => s.theme === themeKey)?.value ??
       pg.player.bot?.skills.find((s) => s.theme === THEME_FALLBACK)?.value ?? 30;
 
-    // --- Nouvelle logique : tirage gaussien et décision par seuil ---
+    // --- Nouvelle logique : probas successives ---
     const diffNum = Math.max(1, Math.min(4, Number(q.difficulty ?? 2)));
-    const threshold = DIFF_THRESHOLD[diffNum];
-    const draw = sampleNormalClamped(skill); // 0..100 ~ N(skill, sigma)
+    const textParams = TEXT_SUCCESS_PARAMS[diffNum];
+    const mcParams = MC_SUCCESS_PARAMS[diffNum];
+    const textSuccessProb = computeSuccessProbability(skill, textParams);
+    const textDraw = drawRandom();
 
     let outcome: "text-correct" | "mc-correct" | "wrong";
-    if (draw > threshold) {
-      outcome = "text-correct";                         // a) au-dessus du seuil -> texte correct
-    } else if (threshold - draw <= 10 && threshold - draw >= 0) {
-      outcome = "mc-correct";                           // b) dans la bande [0..10] sous le seuil -> QCM correct
+    if (textDraw < textSuccessProb) {
+      outcome = "text-correct";
     } else {
-      outcome = "wrong";                                // c) sinon faux
+      const mcSuccessProb = computeSuccessProbability(skill, mcParams);
+      const mcDraw = drawRandom();
+      outcome = mcDraw < mcSuccessProb ? "mc-correct" : "wrong";
     }
     // ---------------------------------------------------------------
 
