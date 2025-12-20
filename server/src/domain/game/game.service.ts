@@ -180,7 +180,25 @@ export async function startGameForRoom(
     io.sockets.sockets.get(sid)?.join(gameRoom);
   }
 
-  await startRound(clients, gameStates, io, prisma, st);
+  const countdownSeconds = Math.max(0, Number(process.env.GAME_COUNTDOWN_SECONDS || 3));
+  if (countdownSeconds > 0) {
+    const countdownUid = `${st.gameId}:pregame:${Date.now()}`;
+    st.roundUid = countdownUid;
+    const endsAt = Date.now() + countdownSeconds * 1000;
+    io.to(room.id).emit("game_countdown", {
+      seconds: countdownSeconds,
+      endsAt,
+      serverNow: Date.now(),
+    });
+    st.timer = setTimeout(() => {
+      if (st.roundUid !== countdownUid) return;
+      startRound(clients, gameStates, io, prisma, st).catch((err) =>
+        console.error("[startRound error]", err)
+      );
+    }, countdownSeconds * 1000);
+  } else {
+    await startRound(clients, gameStates, io, prisma, st);
+  }
 }
 /* ---------------------------------------------------------------------------------------- */
 

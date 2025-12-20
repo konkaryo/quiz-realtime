@@ -33,7 +33,7 @@ type QuestionLite = {
   theme?: string | null;
   difficulty?: number | null;
 };
-type Phase = "idle" | "playing" | "reveal" | "between" | "final";
+type Phase = "idle" | "countdown" | "playing" | "reveal" | "between" | "final";
 type LeaderRow = { id: string; name: string; score: number; img?: string | null };
 type RoomMeta = { id: string; code: string | null; visibility: "PUBLIC" | "PRIVATE"; name?: string | null };
 type RoomInfoItem = { label: string; value: string | number };
@@ -216,6 +216,7 @@ export default function RoomPage() {
   const [finalEndsAt, setFinalEndsAt] = useState<number | null>(null);
   const [finalDuration, setFinalDuration] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
+  const [gameCountdown, setGameCountdown] = useState<number | null>(null);
   const remaining = useMemo(
     () => (endsAt ? Math.max(0, Math.ceil((endsAt - nowServer()) / 1000)) : null),
     [endsAt, nowTick, skew]
@@ -242,6 +243,14 @@ export default function RoomPage() {
     const id = setInterval(() => setNowTick(Date.now()), 1000);
     return () => clearInterval(id);
   }, [endsAt, finalEndsAt]);
+
+  useEffect(() => {
+    if (gameCountdown === null) return;
+    const id = setTimeout(() => {
+      setGameCountdown((prev) => (prev && prev > 1 ? prev - 1 : null));
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [gameCountdown]);
 
   useEffect(() => {
     if (mcChoices) setChoicesRevealed(true);
@@ -286,11 +295,36 @@ export default function RoomPage() {
       }
     });
 
+    s.on("game_countdown", (p: { seconds?: number; endsAt?: number; serverNow?: number }) => {
+      const nextSkew = typeof p.serverNow === "number" ? p.serverNow - Date.now() : skew;
+      if (typeof p.serverNow === "number") setSkew(nextSkew);
+      const seconds =
+        typeof p.endsAt === "number"
+          ? Math.max(1, Math.ceil((p.endsAt - (Date.now() + nextSkew)) / 1000))
+          : Math.max(1, Math.floor(p.seconds ?? 3));
+      setPhase("countdown");
+      setGameCountdown(seconds);
+      setQuestion(null);
+      setMcChoices(null);
+      setSelected(null);
+      setTextAnswer("");
+      setCorrectId(null);
+      setFeedback(null);
+      setFeedbackResponseMs(null);
+      setFeedbackWasCorrect(null);
+      setFeedbackCorrectLabel(null);
+      setAnswerMode(null);
+      setChoicesRevealed(false);
+      setFinalRecap(null);
+      setPending(false);
+    });
+
     s.on(
       "round_begin",
       (p: { index: number; total: number; endsAt: number; question: QuestionLite; serverNow?: number }) => {
         if (typeof p.serverNow === "number") setSkew(p.serverNow - Date.now());
 
+        setGameCountdown(null);
         setPhase("playing");
         setIndex(p.index);
         setTotal(p.total);
@@ -439,6 +473,7 @@ export default function RoomPage() {
       setFinalEndsAt(null);
       setFinalDuration(null);
       setPending(false);
+      setGameCountdown(null);
     });
 
     (async () => {
@@ -599,6 +634,17 @@ export default function RoomPage() {
           border: 3px solid rgba(0,0,0,0);
           background-clip: padding-box;
         }
+
+        @keyframes countdownPop {
+          0% { transform: scale(0.6); opacity: 0; }
+          35% { transform: scale(1.1); opacity: 1; }
+          70% { transform: scale(1); opacity: 0.9; }
+          100% { transform: scale(0.85); opacity: 0; }
+        }
+        .countdown-pop {
+          animation: countdownPop 1s ease-in-out infinite;
+        }
+
       `}</style>
 
       {/* Overlay global sombre (uniforme) */}
@@ -695,7 +741,13 @@ export default function RoomPage() {
                 <div className="relative min-h-[calc(100dvh-64px)] px-5 md:px-10 py-10">
                 <div className="flex min-h-[calc(100dvh-64px-80px)] items-start justify-center pt-10">
                   <div className="w-full max-w-[900px]">  
-                    {phase === "final" && finalRemaining !== null ? (
+                    {gameCountdown !== null ? (
+                      <div className="flex min-h-[360px] items-center justify-center">
+                        <div className="countdown-pop text-[96px] font-extrabold text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.35)]">
+                          {gameCountdown}
+                        </div>
+                      </div>
+                    ) : phase === "final" && finalRemaining !== null ? (
                       <div className="mb-14 -mt-10 px-1 py-2">
                         <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
                           <div
@@ -745,7 +797,7 @@ export default function RoomPage() {
                         onSelectChoice={(choice) => answerByChoice(choice.id)}
                         questionProgress={questionProgress}
                       />
-                    ) : (
+                    ) : phase === "countdown" ? null : (
                       <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-10 text-center text-sm text-white/70">
                         {phase === "between"
                           ? ""
