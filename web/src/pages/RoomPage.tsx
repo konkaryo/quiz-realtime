@@ -213,10 +213,16 @@ export default function RoomPage() {
   // timing
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [roundDuration, setRoundDuration] = useState<number | null>(null);
+  const [finalEndsAt, setFinalEndsAt] = useState<number | null>(null);
+  const [finalDuration, setFinalDuration] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
   const remaining = useMemo(
     () => (endsAt ? Math.max(0, Math.ceil((endsAt - nowServer()) / 1000)) : null),
     [endsAt, nowTick, skew]
+  );
+  const finalRemaining = useMemo(
+    () => (finalEndsAt ? Math.max(0, Math.ceil((finalEndsAt - nowServer()) / 1000)) : null),
+    [finalEndsAt, nowTick, skew]
   );
   const timerProgress = useMemo(() => {
     if (!endsAt || !roundDuration) return 0;
@@ -224,12 +230,18 @@ export default function RoomPage() {
     const progress = remainingMs / roundDuration;
     return Math.min(1, Math.max(0, progress));
   }, [endsAt, roundDuration, nowTick, skew]);
+  const finalProgress = useMemo(() => {
+    if (!finalEndsAt || !finalDuration) return 0;
+    const remainingMs = Math.max(0, finalEndsAt - nowServer());
+    const progress = remainingMs / finalDuration;
+    return Math.min(1, Math.max(0, progress));
+  }, [finalEndsAt, finalDuration, nowTick, skew]);
 
   useEffect(() => {
-    if (!endsAt) return;
+    if (!endsAt && !finalEndsAt) return;
     const id = setInterval(() => setNowTick(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [endsAt]);
+  }, [endsAt, finalEndsAt]);
 
   useEffect(() => {
     if (mcChoices) setChoicesRevealed(true);
@@ -283,6 +295,8 @@ export default function RoomPage() {
         setIndex(p.index);
         setTotal(p.total);
         setEndsAt(p.endsAt);
+        setFinalEndsAt(null);
+        setFinalDuration(null);
 
         const serverNow = nowServer();
         setRoundDuration(Math.max(0, p.endsAt - serverNow));
@@ -385,7 +399,7 @@ export default function RoomPage() {
       setLeaderboard(p.leaderboard ?? []);
     });
 
-    s.on("final_leaderboard", (p: { leaderboard: LeaderRow[] }) => {
+    s.on("final_leaderboard", (p: { leaderboard: LeaderRow[]; displayMs?: number }) => {
       setPhase("final");
       setLeaderboard(p.leaderboard ?? []);
       setQuestion(null);
@@ -401,6 +415,14 @@ export default function RoomPage() {
       setChoicesRevealed(false);
       setEndsAt(null);
       setRoundDuration(null);
+      if (typeof p.displayMs === "number") {
+        const displayMs = Math.max(0, p.displayMs ?? 0);
+        setFinalEndsAt(Date.now() + displayMs);
+        setFinalDuration(displayMs);
+      } else {
+        setFinalEndsAt(null);
+        setFinalDuration(null);
+      }
       setPending(false);
     });
 
@@ -414,6 +436,8 @@ export default function RoomPage() {
       setQuestion(null);
       setEndsAt(null);
       setRoundDuration(null);
+      setFinalEndsAt(null);
+      setFinalDuration(null);
       setPending(false);
     });
 
@@ -511,6 +535,12 @@ export default function RoomPage() {
     () => (mcChoices ? mcChoices.map<QuestionPanelChoice>((c) => ({ id: c.id, label: c.label })) : null),
     [mcChoices]
   );
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
 
   const questionProgress: QuestionPanelProgress[] = [];
   const isPlaying = phase === "playing" && lives > 0;
@@ -664,7 +694,25 @@ export default function RoomPage() {
 
                 <div className="relative min-h-[calc(100dvh-64px)] px-5 md:px-10 py-10">
                 <div className="flex min-h-[calc(100dvh-64px-80px)] items-start justify-center pt-10">
-                  <div className="w-full max-w-[900px]">
+                  <div className="w-full max-w-[900px]">  
+                    {phase === "final" && finalRemaining !== null ? (
+                      <div className="mb-14 -mt-10 px-1 py-2">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                          <div
+                            className="h-full bg-gradient-to-r from-fuchsia-400 via-pink-500 to-rose-500 transition-[width] duration-300"
+                            style={{ width: `${finalProgress * 100}%` }}
+                          />
+                        </div>
+                        <div className="mt-2 text-center">
+                          <div className="text-sm font-semibold text-white/90">
+                            Une nouvelle partie va bientôt commencer...
+                          </div>
+                          <div className="text-[12px] text-white/60">
+                            {formatCountdown(finalRemaining)}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                     {phase === "final" ? (
                       <FinalLeaderboard rows={leaderboard} selfId={selfId} selfName={selfName} />
                     ) : normalizedQuestion ? (
