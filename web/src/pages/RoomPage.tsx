@@ -177,6 +177,7 @@ export default function RoomPage() {
   const [feedbackWasCorrect, setFeedbackWasCorrect] = useState<boolean | null>(null);
   const [feedbackCorrectLabel, setFeedbackCorrectLabel] = useState<string | null>(null);
   const [answerMode, setAnswerMode] = useState<"text" | "choice" | null>(null);
+  const [feedbackPoints, setFeedbackPoints] = useState<number | null>(null);
   const [choicesRevealed, setChoicesRevealed] = useState(false);
   const [pending, setPending] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -313,6 +314,7 @@ export default function RoomPage() {
       setFeedbackResponseMs(null);
       setFeedbackWasCorrect(null);
       setFeedbackCorrectLabel(null);
+      setFeedbackPoints(null);
       setAnswerMode(null);
       setChoicesRevealed(false);
       setFinalRecap(null);
@@ -348,6 +350,7 @@ export default function RoomPage() {
         setFeedbackResponseMs(null);
         setFeedbackWasCorrect(null);
         setFeedbackCorrectLabel(null);
+        setFeedbackPoints(null);
         setAnswerMode(null);
         setChoicesRevealed(false);
         setLives(() => {
@@ -370,11 +373,18 @@ export default function RoomPage() {
 
     s.on(
       "answer_feedback",
-      (p: { correct: boolean; correctChoiceId: string | null; correctLabel: string | null; responseMs?: number }) => {
+      (p: {
+        correct: boolean;
+        correctChoiceId: string | null;
+        correctLabel: string | null;
+        responseMs?: number;
+        points?: number;
+      }) => {
         if (typeof p.responseMs === "number") setFeedbackResponseMs(p.responseMs);
         if (typeof p.correct === "boolean") setFeedbackWasCorrect(p.correct);
         if (typeof p.correctLabel === "string" && p.correctLabel) setFeedbackCorrectLabel(p.correctLabel);
         if (p.correctChoiceId) setCorrectId(p.correctChoiceId);
+        if (typeof p.points === "number") setFeedbackPoints(p.points);
 
         let nextLives = livesRef.current;
         if (mcChoicesRef.current === null) {
@@ -445,6 +455,7 @@ export default function RoomPage() {
       setFeedbackResponseMs(null);
       setFeedbackWasCorrect(null);
       setFeedbackCorrectLabel(null);
+      setFeedbackPoints(null);
       setAnswerMode(null);
       setChoicesRevealed(false);
       setEndsAt(null);
@@ -788,6 +799,7 @@ export default function RoomPage() {
                         feedbackResponseMs={feedbackResponseMs}
                         feedbackWasCorrect={feedbackWasCorrect}
                         feedbackCorrectLabel={feedbackCorrectLabel}
+                        feedbackPoints={feedbackPoints}
                         answerMode={answerMode}
                         choicesRevealed={choicesRevealed}
                         showChoices={showChoices}

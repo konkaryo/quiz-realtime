@@ -563,6 +563,7 @@ socket.on(
       correctLabel: string | null;
       responseMs: number;
       score: number;
+      points: number;
       livesLeft?: number;
     } = {
       correct: isCorrect,
@@ -570,6 +571,7 @@ socket.on(
       correctLabel: q.correctLabel,
       responseMs,
       score: sess.score,
+      points: isCorrect ? CFG.MC_ANSWER_POINTS_GAIN : 0,
     };
 
     // 👉 Règle demandée :
@@ -654,6 +656,7 @@ socket.on(
         correctLabel: q.correctLabel,
         responseMs,
         score: sess.score,
+        points: gained,
       };
 
       // 👉 Si la réponse est fausse ET qu'on vient d'épuiser les vies, on envoie livesLeft (0)
@@ -676,6 +679,7 @@ socket.on(
       socket.emit("daily_answer_feedback", {
         correct: false,
         livesLeft: remainingLives,
+        points: 0,
       });
     }
 
@@ -847,7 +851,8 @@ socket.on(
           correct: !!choice.isCorrect,
           correctChoiceId: correctChoice ? correctChoice.id : null,
           correctLabel: correctChoice ? correctChoice.label : null,
-          responseMs
+          responseMs,
+          points: gained,
         });
 
         //io.to(client.roomId).emit("answer_received");
@@ -944,10 +949,11 @@ socket.on(
             correct,
             correctChoiceId: corr ? corr.id : null,
             correctLabel: corr ? corr.label : null,
-            responseMs
+            responseMs,
+            points: gained,
           });
         } else {
-          socket.emit("answer_feedback", { correct: false });
+          socket.emit("answer_feedback", { correct: false, points: 0 });
         }
 
         //io.to(client.roomId).emit("answer_received");

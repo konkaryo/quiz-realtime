@@ -86,6 +86,7 @@ type Props = {
   feedbackResponseMs: number | null;
   feedbackWasCorrect: boolean | null;
   feedbackCorrectLabel: string | null;
+  feedbackPoints?: number | null;
   answerMode: "text" | "choice" | null;
   choicesRevealed: boolean;
 
@@ -121,6 +122,7 @@ export default function DailyQuestionPanel(props: Props) {
     feedbackResponseMs,
     feedbackWasCorrect,
     feedbackCorrectLabel,
+    feedbackPoints = null,
     answerMode,
     choicesRevealed,
     showChoices,
@@ -134,6 +136,7 @@ export default function DailyQuestionPanel(props: Props) {
   const themeMeta = getThemeMeta(question.theme ?? null);
 
   const showResponseTime = feedbackWasCorrect === true && feedbackResponseMs !== null;
+  const showFeedbackPoints = typeof feedbackPoints === "number";
   const showCorrectLabelCell =
     !!feedbackCorrectLabel &&
     (answerMode === "text" ||
@@ -330,20 +333,6 @@ className={[
                 </div>
               </div>
 
-              {/* temps de réponse */}
-              {showResponseTime && feedbackResponseMs !== null && (
-                <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-slate-700/80 bg-black/80 px-5 py-2.5 text-xs text-slate-100 shadow-inner shadow-black/80">
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Temps de réponse
-                    </span>
-                    <span className="mt-1 font-mono text-sm text-slate-50">
-                      {feedbackResponseMs.toLocaleString("fr-FR")} ms
-                    </span>
-                  </div>
-                </div>
-              )}
-
               {/* bonne réponse (mode texte) */}
               {showCorrectLabelCell && (
                 <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-emerald-600 bg-emerald-600 px-5 py-2.5 text-xs text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]">
@@ -353,6 +342,34 @@ className={[
                     </span>
                     <span className="mt-1 font-medium text-[13px]">
                       {feedbackCorrectLabel}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* points gagnés */}
+              {showFeedbackPoints && (
+                <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-slate-700/80 bg-black/80 px-5 py-2.5 text-xs text-slate-100 shadow-inner shadow-black/80">
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Points gagnés
+                    </span>
+                    <span className="mt-1 font-mono text-sm text-slate-50">
+                      + {feedbackPoints.toLocaleString("fr-FR")} pts
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* temps de réponse */}
+              {showResponseTime && feedbackResponseMs !== null && (
+                <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-slate-700/80 bg-black/80 px-5 py-2.5 text-xs text-slate-100 shadow-inner shadow-black/80">
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Temps de réponse
+                    </span>
+                    <span className="mt-1 font-mono text-sm text-slate-50">
+                      {feedbackResponseMs.toLocaleString("fr-FR")} ms
                     </span>
                   </div>
                 </div>

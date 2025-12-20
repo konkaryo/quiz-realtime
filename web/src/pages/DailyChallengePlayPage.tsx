@@ -65,6 +65,7 @@ type DailyAnswerFeedback = {
   responseMs?: number;
   livesLeft?: number;
   score?: number;
+  points?: number;
 };
 
 type DailyRoundEnd = {
@@ -196,6 +197,7 @@ export default function DailyChallengePlayPage() {
   const [feedbackResponseMs, setFeedbackResponseMs] = useState<number | null>(null);
   const [feedbackWasCorrect, setFeedbackWasCorrect] = useState<boolean | null>(null);
   const [feedbackCorrectLabel, setFeedbackCorrectLabel] = useState<string | null>(null);
+  const [feedbackPoints, setFeedbackPoints] = useState<number | null>(null);
   const [answerMode, setAnswerMode] = useState<"text" | "choice" | null>(null);
   const [choicesRevealed, setChoicesRevealed] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
@@ -289,6 +291,7 @@ export default function DailyChallengePlayPage() {
       setFeedbackWasCorrect(null);
       feedbackWasCorrectRef.current = null;
       setFeedbackCorrectLabel(null);
+      setFeedbackPoints(null);
       setAnswerMode(null);
       setChoicesRevealed(false);
       setEndsAt(p.endsAt);
@@ -312,6 +315,7 @@ export default function DailyChallengePlayPage() {
         setFeedbackWasCorrect(p.correct);
         feedbackWasCorrectRef.current = p.correct;
       }
+      if (typeof p.points === "number") setFeedbackPoints(p.points);
       if (typeof p.responseMs === "number") setFeedbackResponseMs(p.responseMs);
       if (p.correctChoiceId) setCorrectChoiceId(p.correctChoiceId);
       if (typeof p.correctLabel === "string" && p.correctLabel) {
@@ -527,6 +531,7 @@ export default function DailyChallengePlayPage() {
     feedbackResponseMs={feedbackResponseMs}
     feedbackWasCorrect={feedbackWasCorrect}
     feedbackCorrectLabel={feedbackCorrectLabel}
+    feedbackPoints={feedbackPoints}
     answerMode={answerMode}
     choicesRevealed={choicesRevealed}
     showChoices={showChoices}
