@@ -59,7 +59,6 @@ model User {
   player          Player?
   ownedRooms      Room[]    @relation("UserOwnedRooms")
   role            Role      @default(USER)
-  bits            Int       @default(0)
 }
 
 model Session {
@@ -80,6 +79,7 @@ model Player {
   user        User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
   name        String
   img         String                @default("0")
+  bits        Int                   @default(0)
   isBot       Boolean               @default(false)
   bot         Bot?
   createdAt   DateTime              @default(now())

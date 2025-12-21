@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 
-type Row = { id: string; name: string; score: number; img?: string | null };
+type Row = { id: string; name: string; score: number; img?: string | null; bits?: number };
 
 export function FinalLeaderboard({
   rows,
@@ -162,7 +162,12 @@ export function FinalLeaderboard({
                         <div className="text-[11px] opacity-70">Niveau 1</div>
                       </div>
                     </div>
-                    <span className="tabular-nums text-sm">{r.score}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="tabular-nums text-[12px] text-emerald-200/90">
+                        +{r.bits ?? 0} bits
+                      </span>
+                      <span className="tabular-nums text-sm">{r.score}</span>
+                    </div>
                   </li>
                 );
               })}

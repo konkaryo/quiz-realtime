@@ -9,4 +9,8 @@ export const CFG = {
   TEXT_LIVES: Number(process.env.TEXT_LIVES || 3),
   MC_ANSWER_POINTS_GAIN: Number(process.env.MC_ANSWER_POINTS_GAIN || 70),
   TXT_ANSWER_POINTS_GAIN: Number(process.env.TXT_ANSWER_POINTS_GAIN || 100),
+  BITS_POT_SCALE: Number(process.env.BITS_POT_SCALE || 40),
+  BITS_POT_SMALL_ROOM_M: Number(process.env.BITS_POT_SMALL_ROOM_M || 15),
+  BITS_POT_PENALTY_Q: Number(process.env.BITS_POT_PENALTY_Q || 2),
+  BITS_WINNER_POWER: Number(process.env.BITS_WINNER_POWER || 0.9),
 };

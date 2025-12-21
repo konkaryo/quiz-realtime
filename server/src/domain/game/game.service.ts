@@ -9,6 +9,7 @@ import { scheduleBotAnswers } from "../bot/bot.service";
 import { QUESTION_DISTRIBUTION, quotasFromDistribution } from "../question/distribution";
 import { rebalanceBotsAfterGame } from "../bot/traffic";
 import { buildPlayerSummary, buildRoomQuestionStats } from "./summary.service";
+import { awardBitsForGame } from "./bits-reward.service";
 
 type Leaderboard = Awaited<ReturnType<typeof lb_service.buildLeaderboard>>;
 
@@ -387,8 +388,15 @@ async function finalizeGameAfterReveal(
 
   await prisma.game.update({ where: { id: st.gameId }, data: { state: "ended" } });
 
+  const awarded = await awardBitsForGame(prisma, st.gameId, leaderboard);
+
   const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 20000);
   io.to(st.roomId).emit("final_leaderboard", { leaderboard, displayMs: FINAL_LB_MS });
+  if (awarded.length) {
+    io.to(st.roomId).emit("bits_awarded", {
+      rewards: awarded.map(({ playerGameId, rank, bits }) => ({ playerGameId, rank, bits })),
+    });
+  }
 
   const statsMap = await buildRoomQuestionStats(prisma, st.gameId);
 

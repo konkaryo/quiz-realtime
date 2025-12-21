@@ -7,6 +7,7 @@ import bitIconUrl from "@/assets/bit.png";
 type CurrentUser = {
   displayName?: string;
   img?: string | null;
+  bits?: number;
 };
 
 
@@ -144,6 +145,9 @@ export default function AppShell() {
   const nav = useNavigate();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [displayBits, setDisplayBits] = useState(0);
+  const displayBitsRef = useRef(0);
+  const animationRef = useRef<number | null>(null);
 
   const [openMenu, setOpenMenu] = useState<null | "solo" | "multi" | "private">(null);
   const [userOpen, setUserOpen] = useState(false);
@@ -155,13 +159,64 @@ export default function AppShell() {
       try {
         const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
         const { user } = (res.ok ? await res.json() : { user: null }) as { user: CurrentUser | null };
-        if (mounted) setUser(user ?? null);
+        if (mounted) {
+          setUser(user ?? null);
+          setDisplayBits(user?.bits ?? 0);
+        }
       } catch {
       } finally {
         if (mounted) setLoading(false);
       }
     })();
     return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    displayBitsRef.current = displayBits;
+  }, [displayBits]);
+
+  useEffect(() => {
+    if (typeof user?.bits !== "number") return;
+    const start = displayBitsRef.current;
+    const end = user.bits;
+    if (start === end) return;
+    if (animationRef.current !== null) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    const duration = 700;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = Math.round(start + (end - start) * eased);
+      setDisplayBits(value);
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(tick);
+      } else {
+        animationRef.current = null;
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (animationRef.current !== null) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    };
+  }, [user?.bits]);
+
+  useEffect(() => {
+    const onBitsUpdated = (event: Event) => {
+      const custom = event as CustomEvent<{ total?: number }>;
+      const total = custom.detail?.total;
+      if (!Number.isFinite(total)) return;
+      setUser((prev) => (prev ? { ...prev, bits: total } : prev));
+    };
+    window.addEventListener("bits-updated", onBitsUpdated as EventListener);
+    return () => window.removeEventListener("bits-updated", onBitsUpdated as EventListener);
   }, []);
 
   useEffect(() => {
@@ -357,7 +412,7 @@ export default function AppShell() {
         {/* Right: user */}
         <div ref={userRef} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 700, color: "#e5e7eb" }}>
-            <span>256 x</span>
+            <span>{displayBits} x</span>
             <img src={bitIconUrl} alt="Bits" width={25} height={25} style={{ display: "block" }} />
           </div>
           {!loading && (

@@ -34,7 +34,7 @@ type QuestionLite = {
   difficulty?: number | null;
 };
 type Phase = "idle" | "countdown" | "playing" | "reveal" | "between" | "final";
-type LeaderRow = { id: string; name: string; score: number; img?: string | null };
+type LeaderRow = { id: string; name: string; score: number; img?: string | null; bits?: number };
 type RoomMeta = { id: string; code: string | null; visibility: "PUBLIC" | "PRIVATE"; name?: string | null };
 type RoomInfoItem = { label: string; value: string | number };
 
@@ -188,6 +188,7 @@ export default function RoomPage() {
   const mcChoicesRef = useRef<ChoiceLite[] | null>(null);
 
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
+  const [bitsByPgId, setBitsByPgId] = useState<Record<string, number>>({});
   const [selfId, setSelfId] = useState<string | null>(null);
   const [selfName, setSelfName] = useState<string | null>(null);
 
@@ -446,6 +447,7 @@ export default function RoomPage() {
     s.on("final_leaderboard", (p: { leaderboard: LeaderRow[]; displayMs?: number }) => {
       setPhase("final");
       setLeaderboard(p.leaderboard ?? []);
+      setBitsByPgId({});
       setQuestion(null);
       setMcChoices(null);
       setSelected(null);
@@ -469,6 +471,28 @@ export default function RoomPage() {
         setFinalDuration(null);
       }
       setPending(false);
+    });
+
+    s.on("bits_awarded", (p: { rewards?: { playerGameId: string; rank: number; bits: number }[] }) => {
+      const rewards = p.rewards ?? [];
+      if (!Array.isArray(rewards)) return;
+      setBitsByPgId((prev) => {
+        const next = { ...prev };
+        rewards.forEach((reward) => {
+          if (!reward?.playerGameId) return;
+          next[reward.playerGameId] = reward.bits ?? 0;
+        });
+        return next;
+      });
+      fetch(`${API_BASE}/auth/me`, { credentials: "include" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const total = data?.user?.bits;
+          if (Number.isFinite(total)) {
+            window.dispatchEvent(new CustomEvent("bits-updated", { detail: { total } }));
+          }
+        })
+        .catch(() => {});
     });
 
     /* récapitulatif individuel de la partie (unicast) */
@@ -512,6 +536,11 @@ export default function RoomPage() {
       s.close();
     };
   }, [roomId, nav]);
+
+  const finalRows = useMemo(
+    () => leaderboard.map((row) => ({ ...row, bits: bitsByPgId[row.id] ?? 0 })),
+    [leaderboard, bitsByPgId],
+  );
 
   useEffect(() => {
     if (phase === "playing") inputRef.current?.focus();
@@ -777,7 +806,7 @@ export default function RoomPage() {
                       </div>
                     ) : null}
                     {phase === "final" ? (
-                      <FinalLeaderboard rows={leaderboard} selfId={selfId} selfName={selfName} />
+                      <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
                     ) : normalizedQuestion ? (
                       <QuestionPanel
                         question={normalizedQuestion}
