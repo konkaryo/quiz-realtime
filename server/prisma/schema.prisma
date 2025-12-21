@@ -59,6 +59,7 @@ model User {
   player          Player?
   ownedRooms      Room[]    @relation("UserOwnedRooms")
   role            Role      @default(USER)
+  bits            Int       @default(0)
 }
 
 model Session {
