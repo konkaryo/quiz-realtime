@@ -13,6 +13,7 @@ import { getCookie } from "./infra/cookies";
 import type { Client, GameState } from "./types";
 import { authRoutes } from "./routes/auth";
 import { dailyRoutes } from "./routes/daily";
+import { leaderboardRoutes } from "./routes/leaderboard";
 import { registerSocketHandlers } from "./sockets/handlers";
 import { clientsInRoom, isCodeValid, genCode, genRoomId, getRandomPublicRoomName } from "./domain/room/room.service";
 import { raceRoutes } from "./routes/race";
@@ -45,6 +46,7 @@ async function main() {
 
   await app.register(authRoutes({ prisma }), { prefix: "/auth" });
   await app.register(dailyRoutes({ prisma }), { prefix: "/daily" });
+    await app.register(leaderboardRoutes({ prisma }), { prefix: "/leaderboard" });
   await app.register(raceRoutes({ prisma }), { prefix: "/race" });
 
   app.get("/health", async () => ({ ok: true }));
