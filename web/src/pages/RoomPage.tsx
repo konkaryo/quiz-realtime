@@ -814,36 +814,38 @@ export default function RoomPage() {
                     {phase === "final" ? (
                       <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
                     ) : normalizedQuestion ? (
-                      <QuestionPanel
-                        question={normalizedQuestion}
-                        index={index}
-                        totalQuestions={total}
-                        lives={lives}
-                        totalLives={TEXT_LIVES}
-                        remainingSeconds={remaining}
-                        timerProgress={timerProgress}
-                        isReveal={phase === "reveal" && (remaining ?? 0) === 0}
-                        isPlaying={isPlaying}
-                        inputRef={inputRef}
-                        textAnswer={textAnswer}
-                        textLocked={textLocked}
-                        onChangeText={setTextAnswer}
-                        onSubmitText={sendText}
-                        onShowChoices={showMultipleChoice}
-                        feedback={feedbackText}
-                        feedbackResponseMs={feedbackResponseMs}
-                        feedbackWasCorrect={feedbackWasCorrect}
-                        feedbackCorrectLabel={feedbackCorrectLabel}
-                        feedbackPoints={feedbackPoints}
-                        answerMode={answerMode}
-                        choicesRevealed={choicesRevealed}
-                        showChoices={showChoices}
-                        choices={choicesForPanel}
-                        selectedChoice={selected}
-                        correctChoiceId={correctId}
-                        onSelectChoice={(choice) => answerByChoice(choice.id)}
-                        questionProgress={questionProgress}
-                      />
+                      <div className="rounded-[48px] shadow-[0_0_36px_rgba(56,189,248,0.22)] transition-shadow duration-300">
+                        <QuestionPanel
+                          question={normalizedQuestion}
+                          index={index}
+                          totalQuestions={total}
+                          lives={lives}
+                          totalLives={TEXT_LIVES}
+                          remainingSeconds={remaining}
+                          timerProgress={timerProgress}
+                          isReveal={phase === "reveal" && (remaining ?? 0) === 0}
+                          isPlaying={isPlaying}
+                          inputRef={inputRef}
+                          textAnswer={textAnswer}
+                          textLocked={textLocked}
+                          onChangeText={setTextAnswer}
+                          onSubmitText={sendText}
+                          onShowChoices={showMultipleChoice}
+                          feedback={feedbackText}
+                          feedbackResponseMs={feedbackResponseMs}
+                          feedbackWasCorrect={feedbackWasCorrect}
+                          feedbackCorrectLabel={feedbackCorrectLabel}
+                          feedbackPoints={feedbackPoints}
+                          answerMode={answerMode}
+                          choicesRevealed={choicesRevealed}
+                          showChoices={showChoices}
+                          choices={choicesForPanel}
+                          selectedChoice={selected}
+                          correctChoiceId={correctId}
+                          onSelectChoice={(choice) => answerByChoice(choice.id)}
+                          questionProgress={questionProgress}
+                        />
+                      </div>
                     ) : phase === "countdown" ? null : (
                       <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-10 text-center text-sm text-white/70">
                         {phase === "between"
