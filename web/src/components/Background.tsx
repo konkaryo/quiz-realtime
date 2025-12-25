@@ -19,7 +19,7 @@ export default function Background({
       />
       <div
         aria-hidden
-        /* className={`${sharedClassName} pointer-events-none bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(12,18,34,0.95),#020617)]`} */
+        className={`${sharedClassName} pointer-events-none bg-[linear-gradient(to_top,rgba(194,115,247,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(12,18,34,0.95),#020617)]`}
       />
       <div aria-hidden className={`${sharedClassName} pointer-events-none`}>
         {Array.from({ length: particleCount }).map((_, index) => (

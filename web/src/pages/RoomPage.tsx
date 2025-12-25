@@ -633,6 +633,7 @@ export default function RoomPage() {
   // ✅ Layout widths (LG+)
   const leftW = 280; // (déjà élargi légèrement)
   const rightW = 300;
+  const questionPanelBackgroundClass = "bg-[#060A1B]";
 
   const hasScrollableLeaderboard = leaderboard.length > LB_VISIBLE;
   const selfRow = selfIndex >= 0 ? leaderboard[selfIndex] : null;
@@ -690,21 +691,18 @@ export default function RoomPage() {
 
       `}</style>
 
-      {/* Overlay global sombre (uniforme) */}
-      <div className="fixed inset-0 bg-slate-950/70 pointer-events-none" />
-
       <div className="relative z-10 min-h-[calc(100dvh-64px)] text-white lg:overflow-hidden">
         {/* STRUCTURE GLOBALE — 3 zones + séparateurs continus */}
         <div className="relative">
-          {/* séparateurs (continus, un peu plus épais) */}
+          {/* séparateurs (continus) */}
 
           <div
-            className="hidden lg:block fixed top-16 bottom-0 w-[2px] bg-white/15 z-30"
+            className="hidden lg:block fixed top-16 bottom-0 w-px bg-white/15 z-30"
             style={{ left: leftW }}
             aria-hidden
           />
           <div
-            className="hidden lg:block fixed top-16 bottom-0 w-[2px] bg-white/15 z-30"
+            className="hidden lg:block fixed top-16 bottom-0 w-px bg-white/15 z-30"
             style={{ right: rightW }}
             aria-hidden
           />
@@ -712,7 +710,12 @@ export default function RoomPage() {
           <div className="relative grid grid-cols-1 lg:block">
             {/* LEFT */}
             <aside className="hidden lg:block fixed top-16 bottom-0 left-0 w-[280px] z-20 overflow-x-hidden">
-              <div className="h-full px-6 py-6 flex flex-col overflow-x-hidden">
+              <div
+                className={[
+                  "h-full px-6 py-6 flex flex-col overflow-x-hidden",
+                  questionPanelBackgroundClass,
+                ].join(" ")}
+              >
                 <SectionTitle right={`${Math.max(leaderboard.length, 1)} joueurs`}>Classement</SectionTitle>
 
                 <div className="mt-4 flex-1 min-h-0 overflow-x-hidden">
@@ -779,7 +782,7 @@ export default function RoomPage() {
                 }}
               >
                 {<Background position="absolute" />}
-                <div className="absolute inset-0 bg-slate-900/40" aria-hidden />
+                <div className="absolute inset-0 bg-slate-900/0" aria-hidden />
 
                 <div className="relative min-h-[calc(100dvh-64px)] px-5 md:px-10 py-10">
                 <div className="flex min-h-[calc(100dvh-64px-80px)] items-start justify-center pt-10">
@@ -864,7 +867,7 @@ export default function RoomPage() {
 
             {/* RIGHT */}
             <aside className="hidden lg:block fixed top-16 bottom-0 right-0 w-[300px] z-20">
-              <div className="h-full px-6 py-6">
+              <div className={["h-full px-6 py-6", questionPanelBackgroundClass].join(" ")}>
                 <SectionTitle>Salon</SectionTitle>
 
                 {/* ✅ nom du salon en gros, sous "SALON" */}
