@@ -172,8 +172,8 @@ export default function DailyQuestionPanel(props: Props) {
         <div className="pointer-events-none absolute -inset-[2px] rounded-[46px] opacity-70 blur-xl" />
         <div
           className={[
-            "relative w-full rounded-[40px] border border-slate-800/80",
-            "bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)]",
+            "relative w-full rounded-[40px] border border-slate-700/80",
+            "bg-[radial-gradient(circle_at_top,_rgba(20,30,55,0.96),rgba(15,23,42,0.98)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.85),#020617)]",
             "shadow-[0_0_5px_rgba(248,248,248,0.8)]",
             "sm:p-8 lg:p-8",
           ].join(" ")}

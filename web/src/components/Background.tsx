@@ -15,11 +15,11 @@ export default function Background({
     <>
       <div
         aria-hidden
-        className={`${sharedClassName} bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308]`}
+        className={`${sharedClassName} bg-gradient-to-br from-[#050815] via-[#050014] to-[#1b0308]`}
       />
       <div
         aria-hidden
-        className={`${sharedClassName} pointer-events-none bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(12,18,34,0.95),#020617)]`}
+        /* className={`${sharedClassName} pointer-events-none bg-[linear-gradient(to_top,rgba(248,113,113,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(12,18,34,0.95),#020617)]`} */
       />
       <div aria-hidden className={`${sharedClassName} pointer-events-none`}>
         {Array.from({ length: particleCount }).map((_, index) => (

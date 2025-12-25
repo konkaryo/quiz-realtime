@@ -47,10 +47,10 @@ type DifficultyParams = {
 };
 
 const TEXT_SUCCESS_PARAMS: Record<number, DifficultyParams> = {
-  1: { pMin: 0.20, pMax: 0.98, t: 28, s: 22, k: 1.10 },
-  2: { pMin: 0.13, pMax: 0.90, t: 52, s: 18, k: 1.15 },
-  3: { pMin: 0.03, pMax: 0.85, t: 67, s: 15, k: 1.20 },
-  4: { pMin: 0.0005, pMax: 0.85, t: 60, s: 18, k: 3.00 },
+  1: { pMin: 0.000894, pMax: 0.987059, t: -0.6738, s: 31.4048, k: 3.3622 },
+  2: { pMin: 0.000128, pMax: 0.996224, t: 40.0608, s: 25.9796, k: 1.9613 },
+  3: { pMin: 0.000085, pMax: 0.789855, t: 41.4811, s: 21.362, k: 3.4659 },
+  4: { pMin: 0.000147, pMax: 0.646214, t: 84.9999, s: 13.44, k: 2.1857 },
 };
 
 const MC_SUCCESS_PARAMS: Record<number, DifficultyParams> = {

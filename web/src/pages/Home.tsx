@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Background from "../components/Background";
-import homeBackground from "../assets/background-2.png";
+import homeBackground from "../assets/background-1.jpg";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -110,16 +110,8 @@ export default function Home() {
   const leftW = 280;
 
   return (
-    <div
-      className="relative min-h-screen"
-      style={{
-        backgroundImage: `url(${homeBackground})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
-      }}
-    >
-      <div aria-hidden className="absolute inset-0 bg-slate-950/70" />
+    <div className="relative min-h-[calc(100dvh-64px)] overflow-hidden">
+      <Background />
 
       <div className="relative z-10 min-h-[calc(100dvh-64px)] text-white">
         <div
@@ -203,7 +195,7 @@ export default function Home() {
         <div
           className="relative lg:ml-[280px]"
           style={{
-            maxWidth: 980,
+            maxWidth: 1120,
             margin: "0 auto",
             padding: 16,
             paddingTop: 24,
@@ -271,6 +263,7 @@ export default function Home() {
                   background:
                     "linear-gradient(180deg, rgba(15,23,42,.88), rgba(2,6,23,.92))",
                   backdropFilter: "blur(6px)",
+                  width: "100%",
                 }}
               >
                 {/* EN-TÊTES */}
@@ -311,13 +304,17 @@ export default function Home() {
                     </div>
                   )}
 
-                  {rooms.map((r, index) => {
-                    const ownerName = r.owner?.displayName || "—";
-                    const roomName = r.name?.trim() || "—";
+                  {Array.from({
+                    length: Math.max(10, rooms.length),
+                  }).map((_, index) => {
+                    const r = rooms[index];
+                    const isEmpty = !r;
+                    const ownerName = r?.owner?.displayName || "—";
+                    const roomName = r?.name?.trim() || "—";
 
                     // ----------- DIFFICULTÉ → ÉTOILES 1 à 5 ------------
                     const diffNum =
-                      typeof r.difficulty === "number" ? r.difficulty : undefined;
+                      typeof r?.difficulty === "number" ? r.difficulty : undefined;
 
                     const diffLabel =
                       diffNum !== undefined ? `${diffNum}/10` : "—";
@@ -337,7 +334,7 @@ export default function Home() {
                     // --------------------------------------------------
 
                     const pcNum =
-                      typeof r.playerCount === "number"
+                      typeof r?.playerCount === "number"
                         ? r.playerCount
                         : undefined;
 
@@ -347,7 +344,7 @@ export default function Home() {
                         : "—";
 
                     const created =
-                      r.createdAt && !Number.isNaN(Date.parse(r.createdAt))
+                      r?.createdAt && !Number.isNaN(Date.parse(r.createdAt))
                         ? new Intl.DateTimeFormat("fr-FR", {
                             dateStyle: "short",
                             timeStyle: "short",
@@ -355,10 +352,34 @@ export default function Home() {
                           }).format(new Date(r.createdAt))
                         : "—";
 
-                    const baseBg =
-                      index % 2 === 0
-                        ? "rgba(15,23,42,.75)"
-                        : "rgba(2,6,23,.75)";
+                    const baseBg = index % 2 === 0 ? "#0B3146" : "#0A2536";
+
+                    if (isEmpty) {
+                      return (
+                        <div
+                          key={`empty-${index}`}
+                          style={{
+                            width: "100%",
+                            display: "grid",
+                            gridTemplateColumns:
+                              "2.2fr 1.4fr 1fr 1fr 1.6fr 1fr",
+                            alignItems: "center",
+                            padding: "12px 18px",
+                            background: baseBg,
+                            color: "#94a3b8",
+                            fontSize: 13,
+                            textAlign: "left",
+                          }}
+                        >
+                          <span>—</span>
+                          <span>—</span>
+                          <span>—</span>
+                          <span>—</span>
+                          <span>—</span>
+                          <span style={{ textAlign: "right" }}>—</span>
+                        </div>
+                      );
+                    }
 
                     return (
                       <button

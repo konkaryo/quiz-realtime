@@ -5,6 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
 import Background from "../components/Background";
+import roomBackground from "../assets/background-8.jpg";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
   QuestionProgress as QuestionPanelProgress,
@@ -23,7 +24,9 @@ const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
  * Mets ton image dans /public et adapte le chemin si besoin.
  * Exemple: /public/center-bg.png  ->  "/center-bg.png"
  */
-const CENTER_BG_URL = "/center-bg.png";
+/*const CENTER_BG_URL = "/center-bg.png";*/
+
+const CENTER_BG_URL = roomBackground;
 
 type ChoiceLite = { id: string; label: string };
 type QuestionLite = {
@@ -775,7 +778,7 @@ export default function RoomPage() {
                   backgroundRepeat: "no-repeat",
                 }}
               >
-                <Background position="absolute" />
+                {<Background position="absolute" />}
                 <div className="absolute inset-0 bg-slate-900/40" aria-hidden />
 
                 <div className="relative min-h-[calc(100dvh-64px)] px-5 md:px-10 py-10">
