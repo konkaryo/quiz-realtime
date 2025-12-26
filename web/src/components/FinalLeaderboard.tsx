@@ -90,32 +90,23 @@ export function FinalLeaderboard({
                     ].join(" ")}
                     style={{ height: t.h }}
                   >
-                    {/* pastille rang — légèrement réduite */}
-                    <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none" style={{ top: "14%" }}>
-                      <div
-                        className={[
-                          t.rank === 1 ? "w-[52px] h-[52px]" : "w-[44px] h-[44px]",
-                          "relative rounded-full grid place-items-center",
-                          "bg-black/30 backdrop-blur-[3px] border border-white/10",
-                          "shadow-[inset_0_4px_10px_rgba(255,255,255,.08),inset_0_-8px_18px_rgba(0,0,0,.45),0_10px_26px_rgba(0,0,0,.35)]",
-                        ].join(" ")}
-                      >
-                        <span
-                          className="absolute inset-0 rounded-full pointer-events-none"
-                          style={{
-                            boxShadow:
-                              t.rank === 1
-                                ? "0 0 0 2px rgba(252,211,77,.60) inset"
-                                : t.rank === 2
-                                ? "0 0 0 2px rgba(203,213,225,.55) inset"
-                                : "0 0 0 2px rgba(253,186,116,.55) inset",
-                          }}
-                        />
-                        <span className="relative font-extrabold text-[17px] md:text-[19px] leading-none tabular-nums translate-y-[0.5px]">
-                          {t.rank}
-                        </span>
-                      </div>
-                    </div>
+                  {/* numéro gravé */}
+                  <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none" style={{ top: "16%" }}>
+                    <span
+                      className={[
+                        "font-extrabold tabular-nums select-none",
+                        t.rank === 1 ? "text-[50px]" : "text-[44px]",
+                        "text-white/20",
+                        "text-[#696D77]",
+                      ].join(" ")}
+                      style={{
+                        textShadow:
+                          "0 1px 0 rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.15)",
+                      }}
+                    >
+                      {t.rank}
+                    </span>
+                  </div>
                   </div>
                 </div>
               );
