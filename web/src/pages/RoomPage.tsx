@@ -131,7 +131,7 @@ function PlayerCell({
   return (
     <div className="flex items-stretch gap-2 w-full max-w-full overflow-x-hidden">
       <span className="w-4 text-right text-[12px] opacity-70 tabular-nums leading-[42px] flex-shrink-0">
-        {rank}
+        #{rank}
       </span>
 
 <div
@@ -227,6 +227,8 @@ export default function RoomPage() {
   const [selfId, setSelfId] = useState<string | null>(null);
   const [selfName, setSelfName] = useState<string | null>(null);
   const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>([]);
+  const [rankPulseKey, setRankPulseKey] = useState(0);
+  const rankRef = useRef<number | null>(null);
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
 
@@ -655,6 +657,14 @@ export default function RoomPage() {
     mcChoicesRef.current = mcChoices;
   }, [mcChoices]);
 
+  useEffect(() => {
+    if (selfIndex < 0) return;
+    if (rankRef.current !== null && rankRef.current !== selfIndex) {
+      setRankPulseKey((prev) => prev + 1);
+    }
+    rankRef.current = selfIndex;
+  }, [selfIndex]);
+
   /* --------------------------- actions --------------------------- */
   const sendText = () => {
     if (!socket || phase !== "playing" || !question || lives <= 0) return;
@@ -752,6 +762,29 @@ export default function RoomPage() {
     { label: "Code", value: roomMeta?.code ?? "—" },
   ];
 
+  const rankLabel = useMemo(() => {
+    if (selfIndex < 0) return null;
+    const rank = selfIndex + 1;
+    const suffix = rank === 1 ? "er" : "ème";
+    return { value: String(rank), suffix, rank };
+  }, [selfIndex]);
+
+  const rankAnimationVars = useMemo(() => {
+    if (!rankLabel) return null;
+    const clampedRank = Math.min(Math.max(rankLabel.rank, 1), 20);
+    const intensity = (20 - clampedRank) / 19; // 1 -> max, 20 -> min
+    const translate = 1 + intensity * 9; // px
+    const scale = 0.995 - intensity * 0.055;
+    const opacity = 0.95 - intensity * 0.55;
+    const duration = 280 + intensity * 220;
+    return {
+      "--rank-pop-translate": `${translate.toFixed(1)}px`,
+      "--rank-pop-scale": `${scale.toFixed(3)}`,
+      "--rank-pop-opacity": `${opacity.toFixed(2)}`,
+      animationDuration: `${Math.round(duration)}ms`,
+    } as React.CSSProperties;
+  }, [rankLabel]);
+
   return (
     <>
       <div
@@ -793,6 +826,17 @@ export default function RoomPage() {
         }
         .countdown-pop {
           animation: countdownPop 1s ease-in-out infinite;
+        }
+
+        @keyframes rankPop {
+          0% {
+            transform: translateY(var(--rank-pop-translate, 4px)) scale(var(--rank-pop-scale, 0.98));
+            opacity: var(--rank-pop-opacity, 0.6);
+          }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .rank-pop {
+          animation: rankPop 420ms ease-out;
         }
 
       `}</style>
@@ -999,6 +1043,19 @@ export default function RoomPage() {
                     ) : null}
                   </div>
                 </div>
+                  {rankLabel && (phase === "playing" || phase === "reveal") ? (
+                    <div className="pointer-events-none absolute top-6 right-10" aria-live="polite">
+                      <div
+                        key={rankPulseKey}
+                        className="rank-pop text-[40px] font-extrabold tracking-wide text-white drop-shadow-[0_10px_28px_rgba(255,255,255,0.4)]"
+                        style={rankAnimationVars ?? undefined}
+                      >
+                        {rankLabel.value}
+                        <sup className="ml-1 text-[55%] font-semibold tracking-normal">{rankLabel.suffix}</sup>
+                      </div>
+                    </div>
+                  ) : null}
+                
               </div>
               </main>
             </div>
