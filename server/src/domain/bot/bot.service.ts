@@ -244,6 +244,7 @@ export async function scheduleBotAnswers(
         const responseMs = Math.max(0, Date.now() - (st.roundStartMs ?? Date.now()));
 
         // ==== Appliquer la réponse / scoring ====
+        let answerMode: "mc" | "text" = "mc";
         if (outcome === "mc-correct") {
           // QCM correct
           if (!correctChoice) return;
@@ -251,6 +252,7 @@ export async function scheduleBotAnswers(
           await botApplyMcScoring(prisma, st, client, q.id, correctChoice.label, true, responseMs);
         } else if (outcome === "text-correct") {
           // Texte correct + éventuel bonus de rapidité
+          answerMode = "text";
           const rawText = correctChoice ? correctChoice.label : "???";
           let speedBonus = 0;
           if (!Array.isArray(st.answeredOrderText)) st.answeredOrderText = [];
@@ -271,6 +273,7 @@ export async function scheduleBotAnswers(
             st.answeredThisRound.add(pg.id);
             await botApplyMcScoring(prisma, st, client, q.id, wrong.label, false, responseMs);
           } else {
+            answerMode = "text";
             const rawText =
               wrongChoices.length ? pick(wrongChoices).label :
               correctChoice ? correctChoice.label + "?" : "???";
@@ -289,7 +292,11 @@ export async function scheduleBotAnswers(
 
         // badge "a répondu" + statut correct/incorrect
         const wasCorrect = outcome === "mc-correct" || outcome === "text-correct";
-        io.to(st.roomId).emit("player_answered", { pgId: client.playerGameId, correct: wasCorrect });
+        io.to(st.roomId).emit("player_answered", {
+          pgId: client.playerGameId,
+          correct: wasCorrect,
+          mode: answerMode,
+        });
       } catch (err) {
         console.error("[bot answer]", err);
       }

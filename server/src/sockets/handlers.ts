@@ -856,7 +856,11 @@ socket.on(
         });
 
         //io.to(client.roomId).emit("answer_received");
-        io.to(st.roomId).emit("player_answered", { pgId: client.playerGameId, correct: !!choice.isCorrect });
+        io.to(st.roomId).emit("player_answered", {
+          pgId: client.playerGameId,
+          correct: !!choice.isCorrect,
+          mode: "mc",
+        });
       }
     );
 
@@ -957,7 +961,13 @@ socket.on(
         }
 
         //io.to(client.roomId).emit("answer_received");
-        io.to(st.roomId).emit("player_answered", { pgId: client.playerGameId, correct });
+        if (correct || livesLeft <= 0) {
+          io.to(st.roomId).emit("player_answered", {
+            pgId: client.playerGameId,
+            correct,
+            mode: "text",
+          });
+        }
       }
     );
 

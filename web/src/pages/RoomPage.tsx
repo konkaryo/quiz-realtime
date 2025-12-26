@@ -40,6 +40,7 @@ type Phase = "idle" | "countdown" | "playing" | "reveal" | "between" | "final";
 type LeaderRow = { id: string; name: string; score: number; img?: string | null; bits?: number };
 type RoomMeta = { id: string; code: string | null; visibility: "PUBLIC" | "PRIVATE"; name?: string | null };
 type RoomInfoItem = { label: string; value: string | number };
+type AnsweredStatus = "correct" | "correct-mc" | "wrong";
 
 /* Récapitulatif final (affiché à gauche uniquement en phase 'final') */
 type RecapItem = {
@@ -96,8 +97,36 @@ function PlayerCell({
   row: LeaderRow;
   rank: number;
   isSelf: boolean;
-  answered?: "correct" | "wrong";
+  answered?: AnsweredStatus;
 }) {
+  const badge = useMemo(() => {
+    if (answered === "correct") {
+      return {
+        className: "bg-emerald-500 text-white",
+        icon: "✓",
+        title: "Bonne réponse",
+      };
+    }
+    if (answered === "correct-mc") {
+      return {
+        className: "bg-amber-400 text-white",
+        icon: "~",
+        title: "Bonne réponse (QCM)",
+      };
+    }
+    if (answered === "wrong") {
+      return {
+        className: "bg-red-500 text-white",
+        icon: "✕",
+        title: "Mauvaise réponse",
+      };
+    }
+    return {
+      className: "bg-white/20 text-white/0",
+      icon: "",
+      title: "Pas encore répondu",
+    };
+  }, [answered]);
   return (
     <div className="flex items-stretch gap-2 w-full max-w-full overflow-x-hidden">
       <span className="w-4 text-right text-[12px] opacity-70 tabular-nums leading-[42px] flex-shrink-0">
@@ -140,17 +169,15 @@ function PlayerCell({
           {/* ✅ point EXACT comme l’ancienne version */}
           <span
             className={[
-              "inline-block w-2.5 h-2.5 rounded-full transition-colors",
-              answered === "correct" ? "bg-white" : answered === "wrong" ? "bg-red-500" : "bg-white/20",
+              "inline-flex h-4 w-4 items-center justify-center rounded-[3px] text-[10px] font-bold leading-none",
+              "transition-colors",
+              badge.className,
             ].join(" ")}
-            title={
-              answered === "correct"
-                ? "Bonne réponse"
-                : answered === "wrong"
-                ? "Mauvaise réponse"
-                : "Pas encore répondu"
-            }
-          />
+            title={badge.title}
+            aria-label={badge.title}
+          >
+            {badge.icon}
+          </span>
         </div>
       </div>
     </div>
@@ -166,7 +193,7 @@ export default function RoomPage() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
 
-  const [answeredByPg, setAnsweredByPg] = useState<Record<string, "correct" | "wrong">>({});
+  const [answeredByPg, setAnsweredByPg] = useState<Record<string, AnsweredStatus>>({});
   const [question, setQuestion] = useState<QuestionLite | null>(null);
   const [index, setIndex] = useState(0);
   const [total, setTotal] = useState(0);
@@ -424,9 +451,14 @@ export default function RoomPage() {
       }
     );
 
-    s.on("player_answered", (p: { pgId: string; correct?: boolean }) => {
+    s.on("player_answered", (p: { pgId: string; correct?: boolean; mode?: "mc" | "text" }) => {
       if (!p?.pgId) return;
-      setAnsweredByPg((prev) => ({ ...prev, [p.pgId]: p.correct ? "correct" : "wrong" }));
+      const nextStatus: AnsweredStatus = p.correct
+        ? p.mode === "mc"
+          ? "correct-mc"
+          : "correct"
+        : "wrong";
+      setAnsweredByPg((prev) => ({ ...prev, [p.pgId]: nextStatus }));
     });
 
     s.on(
@@ -435,6 +467,15 @@ export default function RoomPage() {
         setPhase("reveal");
         setCorrectId(p.correctChoiceId);
         if (Array.isArray(p.leaderboard)) setLeaderboard(p.leaderboard);
+        setAnsweredByPg((prev) => {
+          const rows = Array.isArray(p.leaderboard) ? p.leaderboard : leaderboard;
+          if (!rows.length) return prev;
+          const next = { ...prev };
+          rows.forEach((row) => {
+            if (!next[row.id]) next[row.id] = "wrong";
+          });
+          return next;
+        });
         setFeedback((prev) => prev ?? "Temps écoulé !");
         if (p.correctLabel) setFeedbackCorrectLabel(p.correctLabel);
         setEndsAt(null);
