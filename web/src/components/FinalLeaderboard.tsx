@@ -1,4 +1,6 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
+import laurier from "../assets/laurier.png";
+
 
 type Row = { id: string; name: string; score: number; img?: string | null; bits?: number };
 
@@ -11,19 +13,18 @@ export function FinalLeaderboard({
   selfId?: string | null;
   selfName?: string | null;
 }) {
-  const top3 = rows.slice(0, 3);
   const listRows = rows;
 
   // 2 | 1 | 3
-  const order = [top3[1], top3[0], top3[2]].filter(Boolean) as Row[];
-
-  // Hauteurs réduites (~15%)
-  const tier = (idx: number) =>
-    [
-      { h: 105, ring: "ring-slate-300/60",  rank: 2 },
-      { h: 145, ring: "ring-amber-300/70",  rank: 1 },
-      { h:  90, ring: "ring-orange-300/60", rank: 3 },
-    ][idx];
+  const podiumSlots = useMemo(
+    () =>
+      [
+        { h: 105, ring: "ring-slate-300/60", rank: 2 },
+        { h: 145, ring: "ring-amber-300/70", rank: 1 },
+        { h: 90, ring: "ring-orange-300/60", rank: 3 },
+      ].map((slot) => ({ ...slot, row: rows[slot.rank - 1] })),
+    [rows]
+  );
 
   const isSelfRow = (r: Row) =>
     (!!selfId && r.id === selfId) ||
@@ -49,34 +50,44 @@ export function FinalLeaderboard({
       <div className="px-3 md:px-6 pt-2 pb-1">
         <div className="relative overflow-hidden rounded-xl">
           <div className="relative grid grid-cols-1 md:grid-cols-3 items-end gap-7 py-3">
-            {order.map((r, i) => {
-              const t = tier(i);
-              const isSelf = isSelfRow(r);
+            {podiumSlots.map((slot) => {
+              const { row, h, ring, rank } = slot;
+              const isSelf = row ? isSelfRow(row) : false;
 
               return (
-                <div key={r.id} className="flex flex-col items-center">
+                <div key={rank} className="flex flex-col items-center">
                   {/* Avatar — réduit */}
                   <div
                     className={[
                       "w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden",
-                      "ring-4", t.ring,
+                      "ring-4",
+                      ring,
                       "shadow-[0_10px_40px_rgba(0,0,0,.45)]",
                     ].join(" ")}
-                    aria-label={`Avatar de ${r.name}`}
+                    aria-label={row ? `Avatar de ${row.name}` : "Aucun joueur"}
                   >
-                    <img
-                      src={r.img ?? "/img/profiles/0.avif"}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      draggable={false}
-                      loading="lazy"
-                    />
+                    {row ? (
+                      <img
+                        src={row.img ?? "/img/profiles/0.avif"}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        draggable={false}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-white/10" />
+                    )}
                   </div>
 
                   {/* Nom */}
                   <div className="mt-2 mb-2 text-center max-w-[220px] px-1">
-                    <div className={["font-semibold truncate", isSelf ? "text-white" : "text-white/90"].join(" ")}>
-                      {r.name}
+                    <div
+                      className={[
+                        "font-semibold truncate",
+                        isSelf ? "text-white" : "text-white/90",
+                      ].join(" ")}
+                    >
+                      {row ? row.name : "—"}
                     </div>
                   </div>
 
@@ -88,24 +99,35 @@ export function FinalLeaderboard({
                       "border-x border-t border-white/10",
                       "shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_16px_40px_rgba(0,0,0,.55)]",
                     ].join(" ")}
-                    style={{ height: t.h }}
+                    style={{ height: h }}
                   >
                   {/* numéro gravé */}
-                  <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none" style={{ top: "16%" }}>
-                    <span
-                      className={[
-                        "font-extrabold tabular-nums select-none",
-                        t.rank === 1 ? "text-[50px]" : "text-[44px]",
-                        "text-white/20",
-                        "text-[#696D77]",
-                      ].join(" ")}
-                      style={{
-                        textShadow:
-                          "0 1px 0 rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.15)",
-                      }}
-                    >
-                      {t.rank}
-                    </span>
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div className={["flex items-center", rank === 1 ? "flex-col gap-0" : ""].join(" ")}>
+                      <span
+                        className={[
+                          "font-extrabold tabular-nums select-none",
+                          rank === 1 ? "text-[52px]" : rank === 2 ? "text-[48px]" : "text-[44px]",
+                          "text-white/20",
+                          "text-[#696D77]",
+                        ].join(" ")}
+                        style={{
+                          textShadow:
+                            "0 1px 0 rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.15)",
+                        }}
+                      >
+                        {rank}
+                      </span>
+                      {rank === 1 ? (
+                        <img
+                          src={laurier}
+                          alt=""
+                          className="w-16 md:w-20 opacity-80 -mt-6"
+                          draggable={false}
+                          loading="lazy"
+                        />
+                      ) : null}
+                    </div>
                   </div>
                   </div>
                 </div>
