@@ -103,7 +103,7 @@ function PlayerCell({
   const badge = useMemo(() => {
     if (answered === "correct") {
       return {
-        className: "bg-emerald-500 text-white",
+        className: "bg-emerald-400 text-white",
         icon: "✓",
         title: "Bonne réponse",
       };
@@ -919,7 +919,7 @@ export default function RoomPage() {
                         const isCurrent = idx === index && phase !== "final" && phase !== "between";
                         const colorClass =
                           status === "correct"
-                            ? "bg-emerald-500 text-white"
+                            ? "bg-emerald-400 text-white"
                             : status === "correct-mc"
                             ? "bg-amber-400 text-white"
                             : status === "wrong"
@@ -1037,7 +1037,7 @@ export default function RoomPage() {
                     )}
 
                     {phase === "final" && finalRecap ? (
-                      <div className="mt-6">
+                      <div className="mt-6 px-3 md:px-6">
                         <FinalQuestionRecapClean items={finalRecap} />
                       </div>
                     ) : null}
@@ -1313,8 +1313,8 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
       <div className="mt-2">
         <div className="h-[8px] rounded-full overflow-hidden border border-white/10 bg-white/5 flex">
           <div className="h-full bg-emerald-400" style={{ width: `${wCorrect}%` }} />
-          <div className="h-full bg-amber-300" style={{ width: `${wQcm}%` }} />
-          <div className="h-full bg-rose-400" style={{ width: `${wWrong}%` }} />
+          <div className="h-full bg-amber-400" style={{ width: `${wQcm}%` }} />
+          <div className="h-full bg-red-500" style={{ width: `${wWrong}%` }} />
         </div>
       </div>
     );
@@ -1324,7 +1324,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
   const hasAttempts = attempts.length > 0;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="rounded-2xl border border-white/10 bg-[#11182A] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_16px_40px_rgba(0,0,0,.55)]">
       <div className="flex items-baseline gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">
           Question {(selected?.index ?? 0) + 1}
@@ -1356,7 +1356,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
         ) : (
           attempts.map((a, idx) => (
             <div key={idx} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2">
-              <span className={a.correct ? "text-emerald-400" : "text-rose-400"} aria-hidden>
+              <span className={a.correct ? "text-emerald-400" : "text-red-500"} aria-hidden>
                 {a.correct ? "✅" : "❌"}
               </span>
 
@@ -1388,10 +1388,11 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
       <div className="mt-4 flex flex-wrap justify-start gap-2">
         {ordered.map((q, i) => {
           const state = questionState(q);
-          const base = "w-8 h-8 flex items-center justify-center rounded-lg text-[12px] font-semibold cursor-pointer transition border";
-          let color = "border-white/10 bg-white/[0.04] text-white/80";
-          if (state === "correct") color = "border-emerald-400/40 bg-emerald-400/15 text-white";
-          if (state === "wrong") color = "border-rose-400/40 bg-rose-400/15 text-white";
+          const base =
+            "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold cursor-pointer transition-all";
+          let color = "bg-white/20 text-white/70";
+          if (state === "correct") color = "bg-emerald-400 text-white";
+          if (state === "wrong") color = "bg-red-500 text-white";
 
           return (
             <button

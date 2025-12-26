@@ -320,7 +320,7 @@ className={[
                       ? "text-amber-300"
                       : feedback.includes("Bravo")
                       ? "text-emerald-400"
-                      : "text-rose-400",
+                      : "text-red-500",
                   ].join(" ")}
                 >
                   {feedback === "Temps écoulé !"
@@ -401,7 +401,7 @@ className={[
                       isCorrect
                         ? "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]"
                         : isSelected
-                        ? "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]"
+                        ? "border-red-500 bg-red-500 text-slate-50 shadow-[0_0_0px_rgba(239,68,68,0.8)]"
                         : `border-slate-700/90 bg-black/75 text-slate-50 ${hoverClasses}`,
                       !isPlaying ? "cursor-default" : "",
                     ].join(" ")}
@@ -429,7 +429,7 @@ className={[
                 "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
             } else if (state === "wrong") {
               colorClasses =
-                "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]";
+                "border-red-500 bg-red-500 text-slate-50 shadow-[0_0_0px_rgba(239,68,68,0.8)]";
             }
 
             return (
