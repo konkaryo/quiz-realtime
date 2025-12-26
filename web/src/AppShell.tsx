@@ -411,8 +411,8 @@ export default function AppShell() {
 
         {/* Right: user */}
         <div ref={userRef} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 700, color: "#e5e7eb" }}>
-            <span>{displayBits} x</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 800, color: "#e5e7eb" }}>
+            <span>{displayBits}</span>
             <img src={bitIconUrl} alt="Bits" width={25} height={25} style={{ display: "block" }} />
           </div>
           {!loading && (

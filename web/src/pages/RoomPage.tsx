@@ -696,8 +696,7 @@ export default function RoomPage() {
         aria-hidden
         className="fixed inset-0 bg-gradient-to-br from-[#050816] via-[#050014] to-[#1b0308]"
       />
-
-      {/* ✅ Scrollbar style (ancienne vibe) pour le classement */}
+      {/* ✅ Scrollbar style global */}
       <style>{`
         .lb-scroll {
           scrollbar-width: thin;
