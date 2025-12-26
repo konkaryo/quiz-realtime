@@ -762,21 +762,25 @@ export default function RoomPage() {
       <style>{`
         .lb-scroll {
           scrollbar-width: thin;
-          scrollbar-color: rgba(255,255,255,.22) rgba(255,255,255,.06);
+          scrollbar-color: #484B57 #151828;
         }
         .lb-scroll::-webkit-scrollbar { width: 12px; }
         .lb-scroll::-webkit-scrollbar-track {
-          background: rgba(255,255,255,.06);
+          background: #151828;
           border-radius: 999px;
         }
+        .lb-scroll::-webkit-scrollbar-button {
+          background-color: #484B57;
+          height: 12px;
+        }
         .lb-scroll::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,.22);
+          background: #484B57;
           border-radius: 999px;
           border: 3px solid rgba(0,0,0,0);
           background-clip: padding-box;
         }
         .lb-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(255,255,255,.32);
+          background: #484B57;
           border: 3px solid rgba(0,0,0,0);
           background-clip: padding-box;
         }
