@@ -438,19 +438,35 @@ export default function RoomPage() {
             });
             nextLives = 0;
           } else {
-            let computedLives = livesRef.current;
-            setLives((prev) => {
-              const updated = Math.max(0, prev - 1);
-              computedLives = updated;
-              livesRef.current = updated;
-              if (updated > 0) {
-                setTextAnswer("");
-                requestAnimationFrame(() => inputRef.current?.focus());
-              }
-              return updated;
-            });
-            nextLives = computedLives;
+            const updatedLives = Math.max(0, livesRef.current - 1);
+            setLives(updatedLives);
+            livesRef.current = updatedLives;
+            nextLives = updatedLives;
+            if (updatedLives > 0) {
+              setTextAnswer("");
+              requestAnimationFrame(() => inputRef.current?.focus());
+            }
           }
+        }
+
+        const shouldResolveStatus =
+          p.correct || (mcChoicesRef.current !== null ? true : (nextLives ?? 0) <= 0);
+        if (shouldResolveStatus) {
+          setQuestionStatuses((prev) => {
+            const next = prev.length
+              ? [...prev]
+              : Array.from({ length: totalRef.current }, () => "pending" as QuestionStatus);
+            const resolvedIndex = indexRef.current;
+            const nextStatus: QuestionStatus = p.correct
+              ? answerModeRef.current === "choice"
+                ? "correct-mc"
+                : "correct"
+              : "wrong";
+            if (resolvedIndex >= 0 && resolvedIndex < next.length) {
+              next[resolvedIndex] = nextStatus;
+            }
+            return next;
+          });
         }
 
         if (p.correct) setFeedback("Bravo !");
@@ -848,7 +864,7 @@ export default function RoomPage() {
                   )}
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-6">  
                   <div className="mt-3 grid grid-cols-6 gap-2">
                     {questionTrackerItems.length ? (
                       questionTrackerItems.map((status, idx) => {
