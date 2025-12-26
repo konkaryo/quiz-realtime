@@ -41,6 +41,7 @@ type LeaderRow = { id: string; name: string; score: number; img?: string | null;
 type RoomMeta = { id: string; code: string | null; visibility: "PUBLIC" | "PRIVATE"; name?: string | null };
 type RoomInfoItem = { label: string; value: string | number };
 type AnsweredStatus = "correct" | "correct-mc" | "wrong";
+type QuestionStatus = "pending" | "correct" | "correct-mc" | "wrong";
 
 /* Récapitulatif final (affiché à gauche uniquement en phase 'final') */
 type RecapItem = {
@@ -211,6 +212,10 @@ export default function RoomPage() {
   const [choicesRevealed, setChoicesRevealed] = useState(false);
   const [pending, setPending] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const answerModeRef = useRef<"text" | "choice" | null>(null);
+  const feedbackWasCorrectRef = useRef<boolean | null>(null);
+  const indexRef = useRef(0);
+  const totalRef = useRef(0);
 
   const [lives, setLives] = useState<number>(TEXT_LIVES);
   const livesRef = useRef<number>(TEXT_LIVES);
@@ -221,6 +226,7 @@ export default function RoomPage() {
   const [bitsByPgId, setBitsByPgId] = useState<Record<string, number>>({});
   const [selfId, setSelfId] = useState<string | null>(null);
   const [selfName, setSelfName] = useState<string | null>(null);
+  const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>([]);
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
 
@@ -350,6 +356,7 @@ export default function RoomPage() {
       setChoicesRevealed(false);
       setFinalRecap(null);
       setPending(false);
+      setQuestionStatuses([]);
     });
 
     s.on(
@@ -361,6 +368,8 @@ export default function RoomPage() {
         setPhase("playing");
         setIndex(p.index);
         setTotal(p.total);
+        indexRef.current = p.index;
+        totalRef.current = p.total;
         setEndsAt(p.endsAt);
         setFinalEndsAt(null);
         setFinalDuration(null);
@@ -390,6 +399,9 @@ export default function RoomPage() {
         });
         setFinalRecap(null);
         setPending(false);
+        setQuestionStatuses((prev) =>
+          Array.from({ length: p.total }, (_, idx) => prev[idx] ?? "pending")
+        );
         initSfx();
       }
     );
@@ -466,6 +478,22 @@ export default function RoomPage() {
       (p: { index: number; correctChoiceId: string | null; correctLabel?: string | null; leaderboard?: LeaderRow[] }) => {
         setPhase("reveal");
         setCorrectId(p.correctChoiceId);
+        setQuestionStatuses((prev) => {
+          const next = prev.length
+            ? [...prev]
+            : Array.from({ length: totalRef.current }, () => "pending" as QuestionStatus);
+          const resolvedIndex = typeof p.index === "number" ? p.index : indexRef.current;
+          const nextStatus: QuestionStatus =
+            feedbackWasCorrectRef.current === true
+              ? answerModeRef.current === "choice"
+                ? "correct-mc"
+                : "correct"
+              : "wrong";
+          if (resolvedIndex >= 0 && resolvedIndex < next.length) {
+            next[resolvedIndex] = nextStatus;
+          }
+          return next;
+        });
         if (Array.isArray(p.leaderboard)) setLeaderboard(p.leaderboard);
         setAnsweredByPg((prev) => {
           const rows = Array.isArray(p.leaderboard) ? p.leaderboard : leaderboard;
@@ -591,6 +619,19 @@ export default function RoomPage() {
   }, [phase, question]);
 
   useEffect(() => {
+    answerModeRef.current = answerMode;
+  }, [answerMode]);
+
+  useEffect(() => {
+    feedbackWasCorrectRef.current = feedbackWasCorrect;
+  }, [feedbackWasCorrect]);
+
+  useEffect(() => {
+    indexRef.current = index;
+    totalRef.current = total;
+  }, [index, total]);
+
+  useEffect(() => {
     livesRef.current = lives;
   }, [lives]);
 
@@ -678,6 +719,11 @@ export default function RoomPage() {
 
   const hasScrollableLeaderboard = leaderboard.length > LB_VISIBLE;
   const selfRow = selfIndex >= 0 ? leaderboard[selfIndex] : null;
+
+  const questionTrackerItems = useMemo(
+    () => Array.from({ length: total }, (_, idx) => questionStatuses[idx] ?? "pending"),
+    [questionStatuses, total],
+  );
 
   // ✅ Nom du salon affiché en gros à droite
   const roomDisplayName = roomMeta?.name?.trim() || "-";
@@ -802,11 +848,41 @@ export default function RoomPage() {
                   )}
                 </div>
 
-                {leaderboard.length > 0 ? (
-                  <div className="mt-4 text-[11px] text-white/45">
-                    {hasScrollableLeaderboard ? "Scroll pour voir tout le classement" : "—"}
+                <div className="mt-6">
+                  <div className="mt-3 grid grid-cols-6 gap-2">
+                    {questionTrackerItems.length ? (
+                      questionTrackerItems.map((status, idx) => {
+                        const isCurrent = idx === index && phase !== "final" && phase !== "between";
+                        const colorClass =
+                          status === "correct"
+                            ? "bg-emerald-500 text-white"
+                            : status === "correct-mc"
+                            ? "bg-amber-400 text-white"
+                            : status === "wrong"
+                            ? "bg-red-500 text-white"
+                            : "bg-white/20 text-white/70";
+
+                        return (
+                          <div
+                            key={`q-${idx + 1}`}
+                            className={[
+                              "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold",
+                              "transition-all",
+                              colorClass,
+                              isCurrent ? "ring-2 ring-white/70 ring-offset-2 ring-offset-black/20" : "",
+                            ].join(" ")}
+                            aria-label={`Question ${idx + 1}`}
+                            title={`Question ${idx + 1}`}
+                          >
+                            {idx + 1}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-white/45 text-sm">—</div>
+                    )}
                   </div>
-                ) : null}
+                </div>
               </div>
             </aside>
 
