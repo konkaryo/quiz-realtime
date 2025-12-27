@@ -229,6 +229,9 @@ export default function RoomPage() {
   const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>([]);
   const [rankPulseKey, setRankPulseKey] = useState(0);
   const rankRef = useRef<number | null>(null);
+  const [displayScore, setDisplayScore] = useState(0);
+  const displayScoreRef = useRef(0);
+  const scoreAnimationRef = useRef<number | null>(null);
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
 
@@ -245,6 +248,7 @@ export default function RoomPage() {
         (!!selfName && typeof r.name === "string" && r.name.toLowerCase() === selfName.toLowerCase())
     );
   }, [leaderboard, selfId, selfName]);
+  const selfRow = selfIndex >= 0 ? leaderboard[selfIndex] : null;
 
   /* -------- timer bar (inversée) -------- */
   const [skew, setSkew] = useState(0);
@@ -665,6 +669,53 @@ export default function RoomPage() {
     rankRef.current = selfIndex;
   }, [selfIndex]);
 
+  useEffect(() => {
+    displayScoreRef.current = displayScore;
+  }, [displayScore]);
+
+  useEffect(() => {
+    if (!selfRow || typeof selfRow.score !== "number") {
+      if (scoreAnimationRef.current !== null) {
+        cancelAnimationFrame(scoreAnimationRef.current);
+        scoreAnimationRef.current = null;
+      }
+      setDisplayScore(0);
+      displayScoreRef.current = 0;
+      return;
+    }
+    const start = displayScoreRef.current;
+    const end = selfRow.score;
+    if (start === end) {
+      return;
+    }
+    if (scoreAnimationRef.current !== null) {
+      cancelAnimationFrame(scoreAnimationRef.current);
+      scoreAnimationRef.current = null;
+    }
+    const duration = 650;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = Math.round(start + (end - start) * eased);
+      setDisplayScore(value);
+      if (progress < 1) {
+        scoreAnimationRef.current = requestAnimationFrame(tick);
+      } else {
+        scoreAnimationRef.current = null;
+      }
+    };
+
+    scoreAnimationRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (scoreAnimationRef.current !== null) {
+        cancelAnimationFrame(scoreAnimationRef.current);
+        scoreAnimationRef.current = null;
+      }
+    };
+  }, [selfRow]);
+
   /* --------------------------- actions --------------------------- */
   const sendText = () => {
     if (!socket || phase !== "playing" || !question || lives <= 0) return;
@@ -744,7 +795,6 @@ export default function RoomPage() {
   const questionPanelBackgroundClass = "bg-[#060A1B]";
 
   const hasScrollableLeaderboard = leaderboard.length > LB_VISIBLE;
-  const selfRow = selfIndex >= 0 ? leaderboard[selfIndex] : null;
 
   const questionTrackerItems = useMemo(
     () => Array.from({ length: total }, (_, idx) => questionStatuses[idx] ?? "pending"),
@@ -1043,15 +1093,24 @@ export default function RoomPage() {
                     ) : null}
                   </div>
                 </div>
-                  {rankLabel && (phase === "playing" || phase === "reveal") ? (
-                    <div className="pointer-events-none absolute top-6 right-10" aria-live="polite">
-                      <div
-                        key={rankPulseKey}
-                        className="rank-pop text-[40px] font-extrabold tracking-wide text-white drop-shadow-[0_10px_28px_rgba(255,255,255,0.4)]"
-                        style={rankAnimationVars ?? undefined}
-                      >
-                        {rankLabel.value}
-                        <sup className="ml-1 text-[55%] font-semibold tracking-normal">{rankLabel.suffix}</sup>
+                  {rankLabel || selfRow ? (
+                    <div className="pointer-events-none absolute top-6 right-10 text-right" aria-live="polite">
+                      <div className="flex flex-col items-end gap-1">
+                        {rankLabel && (phase === "playing" || phase === "reveal") ? (
+                          <div
+                            key={rankPulseKey}
+                            className="rank-pop text-[40px] font-extrabold tracking-wide text-white drop-shadow-[0_10px_28px_rgba(255,255,255,0.4)]"
+                            style={rankAnimationVars ?? undefined}
+                          >
+                            {rankLabel.value}
+                            <sup className="ml-1 text-[55%] font-semibold tracking-normal">{rankLabel.suffix}</sup>
+                          </div>
+                        ) : null}
+                        {selfRow && (phase === "playing" || phase === "reveal") ? (
+                          <div className="text-[20px] font-semibold tracking-wide text-white/85">
+                            {displayScore} <span className="text-[14px] font-medium text-white/60">pts</span>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   ) : null}
