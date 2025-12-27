@@ -259,6 +259,9 @@ export default function DailyQuestionPanel(props: Props) {
                   onKeyDown={handleKeyDown}
                   disabled={textInputDisabled}
                   aria-disabled={textLocked}
+                  spellCheck={false}
+                  autoCorrect="off"
+                  autoCapitalize="off"
                   className={[
                     "w-full border-none bg-transparent px-2 py-2 text-[15px] font-medium tracking-[0.02em] antialiased focus:outline-none focus:ring-0",
                     textInputColorClass,
