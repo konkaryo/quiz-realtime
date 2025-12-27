@@ -141,7 +141,7 @@ function PlayerCell({
     "px-3 py-2",
     "overflow-hidden", // ✅ évite les liserés aux bords
     isSelf
-      ? "border-0 bg-gradient-to-r from-[#D30E72] to-[#770577] text-white"
+      ? "border-0 bg-gradient-to-b from-[#D30E72] to-[#770577] text-white"
       : "border border-white/10 bg-white/[0.03]",
   ].join(" ")}
 >
@@ -1123,7 +1123,7 @@ export default function RoomPage() {
                         "flex items-center justify-between rounded-xl border px-3 py-2 overflow-x-hidden",
                         (selfId && r.id === selfId) ||
                         (!!selfName && typeof r.name === "string" && r.name.toLowerCase() === selfName.toLowerCase())
-                          ? "bg-gradient-to-r from-[#D30E72] to-[#770577] text-white border-transparent"
+                          ? "bg-gradient-to-b from-[#D30E72] to-[#770577] text-white border-transparent"
                           : "border-white/10 bg-white/[0.02]",
                       ].join(" ")}
                     >
@@ -1140,7 +1140,7 @@ export default function RoomPage() {
 
                 {hasScrollableLeaderboard && selfRow ? (
                   <div className="mt-4 pt-4 border-t border-white/10 overflow-x-hidden">
-                    <div className="flex items-center justify-between rounded-xl border border-transparent bg-gradient-to-r from-[#D30E72] to-[#770577] px-3 py-2 overflow-x-hidden text-white">
+                    <div className="flex items-center justify-between rounded-xl border border-transparent bg-gradient-to-b from-[#D30E72] to-[#770577] px-3 py-2 overflow-x-hidden text-white">
                       <div className="min-w-0 flex items-center gap-2 overflow-hidden">
                         <span className="w-6 text-right text-white/90 tabular-nums flex-shrink-0">{selfIndex + 1}.</span>
                         <span className="truncate text-[13px] font-semibold">{selfRow.name}</span>

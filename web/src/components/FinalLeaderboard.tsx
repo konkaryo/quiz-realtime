@@ -156,10 +156,10 @@ export function FinalLeaderboard({
                     key={r.id}
                     ref={isSelf ? activeItemRef : undefined}
                     className={[
-                      "flex items-center justify-between rounded-lg px-3 py-1.5 border shadow-[0_4px_10px_rgba(0,0,0,.22)]",
+                      "flex items-center justify-between rounded-lg px-3 py-1.5 border shadow-[0_4px_10px_rgba(0,0,0,.22)] overflow-hidden",
                       "text-[13px] leading-tight",
                       isSelf
-                        ? "bg-gradient-to-r from-[#D30E72] to-[#770577] text-white border-transparent"
+                        ? "border-0 bg-gradient-to-b from-[#D30E72] to-[#770577] text-white"
                         : `${podiumStepBackgroundClass} text-white border-white/10`,
                     ].join(" ")}
                   >
