@@ -31,6 +31,7 @@ export function FinalLeaderboard({
     (!!selfName && r.name?.toLowerCase() === selfName.toLowerCase());
 
   const podiumStepBackgroundClass = "bg-[#11182A]";
+  const listAlternateBackgroundClass = "bg-[#1B2132]";
 
   const listWrapRef = useRef<HTMLDivElement | null>(null);
   const activeItemRef = useRef<HTMLLIElement | null>(null);
@@ -150,6 +151,7 @@ export function FinalLeaderboard({
               {listRows.map((r, idx) => {
                 const rank = idx + 1;
                 const isSelf = isSelfRow(r);
+                const hasAlternateBackground = idx % 2 === 1;
 
                 return (
                   <li
@@ -160,11 +162,15 @@ export function FinalLeaderboard({
                       "text-[13px] leading-tight",
                       isSelf
                         ? "border-0 bg-gradient-to-b from-[#D30E72] to-[#770577] text-white"
-                        : `${podiumStepBackgroundClass} text-white border-white/10`,
+                        : `${
+                            hasAlternateBackground
+                              ? listAlternateBackgroundClass
+                              : podiumStepBackgroundClass
+                          } text-white border-white/10`,
                     ].join(" ")}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-5 text-right opacity-80 tabular-nums">{rank}</span>
+                      <span className="w-5 text-right opacity-80 tabular-nums">#{rank}</span>
                       <img
                         src={r.img ?? "/img/profiles/0.avif"}
                         alt=""
