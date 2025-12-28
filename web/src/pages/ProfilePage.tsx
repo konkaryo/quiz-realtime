@@ -1,7 +1,8 @@
 // web/src/pages/ProfilePage.tsx
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Background from "../components/Background";
+import { getLevelProgress } from "../utils/experience";
 
 import {
   ArrowUpRight,
@@ -11,7 +12,6 @@ import {
   Clock,
   Edit3,
   Shield,
-  Sparkles,
   Trophy,
   Users,
 } from "lucide-react";
@@ -27,12 +27,21 @@ import {
   LabelList,
 } from "recharts";
 
-const avatarSrc = "/src/assets/89.jpg";
+type CurrentUser = {
+  displayName?: string;
+  img?: string | null;
+  experience?: number;
+};
+
+const API_BASE =
+  (import.meta as any).env?.VITE_API_BASE ??
+  (typeof window !== "undefined" ? window.location.origin : "");
+
+const fallbackAvatar = "/img/profiles/0.avif";
 
 const mockProfile = {
   name: "Synapz",
   username: "@lea.dmt",
-  avatar: avatarSrc,
   rank: "Aigle rubis",
   globalPosition: 18,
   score: 24180,
@@ -151,16 +160,15 @@ const achievements = [
   {
     title: "Maître des thèmes",
     desc: "80% de réussite sur 5 catégories",
-    icon: <Sparkles className="h-5 w-5" />,
     progress: 4,
     goal: 5,
   },
 ];
 
 const friends = [
-  { name: "Nora", status: "En ligne", avatar: avatarSrc },
-  { name: "Liam", status: "En partie", avatar: avatarSrc },
-  { name: "Sacha", status: "Hors ligne", avatar: avatarSrc },
+  { name: "Nora", status: "En ligne", avatar: fallbackAvatar },
+  { name: "Liam", status: "En partie", avatar: fallbackAvatar },
+  { name: "Sacha", status: "Hors ligne", avatar: fallbackAvatar },
 ];
 
 const history = [
@@ -201,6 +209,30 @@ function SectionCard({ title, children, right, className }: SectionCardProps) {
 /* ================================================================== */
 
 export default function ProfilePage() {
+  const [user, setUser] = useState<CurrentUser | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
+        const { user } = (res.ok ? await res.json() : { user: null }) as {
+          user: CurrentUser | null;
+        };
+        if (mounted) setUser(user ?? null);
+      } catch {
+        if (mounted) setUser(null);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const displayName = user?.displayName ?? "Utilisateur";
+  const avatarUrl = user?.img || fallbackAvatar;
+  const experienceValue = user?.experience ?? 0;
+  const xpProgress = getLevelProgress(experienceValue);
   return (
     <div className="relative text-slate-50">
       <Background />
@@ -231,8 +263,8 @@ export default function ProfilePage() {
                 }}
               >
                 <img
-                  src={avatarSrc}
-                  alt="Photo de profil"
+                  src={avatarUrl}
+                  alt={`Photo de profil de ${displayName}`}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               </div>
@@ -241,8 +273,28 @@ export default function ProfilePage() {
             {/* INFOS */}
             <div className="flex flex-col gap-3">
               <h1 className="font-brutal text-3xl sm:text-4xl text-slate-50">
-                {mockProfile.name}
+                {displayName}
               </h1>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                  <span>Niveau {xpProgress.level}</span>
+                  <span className="text-xs text-slate-400">
+                    {xpProgress.needed > 0
+                      ? `${xpProgress.gained} / ${xpProgress.needed} XP`
+                      : "Niveau maximum"}
+                  </span>
+                </div>
+                <div className="h-2 w-full max-w-xs rounded-full bg-slate-800/80">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${xpProgress.progress * 100}%`,
+                      background: "linear-gradient(90deg,#38bdf8,#22d3ee)",
+                      boxShadow: "inset 0 0 6px rgba(255,255,255,.25)",
+                    }}
+                  />
+                </div>
+              </div>
 
               <div className="flex flex-wrap gap-3 text-sm font-semibold">
                 <span className="inline-flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-slate-100 ring-1 ring-slate-600/70">
