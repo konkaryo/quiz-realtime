@@ -1,6 +1,6 @@
 // web/src/pages/ProfilePage.tsx
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Background from "../components/Background";
 import { getLevelProgress } from "../utils/experience";
 
@@ -70,23 +70,14 @@ const CATEGORY_CONFIG = {
 
 type CategoryKey = keyof typeof CATEGORY_CONFIG;
 
-const CATEGORY_ACCURACY: Record<CategoryKey, number> = {
-  CINEMA_SERIES: 88,
-  ARTS_CULTURE: 82,
-  JEUX_BD: 75,
-  GEOGRAPHIE: 90,
-  LANGUES_LITTERATURE: 86,
-  ECONOMIE_POLITIQUE: 20,
-  GASTRONOMIE: 83,
-  CROYANCES: 77,
-  SPORT: 92,
-  HISTOIRE: 84,
-  DIVERS: 71,
-  SCIENCES_NATURELLES: 5,
-  SCIENCES_TECHNIQUES: 80,
-  MUSIQUE: 76,
-  ACTUALITES_MEDIAS: 81,
-};
+const emptyCategoryAccuracy = () =>
+  (Object.keys(CATEGORY_CONFIG) as CategoryKey[]).reduce(
+    (acc, key) => {
+      acc[key] = 0;
+      return acc;
+    },
+    {} as Record<CategoryKey, number>
+  );
 
 // Libellés (longs) affichés dans les barres
 const CATEGORY_SHORT: Record<CategoryKey, string> = {
@@ -126,18 +117,6 @@ const SHORT_LABEL_COLOR: Record<string, string> = {
   "ACTUALITES & MEDIAS": "#FBC5CE",
 };
 
-const categoryBarData = (Object.keys(CATEGORY_CONFIG) as CategoryKey[])
-  .map((key) => {
-    const meta = CATEGORY_CONFIG[key];
-    return {
-      key,
-      label: meta.label,
-      short: CATEGORY_SHORT[key],
-      color: meta.color,
-      accuracy: CATEGORY_ACCURACY[key] ?? 0,
-    };
-  })
-  .sort((a, b) => b.accuracy - a.accuracy);
 
 /* ---------------------- AUTRES DONNÉES --------------------------- */
 
@@ -210,6 +189,9 @@ function SectionCard({ title, children, right, className }: SectionCardProps) {
 
 export default function ProfilePage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [categoryAccuracy, setCategoryAccuracy] = useState<Record<CategoryKey, number>>(
+    emptyCategoryAccuracy
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -228,6 +210,52 @@ export default function ProfilePage() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/auth/me/stats`, {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const payload = (await res.json()) as {
+          stats?: Record<string, { accuracy: number }>;
+        };
+        const base = emptyCategoryAccuracy();
+        if (payload.stats) {
+          for (const [theme, stat] of Object.entries(payload.stats)) {
+            if (theme in base) {
+              base[theme as CategoryKey] = stat.accuracy ?? 0;
+            }
+          }
+        }
+        if (mounted) setCategoryAccuracy(base);
+      } catch {
+        if (mounted) setCategoryAccuracy(emptyCategoryAccuracy());
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const categoryBarData = useMemo(
+    () =>
+      (Object.keys(CATEGORY_CONFIG) as CategoryKey[])
+        .map((key) => {
+          const meta = CATEGORY_CONFIG[key];
+          return {
+            key,
+            label: meta.label,
+            short: CATEGORY_SHORT[key],
+            color: meta.color,
+            accuracy: categoryAccuracy[key] ?? 0,
+          };
+        })
+        .sort((a, b) => b.accuracy - a.accuracy),
+    [categoryAccuracy]
+  );
 
   const displayName = user?.displayName ?? "Utilisateur";
   const avatarUrl = user?.img || fallbackAvatar;

@@ -137,4 +137,53 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
         },
       });
     });
+
+    // GET /auth/me/stats
+    app.get("/me/stats", async (req, reply) => {
+      const { user, session } = await currentUser(prisma, req);
+      if (!user || !session) return reply.code(401).send({ stats: {} });
+
+      const player = await prisma.player.findUnique({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+
+      if (!player) return reply.send({ stats: {}, totalQuestions: 0 });
+
+      const answers = await prisma.answer.findMany({
+        where: {
+          playerGame: { playerId: player.id },
+          questionId: { not: null },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1000,
+        select: {
+          correct: true,
+          question: { select: { theme: true } },
+        },
+      });
+
+      const stats = new Map<string, { total: number; correct: number }>();
+      for (const ans of answers) {
+        const theme = ans.question?.theme;
+        if (!theme) continue;
+        const entry = stats.get(theme) ?? { total: 0, correct: 0 };
+        entry.total += 1;
+        if (ans.correct) entry.correct += 1;
+        stats.set(theme, entry);
+      }
+
+      const payload: Record<string, { total: number; correct: number; accuracy: number }> = {};
+      for (const [theme, entry] of stats) {
+        const accuracy = entry.total > 0 ? Math.round((entry.correct / entry.total) * 100) : 0;
+        payload[theme] = { ...entry, accuracy };
+      }
+
+      return reply.send({
+        stats: payload,
+        totalQuestions: answers.length,
+      });
+    });
+
   };
+
