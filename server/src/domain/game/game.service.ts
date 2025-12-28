@@ -10,6 +10,7 @@ import { QUESTION_DISTRIBUTION, quotasFromDistribution } from "../question/distr
 import { rebalanceBotsAfterGame } from "../bot/traffic";
 import { buildPlayerSummary, buildRoomQuestionStats } from "./summary.service";
 import { awardBitsForGame } from "./bits-reward.service";
+import { awardXpForGame } from "./xp-reward.service";
 
 type Leaderboard = Awaited<ReturnType<typeof lb_service.buildLeaderboard>>;
 
@@ -30,10 +31,16 @@ export async function startGameForRoom(
     if (missing.length) {
       const meta = await prisma.playerGame.findMany({
         where: { id: { in: missing.map((m) => m.id) } },
-        select: { id: true, player: { select: { name: true, img: true } } },
+        select: { id: true, player: { select: { name: true, img: true, experience: true } } },
       });
       for (const pg of meta) {
-        running.playerData.set(pg.id, { score: 0, answers: [], name: pg.player.name, img: pg.player.img });
+        running.playerData.set(pg.id, {
+          score: 0,
+          answers: [],
+          name: pg.player.name,
+          img: pg.player.img,
+          experience: pg.player.experience,
+        });
       }
     }
     return;
@@ -47,15 +54,19 @@ export async function startGameForRoom(
 
   const playersMeta = await prisma.playerGame.findMany({
     where: { id: { in: pgs.map((p) => p.id) } },
-    select: { id: true, player: { select: { name: true, img: true } } },
+    select: { id: true, player: { select: { name: true, img: true, experience: true } } },
   });
-  const playerData = new Map<string, { score: number; answers: StoredAnswer[]; name?: string; img?: string | null }>();
+  const playerData = new Map<
+    string,
+    { score: number; answers: StoredAnswer[]; name?: string; img?: string | null; experience?: number }
+  >();
   playersMeta.forEach((pg) => {
     playerData.set(pg.id, {
       score: 0,
       answers: [],
       name: pg.player.name,
       img: pg.player.img,
+      experience: pg.player.experience,
     });
   });
 
@@ -389,12 +400,19 @@ async function finalizeGameAfterReveal(
   await prisma.game.update({ where: { id: st.gameId }, data: { state: "ended" } });
 
   const awarded = await awardBitsForGame(prisma, st.gameId, leaderboard);
+  const xpAwarded = await awardXpForGame(prisma, st.gameId, leaderboard);
 
   const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 1000000);
   io.to(st.roomId).emit("final_leaderboard", { leaderboard, displayMs: FINAL_LB_MS });
   if (awarded.length) {
     io.to(st.roomId).emit("bits_awarded", {
       rewards: awarded.map(({ playerGameId, rank, bits }) => ({ playerGameId, rank, bits })),
+    });
+  }
+
+  if (xpAwarded.length) {
+    io.to(st.roomId).emit("xp_awarded", {
+      rewards: xpAwarded.map(({ playerGameId, xp }) => ({ playerGameId, xp })),
     });
   }
 

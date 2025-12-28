@@ -4,7 +4,13 @@ import type { GameState } from "../../types";
 import * as media_service from "../media/media.service";
 
 
-type LeaderboardRow = { id: string; name: string; score: number; img: string | null };
+type LeaderboardRow = {
+  id: string;
+  name: string;
+  score: number;
+  img: string | null;
+  experience: number;
+};
 
 function sortWithTieBreak(lb: LeaderboardRow[], st?: GameState) {
   if (st && Array.isArray((st as any).answeredOrder)) {
@@ -39,14 +45,16 @@ export async function buildLeaderboard(prisma: PrismaClient, gameId: string, onl
     if (!ids.length) return [] as LeaderboardRow[];
 
     const missingMeta = ids.filter((id) => !(st.playerData.get(id)?.name));
-    const metaByPgId = new Map<string, { name: string; img: string | null }>();
+    const metaByPgId = new Map<string, { name: string; img: string | null; experience: number }>();
 
     if (missingMeta.length) {
       const rows = await prisma.playerGame.findMany({
         where: { id: { in: missingMeta } },
-        select: { id: true, player: { select: { name: true, img: true } } },
+        select: { id: true, player: { select: { name: true, img: true, experience: true } } },
       });
-      rows.forEach((r) => metaByPgId.set(r.id, { name: r.player.name, img: r.player.img }));
+      rows.forEach((r) =>
+        metaByPgId.set(r.id, { name: r.player.name, img: r.player.img, experience: r.player.experience }),
+      );
     }
 
     const lb = ids
@@ -56,7 +64,13 @@ export async function buildLeaderboard(prisma: PrismaClient, gameId: string, onl
         const meta = metaByPgId.get(id);
         const name = data.name ?? meta?.name ?? "";
         const img = media_service.toProfileUrl(data.img ?? meta?.img ?? null);
-        return { id, name, score: data.score, img } as LeaderboardRow;
+        return {
+          id,
+          name,
+          score: data.score,
+          img,
+          experience: data.experience ?? meta?.experience ?? 0,
+        } as LeaderboardRow;
       })
       .filter(Boolean) as LeaderboardRow[];
 
@@ -71,14 +85,15 @@ export async function buildLeaderboard(prisma: PrismaClient, gameId: string, onl
     where,
     // on garde un premier tri DB par score desc pour limiter le travail en mémoire
     orderBy: [{ score: "desc" }],
-    select: { id: true, score: true, player: { select: { name: true, img: true } } },
+    select: { id: true, score: true, player: { select: { name: true, img: true, experience: true } } },
   });
 
   const lb = rows.map((r) => ({
     id: r.id,
     name: r.player.name,
     score: r.score,
-    img: media_service.toProfileUrl(r.player.img)
+    img: media_service.toProfileUrl(r.player.img),
+    experience: r.player.experience,
   }));
 
   return sortWithTieBreak(lb, st);

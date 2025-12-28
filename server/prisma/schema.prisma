@@ -80,6 +80,7 @@ model Player {
   name        String
   img         String                @default("0")
   bits        Int                   @default(0)
+  experience  Int                   @default(0)
   isBot       Boolean               @default(false)
   bot         Bot?
   createdAt   DateTime              @default(now())

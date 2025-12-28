@@ -79,7 +79,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
       const user = await prisma.user.findUnique({
         where: { email },
-        include: { player: { select: { id: true, name: true, img: true, bits: true } } }
+        include: { player: { select: { id: true, name: true, img: true, bits: true, experience: true } } }
       });
       if (!user) return reply.code(401).send({ error: "invalid-credentials" });
 
@@ -98,6 +98,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           playerName: user.player?.name ?? null,
           img: toProfileUrl(user.player?.img ?? null),
           bits: user.player?.bits ?? 0,
+          experience: user.player?.experience ?? 0,
         },
         session: { expiresAt: session.expiresAt },
       });
@@ -120,7 +121,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
       const player = await prisma.player.findUnique({
         where: { userId: user.id },
-        select: { id: true, name: true, img: true, bits: true },
+        select: { id: true, name: true, img: true, bits: true, experience: true },
       });
 
       return reply.send({
@@ -132,6 +133,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           playerName: player?.name ?? null,
           img: toProfileUrl(player?.img ?? null),
           bits: player?.bits ?? 0,
+          experience: player?.experience ?? 0,
         },
       });
     });

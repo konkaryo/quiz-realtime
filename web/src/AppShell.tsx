@@ -3,13 +3,14 @@ import { useEffect, useState, useRef } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import logoUrl from "@/assets/synapz.png";
 import bitIconUrl from "@/assets/bit.png";
+import { getLevelProgress } from "@/utils/experience";
 
 type CurrentUser = {
   displayName?: string;
   img?: string | null;
   bits?: number;
+  experience?: number;
 };
-
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
@@ -147,7 +148,10 @@ export default function AppShell() {
   const [loading, setLoading] = useState(true);
   const [displayBits, setDisplayBits] = useState(0);
   const displayBitsRef = useRef(0);
+  const [displayExperience, setDisplayExperience] = useState(0);
+  const displayExperienceRef = useRef(0);
   const animationRef = useRef<number | null>(null);
+  const experienceAnimationRef = useRef<number | null>(null);
 
   const [openMenu, setOpenMenu] = useState<null | "solo" | "multi" | "private">(null);
   const [userOpen, setUserOpen] = useState(false);
@@ -162,6 +166,7 @@ export default function AppShell() {
         if (mounted) {
           setUser(user ?? null);
           setDisplayBits(user?.bits ?? 0);
+          setDisplayExperience(user?.experience ?? 0);
         }
       } catch {
       } finally {
@@ -174,6 +179,10 @@ export default function AppShell() {
   useEffect(() => {
     displayBitsRef.current = displayBits;
   }, [displayBits]);
+
+  useEffect(() => {
+    displayExperienceRef.current = displayExperience;
+  }, [displayExperience]);
 
   useEffect(() => {
     if (typeof user?.bits !== "number") return;
@@ -209,6 +218,39 @@ export default function AppShell() {
   }, [user?.bits]);
 
   useEffect(() => {
+    if (typeof user?.experience !== "number") return;
+    const start = displayExperienceRef.current;
+    const end = user.experience;
+    if (start === end) return;
+    if (experienceAnimationRef.current !== null) {
+      cancelAnimationFrame(experienceAnimationRef.current);
+      experienceAnimationRef.current = null;
+    }
+    const duration = 900;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = Math.round(start + (end - start) * eased);
+      setDisplayExperience(value);
+      if (progress < 1) {
+        experienceAnimationRef.current = requestAnimationFrame(tick);
+      } else {
+        experienceAnimationRef.current = null;
+      }
+    };
+
+    experienceAnimationRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (experienceAnimationRef.current !== null) {
+        cancelAnimationFrame(experienceAnimationRef.current);
+        experienceAnimationRef.current = null;
+      }
+    };
+  }, [user?.experience]);
+
+  useEffect(() => {
     const onBitsUpdated = (event: Event) => {
       const custom = event as CustomEvent<{ total?: number }>;
       const total = custom.detail?.total;
@@ -217,6 +259,17 @@ export default function AppShell() {
     };
     window.addEventListener("bits-updated", onBitsUpdated as EventListener);
     return () => window.removeEventListener("bits-updated", onBitsUpdated as EventListener);
+  }, []);
+
+  useEffect(() => {
+    const onExperienceUpdated = (event: Event) => {
+      const custom = event as CustomEvent<{ total?: number }>;
+      const total = custom.detail?.total;
+      if (!Number.isFinite(total)) return;
+      setUser((prev) => (prev ? { ...prev, experience: total } : prev));
+    };
+    window.addEventListener("experience-updated", onExperienceUpdated as EventListener);
+    return () => window.removeEventListener("experience-updated", onExperienceUpdated as EventListener);
   }, []);
 
   useEffect(() => {
@@ -254,6 +307,9 @@ export default function AppShell() {
   ];
 
   const avatarUrl = user?.img || "/img/profiles/0.avif";
+  const xpValue = displayExperience;
+  const xpProgress = getLevelProgress(xpValue);
+
 
   const HEADER_H = 64;
 
@@ -411,6 +467,73 @@ export default function AppShell() {
 
         {/* Right: user */}
         <div ref={userRef} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 20, position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              aria-label={`Niveau ${xpProgress.level}`}
+              style={{
+                width: 34,
+                height: 30,
+                display: "grid",
+                placeItems: "center",
+                fontWeight: 900,
+                color: "#0f172a",
+                textShadow: "0 1px 0 rgba(255,255,255,.5)",
+                background: "linear-gradient(180deg,#7dd3fc,#38bdf8)",
+                border: "2px solid #0ea5e9",
+                boxShadow: "0 2px 6px rgba(0,0,0,.4)",
+                clipPath:
+                  "polygon(0% 25%, 12% 25%, 12% 0%, 88% 0%, 88% 25%, 100% 25%, 100% 75%, 88% 75%, 88% 100%, 12% 100%, 12% 75%, 0% 75%)",
+              }}
+            >
+              {xpProgress.level}
+            </div>
+            <div
+              style={{
+                minWidth: 120,
+                padding: "4px 6px",
+                borderRadius: 10,
+                background: "linear-gradient(180deg,rgba(15,23,42,.9),rgba(8,10,20,.9))",
+                border: "1px solid rgba(255,255,255,.12)",
+                boxShadow: "inset 0 0 0 1px rgba(0,0,0,.35)",
+              }}
+            >
+              <div
+                aria-label={`Progression ${xpProgress.gained} sur ${xpProgress.needed || xpProgress.gained} xp`}
+                style={{
+                  position: "relative",
+                  height: 14,
+                  borderRadius: 8,
+                  background: "linear-gradient(180deg,#0b1224,#0a0f1f)",
+                  overflow: "hidden",
+                  border: "1px solid rgba(255,255,255,.08)",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: `${xpProgress.progress * 100}%`,
+                    background: "linear-gradient(90deg,#38bdf8,#22d3ee)",
+                    boxShadow: "inset 0 0 6px rgba(255,255,255,.25)",
+                  }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: "#e2e8f0",
+                    textShadow: "0 1px 2px rgba(0,0,0,.7)",
+                  }}
+                >
+                  {xpProgress.needed > 0 ? `${xpProgress.gained}/${xpProgress.needed}` : "MAX"}
+                </div>
+              </div>
+            </div>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 800, color: "#e5e7eb" }}>
             <span>{displayBits}</span>
             <img src={bitIconUrl} alt="Bits" width={25} height={25} style={{ display: "block" }} />

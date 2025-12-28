@@ -10,6 +10,7 @@ import QuestionPanel, {
   Choice as QuestionPanelChoice,
   QuestionProgress as QuestionPanelProgress,
 } from "../components/QuestionPanel";
+import { getLevelFromExperience } from "../utils/experience";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -37,7 +38,15 @@ type QuestionLite = {
   difficulty?: number | null;
 };
 type Phase = "idle" | "countdown" | "playing" | "reveal" | "between" | "final";
-type LeaderRow = { id: string; name: string; score: number; img?: string | null; bits?: number };
+type LeaderRow = {
+  id: string;
+  name: string;
+  score: number;
+  img?: string | null;
+  bits?: number;
+  xp?: number;
+  experience?: number;
+};
 type RoomMeta = { id: string; code: string | null; visibility: "PUBLIC" | "PRIVATE"; name?: string | null };
 type RoomInfoItem = { label: string; value: string | number };
 type AnsweredStatus = "correct" | "correct-mc" | "wrong";
@@ -160,7 +169,9 @@ function PlayerCell({
 
           <div className="min-w-0 leading-tight overflow-hidden">
             <div className="truncate text-[13px] font-semibold text-white/90">{row.name}</div>
-            <div className="text-[11px] text-white/45">Niveau 1</div>
+            <div className="text-[11px] text-white/45">
+              Niveau {getLevelFromExperience(row.experience ?? 0)}
+            </div>
           </div>
         </div>
 
@@ -224,6 +235,7 @@ export default function RoomPage() {
 
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
   const [bitsByPgId, setBitsByPgId] = useState<Record<string, number>>({});
+  const [xpByPgId, setXpByPgId] = useState<Record<string, number>>({});
   const [selfId, setSelfId] = useState<string | null>(null);
   const [selfName, setSelfName] = useState<string | null>(null);
   const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>([]);
@@ -542,6 +554,7 @@ export default function RoomPage() {
       setPhase("final");
       setLeaderboard(p.leaderboard ?? []);
       setBitsByPgId({});
+      setXpByPgId({});
       setQuestion(null);
       setMcChoices(null);
       setSelected(null);
@@ -584,6 +597,28 @@ export default function RoomPage() {
           const total = data?.user?.bits;
           if (Number.isFinite(total)) {
             window.dispatchEvent(new CustomEvent("bits-updated", { detail: { total } }));
+          }
+        })
+        .catch(() => {});
+    });
+
+    s.on("xp_awarded", (p: { rewards?: { playerGameId: string; xp: number }[] }) => {
+      const rewards = p.rewards ?? [];
+      if (!Array.isArray(rewards)) return;
+      setXpByPgId((prev) => {
+        const next = { ...prev };
+        rewards.forEach((reward) => {
+          if (!reward?.playerGameId) return;
+          next[reward.playerGameId] = reward.xp ?? 0;
+        });
+        return next;
+      });
+      fetch(`${API_BASE}/auth/me`, { credentials: "include" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const total = data?.user?.experience;
+          if (Number.isFinite(total)) {
+            window.dispatchEvent(new CustomEvent("experience-updated", { detail: { total } }));
           }
         })
         .catch(() => {});
@@ -632,8 +667,13 @@ export default function RoomPage() {
   }, [roomId, nav]);
 
   const finalRows = useMemo(
-    () => leaderboard.map((row) => ({ ...row, bits: bitsByPgId[row.id] ?? 0 })),
-    [leaderboard, bitsByPgId],
+    () =>
+      leaderboard.map((row) => ({
+        ...row,
+        bits: bitsByPgId[row.id] ?? 0,
+        xp: xpByPgId[row.id] ?? 0,
+      })),
+    [leaderboard, bitsByPgId, xpByPgId],
   );
 
   useEffect(() => {

@@ -1,8 +1,17 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import laurier from "../assets/laurier.png";
+import { getLevelFromExperience } from "../utils/experience";
 
 
-type Row = { id: string; name: string; score: number; img?: string | null; bits?: number };
+type Row = {
+  id: string;
+  name: string;
+  score: number;
+  img?: string | null;
+  bits?: number;
+  xp?: number;
+  experience?: number;
+};
 
 export function FinalLeaderboard({
   rows,
@@ -180,10 +189,15 @@ export function FinalLeaderboard({
                       />
                       <div className="min-w-0">
                         <div className="truncate">{r.name}</div>
-                        <div className="text-[11px] opacity-70">Niveau 1</div>
+                        <div className="text-[11px] opacity-70">
+                          Niveau {getLevelFromExperience((r.experience ?? 0) + (r.xp ?? 0))}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
+                      <span className="tabular-nums text-[12px] text-cyan-200/90">
+                        +{r.xp ?? 0} xp
+                      </span>
                       <span className="tabular-nums text-[12px] text-emerald-200/90">
                         +{r.bits ?? 0} bits
                       </span>

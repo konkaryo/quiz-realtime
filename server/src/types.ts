@@ -42,6 +42,7 @@ export type GameState = {
       answers: StoredAnswer[];
       name?: string;
       img?: string | null;
+      experience?: number;
     }
   >;
   persistedResults?: boolean;
