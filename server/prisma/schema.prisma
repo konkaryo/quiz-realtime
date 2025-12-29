@@ -118,7 +118,7 @@ model Room {
   name          String?
   ownerId       String?
   owner         User?          @relation("UserOwnedRooms", fields: [ownerId], references: [id], onDelete: SetNull)
-  difficulty    Int            @default(5)
+  difficulty    Int            @default(50)
   popularity    Int            @default(5)
   code          String?        @unique
   createdAt     DateTime       @default(now())

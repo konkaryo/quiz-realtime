@@ -49,7 +49,7 @@ export default function CreateRoomPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const [difficulty, setDifficulty] = useState<number>(5);
+  const [difficulty, setDifficulty] = useState<number>(50);
   const [questionCount, setQuestionCount] = useState<number>(10);   // 10–30
   const [questionDuration, setQuestionDuration] = useState<number>(20); // 10–30 (secondes)
 
@@ -249,20 +249,20 @@ export default function CreateRoomPage() {
       {/* Difficulté */}
       <div style={{ marginBottom: 24 }}>
         <label htmlFor="difficulty" style={{ display: "block", fontWeight: 600, marginBottom: 8 }}>
-          Difficulté : <span style={{ fontVariantNumeric: "tabular-nums" }}>{difficulty}</span> / 10
+          Difficulté : <span style={{ fontVariantNumeric: "tabular-nums" }}>{difficulty}</span>%
         </label>
         <input
           id="difficulty"
           type="range"
-          min={1}
-          max={10}
+          min={0}
+          max={100}
           step={1}
           value={difficulty}
           onChange={(e) => setDifficulty(Number(e.target.value))}
           style={{ width: "100%" }}
         />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.7 }}>
-          <span>1</span><span>5</span><span>10</span>
+          <span>0%</span><span>50%</span><span>100%</span>
         </div>
       </div>
 

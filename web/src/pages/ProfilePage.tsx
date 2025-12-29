@@ -1,20 +1,10 @@
 // web/src/pages/ProfilePage.tsx
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import React, { useEffect, useMemo, useState, type ReactNode } from "react";
 import Background from "../components/Background";
 import { getLevelProgress } from "../utils/experience";
 
-import {
-  ArrowUpRight,
-  BadgeCheck,
-  Camera,
-  Check,
-  Clock,
-  Edit3,
-  Shield,
-  Trophy,
-  Users,
-} from "lucide-react";
+import { BadgeCheck, Clock, Edit3, Trophy, Users } from "lucide-react";
 
 import {
   BarChart,
@@ -23,7 +13,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
   LabelList,
 } from "recharts";
 
@@ -38,15 +27,6 @@ const API_BASE =
   (typeof window !== "undefined" ? window.location.origin : "");
 
 const fallbackAvatar = "/img/profiles/0.avif";
-
-const mockProfile = {
-  name: "Synapz",
-  username: "@lea.dmt",
-  rank: "Aigle rubis",
-  globalPosition: 18,
-  score: 24180,
-  streak: 12,
-};
 
 /* ---------------------- CATÉGORIES + COULEURS ---------------------- */
 
@@ -79,44 +59,200 @@ const emptyCategoryAccuracy = () =>
     {} as Record<CategoryKey, number>
   );
 
-// Libellés (longs) affichés dans les barres
-const CATEGORY_SHORT: Record<CategoryKey, string> = {
-  SPORT: "SPORT",
-  GEOGRAPHIE: "GEOGRAPHIE",
-  SCIENCES_NATURELLES: "SCIENCES NATURELLES",
-  CINEMA_SERIES: "CINEMA & SERIES",
-  LANGUES_LITTERATURE: "LANGUES & LITTERATURE",
-  HISTOIRE: "HISTOIRE",
-  GASTRONOMIE: "GASTRONOMIE",
-  ARTS_CULTURE: "ARTS & CULTURE",
-  ACTUALITES_MEDIAS: "ACTUALITES & MEDIAS",
-  SCIENCES_TECHNIQUES: "SCIENCES & TECHNIQUES",
-  ECONOMIE_POLITIQUE: "ECONOMIE & POLITIQUE",
-  CROYANCES: "CROYANCES",
-  MUSIQUE: "MUSIQUE",
-  JEUX_BD: "JEUX & BD",
-  DIVERS: "DIVERS",
+/* ---------------------- HELPERS GRAPH (SEGMENTS) ---------------------- */
+
+const SEGMENTS = 10;
+const EMPTY_SEGMENT_COLOR = "rgba(148,163,184,0.16)";
+const SEGMENT_STROKE = "rgba(2,6,23,0.55)";
+const SEGMENT_STROKE_WIDTH = 1;
+const SEGMENT_RADIUS = 2;
+
+function clampAccuracy(v: number) {
+  if (!Number.isFinite(v)) return 0;
+  return Math.max(0, Math.min(100, v));
+}
+
+function ellipsize(s: string, max = 28) {
+  const str = String(s ?? "");
+  return str.length > max ? str.slice(0, max - 1) + "…" : str;
+}
+
+type SegmentedBarShapeProps = {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  payload?: any;
 };
 
-// Couleurs des sigles à l'intérieur des barres
-const SHORT_LABEL_COLOR: Record<string, string> = {
-  "CINEMA & SERIES": "#B8E9E4",
-  "ARTS & CULTURE": "#FCE1B5",
-  "JEUX & BD": "#F8E8B4",
-  GEOGRAPHIE: "#BCF1F9",
-  "LANGUES & LITTERATURE": "#F3C7FA",
-  "ECONOMIE & POLITIQUE": "#C4D9FC",
-  GASTRONOMIE: "#FDD5B9",
-  CROYANCES: "#D9DCFC",
-  SPORT: "#DAEFB9",
-  HISTOIRE: "#C0C0C0",
-  DIVERS: "#E3E3E3",
-  "SCIENCES NATURELLES": "#BCEDCE",
-  "SCIENCES & TECHNIQUES": "#FAC6C6",
-  MUSIQUE: "#F9C8E0",
-  "ACTUALITES & MEDIAS": "#FBC5CE",
+/**
+ * 10 segments de 10% + overlay coloré (plein/partiel).
+ */
+function SegmentedBarShape(props: SegmentedBarShapeProps): React.ReactElement {
+  const { x = 0, y = 0, width = 0, height = 0, payload } = props;
+
+  // Placeholder: ne rien dessiner
+  if (payload?.isPlaceholder) return <g />;
+
+  const accuracy = clampAccuracy(Number(payload?.accuracy ?? 0));
+  const color = String(payload?.color ?? "#22D3EE");
+
+  const segW = width / SEGMENTS;
+
+  const innerPadX = 1;
+  const innerPadY = 1;
+
+  const rectH = Math.max(10, height - innerPadY * 2);
+  const rectY = y + innerPadY;
+
+  const out: React.ReactElement[] = [];
+
+  for (let i = 0; i < SEGMENTS; i++) {
+    const segStart = i * 10;
+    const segEnd = (i + 1) * 10;
+
+    const filledPortion =
+      accuracy >= segEnd ? 1 : accuracy <= segStart ? 0 : (accuracy - segStart) / 10;
+
+    const segX = x + i * segW;
+
+    out.push(
+      <rect
+        key={`bg-${i}`}
+        x={segX}
+        y={rectY}
+        width={segW}
+        height={rectH}
+        fill={EMPTY_SEGMENT_COLOR}
+        stroke={SEGMENT_STROKE}
+        strokeWidth={SEGMENT_STROKE_WIDTH}
+        rx={SEGMENT_RADIUS}
+        ry={SEGMENT_RADIUS}
+      />
+    );
+
+    if (filledPortion > 0) {
+      const usableW = Math.max(0, segW - innerPadX * 2);
+      const rawW = usableW * filledPortion;
+      const fgW = Math.min(usableW, Math.max(1, rawW));
+
+      out.push(
+        <rect
+          key={`fg-${i}`}
+          x={segX + innerPadX}
+          y={rectY + 1}
+          width={fgW}
+          height={Math.max(8, rectH - 2)}
+          fill={color}
+          rx={SEGMENT_RADIUS}
+          ry={SEGMENT_RADIUS}
+        />
+      );
+    }
+  }
+
+  return <g>{out}</g>;
+}
+
+/**
+ * Label % à droite : placeholder => rien
+ */
+const PercentLabel = (props: any) => {
+  const { x = 0, y = 0, width = 0, height = 0, value, payload } = props;
+
+  if (payload?.isPlaceholder) return null;
+
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+
+  const v = Math.round(num);
+  const tx = Number(x) + Number(width) + 26;
+  const ty = Number(y) + Number(height) / 2 + 4;
+
+  return (
+    <text
+      x={tx}
+      y={ty}
+      textAnchor="start"
+      fill="#E5E7EB"
+      fontSize={12}
+      fontWeight={700}
+      style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif" }}
+    >
+      {v}%
+    </text>
+  );
 };
 
+/**
+ * Tick YAxis : placeholder => rien
+ */
+const RankTick = (props: any) => {
+  const { x, y, payload } = props;
+  const v = String(payload?.value ?? "");
+  if (!v) return null;
+
+  return (
+    <text
+      x={Number(x) - 10}
+      y={Number(y)}
+      dy={4}
+      textAnchor="end"
+      fill="#E5E7EB"
+      fontSize={12}
+      style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif" }}
+    >
+      {ellipsize(v, 30)}
+    </text>
+  );
+};
+
+/**
+ * ✅ Cursor conditionnel : placeholder => aucun surlignage
+ */
+const SmartCursor = (props: any) => {
+  const p = props?.payload?.[0]?.payload;
+  if (p?.isPlaceholder) return null;
+
+  const { x, y, width, height } = props;
+  return (
+    <rect
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      fill="rgba(255,255,255,0.04)"
+    />
+  );
+};
+
+/**
+ * ✅ Tooltip conditionnelle : placeholder => rien
+ */
+const SmartTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  const p = payload?.[0]?.payload;
+  if (p?.isPlaceholder) return null;
+
+  const cleanLabel = String(label ?? "").replace(/^#\d+\.\s*/, "");
+  const a = clampAccuracy(Number(p?.accuracy ?? 0));
+
+  return (
+    <div
+      style={{
+        backgroundColor: "#020617",
+        border: "1px solid #1F2937",
+        borderRadius: 10,
+        padding: "10px 12px",
+        color: "#fff",
+        fontSize: 12,
+      }}
+    >
+      <div style={{ fontWeight: 700, marginBottom: 6 }}>{cleanLabel}</div>
+      <div style={{ color: "#E5E7EB" }}>{Math.round(a)}% — Taux de réussite</div>
+    </div>
+  );
+};
 
 /* ---------------------- AUTRES DONNÉES --------------------------- */
 
@@ -187,6 +323,36 @@ function SectionCard({ title, children, right, className }: SectionCardProps) {
 /* =========================== PAGE ================================= */
 /* ================================================================== */
 
+type Row = {
+  key: string;
+  label: string;
+  color: string;
+  accuracy: number;
+  full: number;
+  rank: number;
+  labelWithRank: string;
+  isPlaceholder?: boolean;
+};
+
+function padRows(rows: Row[], targetLen: number, colId: "L" | "R"): Row[] {
+  if (rows.length >= targetLen) return rows;
+
+  const out = rows.slice();
+  for (let i = rows.length; i < targetLen; i++) {
+    out.push({
+      key: `__placeholder_${colId}_${i}`,
+      label: "",
+      color: "transparent",
+      accuracy: Number.NaN, // évite toute valeur
+      full: 100,            // on garde le "band" (alignement)
+      rank: 0,
+      labelWithRank: "",
+      isPlaceholder: true,
+    });
+  }
+  return out;
+}
+
 export default function ProfilePage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [categoryAccuracy, setCategoryAccuracy] = useState<Record<CategoryKey, number>>(
@@ -219,17 +385,18 @@ export default function ProfilePage() {
           credentials: "include",
         });
         if (!res.ok) return;
+
         const payload = (await res.json()) as {
           stats?: Record<string, { accuracy: number }>;
         };
+
         const base = emptyCategoryAccuracy();
         if (payload.stats) {
           for (const [theme, stat] of Object.entries(payload.stats)) {
-            if (theme in base) {
-              base[theme as CategoryKey] = stat.accuracy ?? 0;
-            }
+            if (theme in base) base[theme as CategoryKey] = stat.accuracy ?? 0;
           }
         }
+
         if (mounted) setCategoryAccuracy(base);
       } catch {
         if (mounted) setCategoryAccuracy(emptyCategoryAccuracy());
@@ -240,32 +407,97 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const categoryBarData = useMemo(
-    () =>
-      (Object.keys(CATEGORY_CONFIG) as CategoryKey[])
-        .map((key) => {
-          const meta = CATEGORY_CONFIG[key];
-          return {
-            key,
-            label: meta.label,
-            short: CATEGORY_SHORT[key],
-            color: meta.color,
-            accuracy: categoryAccuracy[key] ?? 0,
-          };
-        })
-        .sort((a, b) => b.accuracy - a.accuracy),
-    [categoryAccuracy]
-  );
+  const sortedCategoryData = useMemo<Row[]>(() => {
+    return (Object.keys(CATEGORY_CONFIG) as CategoryKey[])
+      .map((key) => {
+        const meta = CATEGORY_CONFIG[key];
+        const accuracy = clampAccuracy(categoryAccuracy[key] ?? 0);
+        return { key, label: meta.label, color: meta.color, accuracy, full: 100 };
+      })
+      .sort((a, b) => b.accuracy - a.accuracy)
+      .map((item, idx) => ({
+        ...(item as any),
+        rank: idx + 1,
+        labelWithRank: `#${idx + 1}. ${item.label}`,
+      }));
+  }, [categoryAccuracy]);
+
+  const { leftData, rightData, maxRows } = useMemo(() => {
+    const mid = Math.ceil(sortedCategoryData.length / 2);
+    const left = sortedCategoryData.slice(0, mid);
+    const right = sortedCategoryData.slice(mid);
+
+    const targetRows = left.length;
+
+    return {
+      leftData: padRows(left, targetRows, "L"),
+      rightData: padRows(right, targetRows, "R"),
+      maxRows: targetRows,
+    };
+  }, [sortedCategoryData]);
 
   const displayName = user?.displayName ?? "Utilisateur";
   const avatarUrl = user?.img || fallbackAvatar;
   const experienceValue = user?.experience ?? 0;
   const xpProgress = getLevelProgress(experienceValue);
+
+  const barRowPx = 34;
+  const minChartH = 260;
+  const unifiedChartH = Math.max(minChartH, maxRows * barRowPx);
+
+  const ChartBlock = ({ data, height }: { data: Row[]; height: number }) => (
+    <div className="rounded-2xl border border-slate-800/70 bg-black/50 p-2 sm:p-3">
+      <div style={{ height }} className="w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            layout="vertical"
+            margin={{ top: 6, right: 86, left: 6, bottom: 12 }}
+            barCategoryGap={14}
+          >
+            <XAxis
+              type="number"
+              domain={[0, 100]}
+              ticks={[0, 20, 40, 60, 80, 100]}
+              tick={{ fill: "#94A3B8", fontSize: 12 }}
+              axisLine={{ stroke: "rgba(148,163,184,0.25)" }}
+              tickLine={false}
+            />
+
+            <YAxis
+              type="category"
+              dataKey="labelWithRank"
+              width={200}
+              tickLine={false}
+              axisLine={false}
+              tick={<RankTick />}
+              interval={0}
+              tickMargin={8}
+            />
+
+            <Tooltip
+              cursor={<SmartCursor />}
+              content={<SmartTooltip />}
+            />
+
+            <Bar
+              dataKey="full"
+              isAnimationActive={false}
+              barSize={18}
+              shape={SegmentedBarShape as any}
+            >
+              <LabelList dataKey="accuracy" content={<PercentLabel />} />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+
   return (
     <div className="relative text-slate-50">
       <Background />
 
-      {/* CONTENT */}
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-12 sm:px-8 lg:px-10">
         {/* ===================== ENTÊTE ===================== */}
         <div className="mb-10">
@@ -273,8 +505,8 @@ export default function ProfilePage() {
             {/* AVATAR */}
             <div
               style={{
-                width: 200,
-                height: 200,
+                width: 160,
+                height: 160,
                 borderRadius: 24,
                 padding: 4,
                 background: "linear-gradient(135deg, #fb7185, #a855f7, #3b82f6)",
@@ -303,6 +535,7 @@ export default function ProfilePage() {
               <h1 className="font-brutal text-3xl sm:text-4xl text-slate-50">
                 {displayName}
               </h1>
+
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
                   <span>Niveau {xpProgress.level}</span>
@@ -312,6 +545,7 @@ export default function ProfilePage() {
                       : "Niveau maximum"}
                   </span>
                 </div>
+
                 <div className="h-2 w-full max-w-xs rounded-full bg-slate-800/80">
                   <div
                     className="h-full rounded-full"
@@ -322,15 +556,6 @@ export default function ProfilePage() {
                     }}
                   />
                 </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 text-sm font-semibold">
-                <span className="inline-flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-slate-100 ring-1 ring-slate-600/70">
-                  <Shield className="h-4 w-4" /> Rang {mockProfile.rank}
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-slate-100 ring-1 ring-slate-600/70">
-                  <Trophy className="h-4 w-4" /> #{mockProfile.globalPosition} global
-                </span>
               </div>
             </div>
           </div>
@@ -359,7 +584,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="rounded-2xl border border-slate-800/70 bg-black/70 p-4">
-                <div className="flex items-center justify_between text-sm text-slate-300">
+                <div className="flex items-center justify-between text-sm text-slate-300">
                   <span>Temps moyen</span>
                   <Clock className="h-4 w-4 text-amber-300" />
                 </div>
@@ -377,107 +602,16 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Bar chart catégories */}
+            {/* Graph en 2 colonnes */}
             <div className="mt-5 rounded-2xl border border-slate-800/70 bg-black/70 p-4">
-              <div className="flex items-center justify-between mb-3 text-sm text-slate-300">
+              <div className="mb-3 flex items-center justify-between text-sm text-slate-300">
                 <span>Taux de réussite par catégorie</span>
                 <span className="text-xs text-slate-400">Mise à jour quotidienne</span>
               </div>
 
-              <div className="h-[360px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={categoryBarData}
-                    margin={{ top: 10, right: 10, left: 10, bottom: 30 }}
-                  >
-                    {/* pas de labels X visibles, uniquement les libellés dans les barres + % dessous */}
-                    <XAxis dataKey="label" tick={false} axisLine={false} />
-                    <YAxis
-                      tick={{ fill: "#94A3B8", fontSize: 12 }}
-                      domain={[0, 100]}
-                    />
-                    <Tooltip
-                      cursor={{ fill: "rgba(255,255,255,0.05)" }}
-                      contentStyle={{
-                        backgroundColor: "#020617",
-                        border: "1px solid #1F2937",
-                        borderRadius: "8px",
-                      }}
-                      labelStyle={{ color: "#fff" }}
-                      labelFormatter={(label) => String(label)}
-                      formatter={(v: number) => [`${v}%`, "Taux"]}
-                    />
-                    <Bar dataKey="accuracy" radius={[4, 4, 0, 0]}>
-                      {categoryBarData.map((entry) => (
-                        <Cell key={entry.key} fill={entry.color} />
-                      ))}
-
-                      {/* Libellé de la catégorie, dans la barre */}
-                      <LabelList
-                        dataKey="short"
-                        content={(props: any) => {
-                          const { x = 0, y = 0, width = 0, height = 0, value } = props;
-
-                          const horizontalPadding = 45;
-                          const verticalPadding = 10;
-
-                          const cx = Number(x) + horizontalPadding;
-                          const cy = Number(y) + Number(height) - verticalPadding;
-
-                          const short = String(value).toUpperCase();
-                          const labelColor =
-                            SHORT_LABEL_COLOR[short] ?? "#F9FAFB";
-
-                          return (
-                            <text
-                              x={cx}
-                              y={cy}
-                              transform={`rotate(-90, ${cx}, ${cy})`}
-                              textAnchor="start"
-                              fill={labelColor}
-                              fontSize={12}
-                              fontWeight={800}
-                              style={{
-                                fontFamily:
-                                  "var(--font-brutal, brutal, system-ui)",
-                              }}
-                            >
-                              {short}
-                            </text>
-                          );
-                        }}
-                      />
-
-                      {/* Valeur sous la barre (ex: 85%) */}
-                      <LabelList
-                        dataKey="accuracy"
-                        content={(props: any) => {
-                          const { x = 0, y = 0, width = 0, height = 0, value } = props;
-
-                          const cx = Number(x) + Number(width) / 2;
-                          const cy = Number(y) + Number(height) + 18; // sous la barre
-
-                          return (
-                            <text
-                              x={cx}
-                              y={cy}
-                              textAnchor="middle"
-                              fill="#E5E7EB"
-                              fontSize={11}
-                              fontWeight={600}
-                              style={{
-                                fontFamily:
-                                  "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-                              }}
-                            >
-                              {`${value}%`}
-                            </text>
-                          );
-                        }}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <ChartBlock data={leftData} height={unifiedChartH} />
+                <ChartBlock data={rightData} height={unifiedChartH} />
               </div>
             </div>
           </SectionCard>
@@ -487,38 +621,10 @@ export default function ProfilePage() {
         <div className="grid gap-6 lg:grid-cols-[280px,minmax(0,1fr)]">
           {/* COLONNE GAUCHE */}
           <aside className="flex flex-col gap-4">
-            {/* Score + série + spoiler */}
             <div className="rounded-3xl border border-slate-800/70 bg-black/70 shadow-[0_20px_60px_rgba(15,23,42,0.9)] overflow-hidden">
               <div className="relative h-32 w-full bg-gradient-to-br from-rose-500/40 via-purple-500/30 to-blue-500/25" />
-              <div className="-mt-12 px-4 pb-4">
-                <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-slate-800/70 bg-black/70 p-3 text-center text-sm text-slate-100">
-                  <div>
-                    <p className="text-xs uppercase text-slate-400">Score total</p>
-                    <span className="text-xl font-semibold text-rose-100">
-                      {mockProfile.score.toLocaleString("fr-FR")}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase text-slate-400">Série actuelle</p>
-                    <span className="text-xl font-semibold text-emerald-100">
-                      {mockProfile.streak} jours
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50">
-                  <Shield className="h-5 w-5" />
-                  <div>
-                    <p className="font-semibold">Protection anti-spoiler activée</p>
-                    <p className="text-xs text-emerald-100/80">
-                      Masque les réponses avant validation.
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* Amis */}
             <SectionCard title="Liste d'amis">
               <div className="flex flex-col gap-3">
                 {friends.map((f) => (
@@ -549,7 +655,6 @@ export default function ProfilePage() {
 
           {/* COLONNE DROITE */}
           <div className="flex flex-col gap-5">
-            {/* Succès */}
             <SectionCard
               title="Succès"
               right={<button className="text-xs font-semibold text-rose-100">Tout voir</button>}
@@ -592,7 +697,6 @@ export default function ProfilePage() {
               </div>
             </SectionCard>
 
-            {/* Historique */}
             <SectionCard title="Historique des parties">
               <div className="grid gap-3 md:grid-cols-3">
                 {history.map((e) => (
@@ -600,14 +704,12 @@ export default function ProfilePage() {
                     key={e.title}
                     className="rounded-2xl border border-slate-800/70 bg-black/70 p-4 text-sm text-slate-100"
                   >
-                    <div className="flex items_center justify-between">
+                    <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs uppercase tracking-wide text-slate-400">
                           {e.title}
                         </p>
-                        <p className="text-base font-semibold text-white">
-                          {e.detail}
-                        </p>
+                        <p className="text-base font-semibold text-white">{e.detail}</p>
                       </div>
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-semibold ${

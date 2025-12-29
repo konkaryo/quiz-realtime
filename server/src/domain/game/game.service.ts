@@ -6,13 +6,134 @@ import * as room_service from "../room/room.service";
 import * as media_service from "../media/media.service";
 import * as lb_service from "../game/leaderboard.service";
 import { scheduleBotAnswers } from "../bot/bot.service";
-import { QUESTION_DISTRIBUTION, quotasFromDistribution } from "../question/distribution";
+import { quotasFromPercent } from "../question/distribution";
 import { rebalanceBotsAfterGame } from "../bot/traffic";
 import { buildPlayerSummary, buildRoomQuestionStats } from "./summary.service";
 import { awardBitsForGame } from "./bits-reward.service";
 import { awardXpForGame } from "./xp-reward.service";
 
 type Leaderboard = Awaited<ReturnType<typeof lb_service.buildLeaderboard>>;
+
+const DEFAULT_DIFFICULTY_PERCENT = 50;
+const DIVERS_PROBABILITY_STEP = 0.05;
+
+const shuffle = <T,>(values: T[]): T[] => {
+  const items = [...values];
+  for (let i = items.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+};
+
+const diversProbability = (count: number) => Math.min(count * DIVERS_PROBABILITY_STEP, 1);
+
+const replaceWithDivers = (block: Theme[], diversAllowed: boolean) => {
+  if (!diversAllowed || block.length === 0) return block;
+  const idx = Math.floor(Math.random() * block.length);
+  const updated = [...block];
+  updated[idx] = Theme.DIVERS;
+  return updated;
+};
+
+const buildThemeSequence = (total: number, themes: Theme[], diversAllowed: boolean): Theme[] => {
+  if (total <= 0) return [];
+  if (themes.length === 0) {
+    if (diversAllowed) return Array.from({ length: total }, () => Theme.DIVERS);
+    throw new Error("No themes available for selection.");
+  }
+
+  const T = themes.length;
+  if (total <= T) {
+    const picked = shuffle(themes).slice(0, total);
+    if (diversAllowed && Math.random() < diversProbability(T)) {
+      return replaceWithDivers(picked, true);
+    }
+    return picked;
+  }
+
+  const Q = Math.floor(total / T);
+  const R = total % T;
+  const blocks: Theme[] = [];
+
+  for (let i = 0; i < Q; i += 1) {
+    const block = [...themes];
+    const withDivers =
+      diversAllowed && Math.random() < diversProbability(T) ? replaceWithDivers(block, true) : block;
+    blocks.push(...withDivers);
+  }
+
+  if (R > 0) {
+    const remainder = shuffle(themes).slice(0, R);
+    const withDivers =
+      diversAllowed && Math.random() < diversProbability(R) ? replaceWithDivers(remainder, true) : remainder;
+    blocks.push(...withDivers);
+  }
+
+  return blocks;
+};
+
+const difficultyFallbacks = (level: number) => {
+  const levels = [1, 2, 3, 4];
+  const rest = levels.filter((l) => l !== level);
+  rest.sort((a, b) => {
+    const da = Math.abs(a - level);
+    const db = Math.abs(b - level);
+    if (da !== db) return da - db;
+    return a - b;
+  });
+  return [level, ...rest];
+};
+
+const toDifficultyList = ([n1, n2, n3, n4]: [number, number, number, number]) => [
+  ...Array.from({ length: n1 }, () => 1),
+  ...Array.from({ length: n2 }, () => 2),
+  ...Array.from({ length: n3 }, () => 3),
+  ...Array.from({ length: n4 }, () => 4),
+];
+
+type Row = { id: string };
+
+const fetchQuestionId = async (
+  prisma: PrismaClient,
+  theme: Theme,
+  difficulty: number,
+  excludedIds: string[]
+): Promise<string | null> => {
+  const rows = await prisma.$queryRaw<Row[]>`
+    SELECT "id" FROM "Question"
+    WHERE "theme" = ${theme}::"Theme"
+    AND "difficulty" = ${String(difficulty)}
+    AND ("id" NOT IN (${Prisma.join(excludedIds.length ? excludedIds : [""])}) OR ${excludedIds.length === 0})
+    ORDER BY random()
+    LIMIT 1;
+  `;
+  return rows[0]?.id ?? null;
+};
+
+const pickQuestionId = async (
+  prisma: PrismaClient,
+  theme: Theme,
+  difficulty: number,
+  excludedIds: string[],
+  fallbackThemes: Theme[]
+): Promise<string | null> => {
+  const fallbackLevels = difficultyFallbacks(difficulty);
+  for (const level of fallbackLevels) {
+    const id = await fetchQuestionId(prisma, theme, level, excludedIds);
+    if (id) return id;
+  }
+
+  const shuffledThemes = shuffle(fallbackThemes.filter((t) => t !== theme));
+  for (const candidate of shuffledThemes) {
+    for (const level of fallbackLevels) {
+      const id = await fetchQuestionId(prisma, candidate, level, excludedIds);
+      if (id) return id;
+    }
+  }
+
+  return null;
+};
 
 /* ---------------------------------------------------------------------------------------- */
 export async function startGameForRoom(
@@ -70,57 +191,50 @@ export async function startGameForRoom(
     });
   });
 
-  type Row = { id: string };
   const QUESTION_COUNT =
     typeof room.questionCount === "number" && Number.isFinite(room.questionCount)
       ? room.questionCount
       : Number(process.env.QUESTION_COUNT || 10);
 
-  // 1) Quotas par difficulté
-  const probs = QUESTION_DISTRIBUTION[Math.max(1, Math.min(10, room.difficulty ?? 5))];
-  const [n1, n2, n3, n4] = quotasFromDistribution(probs, QUESTION_COUNT);
+  const difficultyPercent =
+    typeof room.difficulty === "number" && Number.isFinite(room.difficulty)
+      ? room.difficulty
+      : DEFAULT_DIFFICULTY_PERCENT;
 
-  // 1bis) Thèmes bannis
   const banned = (room.bannedThemes ?? []) as Theme[];
-  const bannedSqlList = banned.length > 0 ? Prisma.join(banned.map(b => Prisma.sql`${b}::"Theme"`)) : null;
-  const andNotBanned = bannedSqlList ? Prisma.sql`AND ("theme" IS NULL OR "theme" NOT IN (${bannedSqlList}))` : Prisma.sql``;
+  const baseThemes = Object.values(Theme).filter((theme) => theme !== Theme.DIVERS && !banned.includes(theme));
+  const diversAllowed = !banned.includes(Theme.DIVERS);
+  const selectableThemes = diversAllowed ? [...baseThemes, Theme.DIVERS] : [...baseThemes];
 
-  // 2) Tirages par difficulté
-  const byDiff: Record<string, number> = { "1": n1, "2": n2, "3": n3, "4": n4 };
-  let qIds: string[] = [];
-
-  for (const [diff, need] of Object.entries(byDiff)) {
-    if (need <= 0) continue;
-    const rows = await prisma.$queryRaw<Row[]>`
-      SELECT "id" FROM "Question"
-      WHERE "difficulty" = ${diff}
-      ${andNotBanned}
-      AND ("id" NOT IN (${Prisma.join(qIds.length ? qIds : [""])}) OR ${qIds.length === 0})
-      ORDER BY random()
-      LIMIT ${Number(need)};
-    `;
-    qIds.push(...rows.map(r => r.id));
-  }
-
-  // 2b) Compléter si manque
-  if (qIds.length < QUESTION_COUNT) {
-    const remaining = QUESTION_COUNT - qIds.length;
-    const fill = await prisma.$queryRaw<Row[]>`
-      SELECT "id" FROM "Question"
-      WHERE ("id" NOT IN (${Prisma.join(qIds.length ? qIds : [""])}) OR ${qIds.length === 0})
-      ${andNotBanned}
-      ORDER BY random()
-      LIMIT ${remaining};
-    `;
-    qIds.push(...fill.map(r => r.id));
-  }
-
-  if (qIds.length === 0) {
-    io.to(room.id).emit("error_msg", "No questions in database.");
+  let themeSequence: Theme[] = [];
+  try {
+    themeSequence = buildThemeSequence(QUESTION_COUNT, baseThemes, diversAllowed);
+  } catch (error) {
+    io.to(room.id).emit("error_msg", "pool insuffisant");
     return;
   }
-  if (qIds.length < Math.min(QUESTION_COUNT)) {
-    console.warn(`[question-pick] Only ${qIds.length}/${QUESTION_COUNT} questions could be loaded.`);
+
+  const [n1, n2, n3, n4] = quotasFromPercent(difficultyPercent, QUESTION_COUNT);
+  const difficultySequence = shuffle(toDifficultyList([n1, n2, n3, n4]));
+  if (difficultySequence.length !== QUESTION_COUNT) {
+    io.to(room.id).emit("error_msg", "pool insuffisant");
+    return;
+  }
+  const pairs = themeSequence.map((theme, index) => ({
+    theme,
+    level: difficultySequence[index],
+  }));
+
+  pairs.sort((a, b) => a.level - b.level);
+
+  let qIds: string[] = [];
+  for (const pair of pairs) {
+    const picked = await pickQuestionId(prisma, pair.theme, pair.level, qIds, selectableThemes);
+    if (!picked) {
+      io.to(room.id).emit("error_msg", "pool insuffisant");
+      return;
+    }
+    qIds.push(picked);
   }
 
   await prisma.$transaction(async (tx) => {

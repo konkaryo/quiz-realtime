@@ -67,7 +67,7 @@ async function main() {
       }
 
       const Body = z.object({
-        difficulty:    z.number().int().min(1).max(10).optional(),
+        difficulty:    z.number().int().min(0).max(100).optional(),
         bannedThemes:  z.array(z.nativeEnum(Theme)).optional(),
         questionCount: z.number().int().min(10).max(30).optional(),
         roundSeconds:  z.number().int().min(10).max(30).optional(),
@@ -77,7 +77,7 @@ async function main() {
       const parsed = Body.safeParse(req.body);
       if (!parsed.success) { return reply.code(400).send({ error: parsed.error.message }); }
       const {
-        difficulty = 5,
+        difficulty = 50,
         bannedThemes = [],
         questionCount = 10,
         roundSeconds = 10,

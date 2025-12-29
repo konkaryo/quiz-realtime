@@ -317,16 +317,16 @@ export default function Home() {
                       typeof r?.difficulty === "number" ? r.difficulty : undefined;
 
                     const diffLabel =
-                      diffNum !== undefined ? `${diffNum}/10` : "—";
+                      diffNum !== undefined ? `${diffNum}%` : "—";
 
                     let starCount: number | null = null;
                     
                     if (diffNum !== undefined) {
-                      if (diffNum <= 2) starCount = 1;      // 1–2
-                      else if (diffNum <= 4) starCount = 2; // 3–4
-                      else if (diffNum <= 6) starCount = 3; // 5–6
-                      else if (diffNum <= 8) starCount = 4; // 7–8
-                      else starCount = 5;                   // 9–10
+                      if (diffNum <= 20) starCount = 1;      // 0–20
+                      else if (diffNum <= 40) starCount = 2; // 21–40
+                      else if (diffNum <= 60) starCount = 3; // 41–60
+                      else if (diffNum <= 80) starCount = 4; // 61–80
+                      else starCount = 5;                    // 81–100
                     }
 
                     const diffStars =
