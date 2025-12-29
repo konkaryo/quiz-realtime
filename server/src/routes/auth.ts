@@ -150,27 +150,61 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
       if (!player) return reply.send({ stats: {}, totalQuestions: 0 });
 
-      const answers = await prisma.answer.findMany({
-        where: {
-          playerGame: { playerId: player.id },
-          questionId: { not: null },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 1000,
-        select: {
-          correct: true,
-          question: { select: { theme: true } },
-        },
-      });
+      const answerStatsFilter = {
+        playerGame: { playerId: player.id },
+        questionId: { not: null },
+      };
 
-      const stats = new Map<string, { total: number; correct: number }>();
+      const [answers, totalQuestions, avgTextResponse] = await Promise.all([
+        prisma.answer.findMany({
+          where: answerStatsFilter,
+          orderBy: { createdAt: "desc" },
+          take: 1000,
+          select: {
+            correct: true,
+            playerGameId: true,
+            questionId: true,
+            question: { select: { theme: true } },
+          },
+        }),
+        prisma.answer
+          .groupBy({
+            by: ["playerGameId", "questionId"],
+            where: answerStatsFilter,
+          })
+          .then((rows) => rows.length),
+        prisma.answer.aggregate({
+          where: {
+            playerGame: { playerId: player.id },
+            mode: "text",
+            correct: true,
+            responseMs: { gte: 0 },
+          },
+          _avg: { responseMs: true },
+        }),
+      ]);
+
+      const seenQuestions = new Map<string, { theme: string; correct: boolean }>();
       for (const ans of answers) {
+        if (!ans.questionId) continue;
         const theme = ans.question?.theme;
         if (!theme) continue;
-        const entry = stats.get(theme) ?? { total: 0, correct: 0 };
-        entry.total += 1;
-        if (ans.correct) entry.correct += 1;
-        stats.set(theme, entry);
+
+        const key = `${ans.playerGameId}:${ans.questionId}`;
+        const existing = seenQuestions.get(key);
+        if (!existing) {
+          seenQuestions.set(key, { theme, correct: ans.correct });
+        } else if (!existing.correct && ans.correct) {
+          seenQuestions.set(key, { ...existing, correct: true });
+        }
+      }
+
+      const stats = new Map<string, { total: number; correct: number }>();
+      for (const entry of seenQuestions.values()) {
+        const statEntry = stats.get(entry.theme) ?? { total: 0, correct: 0 };
+        statEntry.total += 1;
+        if (entry.correct) statEntry.correct += 1;
+        stats.set(entry.theme, statEntry);
       }
 
       const payload: Record<string, { total: number; correct: number; accuracy: number }> = {};
@@ -181,7 +215,8 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
       return reply.send({
         stats: payload,
-        totalQuestions: answers.length,
+        totalQuestions,
+        avgTextResponseMs: avgTextResponse._avg.responseMs ?? null,
       });
     });
 

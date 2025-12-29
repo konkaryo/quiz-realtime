@@ -359,6 +359,9 @@ export default function ProfilePage() {
     emptyCategoryAccuracy
   );
 
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [avgTextResponseMs, setAvgTextResponseMs] = useState<number | null>(null);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -388,6 +391,8 @@ export default function ProfilePage() {
 
         const payload = (await res.json()) as {
           stats?: Record<string, { accuracy: number }>;
+          totalQuestions?: number;
+          avgTextResponseMs?: number | null;
         };
 
         const base = emptyCategoryAccuracy();
@@ -397,9 +402,17 @@ export default function ProfilePage() {
           }
         }
 
-        if (mounted) setCategoryAccuracy(base);
+        if (mounted) {
+          setCategoryAccuracy(base);
+          setTotalQuestions(payload.totalQuestions ?? 0);
+          setAvgTextResponseMs(payload.avgTextResponseMs ?? null);
+        }
       } catch {
-        if (mounted) setCategoryAccuracy(emptyCategoryAccuracy());
+        if (mounted) {
+          setCategoryAccuracy(emptyCategoryAccuracy());
+          setTotalQuestions(0);
+          setAvgTextResponseMs(null);
+        }
       }
     })();
     return () => {
@@ -588,17 +601,25 @@ export default function ProfilePage() {
                   <span>Temps moyen</span>
                   <Clock className="h-4 w-4 text-amber-300" />
                 </div>
-                <p className="mt-2 text-3xl font-semibold text-amber-100">5.1s</p>
-                <p className="text-xs text-slate-400">Réaction stable</p>
+                <p className="mt-2 text-3xl font-semibold text-amber-100">
+                  {avgTextResponseMs !== null
+                    ? `${(avgTextResponseMs / 1000).toFixed(1)}s`
+                    : "--"}
+                </p>
+                <p className="text-xs text-slate-400">
+                  Moyenne sur les réponses libres correctes
+                </p>
               </div>
 
               <div className="rounded-2xl border border-slate-800/70 bg-black/70 p-4">
                 <div className="flex items-center justify-between text-sm text-slate-300">
-                  <span>Rang moyen</span>
+                  <span>Questions jouées</span>
                   <Users className="h-4 w-4 text-sky-300" />
                 </div>
-                <p className="mt-2 text-3xl font-semibold text-sky-100">Top 5%</p>
-                <p className="text-xs text-slate-400">Sur les 30 dernières parties</p>
+                <p className="mt-2 text-3xl font-semibold text-sky-100">
+                  {totalQuestions.toLocaleString("fr-FR")}
+                </p>
+                <p className="text-xs text-slate-400">Total de questions répondues</p>
               </div>
             </div>
 
