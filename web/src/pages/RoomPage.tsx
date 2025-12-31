@@ -929,6 +929,7 @@ export default function RoomPage() {
           animation: rankPop 420ms ease-out;
         }
 
+
       `}</style>
 
       <div className="relative z-10 min-h-[calc(100dvh-64px)] text-white lg:overflow-hidden">

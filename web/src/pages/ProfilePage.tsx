@@ -359,6 +359,11 @@ export default function ProfilePage() {
     emptyCategoryAccuracy
   );
 
+  const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
+  const [pendingAvatarUrl, setPendingAvatarUrl] = useState<string | null>(null);
+  const [pendingAvatarName, setPendingAvatarName] = useState<string | null>(null);
+  const [appliedAvatarUrl, setAppliedAvatarUrl] = useState<string | null>(null);
+
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [avgTextResponseMs, setAvgTextResponseMs] = useState<number | null>(null);
 
@@ -450,13 +455,41 @@ export default function ProfilePage() {
   }, [sortedCategoryData]);
 
   const displayName = user?.displayName ?? "Utilisateur";
-  const avatarUrl = user?.img || fallbackAvatar;
+  const avatarUrl = appliedAvatarUrl ?? user?.img ?? fallbackAvatar;
   const experienceValue = user?.experience ?? 0;
   const xpProgress = getLevelProgress(experienceValue);
 
   const barRowPx = 34;
   const minChartH = 260;
   const unifiedChartH = Math.max(minChartH, maxRows * barRowPx);
+
+  const handleAvatarFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPendingAvatarUrl(String(reader.result ?? ""));
+      setPendingAvatarName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarEditorClose = () => {
+    setIsAvatarEditorOpen(false);
+    setPendingAvatarUrl(null);
+    setPendingAvatarName(null);
+  };
+
+  const handleAvatarSave = () => {
+    if (pendingAvatarUrl) {
+      setAppliedAvatarUrl(pendingAvatarUrl);
+    }
+    setPendingAvatarUrl(null);
+    setPendingAvatarName(null);
+    setIsAvatarEditorOpen(false);
+  };
 
   const ChartBlock = ({ data, height }: { data: Row[]; height: number }) => (
     <div className="rounded-2xl border border-slate-800/70 bg-black/50 p-2 sm:p-3">
@@ -526,21 +559,24 @@ export default function ProfilePage() {
                 boxShadow: "0 0 24px rgba(248,113,113,0.45)",
               }}
             >
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: 20,
-                  overflow: "hidden",
-                  backgroundColor: "#020617",
-                }}
+              <button
+                type="button"
+                onClick={() => setIsAvatarEditorOpen(true)}
+                className="group relative block h-full w-full overflow-hidden rounded-[20px] bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-200/80"
+                aria-label="Modifier la photo de profil"
               >
                 <img
                   src={avatarUrl}
                   alt={`Photo de profil de ${displayName}`}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-              </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold text-slate-100 ring-1 ring-white/20">
+                    <Edit3 className="h-3.5 w-3.5" />
+                    Modifier
+                  </span>
+                </div>
+              </button>
             </div>
 
             {/* INFOS */}
@@ -752,6 +788,74 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      {isAvatarEditorOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-800/80 bg-slate-950 p-6 text-slate-100 shadow-[0_25px_60px_rgba(15,23,42,0.6)]">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">
+                  Mettre à jour la photo de profil
+                </h2>
+                <p className="mt-1 text-xs text-slate-400">
+                  Importez une image carrée ou recadrez-la pour un rendu optimal.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAvatarEditorClose}
+                className="rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-200 hover:border-rose-200/60 hover:text-rose-100 transition"
+              >
+                Fermer
+              </button>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <div className="h-24 w-24 overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">
+                  <img
+                    src={pendingAvatarUrl ?? avatarUrl}
+                    alt="Aperçu de la photo de profil"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col gap-2">
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-slate-700 bg-slate-900/40 px-4 py-2 text-sm font-semibold text-slate-100 hover:border-rose-200/60 hover:text-rose-100 transition">
+                    Choisir une image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={handleAvatarFileChange}
+                    />
+                  </label>
+                  <p className="text-xs text-slate-400">
+                    {pendingAvatarName ?? "Formats acceptés : JPG, PNG, WEBP."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleAvatarEditorClose}
+                className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-slate-500 hover:text-white transition"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleAvatarSave}
+                disabled={!pendingAvatarUrl}
+                className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(244,63,94,0.3)] transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:bg-slate-700/70 disabled:text-slate-400"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
     </div>
   );
 }
