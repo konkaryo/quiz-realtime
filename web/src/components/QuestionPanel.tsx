@@ -19,17 +19,21 @@ export type QuestionProgress = "pending" | "correct" | "wrong";
 
 function Lives({ lives, total }: { lives: number; total: number }) {
   const full = Array.from({ length: lives }).map((_, i) => (
-    <span key={`f${i}`} className="text-[18px] leading-none">
+    <span key={`f${i}`} className="text-[14px] leading-none whitespace-nowrap">
       ❤️
     </span>
   ));
   const empty = Array.from({ length: Math.max(0, total - lives) }).map((_, i) => (
-    <span key={`e${i}`} className="text-[18px] leading-none opacity-25">
+    <span
+      key={`e${i}`}
+      className="text-[14px] leading-none opacity-25 whitespace-nowrap"
+    >
       ❤️
     </span>
   ));
+
   return (
-    <div className="inline-flex items-center gap-1 px-5 py-2">
+    <div className="inline-flex items-center whitespace-nowrap gap-1 px-4 py-1.5">
       {full}
       {empty}
     </div>
@@ -47,13 +51,15 @@ function TimerBadge({ seconds }: { seconds: number | null }) {
     <div
       aria-live="polite"
       className={[
-        "inline-flex items-center gap-2 text-[18px] font-semibold tabular-nums tracking-[0.3em]",
+        "inline-flex items-center font-semibold tabular-nums whitespace-nowrap",
+        "gap-2 text-[14px]",
+        "tracking-[0.30em]",
         urgent
-          ? "text-rose-400 drop-shadow-[0_0_12px_rgba(248,113,113,0.9)] animate-pulse"
+          ? "text-rose-400 drop-shadow-none animate-pulse"
           : "text-slate-100",
       ].join(" ")}
     >
-      <span className="text-[18px]">⏱</span>
+      <span className="text-[14px]">⏱</span>
       <span>{display}</span>
     </div>
   );
@@ -70,8 +76,8 @@ type Props = {
   // timing
   remainingSeconds: number | null;
   timerProgress: number;
-  isReveal: boolean;       // phase === "reveal" && remainingSeconds === 0
-  isPlaying: boolean;      // phase === "playing" && socketStatus === "connected"
+  isReveal: boolean; // phase === "reveal" && remainingSeconds === 0
+  isPlaying: boolean; // phase === "playing" && socketStatus === "connected"
 
   // saisie texte
   inputRef: RefObject<HTMLInputElement | null>;
@@ -143,9 +149,7 @@ export default function DailyQuestionPanel(props: Props) {
       (answerMode === null && feedback === "Temps écoulé !" && !choicesRevealed));
 
   const textInputDisabled = !isPlaying || textLocked;
-  const textPlaceholder = textLocked
-    ? "Choisissez une réponse..."
-    : "Tapez votre réponse ici...";
+  const textPlaceholder = textLocked ? "Choisissez une réponse..." : "Tapez votre réponse ici...";
   const textInputColorClass = textInputDisabled
     ? "text-slate-400 caret-slate-600 placeholder:text-slate-500/60"
     : "text-slate-50 caret-[#cccccc] placeholder:text-slate-500/70";
@@ -167,30 +171,29 @@ export default function DailyQuestionPanel(props: Props) {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
-      {/* panneau principal style hero samouraï */}
+      {/* panneau principal */}
       <div className="relative">
-        <div className="pointer-events-none absolute -inset-[2px] rounded-[46px] opacity-70 blur-xl" />
         <div
           className={[
-            "relative w-full rounded-[40px] border border-slate-800/80",
-            {/*"bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)]", */},
-            "bg-[#0A1024]",
-            "shadow-[0_0_5px_rgba(248,248,248,0.8)]",
-            "sm:p-8 lg:p-8",
+            "relative w-full shadow-none ring-0 outline-none filter-none",
+            "bg-[#1F2128]",
+            "rounded-[9px]",
+            "p-6",
+            "border border-white/30",
           ].join(" ")}
         >
           {/* bandeau supérieur : timer / info / vies */}
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-<div className="order-2 gap-4 font-medium text-slate-100 md:order-1">
-  Question {index + 1}
-  {typeof totalQuestions === "number" && totalQuestions > 0 && (
-    <span className="text-slate-500"> / {totalQuestions}</span>
-  )}
-</div>
+          <div className="flex flex-col md:flex-row md:flex-nowrap md:items-center md:justify-between gap-3">
+            <div className="order-2 md:order-1 whitespace-nowrap font-medium text-slate-100 text-[14px] leading-[18px]">
+              Question {index + 1}
+              {typeof totalQuestions === "number" && totalQuestions > 0 && (
+                <span className="text-slate-500"> / {totalQuestions}</span>
+              )}
+            </div>
 
-            <div className="order-1 flex justify-center md:order-2">
+            <div className="order-1 md:order-2 flex justify-center whitespace-nowrap">
               {isReveal ? (
-                <div className="text-[13px] font-semibold uppercase tracking-[0.3em] text-slate-300/80">
+                <div className="font-semibold uppercase text-slate-300/80 whitespace-nowrap text-[10px] tracking-[0.30em]">
                   En attente...
                 </div>
               ) : (
@@ -198,60 +201,89 @@ export default function DailyQuestionPanel(props: Props) {
               )}
             </div>
 
-            <div className="order-3 flex justify-end md:order-3">
+            <div className="order-3 md:order-3 flex justify-end whitespace-nowrap">
               <Lives lives={lives} total={totalLives} />
             </div>
           </div>
 
-          {/* barre de progression rouge */}
-          <div className="mt-5 h-[3px] w-full rounded-full bg-slate-800">
+          {/* barre de progression */}
+          <div
+            className="mt-4 h-[2px] w-full rounded-full"
+            style={{ backgroundColor: "#15171E" }}
+          >
             <div
-              className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-sky-400 to-white transition-all"
-              style={{ width: `${timerProgress * 100}%` }}
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${timerProgress * 100}%`,
+                backgroundColor: "#02B0FF",
+              }}
             />
           </div>
 
           {/* question + image */}
-          <div className="mt-8 flex flex-col gap-6 md:min-h-[14rem] md:flex-row md:items-stretch">
+          <div className="flex flex-col md:flex-row md:items-stretch mt-6 gap-4 md:min-h-[14rem]">
             <div className={question.img ? "md:w-3/5" : "md:w-full"}>
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <div className="inline-flex items-center gap-2 rounded-[12px] border border-slate-700/80 bg-black/70 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-100">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <div
+                  className={[
+                    "inline-flex items-center border border-slate-700/80 bg-[#15171E] font-semibold uppercase text-slate-100 whitespace-nowrap",
+                    "gap-2",
+                    "rounded-[9px]",
+                    "px-3 py-1.5",
+                    "text-[8px]",
+                    "tracking-[0.18em]",
+                  ].join(" ")}
+                >
                   <span
                     aria-hidden
-                    className="inline-block h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: themeMeta.color }}
+                    className="inline-block rounded-full"
+                    style={{
+                      backgroundColor: themeMeta.color,
+                      height: 8,
+                      width: 8,
+                    }}
                   />
                   {themeMeta.label}
                 </div>
+
                 {question.slotLabel && (
-                  <span className="rounded-full bg-slate-900/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-200">
+                  <span
+                    className={[
+                      "rounded-full bg-slate-900/90 font-semibold uppercase text-slate-200 whitespace-nowrap",
+                      "px-3 py-1",
+                      "text-[8px]",
+                      "tracking-[0.22em]",
+                    ].join(" ")}
+                  >
                     {question.slotLabel}
                   </span>
                 )}
               </div>
 
-              <p className="mt-5 text-[20px] font-semibold leading-snug text-slate-50 sm:text-[20px]">
+              <p className="mt-4 font-semibold leading-snug text-slate-50 text-[15px]">
                 {question.text}
               </p>
             </div>
-{question.img && (
-  <div className="md:w-2/5">
-    <div className="relative h-full">
-      <img
-        src={question.img}
-        alt=""
-        className="relative max-h-56 w-full rounded-[26px] object-cover shadow-[0_20px_50px_rgba(0,0,0,0.95)]"
-        loading="lazy"
-      />
-    </div>
-  </div>
-)}
+
+            {question.img && (
+              <div className="md:w-2/5">
+                <div className="relative h-full">
+                  <img
+                    src={question.img}
+                    alt=""
+                    className="relative w-full object-cover shadow-none max-h-[168px] rounded-[20px]"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* zone saisie & boutons */}
-          <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-end">
+          {/* ✅ FIX : mt-1.5 sur le conteneur commun + labels en absolute pour ne pas impacter l'alignement */}
+          <div className="mt-1.5 flex flex-col md:flex-row md:items-center gap-3">
             <div className="flex-1">
-              <div className="mt-2 rounded-[12px] border border-slate-700/80 bg-black/70 px-3 py-1 shadow-inner shadow-black/80">
+              <div className="border border-slate-700/80 bg-black/70 shadow-inner shadow-black/80 rounded-[9px] px-2.5 py-1">
                 <input
                   ref={inputRef}
                   value={textAnswer}
@@ -263,7 +295,10 @@ export default function DailyQuestionPanel(props: Props) {
                   autoCorrect="off"
                   autoCapitalize="off"
                   className={[
-                    "w-full border-none bg-transparent px-2 py-2 text-[15px] font-medium tracking-[0.02em] antialiased focus:outline-none focus:ring-0",
+                    "w-full border-none bg-transparent font-medium antialiased focus:outline-none focus:ring-0",
+                    "px-2 py-2",
+                    "text-[11px]",
+                    "tracking-[0.02em]",
                     textInputColorClass,
                     textInputDisabled ? "opacity-60 cursor-not-allowed" : "",
                   ].join(" ")}
@@ -272,53 +307,65 @@ export default function DailyQuestionPanel(props: Props) {
               </div>
             </div>
 
-            <div className="flex gap-2 md:ml-3">
-              {/* Bouton principal : Valider */}
-              <button
-                type="button"
-                onClick={onSubmitText}
-                disabled={textInputDisabled}
-                className={[
-                  "inline-flex items-center justify-center rounded-[12px] px-5 py-2.5",
-                  "text-[11px] font-semibold uppercase tracking-[0.18em]",
-                  "bg-[#421D9E] text-slate-50",
-                  "transition duration-150 hover:brightness-110",
-                  textInputDisabled ? "opacity-60" : "shadow-[0_0_5px_rgba(121,58,198,0.45)]",
-                ].join(" ")}
-              >
-                <img src={enterKey} alt="Entrée" className="mr-2 h-5 w-5" />
-                Valider
-              </button>
+            <div className="flex flex-nowrap whitespace-nowrap gap-4 md:ml-3">
+              {/* VALIDER */}
+              <div className="relative flex items-center justify-center">
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.18em] text-white/60">
+                  [Entrée]
+                </div>
 
-              {/* Bouton secondaire : voir les choix */}
-              <button
-                type="button"
-                onClick={onShowChoices}
-                disabled={textInputDisabled}
-className={[
-  "inline-flex items-center justify-center rounded-[12px] px-4 py-2.5",
-  "text-[11px] font-semibold uppercase tracking-[0.18em]",
-  "bg-[#223F81] text-slate-50",
-  "transition duration-150 hover:bg-slate-100",
-  textInputDisabled
-    ? "opacity-60"
-    : "shadow-[0_2px_6px_rgba(34,63,129,0.45)]",
-].join(" ")}
-              >
-                <img src={tabKey} alt="Tab" className="mr-2 h-5 w-5" />
-                Propositions
-              </button>
+                <button
+                  type="button"
+                  onClick={onSubmitText}
+                  disabled={textInputDisabled}
+                  className={[
+                    "inline-flex items-center justify-center bg-[#02B0FF] text-slate-50 transition duration-150 hover:brightness-110",
+                    "rounded-[9px]",
+                    "px-4 py-2",
+                    "font-semibold uppercase",
+                    "text-[8px]",
+                    "tracking-[0.18em]",
+                    textInputDisabled ? "opacity-60" : "shadow-none",
+                  ].join(" ")}
+                >
+                  Valider
+                </button>
+              </div>
+
+              {/* PROPOSITIONS */}
+              <div className="relative flex items-center justify-center">
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.18em] text-white/60">
+                  [Tab]
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onShowChoices}
+                  disabled={textInputDisabled}
+                  className={[
+                    "inline-flex items-center justify-center bg-[#15171E] text-slate-50 transition duration-150 hover:brightness-110",
+                    "rounded-[9px]",
+                    "px-3.5 py-2",
+                    "font-semibold uppercase",
+                    "text-[8px]",
+                    "tracking-[0.18em]",
+                    textInputDisabled ? "opacity-60" : "shadow-none",
+                  ].join(" ")}
+                >
+                  Propositions
+                </button>
+              </div>
             </div>
           </div>
 
           {/* feedback + temps de réponse + bonne réponse */}
           {feedback && (
-            <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-stretch md:gap-4">
+            <div className="flex flex-col md:flex-row md:items-stretch mt-3 gap-2 md:gap-3">
               {/* feedback */}
-              <div className="inline-flex min-h-[42px] items-center gap-3 rounded-[12px] border border-slate-700/80 bg-black/80 px-6 py-2.5 text-sm text-slate-100 shadow-inner shadow-black/80">
+              <div className="inline-flex items-center border border-slate-700/80 bg-black/80 text-slate-100 shadow-inner shadow-black/80 min-h-[32px] gap-2 rounded-[9px] px-4 py-2 text-[11px]">
                 <span
                   className={[
-                    "text-base",
+                    "text-[12px]",
                     feedback === "Temps écoulé !"
                       ? "text-amber-300"
                       : feedback.includes("Bravo")
@@ -326,11 +373,7 @@ className={[
                       : "text-red-500",
                   ].join(" ")}
                 >
-                  {feedback === "Temps écoulé !"
-                    ? "⏳"
-                    : feedback.includes("Bravo")
-                    ? "✅"
-                    : "❌"}
+                  {feedback === "Temps écoulé !" ? "⏳" : feedback.includes("Bravo") ? "✅" : "❌"}
                 </span>
                 <div>
                   <span className="font-medium">{feedback}</span>
@@ -339,26 +382,24 @@ className={[
 
               {/* bonne réponse (mode texte) */}
               {showCorrectLabelCell && (
-                <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-emerald-600 bg-emerald-600 px-5 py-2.5 text-xs text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]">
+                <div className="inline-flex items-center border border-emerald-600 bg-emerald-600 text-slate-50 shadow-none min-h-[32px] rounded-[9px] px-3.5 py-2">
                   <div className="flex flex-col leading-tight">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-100">
+                    <span className="font-semibold uppercase text-emerald-100 whitespace-nowrap text-[8px] tracking-[0.22em]">
                       Bonne réponse
                     </span>
-                    <span className="mt-1 font-medium text-[13px]">
-                      {feedbackCorrectLabel}
-                    </span>
+                    <span className="mt-1 font-medium text-[10px]">{feedbackCorrectLabel}</span>
                   </div>
                 </div>
               )}
 
               {/* points gagnés */}
               {showFeedbackPoints && (
-                <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-slate-700/80 bg-black/80 px-5 py-2.5 text-xs text-slate-100 shadow-inner shadow-black/80">
+                <div className="inline-flex items-center border border-slate-700/80 bg-black/80 text-slate-100 shadow-inner shadow-black/80 min-h-[32px] rounded-[9px] px-3.5 py-2 text-[10px]">
                   <div className="flex flex-col leading-tight">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    <span className="font-semibold uppercase text-slate-400 whitespace-nowrap text-[8px] tracking-[0.22em]">
                       Points gagnés
                     </span>
-                    <span className="mt-1 font-mono text-sm text-slate-50">
+                    <span className="mt-1 font-mono text-[11px] text-slate-50 whitespace-nowrap">
                       + {feedbackPoints.toLocaleString("fr-FR")} pts
                     </span>
                   </div>
@@ -367,12 +408,12 @@ className={[
 
               {/* temps de réponse */}
               {showResponseTime && feedbackResponseMs !== null && (
-                <div className="inline-flex min-h-[42px] items-center rounded-[12px] border border-slate-700/80 bg-black/80 px-5 py-2.5 text-xs text-slate-100 shadow-inner shadow-black/80">
+                <div className="inline-flex items-center border border-slate-700/80 bg-black/80 text-slate-100 shadow-inner shadow-black/80 min-h-[32px] rounded-[9px] px-3.5 py-2 text-[10px]">
                   <div className="flex flex-col leading-tight">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    <span className="font-semibold uppercase text-slate-400 whitespace-nowrap text-[8px] tracking-[0.22em]">
                       Temps de réponse
                     </span>
-                    <span className="mt-1 font-mono text-sm text-slate-50">
+                    <span className="mt-1 font-mono text-[11px] text-slate-50 whitespace-nowrap">
                       {feedbackResponseMs.toLocaleString("fr-FR")} ms
                     </span>
                   </div>
@@ -383,14 +424,12 @@ className={[
 
           {/* choix multiples */}
           {showChoices && choices && (
-            <div className="mt-6 grid gap-3 md:grid-cols-2">
+            <div className="mt-4 grid gap-2 md:grid-cols-2">
               {choices.map((choice) => {
                 const isSelected = selectedChoice === choice.id;
                 const isCorrect = correctChoiceId === choice.id;
                 const hoverClasses =
-                  selectedChoice === null
-                    ? "hover:border-white hover:bg-slate-900"
-                    : "";
+                  selectedChoice === null ? "hover:border-white hover:bg-slate-900" : "";
 
                 return (
                   <button
@@ -399,12 +438,14 @@ className={[
                     onClick={() => onSelectChoice(choice)}
                     disabled={!isPlaying && !isSelected}
                     className={[
-                      "group relative overflow-hidden rounded-[12px] border px-4 py-3 text-left text-[15px] font-medium transition",
-                      "backdrop-blur-xl",
+                      "group relative overflow-hidden border text-left font-medium transition backdrop-blur-xl shadow-none",
+                      "rounded-[9px]",
+                      "px-3.5 py-2.5",
+                      "text-[11px]",
                       isCorrect
-                        ? "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]"
+                        ? "border-emerald-600 bg-emerald-600 text-slate-50"
                         : isSelected
-                        ? "border-red-500 bg-red-500 text-slate-50 shadow-[0_0_0px_rgba(239,68,68,0.8)]"
+                        ? "border-red-500 bg-red-500 text-slate-50"
                         : `border-slate-700/90 bg-black/75 text-slate-50 ${hoverClasses}`,
                       !isPlaying ? "cursor-default" : "",
                     ].join(" ")}
@@ -420,23 +461,23 @@ className={[
 
       {/* barre de progression des questions sous le cadre */}
       {questionProgress.length > 0 && (
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="mt-4 flex flex-wrap justify-center gap-1.5">
           {questionProgress.map((state, i) => {
-            const base =
-              "w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-md text-sm font-semibold";
-            let colorClasses =
-              "border-slate-700/90 bg-slate-700/60 text-slate-200"; // pending
-
-            if (state === "correct") {
-              colorClasses =
-                "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
-            } else if (state === "wrong") {
-              colorClasses =
-                "border-red-500 bg-red-500 text-slate-50 shadow-[0_0_0px_rgba(239,68,68,0.8)]";
-            }
+            let colorClasses = "bg-slate-700/60 text-slate-200"; // pending
+            if (state === "correct") colorClasses = "bg-emerald-600 text-slate-50";
+            else if (state === "wrong") colorClasses = "bg-red-500 text-slate-50";
 
             return (
-              <div key={i} className={`${base} ${colorClasses}`}>
+              <div
+                key={i}
+                className={[
+                  "flex items-center justify-center rounded-md font-semibold whitespace-nowrap",
+                  "w-[27px] h-[27px]",
+                  "sm:w-[30px] sm:h-[30px]",
+                  "text-[11px]",
+                  colorClasses,
+                ].join(" ")}
+              >
                 {i + 1}
               </div>
             );

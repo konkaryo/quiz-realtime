@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef } from "react";
 import laurier from "../assets/laurier.png";
 import { getLevelFromExperience } from "../utils/experience";
 
-
 type Row = {
   id: string;
   name: string;
@@ -28,9 +27,9 @@ export function FinalLeaderboard({
   const podiumSlots = useMemo(
     () =>
       [
-        { h: 105, ring: "ring-slate-300/60", rank: 2 },
-        { h: 145, ring: "ring-amber-300/70", rank: 1 },
-        { h: 90, ring: "ring-orange-300/60", rank: 3 },
+        { h: 80, ring: "ring-slate-300/60", rank: 2 },
+        { h: 110, ring: "ring-amber-300/70", rank: 1 },
+        { h: 70, ring: "ring-orange-300/60", rank: 3 },
       ].map((slot) => ({ ...slot, row: rows[slot.rank - 1] })),
     [rows]
   );
@@ -39,8 +38,8 @@ export function FinalLeaderboard({
     (!!selfId && r.id === selfId) ||
     (!!selfName && r.name?.toLowerCase() === selfName.toLowerCase());
 
-  const podiumStepBackgroundClass = "bg-[#11182A]";
-  const listAlternateBackgroundClass = "bg-[#1B2132]";
+  const podiumStepBackgroundClass = "bg-[#1F2128]";
+  const listAlternateBackgroundClass = "bg-[#292A30]";
 
   const listWrapRef = useRef<HTMLDivElement | null>(null);
   const activeItemRef = useRef<HTMLLIElement | null>(null);
@@ -57,9 +56,9 @@ export function FinalLeaderboard({
   }, [activeListIndex, listRows.length]);
 
   return (
-    <div className="px-2 pt-1 pb-2">
+    <div className="px-2 pb-2">
       {/* Podium */}
-      <div className="px-3 md:px-6 pt-2 pb-1">
+      <div className="px-3 md:px-6 pb-1">
         <div className="relative overflow-hidden rounded-xl">
           <div className="relative grid grid-cols-1 md:grid-cols-3 items-end gap-7 py-3">
             {podiumSlots.map((slot) => {
@@ -68,10 +67,10 @@ export function FinalLeaderboard({
 
               return (
                 <div key={rank} className="flex flex-col items-center">
-                  {/* Avatar — réduit */}
+                  {/* Avatar */}
                   <div
                     className={[
-                      "w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden",
+                      "w-14 h-14 md:w-16 md:h-16 rounded-xl overflow-hidden",
                       "ring-4",
                       ring,
                       "shadow-[0_10px_40px_rgba(0,0,0,.45)]",
@@ -92,10 +91,10 @@ export function FinalLeaderboard({
                   </div>
 
                   {/* Nom */}
-                  <div className="mt-2 mb-2 text-center max-w-[220px] px-1">
+                  <div className="mt-1.5 mb-2 text-center max-w-[160px] md:max-w-[180px] px-1">
                     <div
                       className={[
-                        "font-semibold truncate",
+                        "font-semibold truncate text-[13px] md:text-[14px]",
                         isSelf ? "text-white" : "text-white/90",
                       ].join(" ")}
                     >
@@ -103,7 +102,7 @@ export function FinalLeaderboard({
                     </div>
                   </div>
 
-                  {/* Marche — hauteur réduite + même style */}
+                  {/* Marche */}
                   <div
                     className={[
                       "relative w-full max-w-[260px] rounded-t-xl",
@@ -113,34 +112,42 @@ export function FinalLeaderboard({
                     ].join(" ")}
                     style={{ height: h }}
                   >
-                  {/* numéro gravé */}
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div className={["flex items-center", rank === 1 ? "flex-col gap-0" : ""].join(" ")}>
-                      <span
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                      <div
                         className={[
-                          "font-extrabold tabular-nums select-none",
-                          rank === 1 ? "text-[52px]" : rank === 2 ? "text-[48px]" : "text-[44px]",
-                          "text-white/20",
-                          "text-[#696D77]",
+                          "flex items-center",
+                          rank === 1 ? "flex-col gap-0" : "",
                         ].join(" ")}
-                        style={{
-                          textShadow:
-                            "0 1px 0 rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.15)",
-                        }}
                       >
-                        {rank}
-                      </span>
-                      {rank === 1 ? (
-                        <img
-                          src={laurier}
-                          alt=""
-                          className="w-16 md:w-20 opacity-80 -mt-6"
-                          draggable={false}
-                          loading="lazy"
-                        />
-                      ) : null}
+                        <span
+                          className={[
+                            "font-extrabold tabular-nums select-none",
+                            rank === 1
+                              ? "text-[40px]"
+                              : rank === 2
+                              ? "text-[36px]"
+                              : "text-[32px]",
+                            "text-[#787A7A]",
+                          ].join(" ")}
+                          style={{
+                            textShadow:
+                              "0 1px 0 rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.15)",
+                          }}
+                        >
+                          {rank}
+                        </span>
+
+                        {rank === 1 ? (
+                          <img
+                            src={laurier}
+                            alt=""
+                            className="w-12 md:w-16 opacity-80 -mt-6"
+                            draggable={false}
+                            loading="lazy"
+                          />
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
                   </div>
                 </div>
               );
@@ -156,52 +163,78 @@ export function FinalLeaderboard({
             ref={listWrapRef}
             className="lb-scroll max-h-[28vh] md:max-h-[32vh] overflow-y-auto pr-2"
           >
+            {/* ✅ plus dense */}
             <ol className="space-y-1.5">
               {listRows.map((r, idx) => {
                 const rank = idx + 1;
                 const isSelf = isSelfRow(r);
                 const hasAlternateBackground = idx % 2 === 1;
 
+                const bgClass = isSelf
+                  ? "border-0 bg-gradient-to-b from-[#D30E72] to-[#770577] text-white"
+                  : `${
+                      hasAlternateBackground
+                        ? listAlternateBackgroundClass
+                        : podiumStepBackgroundClass
+                    } text-white border-white/10`;
+
                 return (
                   <li
                     key={r.id}
                     ref={isSelf ? activeItemRef : undefined}
                     className={[
-                      "flex items-center justify-between rounded-lg px-3 py-1.5 border shadow-[0_4px_10px_rgba(0,0,0,.22)] overflow-hidden",
-                      "text-[13px] leading-tight",
-                      isSelf
-                        ? "border-0 bg-gradient-to-b from-[#D30E72] to-[#770577] text-white"
-                        : `${
-                            hasAlternateBackground
-                              ? listAlternateBackgroundClass
-                              : podiumStepBackgroundClass
-                          } text-white border-white/10`,
+                      "flex items-center justify-between",
+                      "rounded-[6px]",
+                      "pl-2.5 pr-3 py-1",
+                      "border",
+                      "shadow-[0_3px_8px_rgba(0,0,0,.18)]",
+                      "overflow-hidden",
+                      bgClass,
                     ].join(" ")}
+                    style={{
+                      // ✅ ligne vraiment compacte
+                      minHeight: 36,
+                    }}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-5 text-right opacity-80 tabular-nums">#{rank}</span>
+                    {/* LEFT */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      {/* Rang */}
+                      <span className="w-[28px] text-right opacity-80 tabular-nums text-[11px] leading-none flex-shrink-0">
+                        #{rank}
+                      </span>
+
+                      {/* Avatar (plus petit) */}
                       <img
                         src={r.img ?? "/img/profiles/0.avif"}
                         alt=""
-                        className="w-6 h-6 rounded-md object-cover border border-white/15"
+                        className="w-5 h-5 rounded-[5px] object-cover border border-white/15 flex-shrink-0"
                         draggable={false}
                         loading="lazy"
                       />
+
+                      {/* Nom + niveau (typo plus petite) */}
                       <div className="min-w-0">
-                        <div className="truncate">{r.name}</div>
-                        <div className="text-[11px] opacity-70">
-                          Niveau {getLevelFromExperience((r.experience ?? 0) + (r.xp ?? 0))}
+                        <div className="truncate font-semibold text-[12px] leading-[14px]">
+                          {r.name}
+                        </div>
+                        <div className="text-[10px] leading-[12px] opacity-70">
+                          Niveau{" "}
+                          {getLevelFromExperience((r.experience ?? 0) + (r.xp ?? 0))}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="tabular-nums text-[12px] text-cyan-200/90">
-                        +{r.xp ?? 0} xp
+
+                    {/* RIGHT (compact + largeurs fixes) */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="w-[64px] text-right tabular-nums text-[11px] text-cyan-200/90">
+                        +{r.xp ?? 0}xp
                       </span>
-                      <span className="tabular-nums text-[12px] text-emerald-200/90">
-                        +{r.bits ?? 0} bits
+                      <span className="w-[64px] text-right tabular-nums text-[11px] text-emerald-200/90">
+                        +{r.bits ?? 0}b
                       </span>
-                      <span className="tabular-nums text-sm">{r.score}</span>
+                      <span className="w-[44px] text-right tabular-nums text-[12px] font-semibold">
+                        {r.score}
+                      </span>
                     </div>
                   </li>
                 );
