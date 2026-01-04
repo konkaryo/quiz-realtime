@@ -406,7 +406,7 @@
             gap: 16,
             padding: "0 16px",
             // ✅ fond uni opaque
-            background: "#15171E",
+            background: "#1F2128",
             // ✅ suppression du liseré (ancienne ligne supprimée)
             // borderBottom: "1px solid rgba(255,255,255,.10)",
             zIndex: 60,

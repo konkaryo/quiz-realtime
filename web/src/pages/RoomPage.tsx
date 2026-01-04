@@ -1038,29 +1038,6 @@ export default function RoomPage() {
         }
       `}</style>
 
-      {/* ✅ panneau haut (entre navbar et les panneaux) */}
-      <div
-        aria-hidden
-        className="fixed left-0 right-0 z-30"
-        style={{
-          top: NAVBAR_TOP,
-          height: TOP_BAR_H,
-          backgroundColor: "#15171E",
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            height: "70%",
-            marginLeft: 16,
-            marginRight: rightW + 16,
-            backgroundColor: "#24262C",
-            borderRadius: 6,
-            width: "100%",
-          }}
-        />
-      </div>
 
       <div className="relative z-10 min-h-[calc(100dvh-64px)] text-white lg:overflow-hidden">
         <div className="relative">
@@ -1070,103 +1047,101 @@ export default function RoomPage() {
               className="hidden lg:block fixed bottom-0 left-0 z-20 overflow-x-hidden"
               style={{ top: fixedTop, width: leftW }}
             >
-              <div
-                className={["h-full px-6 py-6 flex flex-col overflow-x-hidden", "bg-[#15171E]"].join(
-                  " "
-                )}
-              >
-                {/* ✅ Position + Score */}
-                {rankLabel || selfRow ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                    <div className="flex items-center justify-between">
-                      {/* Position (rang) + trophy */}
-                      <div className="flex items-center gap-2 min-w-0">
-                        <img src={trophy} alt="" className="h-4 w-4 opacity-90" draggable={false} />
-                        <div
-                          key={rankPulseKey}
-                          className="rank-pop font-extrabold tabular-nums text-white"
-                          style={rankLabel ? (rankAnimationVars ?? undefined) : undefined}
-                        >
-                          {rankLabel ? `${rankLabel.value}${rankLabel.suffix}` : "—"}
+              <div className="h-full overflow-x-hidden bg-[#15171E] pb-3 pr-3 pt-3 pl-6">
+                <div className="rounded-[6px] bg-[#1F2128] px-4 pt-6 pb-10 flex flex-col overflow-x-hidden">
+                  {/* ✅ Position + Score */}
+                  {rankLabel || selfRow ? (
+                    <div className="rounded-[6px] border border-white/10 bg-[#15171E] px-3 py-2">
+                      <div className="flex items-center justify-between">
+                        {/* Position (rang) + trophy */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <img src={trophy} alt="" className="h-4 w-4 opacity-90" draggable={false} />
+                          <div
+                            key={rankPulseKey}
+                            className="rank-pop font-extrabold tabular-nums text-white"
+                            style={rankLabel ? (rankAnimationVars ?? undefined) : undefined}
+                          >
+                            {rankLabel ? `${rankLabel.value}${rankLabel.suffix}` : "—"}
+                          </div>
                         </div>
-                      </div>
 
-                      <span className="mx-3 text-white/35">—</span>
+                        <span className="mx-3 text-white/35">—</span>
 
-                      {/* Score */}
-                      <div className="font-extrabold tabular-nums text-white/90">
-                        {displayScore}
-                        <span className="ml-1 text-[12px] font-semibold text-white/55">pts</span>
+                        {/* Score */}
+                        <div className="font-extrabold tabular-nums text-white/90">
+                          {displayScore}
+                          <span className="ml-1 text-[12px] font-semibold text-white/55">pts</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-white/45 text-sm">—</div>
-                )}
-
-<div className="mt-6 flex items-center justify-center gap-3">
-  <img
-    src={divider}
-    alt=""
-    className="h-3 w-auto opacity-70"
-    draggable={false}
-  />
-
-<div className="flex items-center justify-center gap-2 text-white">
-  <img
-    src={playerIcon}
-    alt=""
-    className="h-4 w-4 object-contain"
-    draggable={false}
-  />
-
-  <span className="text-[12px] font-semibold uppercase tracking-[0.22em] tabular-nums">
-    {Math.max(leaderboard.length, 1)}
-  </span>
-</div>
-
-  <img
-    src={divider}
-    alt=""
-    className="h-3 w-auto opacity-70"
-    draggable={false}
-  />
-</div>
-
-                <div className="mt-4 flex-1 min-h-0 overflow-x-hidden">
-                  {leaderboard.length === 0 ? (
-                    <div className="text-white/45 text-sm">—</div>
                   ) : (
-                    <>
-                      <ol
-                        className={["lb-scroll", "m-0 space-y-2", "overflow-y-auto overflow-x-hidden", "pr-3"].join(
-                          " "
-                        )}
-                        style={{ maxHeight: "55vh" }}
-                      >
-                        {leaderboard.map((r, i) => {
-                          const isSelf =
-                            (selfId && r.id === selfId) ||
-                            (!!selfName &&
-                              typeof r.name === "string" &&
-                              r.name.toLowerCase() === selfName.toLowerCase());
-
-                          return (
-                            <li key={r.id} className="max-w-full overflow-x-hidden">
-                              {renderLeaderboardLine(r, i + 1, isSelf)}
-                            </li>
-                          );
-                        })}
-                      </ol>
-
-                      {/* ✅ réplique EXACTE de la ligne dans la liste */}
-                      {hasScrollableLeaderboard && selfRow ? (
-                        <div className="mt-4 pt-4 border-t border-white/10 overflow-x-hidden">
-                          {renderLeaderboardLine(selfRow, selfIndex + 1, true)}
-                        </div>
-                      ) : null}
-                    </>
+                    <div className="text-white/45 text-sm">—</div>
                   )}
+
+                  <div className="mt-6 flex items-center justify-center gap-3">
+                    <img
+                      src={divider}
+                      alt=""
+                      className="h-3 w-auto opacity-70"
+                      draggable={false}
+                    />
+
+                    <div className="flex items-center justify-center gap-2 text-white">
+                      <img
+                        src={playerIcon}
+                        alt=""
+                        className="h-4 w-4 object-contain"
+                        draggable={false}
+                      />
+
+                      <span className="text-[12px] font-semibold uppercase tracking-[0.22em] tabular-nums">
+                        {Math.max(leaderboard.length, 1)}
+                      </span>
+                    </div>
+
+                    <img
+                      src={divider}
+                      alt=""
+                      className="h-3 w-auto opacity-70"
+                      draggable={false}
+                    />
+                  </div>
+
+                  <div className="mt-4 flex-1 min-h-0 overflow-x-hidden">
+                    {leaderboard.length === 0 ? (
+                      <div className="text-white/45 text-sm">—</div>
+                    ) : (
+                      <>
+                        <ol
+                          className={["lb-scroll", "m-0 space-y-2", "overflow-y-auto overflow-x-hidden", "pr-3"].join(
+                            " "
+                          )}
+                          style={{ maxHeight: "55vh" }}
+                        >
+                          {leaderboard.map((r, i) => {
+                            const isSelf =
+                              (selfId && r.id === selfId) ||
+                              (!!selfName &&
+                                typeof r.name === "string" &&
+                                r.name.toLowerCase() === selfName.toLowerCase());
+
+                            return (
+                              <li key={r.id} className="max-w-full overflow-x-hidden">
+                                {renderLeaderboardLine(r, i + 1, isSelf)}
+                              </li>
+                            );
+                          })}
+                        </ol>
+
+                        {/* ✅ réplique EXACTE de la ligne dans la liste */}
+                        {hasScrollableLeaderboard && selfRow ? (
+                          <div className="mt-4 pt-4 border-t border-white/10 overflow-x-hidden">
+                            {renderLeaderboardLine(selfRow, selfIndex + 1, true)}
+                          </div>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </aside>
@@ -1270,44 +1245,47 @@ export default function RoomPage() {
               className="hidden lg:block fixed bottom-0 right-0 z-20"
               style={{ top: fixedTop, width: rightW }}
             >
-              <div className="h-full px-6 py-6 bg-[#15171E]">
-                <div className="mt-6">
-                  <SectionTitle>Progression</SectionTitle>
-                  <div className="mt-3 grid grid-cols-6 gap-2">
-                    {questionTrackerItems.length ? (
-                      questionTrackerItems.map((status, idx) => {
-                        const isCurrent = idx === index && phase !== "final" && phase !== "between";
+              <div className="h-full overflow-x-hidden bg-[#15171E] pb-3 pl-3 pr-6 pt-3">
+                <div className="rounded-[6px] bg-[#1F2128] px-6 py-6 flex flex-col overflow-x-hidden">
+                  <div className="mt-6">
+                    <SectionTitle>Progression</SectionTitle>
+                    <div className="mt-3 grid grid-cols-6 gap-2">
+                      {questionTrackerItems.length ? (
+                        questionTrackerItems.map((status, idx) => {
+                          const isCurrent =
+                            idx === index && phase !== "final" && phase !== "between";
 
-                        const colorClass =
-                          status === "correct"
-                            ? "bg-emerald-400 text-white"
-                            : status === "correct-mc"
-                            ? "bg-amber-400 text-white"
-                            : status === "wrong"
-                            ? "bg-red-500 text-white"
-                            : "bg-white/20 text-white/70";
+                          const colorClass =
+                            status === "correct"
+                              ? "bg-emerald-400 text-white"
+                              : status === "correct-mc"
+                              ? "bg-amber-400 text-white"
+                              : status === "wrong"
+                              ? "bg-red-500 text-white"
+                              : "bg-white/20 text-white/70";
 
-                        return (
-                          <div
-                            key={`q-${idx + 1}`}
-                            className={[
-                              "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold",
-                              "transition-all",
-                              colorClass,
-                              isCurrent
-                                ? "ring-2 ring-white/70 ring-offset-2 ring-offset-black/20"
-                                : "",
-                            ].join(" ")}
-                            aria-label={`Question ${idx + 1}`}
-                            title={`Question ${idx + 1}`}
-                          >
-                            {idx + 1}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-white/45 text-sm">—</div>
-                    )}
+                          return (
+                            <div
+                              key={`q-${idx + 1}`}
+                              className={[
+                                "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold",
+                                "transition-all",
+                                colorClass,
+                                isCurrent
+                                  ? "ring-2 ring-white/70 ring-offset-2 ring-offset-black/20"
+                                  : "",
+                              ].join(" ")}
+                              aria-label={`Question ${idx + 1}`}
+                              title={`Question ${idx + 1}`}
+                            >
+                              {idx + 1}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="text-white/45 text-sm">—</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
