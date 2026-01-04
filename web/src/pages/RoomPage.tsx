@@ -53,6 +53,7 @@ type RoomMeta = {
 type RoomInfoItem = { label: string; value: string | number };
 type AnsweredStatus = "correct" | "correct-mc" | "wrong";
 type QuestionStatus = "pending" | "correct" | "correct-mc" | "wrong";
+type FinalQuestionStats = { correct: number; correctQcm: number; wrong: number };
 
 /* Récapitulatif final (affiché à gauche uniquement en phase 'final') */
 type RecapItem = {
@@ -227,6 +228,7 @@ export default function RoomPage() {
 
   /* ---- recap des questions reçu en fin de partie ---- */
   const [finalRecap, setFinalRecap] = useState<RecapItem[] | null>(null);
+  const [selectedFinalIndex, setSelectedFinalIndex] = useState(0);
 
   // ✅ Top 10 visibles (le reste accessible via scroll)
   const LB_VISIBLE = 10;
@@ -898,6 +900,92 @@ export default function RoomPage() {
     [questionStatuses, total]
   );
 
+  const finalQuestions = useMemo(() => {
+    if (!finalRecap?.length) return [];
+
+    type Agg = {
+      questionId: string;
+      index: number;
+      text: string;
+      correctLabel?: string | null;
+      stats?: FinalQuestionStats;
+      attempts: { correct: boolean }[];
+      status: QuestionStatus;
+    };
+
+    const byId = new Map<string, Agg>();
+    const ordered: Agg[] = [];
+
+    for (const item of finalRecap) {
+      let agg = byId.get(item.questionId);
+      if (!agg) {
+        const statsRaw = (item as { stats?: Partial<FinalQuestionStats> })?.stats;
+        const statsAlt: Partial<FinalQuestionStats> = {
+          correct: (item as { statsCorrect?: number })?.statsCorrect,
+          correctQcm: (item as { statsCorrectQcm?: number })?.statsCorrectQcm,
+          wrong: (item as { statsWrong?: number })?.statsWrong,
+        };
+        const stats =
+          statsRaw &&
+          typeof statsRaw.correct === "number" &&
+          typeof statsRaw.correctQcm === "number" &&
+          typeof statsRaw.wrong === "number"
+            ? {
+                correct: statsRaw.correct,
+                correctQcm: statsRaw.correctQcm,
+                wrong: statsRaw.wrong,
+              }
+            : typeof statsAlt.correct === "number" &&
+              typeof statsAlt.correctQcm === "number" &&
+              typeof statsAlt.wrong === "number"
+            ? {
+                correct: statsAlt.correct,
+                correctQcm: statsAlt.correctQcm,
+                wrong: statsAlt.wrong,
+              }
+            : undefined;
+
+        agg = {
+          questionId: item.questionId,
+          index: item.index,
+          text: item.text,
+          correctLabel: item.correctLabel ?? null,
+          stats,
+          attempts: [],
+          status: "pending",
+        };
+
+        byId.set(item.questionId, agg);
+        ordered.push(agg);
+      }
+
+      if (item.correctLabel) agg.correctLabel = item.correctLabel;
+      agg.attempts.push({ correct: !!item.correct });
+    }
+
+    return ordered.map((agg) => {
+      const isCorrect = agg.attempts.some((attempt) => attempt.correct);
+      return {
+        ...agg,
+        status: agg.attempts.length === 0 ? "pending" : isCorrect ? "correct" : "wrong",
+      };
+    });
+  }, [finalRecap]);
+
+  const finalTrackerItems = useMemo(
+    () =>
+      phase === "final" && finalQuestions.length
+        ? finalQuestions.map((q) => q.status)
+        : questionTrackerItems,
+    [finalQuestions, phase, questionTrackerItems]
+  );
+
+  const selectedFinalQuestion = finalQuestions[selectedFinalIndex] ?? null;
+
+  useEffect(() => {
+    setSelectedFinalIndex(0);
+  }, [finalQuestions.length]);
+
   // ✅ Nom du salon affiché en gros à droite
   const roomDisplayName = roomMeta?.name?.trim() || "-";
 
@@ -1258,10 +1346,12 @@ export default function RoomPage() {
                   <div className="rounded-[6px] bg-[#1F2128] px-6 py-6 flex flex-col overflow-x-hidden">
                     <div>
                       <div className="grid grid-cols-6 gap-2">
-                        {questionTrackerItems.length ? (
-                          questionTrackerItems.map((status, idx) => {
-                            const isCurrent =
-                              idx === index && phase !== "final" && phase !== "between";
+                        {finalTrackerItems.length ? (
+                          finalTrackerItems.map((status, idx) => {
+                            const isFinal = phase === "final";
+                            const isCurrent = isFinal
+                              ? idx === selectedFinalIndex
+                              : idx === index && phase !== "between";
 
                             const colorClass =
                               status === "correct"
@@ -1272,19 +1362,34 @@ export default function RoomPage() {
                                 ? "bg-red-500 text-white"
                                 : "bg-white/20 text-white/70";
 
-                            return (
+                            const trackerClasses = [
+                              "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold",
+                              "transition-all",
+                              colorClass,
+                              isCurrent
+                                ? "ring-2 ring-white/70 ring-offset-2 ring-offset-black/20"
+                                : "",
+                            ].join(" ");
+
+                            const trackerLabel = `Question ${idx + 1}`;
+
+                            return isFinal ? (
+                              <button
+                                key={`q-${idx + 1}`}
+                                type="button"
+                                onClick={() => setSelectedFinalIndex(idx)}
+                                className={trackerClasses}
+                                aria-label={`Voir ${trackerLabel}`}
+                                title={`Voir ${trackerLabel}`}
+                              >
+                                {idx + 1}
+                              </button>
+                            ) : (
                               <div
                                 key={`q-${idx + 1}`}
-                                className={[
-                                  "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold",
-                                  "transition-all",
-                                  colorClass,
-                                  isCurrent
-                                    ? "ring-2 ring-white/70 ring-offset-2 ring-offset-black/20"
-                                    : "",
-                                ].join(" ")}
-                                aria-label={`Question ${idx + 1}`}
-                                title={`Question ${idx + 1}`}
+                                className={trackerClasses}
+                                aria-label={trackerLabel}
+                                title={trackerLabel}
                               >
                                 {idx + 1}
                               </div>
@@ -1296,6 +1401,57 @@ export default function RoomPage() {
                       </div>
                     </div>
                   </div>
+                  {phase === "final" ? (
+                    <div className="rounded-[6px] bg-[#1F2128] px-6 py-6 flex flex-col overflow-x-hidden">
+                      {selectedFinalQuestion ? (
+                        <>
+                          <div className="text-[13px] font-semibold leading-snug text-white">
+                            {selectedFinalQuestion.text}
+                          </div>
+                          <div className="mt-3 text-[12px] text-white/70">
+                            <span className="text-white/45">Réponse :</span>{" "}
+                            <span className="font-semibold text-white">
+                              {selectedFinalQuestion.correctLabel ?? "—"}
+                            </span>
+                          </div>
+                          {selectedFinalQuestion.stats ? (
+                            <div className="mt-4 flex items-center justify-between gap-3 text-[12px]">
+                              <div className="flex items-center gap-2 text-white/80">
+                                <span className="tabular-nums font-semibold">
+                                  {selectedFinalQuestion.stats.correct}
+                                </span>
+                                <span className="flex h-4 w-4 items-center justify-center rounded-[4px] bg-emerald-400 text-[10px] font-bold text-white">
+                                  ✓
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-white/80">
+                                <span className="tabular-nums font-semibold">
+                                  {selectedFinalQuestion.stats.correctQcm}
+                                </span>
+                                <span className="flex h-4 w-4 items-center justify-center rounded-[4px] bg-amber-400 text-[10px] font-bold text-white">
+                                  ~
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-white/80">
+                                <span className="tabular-nums font-semibold">
+                                  {selectedFinalQuestion.stats.wrong}
+                                </span>
+                                <span className="flex h-4 w-4 items-center justify-center rounded-[4px] bg-red-500 text-[10px] font-bold text-white">
+                                  ✕
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="mt-4 text-[12px] text-white/45">
+                              Statistiques indisponibles.
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="mt-4 text-[12px] text-white/45">—</div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </aside>
