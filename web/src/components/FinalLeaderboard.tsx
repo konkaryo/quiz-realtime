@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import laurier from "../assets/laurier.png";
+import starUrl from "../assets/star.png";
 import { getLevelFromExperience } from "../utils/experience";
 
 type Row = {
@@ -39,7 +40,7 @@ export function FinalLeaderboard({
     (!!selfName && r.name?.toLowerCase() === selfName.toLowerCase());
 
   const podiumStepBackgroundClass = "bg-[#1F2128]";
-  const listAlternateBackgroundClass = "bg-[#292A30]";
+  const listAlternateBackgroundClass = "bg-[#26272E]";
 
   const listWrapRef = useRef<HTMLDivElement | null>(null);
   const activeItemRef = useRef<HTMLLIElement | null>(null);
@@ -226,9 +227,34 @@ export function FinalLeaderboard({
 
                     {/* RIGHT (compact + largeurs fixes) */}
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="w-[64px] text-right tabular-nums text-[11px] text-cyan-200/90">
-                        +{r.xp ?? 0}xp
-                      </span>
+                      <div className="flex items-center justify-end gap-2 w-[84px]">
+                        <span className="text-right tabular-nums text-[13px] font-semibold text-white">
+                          +{r.xp ?? 0}
+                        </span>
+                        <span
+                          className="relative w-6 h-6 shrink-0"
+                          aria-hidden="true"
+                        >
+                          <img
+                            src={starUrl}
+                            alt=""
+                            aria-hidden
+                            className="absolute inset-0 w-full h-full object-contain"
+                            draggable={false}
+                          />
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <span
+                              className="relative z-[1] text-[9px] font-bold text-white leading-none"
+                              style={{
+                                textShadow: "0 1px 0 rgba(0,0,0,.55)",
+                                transform: "translateX(0.5px)",
+                              }}
+                            >
+                              XP
+                            </span>
+                          </span>
+                        </span>
+                      </div>
                       <span className="w-[64px] text-right tabular-nums text-[11px] text-emerald-200/90">
                         +{r.bits ?? 0}b
                       </span>
