@@ -887,7 +887,7 @@ export default function RoomPage() {
   const rightW = 300;
 
   // ✅ panneau haut
-  const TOP_BAR_H = 48; // px
+  const TOP_BAR_H = 12; // px
   const NAVBAR_TOP = 52; // px (ton offset actuel)
   const fixedTop = NAVBAR_TOP + TOP_BAR_H;
 
@@ -1158,7 +1158,7 @@ export default function RoomPage() {
                 {<Background position="absolute" />}
                 <div className="absolute inset-0 bg-[#15171E]" aria-hidden />
 
-                <div className="relative px-5 md:px-10 py-10" style={{ minHeight: "100%" }}>
+                <div className="relative px-5 md:px-10 py-4" style={{ minHeight: "100%" }}>
                   <div className="flex items-start justify-center">
                     <div className="w-full max-w-[760px]">
                       {gameCountdown !== null ? (
@@ -1170,7 +1170,12 @@ export default function RoomPage() {
                       ) : null}
 
                       {phase === "final" ? (
-                        <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
+                        <div className="space-y-12">
+                          <div className="rounded-[6px] border border-white/10 bg-[#1F2128] px-4 py-2 text-center text-[18px] font-semibold text-white">
+                            Partie terminée !
+                          </div>
+                          <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
+                        </div>
                       ) : normalizedQuestion ? (
                         <div>
                           <QuestionPanel
