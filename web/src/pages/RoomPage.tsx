@@ -1167,26 +1167,6 @@ export default function RoomPage() {
                             {gameCountdown}
                           </div>
                         </div>
-                      ) : phase === "final" && finalRemaining !== null ? (
-                        <div className="mb-10 -mt-6 px-1 py-2">
-                          <div className="h-1 w-full overflow-hidden rounded-[1px] bg-white/10">
-                            <div
-    className="h-full transition-[width] duration-300"
-    style={{
-      width: `${finalProgress * 100}%`,
-      backgroundColor: "#FFFFFF",
-    }}
-                            />
-                          </div>
-                          <div className="mt-2 text-center">
-                            <div className="text-sm font-semibold text-white/90">
-                              Une nouvelle partie va bientôt commencer...
-                            </div>
-                            <div className="text-[12px] text-white/60">
-                              {formatCountdown(finalRemaining)}
-                            </div>
-                          </div>
-                        </div>
                       ) : null}
 
                       {phase === "final" ? (
@@ -1246,45 +1226,69 @@ export default function RoomPage() {
               style={{ top: fixedTop, width: rightW }}
             >
               <div className="h-full overflow-x-hidden bg-[#15171E] pb-3 pl-3 pr-6 pt-3">
-                <div className="rounded-[6px] bg-[#1F2128] px-6 py-6 flex flex-col overflow-x-hidden">
-                  <div className="mt-6">
-                    <SectionTitle>Progression</SectionTitle>
-                    <div className="mt-3 grid grid-cols-6 gap-2">
-                      {questionTrackerItems.length ? (
-                        questionTrackerItems.map((status, idx) => {
-                          const isCurrent =
-                            idx === index && phase !== "final" && phase !== "between";
+                <div className="flex flex-col gap-4 overflow-x-hidden">
+                  {phase === "final" && finalRemaining !== null ? (
+                    <div className="rounded-[6px] bg-[#1F2128] px-6 py-6">
+                      <div className="rounded-[8px] border border-white/10 bg-[#15171E] px-4 py-4">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                          <div
+                            className="h-full transition-[width] duration-300"
+                            style={{
+                              width: `${finalProgress * 100}%`,
+                              backgroundColor: "#FFFFFF",
+                            }}
+                          />
+                        </div>
+                        <div className="mt-3 text-center">
+                          <div className="text-[13px] font-semibold text-white/90">
+                            Une nouvelle partie va bientôt commencer...
+                          </div>
+                          <div className="mt-1 text-[12px] text-white/70 tabular-nums">
+                            {formatCountdown(finalRemaining)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className="rounded-[6px] bg-[#1F2128] px-6 py-6 flex flex-col overflow-x-hidden">
+                    <div>
+                      <div className="grid grid-cols-6 gap-2">
+                        {questionTrackerItems.length ? (
+                          questionTrackerItems.map((status, idx) => {
+                            const isCurrent =
+                              idx === index && phase !== "final" && phase !== "between";
 
-                          const colorClass =
-                            status === "correct"
-                              ? "bg-emerald-400 text-white"
-                              : status === "correct-mc"
-                              ? "bg-amber-400 text-white"
-                              : status === "wrong"
-                              ? "bg-red-500 text-white"
-                              : "bg-white/20 text-white/70";
+                            const colorClass =
+                              status === "correct"
+                                ? "bg-emerald-400 text-white"
+                                : status === "correct-mc"
+                                ? "bg-amber-400 text-white"
+                                : status === "wrong"
+                                ? "bg-red-500 text-white"
+                                : "bg-white/20 text-white/70";
 
-                          return (
-                            <div
-                              key={`q-${idx + 1}`}
-                              className={[
-                                "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold",
-                                "transition-all",
-                                colorClass,
-                                isCurrent
-                                  ? "ring-2 ring-white/70 ring-offset-2 ring-offset-black/20"
-                                  : "",
-                              ].join(" ")}
-                              aria-label={`Question ${idx + 1}`}
-                              title={`Question ${idx + 1}`}
-                            >
-                              {idx + 1}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="text-white/45 text-sm">—</div>
-                      )}
+                            return (
+                              <div
+                                key={`q-${idx + 1}`}
+                                className={[
+                                  "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold",
+                                  "transition-all",
+                                  colorClass,
+                                  isCurrent
+                                    ? "ring-2 ring-white/70 ring-offset-2 ring-offset-black/20"
+                                    : "",
+                                ].join(" ")}
+                                aria-label={`Question ${idx + 1}`}
+                                title={`Question ${idx + 1}`}
+                              >
+                                {idx + 1}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-white/45 text-sm">—</div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1372,7 +1376,6 @@ export default function RoomPage() {
                 </div>
 
                 <div className="mt-5">
-                  <SectionTitle>Progression</SectionTitle>
                   <div className="mt-3 grid grid-cols-6 gap-2">
                     {questionTrackerItems.length ? (
                       questionTrackerItems.map((status, idx) => {
