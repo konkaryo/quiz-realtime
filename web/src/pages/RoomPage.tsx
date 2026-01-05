@@ -1196,7 +1196,7 @@ export default function RoomPage() {
                   </div>
 
                   <div className="mt-4 flex-1 min-h-0 overflow-x-hidden">
-                    {leaderboard.length === 0 ? (
+                      {leaderboard.length === 0 ? (
                       <div className="text-white/45 text-sm">—</div>
                     ) : (
                       <>
@@ -1259,7 +1259,7 @@ export default function RoomPage() {
 
                       {phase === "final" ? (
                         <div className="space-y-12">
-                          <div className="rounded-[6px] border border-white/10 bg-[#1F2128] px-4 py-2 text-center text-[18px] font-semibold text-white">
+                          <div className="rounded-[6px] border border-white/10 bg-[#1F2128] px-4 py-2 text-center text-[16px] font-semibold text-white">
                             Partie terminée !
                           </div>
                           <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
