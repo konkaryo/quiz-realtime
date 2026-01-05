@@ -4,6 +4,10 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import logoUrl from "@/assets/synapz.png";
 import bitIconUrl from "@/assets/bit.png";
 import starUrl from "@/assets/star.png";
+import keyIconUrl from "@/assets/key_icon.png";
+import addIconUrl from "@/assets/add_icon.png";
+import addActiveIconUrl from "@/assets/add_active_icon.png";
+import calendarIconUrl from "@/assets/calendar_icon.png";
 import { getLevelProgress } from "@/utils/experience";
 
 type CurrentUser = {
@@ -18,7 +22,12 @@ const API_BASE =
   (typeof window !== "undefined" ? window.location.origin : "");
 
 /* ---------- petites cartes verticales pour les menus principaux ---------- */
-type MenuItem = { to: string; title: string; desc: string; icon?: string };
+type MenuItem = {
+  to: string;
+  title: string;
+  desc: string;
+  icon?: React.ReactNode;
+};
 
 function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
   return (
@@ -38,37 +47,32 @@ function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
         const titleEl = e.currentTarget.querySelector<HTMLElement>(
           "[data-menu-title]"
         );
-        if (titleEl) {
-          titleEl.style.color = "#ffffff";
-        }
+        if (titleEl) titleEl.style.color = "#ffffff";
         e.currentTarget.style.background = "#272930";
       }}
       onMouseLeave={(e) => {
         const titleEl = e.currentTarget.querySelector<HTMLElement>(
           "[data-menu-title]"
         );
-        if (titleEl) {
-          titleEl.style.color = "#e2e8f0";
-        }
+        if (titleEl) titleEl.style.color = "#e2e8f0";
         e.currentTarget.style.background = "transparent";
       }}
     >
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        {/* ✅ icône: pas de carré de fond, juste l'image / icône */}
         <div
           style={{
             width: 28,
             height: 28,
-            borderRadius: 6,
             display: "grid",
             placeItems: "center",
-            background: "linear-gradient(135deg,#6366f1,#06b6d4)",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 12,
+            background: "transparent",
+            flexShrink: 0,
           }}
         >
           <span aria-hidden>{icon}</span>
         </div>
+
         <div style={{ minWidth: 0 }}>
           <div
             data-menu-title
@@ -189,6 +193,9 @@ export default function AppShell() {
   );
   const [userOpen, setUserOpen] = useState(false);
   const userRef = useRef<HTMLDivElement | null>(null);
+
+  // ✅ hover icône "Créer un salon privé"
+  const [isAddHover, setIsAddHover] = useState(false);
 
   // ✅ ref du header pour éviter fermeture quand on se déplace vers le dropdown
   const headerRef = useRef<HTMLElement | null>(null);
@@ -390,7 +397,19 @@ export default function AppShell() {
       to: "/solo/daily",
       title: "Défi du jour",
       desc: "Un challenge unique chaque jour.",
-      icon: "📆",
+      icon: (
+        <img
+          src={calendarIconUrl}
+          alt=""
+          aria-hidden
+          style={{
+            width: 28,
+            height: 28,
+            display: "block",
+            objectFit: "contain",
+          }}
+        />
+      ),
     },
     {
       to: "/solo/quiz-thematiques",
@@ -399,6 +418,7 @@ export default function AppShell() {
       icon: "🧠",
     },
   ];
+
   const multiItems: MenuItem[] = [
     {
       to: "/multi/race",
@@ -431,18 +451,43 @@ export default function AppShell() {
       icon: "🏆",
     },
   ];
+
   const privateItems: MenuItem[] = [
     {
       to: "/rooms/new",
       title: "Créer un salon privé",
       desc: "Créez un salon et invitez vos amis.",
-      icon: "➕",
+      icon: (
+        <img
+          src={isAddHover ? addActiveIconUrl : addIconUrl}
+          alt=""
+          aria-hidden
+          style={{
+            width: 28,
+            height: 28,
+            display: "block",
+            objectFit: "contain",
+          }}
+        />
+      ),
     },
     {
       to: "/private/join",
       title: "Rejoindre un salon privé",
       desc: "Entrez un code pour rejoindre.",
-      icon: "🔑",
+      icon: (
+        <img
+          src={keyIconUrl}
+          alt=""
+          aria-hidden
+          style={{
+            width: 28,
+            height: 28,
+            display: "block",
+            objectFit: "contain",
+          }}
+        />
+      ),
     },
   ];
 
@@ -458,7 +503,6 @@ export default function AppShell() {
       {/* ---- Top bar ---- */}
       <header
         ref={headerRef}
-        // ✅ FIX: on ne ferme pas si la souris va vers un élément encore dans le header (ex: dropdown)
         onMouseLeave={(e) => {
           const next = e.relatedTarget as Node | null;
           if (next && headerRef.current?.contains(next)) return;
@@ -509,7 +553,9 @@ export default function AppShell() {
             onFocus={() => setOpenMenu("solo")}
             style={{ position: "relative" }}
           >
-            <button style={openMenu === "solo" ? navItemStyleActive : navItemStyle}>
+            <button
+              style={openMenu === "solo" ? navItemStyleActive : navItemStyle}
+            >
               <span>Solo</span>
               <span
                 aria-hidden
@@ -536,7 +582,6 @@ export default function AppShell() {
                   marginTop: 8,
                 }}
               >
-                {/* zone tampon invisible */}
                 <div
                   style={{
                     position: "absolute",
@@ -594,7 +639,6 @@ export default function AppShell() {
                   marginTop: 8,
                 }}
               >
-                {/* zone tampon invisible */}
                 <div
                   style={{
                     position: "absolute",
@@ -654,7 +698,6 @@ export default function AppShell() {
                   marginTop: 8,
                 }}
               >
-                {/* zone tampon invisible */}
                 <div
                   style={{
                     position: "absolute",
@@ -670,7 +713,17 @@ export default function AppShell() {
                   style={{ display: "flex", flexDirection: "column", gap: 6 }}
                 >
                   {privateItems.map((it) => (
-                    <MenuCard key={it.to} {...it} />
+                    <div
+                      key={it.to}
+                      onMouseEnter={() => {
+                        if (it.to === "/rooms/new") setIsAddHover(true);
+                      }}
+                      onMouseLeave={() => {
+                        if (it.to === "/rooms/new") setIsAddHover(false);
+                      }}
+                    >
+                      <MenuCard {...it} />
+                    </div>
                   ))}
                 </div>
               </div>
