@@ -8,6 +8,7 @@ import keyIconUrl from "@/assets/key_icon.png";
 import addIconUrl from "@/assets/add_icon.png";
 import addActiveIconUrl from "@/assets/add_active_icon.png";
 import calendarIconUrl from "@/assets/calendar_icon.png";
+import multiplayerIconUrl from "@/assets/multiplayer_icon.png";
 import { getLevelProgress } from "@/utils/experience";
 
 type CurrentUser = {
@@ -388,12 +389,6 @@ export default function AppShell() {
   // menus
   const soloItems: MenuItem[] = [
     {
-      to: "/solo/campagne",
-      title: "Campagne",
-      desc: "Progressez chapitre après chapitre.",
-      icon: "📖",
-    },
-    {
       to: "/solo/daily",
       title: "Défi du jour",
       desc: "Un challenge unique chaque jour.",
@@ -411,44 +406,26 @@ export default function AppShell() {
         />
       ),
     },
-    {
-      to: "/solo/quiz-thematiques",
-      title: "Quiz thématiques",
-      desc: "Choisissez un thème et enchaînez.",
-      icon: "🧠",
-    },
   ];
 
   const multiItems: MenuItem[] = [
     {
-      to: "/multi/race",
-      title: "Course",
-      desc: "Sprint chronométré et classements.",
-      icon: "🏁",
-    },
-    {
-      to: "/multi/duel",
-      title: "Duel",
-      desc: "Affrontez un joueur en 1v1.",
-      icon: "⚔️",
-    },
-    {
-      to: "/multi/equipe",
-      title: "Par équipe",
-      desc: "Formez une équipe et coopérez.",
-      icon: "👥",
-    },
-    {
       to: "/multi/public",
       title: "Salon public",
       desc: "Rejoignez des parties ouvertes.",
-      icon: "🏟️",
-    },
-    {
-      to: "/multi/event",
-      title: "Évènement",
-      desc: "Modes spéciaux et compétitions.",
-      icon: "🏆",
+      icon: (
+        <img
+          src={multiplayerIconUrl}
+          alt=""
+          aria-hidden
+          style={{
+            width: 28,
+            height: 28,
+            display: "block",
+            objectFit: "contain",
+          }}
+        />
+      ),
     },
   ];
 

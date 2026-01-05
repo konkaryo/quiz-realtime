@@ -17,7 +17,6 @@ import RacePage from "./pages/RacePage";
 import LobbyRacePage from "./pages/LobbyRacePage";
 
 // ✅ nouvelle page
-import CampaignPage from "./pages/CampaignPage";
 import DailyChallengePage from "./pages/DailyChallengePage";
 import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -94,10 +93,6 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <Home /> },
 
-      // ✅ Campagne (menu Solo)
-      { path: "/solo/campagne", element: <CampaignPage /> },
-      // Optionnel : même page pour un niveau précis pour l’instant
-      { path: "/solo/campagne/level/:levelId", element: <CampaignPage /> },
       { path: "/solo/daily", element: <DailyChallengePage /> },
       { path: "/solo/daily/:date", element: <DailyChallengePlayPage /> },
       { path: "/multi/race", element: <LobbyRacePage /> },
