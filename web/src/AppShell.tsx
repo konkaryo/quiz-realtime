@@ -626,7 +626,7 @@ export default function AppShell() {
           alignItems: "center",
           gap: 16,
           padding: "0 16px",
-          background: "#1F2128",
+          background: "#151827",
           zIndex: 60,
           color: "#e5e7eb",
         }}

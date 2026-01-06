@@ -5,8 +5,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
-import Background from "../components/Background";
-import roomBackground from "../assets/background-8.jpg";
 import trophy from "../assets/trophy.png";
 import divider from "../assets/divider.png";
 import playerIcon from "../assets/player.png";
@@ -24,8 +22,6 @@ const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL ??
   (typeof window !== "undefined" ? window.location.origin : "");
 const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
-
-const CENTER_BG_URL = roomBackground;
 
 type ChoiceLite = { id: string; label: string };
 type QuestionLite = {
@@ -1619,7 +1615,7 @@ useEffect(() => {
   return (
     <>
       {/* ✅ fond uni demandé */}
-      <div aria-hidden className="fixed inset-0 bg-[#15171E]" />
+      <div aria-hidden className="fixed inset-0 bg-[#0D0E17]" />
 
       {/* ✅ Scrollbar style global */}
       <style>{`
@@ -1678,11 +1674,11 @@ useEffect(() => {
               className="hidden lg:block fixed bottom-0 left-0 z-20 overflow-x-hidden"
               style={{ top: fixedTop, width: leftW }}
             >
-              <div className="h-full overflow-x-hidden bg-[#15171E] pb-3 pr-3 pt-3 pl-6">
-                <div className="rounded-[6px] bg-[#1F2128] px-4 pt-6 pb-10 flex flex-col overflow-x-hidden">
+              <div className="h-full overflow-x-hidden bg-transparent pb-3 pr-3 pt-3 pl-6">
+                <div className="rounded-[6px] bg-transparent px-4 pt-6 pb-10 flex flex-col overflow-x-hidden">
                   {/* ✅ Position + Score */}
                   {rankLabel || selfRow ? (
-                    <div className="rounded-[6px] border border-white/10 bg-[#15171E] px-3 py-2">
+                    <div className="rounded-[6px] border border-white/10 bg-transparent px-3 py-2">
                       <div className="flex items-center justify-between">
                         {/* Position (rang) + trophy */}
                         <div className="flex items-center gap-2 min-w-0">
@@ -1785,9 +1781,7 @@ useEffect(() => {
                 marginTop: TOP_BAR_H,
               }}
             >
-              <main className="relative overflow-hidden bg-[#15171E]">
-                {<Background position="absolute" />}
-                <div className="absolute inset-0 bg-[#15171E]" aria-hidden />
+              <main className="relative overflow-hidden bg-transparent">
 
                 <div className="relative px-5 md:px-10 py-4" style={{ minHeight: "100%" }}>
                   <div className="flex items-start justify-center">
@@ -1802,7 +1796,7 @@ useEffect(() => {
 
                       {phase === "final" ? (
                         <div className="space-y-12">
-                          <div className="rounded-[6px] border border-white/10 bg-[#1F2128] px-4 py-2 text-center text-[16px] font-semibold text-white">
+                          <div className="rounded-[6px] border border-white/10 bg-transparent px-4 py-2 text-center text-[16px] font-semibold text-white">
                             Partie terminée !
                           </div>
                           <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
@@ -1841,7 +1835,7 @@ useEffect(() => {
                           />
                         </div>
                       ) : phase === "countdown" ? null : (
-                        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-10 text-center text-sm text-white/70">
+                        <div className="rounded-2xl border border-white/10 bg-transparent px-4 py-10 text-center text-sm text-white/70">
                           {phase === "between"
                             ? ""
                             : phase === "idle"
@@ -1860,11 +1854,11 @@ useEffect(() => {
               className="hidden lg:block fixed bottom-0 right-0 z-20"
               style={{ top: fixedTop, width: rightW }}
             >
-              <div className="h-full overflow-x-hidden bg-[#15171E] pb-3 pl-3 pr-6 pt-3">
+              <div className="h-full overflow-x-hidden bg-transparent pb-3 pl-3 pr-6 pt-3">
                 <div className="flex flex-col gap-4 overflow-x-hidden">
                   {phase === "final" && finalRemaining !== null ? (
-                    <div className="rounded-[6px] bg-[#1F2128] px-6 py-6">
-                      <div className="rounded-[8px] border border-white/10 bg-[#15171E] px-4 py-4">
+                    <div className="rounded-[6px] bg-[#1A1E33] px-6 py-6">
+                      <div className="rounded-[8px] border border-white/10 bg-[#0D0E17] px-4 py-4">
                         <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
                           <div
                             className="h-full transition-[width] duration-300"
@@ -1886,7 +1880,7 @@ useEffect(() => {
                     </div>
                   ) : null}
 
-                  <div className="rounded-[6px] bg-[#1F2128] px-6 py-6 flex flex-col overflow-x-hidden">
+                  <div className="rounded-[6px] bg-[#1A1E33] px-6 py-6 flex flex-col overflow-x-hidden">
                     <div>
                       <div className="grid grid-cols-6 gap-2">
                         {finalTrackerItems.length ? (
@@ -1946,7 +1940,7 @@ useEffect(() => {
                   </div>
 
                   {phase === "final" ? (
-                    <div className="rounded-[6px] bg-[#1F2128] px-6 py-6 flex flex-col overflow-x-hidden">
+                    <div className="rounded-[6px] bg-[#1A1E33] px-6 py-6 flex flex-col overflow-x-hidden">
                       {selectedFinalQuestion ? (
                         <>
                           <div className="text-[13px] font-semibold leading-snug text-white">
@@ -2004,7 +1998,7 @@ useEffect(() => {
           {/* MOBILE */}
           <div className="lg:hidden px-5 md:px-8 pb-10" style={{ marginTop: TOP_BAR_H }}>
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 overflow-x-hidden">
+              <div className="rounded-2xl border border-white/10 bg-transparent p-4 overflow-x-hidden">
                 <SectionTitle right={`${Math.max(leaderboard.length, 1)} joueurs`}>
                   Classement
                 </SectionTitle>
@@ -2053,7 +2047,7 @@ useEffect(() => {
                 ) : null}
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 min-w-0 overflow-hidden">
+              <div className="rounded-2xl border border-white/10 bg-transparent p-4 min-w-0 overflow-hidden">
                 <SectionTitle>Salon</SectionTitle>
 
                 <div className="mt-3 mb-5 min-w-0">

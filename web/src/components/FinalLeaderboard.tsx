@@ -41,8 +41,8 @@ export function FinalLeaderboard({
     (!!selfId && r.id === selfId) ||
     (!!selfName && r.name?.toLowerCase() === selfName.toLowerCase());
 
-  const podiumStepBackgroundClass = "bg-[#1F2128]";
-  const listAlternateBackgroundClass = "bg-[#26272E]";
+  const podiumStepBackgroundClass = "bg-[#1A1E33]";
+  const listAlternateBackgroundClass = "bg-[#151827]";
 
   const listWrapRef = useRef<HTMLDivElement | null>(null);
   const activeItemRef = useRef<HTMLLIElement | null>(null);
@@ -130,11 +130,12 @@ export function FinalLeaderboard({
                               : rank === 2
                               ? "text-[36px]"
                               : "text-[32px]",
-                            "text-[#787A7A]",
+                            "text-[#D6DAE7]",
                           ].join(" ")}
                           style={{
                             textShadow:
                               "0 1px 0 rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.15)",
+                              opacity: .92,
                           }}
                         >
                           {rank}

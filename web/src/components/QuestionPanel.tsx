@@ -176,7 +176,7 @@ export default function DailyQuestionPanel(props: Props) {
         <div
           className={[
             "relative w-full shadow-none ring-0 outline-none filter-none",
-            "bg-[#1F2128]",
+            "bg-[#151827]",
             "rounded-[9px]",
             "p-6",
             "border border-white/30",
