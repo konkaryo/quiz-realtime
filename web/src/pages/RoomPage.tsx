@@ -10,6 +10,7 @@ import roomBackground from "../assets/background-8.jpg";
 import trophy from "../assets/trophy.png";
 import divider from "../assets/divider.png";
 import playerIcon from "../assets/player.png";
+import starUrl from "../assets/star.png";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
   QuestionProgress as QuestionPanelProgress,
@@ -123,21 +124,19 @@ function PlayerCell({
           "rounded-[6px]",
           "py-1 pl-3 pr-4",
           "overflow-hidden",
-          isSelf
-            ? "text-white"
-            : "bg-white/[0.03] text-white",
+          isSelf ? "text-white" : "bg-white/[0.03] text-white",
         ].join(" ")}
         style={
           isSelf
             ? {
-                background: "linear-gradient(to bottom, #D30E72 0%, #770577 100%)",
+                background:
+                  "linear-gradient(to bottom, #D30E72 0%, #770577 100%)",
               }
             : undefined
         }
       >
         {/* Bloc gauche : rang + avatar + nom */}
         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-
           {/* Avatar */}
           {row.img ? (
             <img
@@ -153,9 +152,7 @@ function PlayerCell({
 
           {/* Nom + niveau */}
           <div className="min-w-0 leading-tight overflow-hidden">
-            <div className="truncate text-[13px] font-semibold">
-              {row.name}
-            </div>
+            <div className="truncate text-[13px] font-semibold">{row.name}</div>
 
             <div className="text-[11px] text-white/75">
               Niveau {getLevelFromExperience(row.experience ?? 0)}
@@ -174,7 +171,6 @@ function PlayerCell({
   );
 }
 
-
 /* ============================== PAGE ============================== */
 
 export default function RoomPage() {
@@ -184,7 +180,9 @@ export default function RoomPage() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
 
-  const [answeredByPg, setAnsweredByPg] = useState<Record<string, AnsweredStatus>>({});
+  const [answeredByPg, setAnsweredByPg] = useState<
+    Record<string, AnsweredStatus>
+  >({});
   const [question, setQuestion] = useState<QuestionLite | null>(null);
   const [index, setIndex] = useState(0);
   const [total, setTotal] = useState(0);
@@ -194,9 +192,15 @@ export default function RoomPage() {
   const [correctId, setCorrectId] = useState<string | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [feedbackResponseMs, setFeedbackResponseMs] = useState<number | null>(null);
-  const [feedbackWasCorrect, setFeedbackWasCorrect] = useState<boolean | null>(null);
-  const [feedbackCorrectLabel, setFeedbackCorrectLabel] = useState<string | null>(null);
+  const [feedbackResponseMs, setFeedbackResponseMs] = useState<number | null>(
+    null
+  );
+  const [feedbackWasCorrect, setFeedbackWasCorrect] = useState<boolean | null>(
+    null
+  );
+  const [feedbackCorrectLabel, setFeedbackCorrectLabel] = useState<string | null>(
+    null
+  );
   const [answerMode, setAnswerMode] = useState<"text" | "choice" | null>(null);
   const [feedbackPoints, setFeedbackPoints] = useState<number | null>(null);
   const [choicesRevealed, setChoicesRevealed] = useState(false);
@@ -223,6 +227,14 @@ export default function RoomPage() {
   const [displayScore, setDisplayScore] = useState(0);
   const displayScoreRef = useRef(0);
   const scoreAnimationRef = useRef<number | null>(null);
+
+  const finalXpAnimPlayedRef = useRef(false);
+
+  // ✅ overlay ref pour éviter overlays multiples
+  const finalXpOverlayRef = useRef<HTMLDivElement | null>(null);
+  // ✅ NEW: raf + timeout refs pour cleanup safe
+  const finalXpSimRafRef = useRef<number | null>(null);
+  const finalXpTravelTimeoutRef = useRef<number | null>(null);
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
 
@@ -263,7 +275,9 @@ export default function RoomPage() {
 
   const finalRemaining = useMemo(
     () =>
-      finalEndsAt ? Math.max(0, Math.ceil((finalEndsAt - nowServer()) / 1000)) : null,
+      finalEndsAt
+        ? Math.max(0, Math.ceil((finalEndsAt - nowServer()) / 1000))
+        : null,
     [finalEndsAt, nowTick, skew]
   );
 
@@ -344,12 +358,16 @@ export default function RoomPage() {
     s.on(
       "game_countdown",
       (p: { seconds?: number; endsAt?: number; serverNow?: number }) => {
-        const nextSkew = typeof p.serverNow === "number" ? p.serverNow - Date.now() : skew;
+        const nextSkew =
+          typeof p.serverNow === "number" ? p.serverNow - Date.now() : skew;
         if (typeof p.serverNow === "number") setSkew(nextSkew);
 
         const seconds =
           typeof p.endsAt === "number"
-            ? Math.max(1, Math.ceil((p.endsAt - (Date.now() + nextSkew)) / 1000))
+            ? Math.max(
+                1,
+                Math.ceil((p.endsAt - (Date.now() + nextSkew)) / 1000)
+              )
             : Math.max(1, Math.floor(p.seconds ?? 3));
 
         setPhase("countdown");
@@ -442,7 +460,8 @@ export default function RoomPage() {
         responseMs?: number;
         points?: number;
       }) => {
-        if (typeof p.responseMs === "number") setFeedbackResponseMs(p.responseMs);
+        if (typeof p.responseMs === "number")
+          setFeedbackResponseMs(p.responseMs);
         if (typeof p.correct === "boolean") setFeedbackWasCorrect(p.correct);
         if (typeof p.correctLabel === "string" && p.correctLabel)
           setFeedbackCorrectLabel(p.correctLabel);
@@ -472,7 +491,8 @@ export default function RoomPage() {
         }
 
         const shouldResolveStatus =
-          p.correct || (mcChoicesRef.current !== null ? true : (nextLives ?? 0) <= 0);
+          p.correct ||
+          (mcChoicesRef.current !== null ? true : (nextLives ?? 0) <= 0);
 
         if (shouldResolveStatus) {
           setQuestionStatuses((prev) => {
@@ -534,7 +554,8 @@ export default function RoomPage() {
             ? [...prev]
             : Array.from({ length: totalRef.current }, () => "pending" as QuestionStatus);
 
-          const resolvedIndex = typeof p.index === "number" ? p.index : indexRef.current;
+          const resolvedIndex =
+            typeof p.index === "number" ? p.index : indexRef.current;
 
           const nextStatus: QuestionStatus =
             feedbackWasCorrectRef.current === true
@@ -625,7 +646,9 @@ export default function RoomPage() {
           .then((data) => {
             const totalBits = data?.user?.bits;
             if (Number.isFinite(totalBits)) {
-              window.dispatchEvent(new CustomEvent("bits-updated", { detail: { total: totalBits } }));
+              window.dispatchEvent(
+                new CustomEvent("bits-updated", { detail: { total: totalBits } })
+              );
             }
           })
           .catch(() => {});
@@ -650,7 +673,9 @@ export default function RoomPage() {
         .then((data) => {
           const totalXp = data?.user?.experience;
           if (Number.isFinite(totalXp)) {
-            window.dispatchEvent(new CustomEvent("experience-updated", { detail: { total: totalXp } }));
+            window.dispatchEvent(
+              new CustomEvent("experience-updated", { detail: { total: totalXp } })
+            );
           }
         })
         .catch(() => {});
@@ -688,7 +713,8 @@ export default function RoomPage() {
           const { room } = (await res.json()) as { room: RoomMeta };
           setRoomMeta(room);
 
-          if (room.visibility === "PUBLIC" || !room.code) s.emit("join_game", { roomId: room.id });
+          if (room.visibility === "PUBLIC" || !room.code)
+            s.emit("join_game", { roomId: room.id });
           else s.emit("join_game", { code: room.code });
         } else {
           s.close();
@@ -713,6 +739,511 @@ export default function RoomPage() {
       })),
     [leaderboard, bitsByPgId, xpByPgId]
   );
+
+  // ✅ événements consommés par AppShell pour remplir la barre au rythme des étoiles
+  function emitXpBurstStep(delta: number) {
+    if (!Number.isFinite(delta) || delta <= 0) return;
+    window.dispatchEvent(
+      new CustomEvent("experience-burst-step", { detail: { delta } })
+    );
+  }
+
+  function emitXpBurstEnd(residual: number) {
+    if (!Number.isFinite(residual) || residual <= 0) return;
+    window.dispatchEvent(
+      new CustomEvent("experience-burst-end", { detail: { residual } })
+    );
+  }
+
+// ✅ Flying stars vers l'XP dans la navbar (arrive au centre + pulse + écart min 100ms + ticks XP)
+useEffect(() => {
+  if (phase !== "final") {
+    finalXpAnimPlayedRef.current = false;
+
+    if (finalXpSimRafRef.current !== null) {
+      cancelAnimationFrame(finalXpSimRafRef.current);
+      finalXpSimRafRef.current = null;
+    }
+    if (finalXpTravelTimeoutRef.current !== null) {
+      window.clearTimeout(finalXpTravelTimeoutRef.current);
+      finalXpTravelTimeoutRef.current = null;
+    }
+
+    finalXpOverlayRef.current?.remove();
+    finalXpOverlayRef.current = null;
+    return;
+  }
+
+  if (finalXpAnimPlayedRef.current) return;
+
+  const reduce =
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (reduce) {
+    finalXpAnimPlayedRef.current = true;
+    return;
+  }
+
+  let rafId: number | null = null;
+  let cancelled = false;
+
+  let tries = 0;
+  const MAX_TRIES = 240; // laisse le temps à xp_awarded
+
+  const run = () => {
+    if (cancelled) return;
+    if (finalXpOverlayRef.current) return;
+
+    const sourceEl = document.querySelector<HTMLElement>(
+      '[data-xp-source="final-leaderboard-self"]'
+    );
+    const targetEl =
+      document.querySelector<HTMLElement>('[data-xp-target="nav-xp"] img') ??
+      document.querySelector<HTMLElement>('[data-xp-target="nav-xp"]');
+
+    if (!sourceEl || !targetEl) {
+      tries += 1;
+      if (tries < MAX_TRIES) rafId = requestAnimationFrame(run);
+      return;
+    }
+
+    // ✅ self = la ligne joueur (probablement playerGameId dans row.id)
+    const self = finalRows.find((r) => {
+      const isSelf =
+        (selfId && r.id === selfId) ||
+        (!!selfName &&
+          typeof r.name === "string" &&
+          r.name.toLowerCase() === selfName.toLowerCase());
+      return isSelf;
+    });
+
+    // ✅ IMPORTANT : clé XP = playerGameId (= self?.id), PAS selfId (user id)
+    const selfRowId = self?.id ?? null;
+
+    const xpKnown =
+      !!selfRowId && Object.prototype.hasOwnProperty.call(xpByPgId, selfRowId);
+
+    const xpGained = Math.max(
+      0,
+      Number((selfRowId ? xpByPgId[selfRowId] : undefined) ?? self?.xp ?? 0)
+    );
+
+    // Tant que l’XP n’est pas encore arrivé, on attend
+    if (!xpKnown && xpGained === 0) {
+      tries += 1;
+      if (tries < MAX_TRIES) rafId = requestAnimationFrame(run);
+      return;
+    }
+
+    const PER_STAR_XP = 10;
+    const N = Math.floor(xpGained / PER_STAR_XP);
+    const residual = xpGained - N * PER_STAR_XP; // 0..9
+
+    // XP connu mais pas assez pour faire au moins 1 étoile → stop proprement
+    if (xpKnown && N <= 0) {
+      finalXpAnimPlayedRef.current = true;
+      return;
+    }
+
+    // Toujours pas d’étoile ? on retente un peu (cas xp=5 puis maj plus tard)
+    if (N <= 0) {
+      tries += 1;
+      if (tries < MAX_TRIES) rafId = requestAnimationFrame(run);
+      return;
+    }
+
+    const src = sourceEl.getBoundingClientRect();
+    const dst = targetEl.getBoundingClientRect();
+
+    const srcX = src.left + src.width / 2;
+    const srcY = src.top + src.height / 2;
+    const dstX = dst.left + dst.width / 2;
+    const dstY = dst.top + dst.height / 2;
+
+    const dx = dstX - srcX;
+    const dy = dstY - srcY;
+
+    const overlay = document.createElement("div");
+    finalXpOverlayRef.current = overlay;
+    overlay.style.position = "fixed";
+    overlay.style.inset = "0";
+    overlay.style.pointerEvents = "none";
+    overlay.style.zIndex = "2147483647";
+    document.body.appendChild(overlay);
+
+    const travelMs = 1000;
+    const clusterRadius = 14;
+
+    // ✅ apparition: 200ms et un gap fixe
+    const STAR_APPEAR_GAP_MS = 30;
+
+    const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+    type StarSim = {
+      wrap: HTMLDivElement;
+      img: HTMLImageElement;
+
+      // position simulée (autour de la source)
+      x: number;
+      y: number;
+
+      // vitesse simulée
+      vx: number;
+      vy: number;
+
+      // "apesanteur" (bruit lent)
+      floatSeed: number;
+      driftAx: number;
+      driftAy: number;
+      driftPhase: number;
+    };
+
+    const stars: StarSim[] = [];
+
+    for (let i = 0; i < N; i++) {
+      const size = 20 + Math.random() * 14;
+
+      const wrap = document.createElement("div");
+      wrap.style.position = "absolute";
+      wrap.style.left = `${srcX - size / 2}px`;
+      wrap.style.top = `${srcY - size / 2}px`;
+      wrap.style.width = `${size}px`;
+      wrap.style.height = `${size}px`;
+      wrap.style.transform = "translate(0px, 0px)";
+      wrap.style.willChange = "transform";
+      wrap.style.pointerEvents = "none";
+
+      const img = document.createElement("img");
+      img.src = starUrl;
+      img.alt = "";
+      img.setAttribute("aria-hidden", "true");
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.display = "block";
+      img.style.opacity = "0";
+      img.style.transform = "scale(0.2)";
+      img.style.willChange = "transform, opacity";
+      img.style.filter = "drop-shadow(0 6px 14px rgba(0,0,0,.45))";
+
+      wrap.appendChild(img);
+      overlay.appendChild(wrap);
+
+      const clusterX = rand(-clusterRadius, clusterRadius);
+      const clusterY = rand(-clusterRadius, clusterRadius);
+
+      const appearDelay = i * STAR_APPEAR_GAP_MS;
+
+      img.animate(
+        [
+          { opacity: 0, transform: "scale(0.2)" },
+          { opacity: 1, transform: "scale(1.0)" },
+        ],
+        {
+          duration: 200,
+          delay: appearDelay,
+          easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+          fill: "forwards",
+        }
+      );
+
+      // ✅ drift lent / aléatoire pour le flottement "apesanteur"
+      const driftAngle = Math.random() * Math.PI * 2;
+      const driftMag = 0.006 + Math.random() * 0.010; // accel très faible
+      const driftAx = Math.cos(driftAngle) * driftMag;
+      const driftAy = Math.sin(driftAngle) * driftMag;
+
+      stars.push({
+        wrap,
+        img,
+        x: clusterX,
+        y: clusterY,
+        vx: 0,
+        vy: 0,
+        floatSeed: Math.random() * 1000,
+        driftAx,
+        driftAy,
+        driftPhase: Math.random() * 1000,
+      });
+    }
+
+    // ✅ IMPORTANT: on calcule les temps AVANT tickSim (pas de TDZ)
+    const simStart = performance.now();
+    const lastAppearTime = Math.max(0, (N - 1) * STAR_APPEAR_GAP_MS);
+    const floatUntil = lastAppearTime + 150; // ✅ flottement jusqu'à 200ms après la dernière apparition
+
+    // ✅ paramètres de simulation
+    const repelStrength = 140;
+    const repelRadius = 42;
+    const damping = 0.86;
+    const centerPull = 0.015;
+    const maxSpeed = 1.9;
+
+    // ✅ "apesanteur" : bruit très lent qui dévie un peu la vitesse
+    const driftStrength = 0.20; // poids global du drift (faible)
+    const driftTurnSpeed = 0.00065; // vitesse de variation lente du drift
+    const maxFloatOffset = 28; // évite qu'elles partent trop loin pendant l'attente
+
+    const tickSim = (t: number) => {
+      const elapsed = t - simStart;
+      if (elapsed >= floatUntil) return; // ✅ inclut le +200ms
+
+      // --- forces: recentrage + répulsion ---
+      for (let i = 0; i < stars.length; i++) {
+        const a = stars[i];
+
+        // recentrage doux
+        a.vx += -a.x * centerPull;
+        a.vy += -a.y * centerPull;
+
+        // "apesanteur" : drift direction qui tourne lentement (aléatoire mais lisse)
+        const dt = t - simStart;
+        const theta = a.driftPhase + dt * driftTurnSpeed;
+        const ax = a.driftAx * Math.cos(theta) - a.driftAy * Math.sin(theta);
+        const ay = a.driftAx * Math.sin(theta) + a.driftAy * Math.cos(theta);
+        a.vx += ax * driftStrength;
+        a.vy += ay * driftStrength;
+
+        for (let j = i + 1; j < stars.length; j++) {
+          const b = stars[j];
+          const dxp = a.x - b.x;
+          const dyp = a.y - b.y;
+          const d2 = dxp * dxp + dyp * dyp;
+
+          if (d2 > 0 && d2 < repelRadius * repelRadius) {
+            const d = Math.sqrt(d2);
+            const nx = dxp / d;
+            const ny = dyp / d;
+
+            const push = (1 - d / repelRadius) * repelStrength * 0.001;
+            a.vx += nx * push;
+            a.vy += ny * push;
+            b.vx -= nx * push;
+            b.vy -= ny * push;
+          }
+        }
+      }
+
+      // --- intégration + style ---
+      for (const s of stars) {
+        s.vx *= damping;
+        s.vy *= damping;
+
+        s.vx = Math.max(-maxSpeed, Math.min(maxSpeed, s.vx));
+        s.vy = Math.max(-maxSpeed, Math.min(maxSpeed, s.vy));
+
+        s.x += s.vx;
+        s.y += s.vy;
+
+        // garde-fou: reste dans un "nuage" autour de la source
+        const r = Math.hypot(s.x, s.y);
+        if (r > maxFloatOffset) {
+          const k = maxFloatOffset / r;
+          s.x *= k;
+          s.y *= k;
+          s.vx *= 0.6;
+          s.vy *= 0.6;
+        }
+
+        s.wrap.style.transform = `translate(${s.x}px, ${s.y}px)`;
+
+        // ✅ micro-animation lente (rotation/pulse très soft)
+        const tt = (t + s.floatSeed) * 0.0022; // plus lent que قبل
+        const wobble = Math.sin(tt * 0.9) * 4.0; // rotation douce
+        const pulse = 1.0 + Math.sin(tt * 1.1) * 0.025; // scale très léger
+
+        s.img.style.transform = `rotate(${wobble}deg) scale(${pulse})`;
+      }
+
+      finalXpSimRafRef.current = requestAnimationFrame(tickSim);
+    };
+
+    finalXpSimRafRef.current = requestAnimationFrame(tickSim);
+
+    finalXpTravelTimeoutRef.current = window.setTimeout(() => {
+      if (finalXpSimRafRef.current !== null) {
+        cancelAnimationFrame(finalXpSimRafRef.current);
+        finalXpSimRafRef.current = null;
+      }
+
+      const ARRIVAL_GAP_MS = 100; // ✅ min 100ms entre les arrivées
+
+      stars.forEach((s, i) => {
+        // ✅ arrivée EXACTE (centre -> centre)
+        const endX = dx;
+        const endY = dy;
+
+        // vecteur depuis la position actuelle vers la cible
+        const dvx = endX - s.x;
+        const dvy = endY - s.y;
+
+        const len = Math.max(1, Math.hypot(dvx, dvy));
+        const nx = -dvy / len;
+        const ny = dvx / len;
+
+        const side = Math.random() < 0.5 ? -1 : 1;
+
+        // ⬇️ déviation latérale beaucoup plus faible (moins angulaire)
+        const curveBase = 16 + Math.random() * 22;
+        const curve = side * curveBase;
+
+        // ⬇️ point de contrôle plus centré
+        const midT = 0.55 + Math.random() * 0.08;
+
+        // ⬇️ très léger bruit
+        const ctrlX = s.x + dvx * midT + nx * curve + rand(-6, 6);
+        const ctrlY = s.y + dvy * midT + ny * curve + rand(-6, 6);
+
+        // ⬇️ arc vertical discret
+        const arcLift = -(8 + Math.random() * 18);
+
+        // ✅ pas de fade : on force opacité 1
+        s.img.style.opacity = "1";
+
+        const travelDelay = i * ARRIVAL_GAP_MS;
+
+        // --- trajet courbe + accélération finale via offsets ---
+        const p0 = { x: s.x, y: s.y };
+        const p1 = { x: ctrlX, y: ctrlY + arcLift };
+        const p2 = { x: endX, y: endY };
+
+        const quad = (t: number) => {
+          const u = 1 - t;
+          return {
+            x: u * u * p0.x + 2 * u * t * p1.x + t * t * p2.x,
+            y: u * u * p0.y + 2 * u * t * p1.y + t * t * p2.y,
+          };
+        };
+
+        // - à 70% du temps → seulement 35% du chemin
+        // - à 90% du temps → 70% du chemin
+        const k1 = quad(0.35);
+        const k2 = quad(0.7);
+
+        const travel = s.wrap.animate(
+          [
+            { transform: `translate(${p0.x}px, ${p0.y}px)`, offset: 0 },
+            { transform: `translate(${k1.x}px, ${k1.y}px)`, offset: 0.7 },
+            { transform: `translate(${k2.x}px, ${k2.y}px)`, offset: 0.9 },
+            { transform: `translate(${p2.x}px, ${p2.y}px)`, offset: 1 },
+          ],
+          {
+            duration: travelMs,
+            delay: travelDelay,
+            easing: "cubic-bezier(0.2, 0.0, 0.2, 1)",
+            fill: "forwards",
+          }
+        );
+
+        // ✅ shrink UNIQUEMENT à la fin (sans fade)
+        const shrinkMs = 220;
+        const shrinkDelay = travelDelay + Math.max(0, travelMs - shrinkMs);
+
+        s.img.animate(
+          [
+            { opacity: 1, transform: "scale(1)" },
+            { opacity: 1, transform: "scale(0.65)" },
+          ],
+          {
+            duration: shrinkMs,
+            delay: shrinkDelay,
+            easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+            fill: "forwards",
+          }
+        );
+
+        // rotation optionnelle
+        s.img.animate(
+          [
+            { transform: `rotate(0deg)` },
+            { transform: `rotate(${side * (120 + Math.random() * 180)}deg)` },
+          ],
+          {
+            duration: travelMs,
+            delay: travelDelay,
+            easing: "linear",
+            fill: "forwards",
+          }
+        );
+
+        const pulseNavbar = () => {
+          const navStar =
+            document.querySelector<HTMLElement>('[data-xp-target="nav-xp"] img') ??
+            document.querySelector<HTMLElement>('[data-xp-target="nav-xp"]');
+
+          if (!navStar) return;
+
+          navStar.animate(
+            [
+              {
+                transform: "scale(1)",
+                filter: "drop-shadow(0 2px 6px rgba(0,0,0,.45))",
+              },
+              {
+                transform: "scale(1.18)",
+                filter: "drop-shadow(0 6px 14px rgba(255,255,255,.25))",
+              },
+              {
+                transform: "scale(1)",
+                filter: "drop-shadow(0 2px 6px rgba(0,0,0,.45))",
+              },
+            ],
+            { duration: 260, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }
+          );
+        };
+
+        travel.onfinish = () => {
+          // ✅ 1) pulse au moment exact d'arrivée
+          pulseNavbar();
+
+          // ✅ 2) chaque étoile -> +10 XP (barre suit le rythme dans AppShell)
+          emitXpBurstStep(PER_STAR_XP);
+
+          // cleanup étoile
+          s.wrap.remove();
+
+          // ✅ 3) après la dernière étoile : ajouter le résiduel, puis retirer overlay
+          if (i === stars.length - 1) {
+            if (residual > 0) emitXpBurstEnd(residual);
+
+            setTimeout(() => {
+              overlay.remove();
+              if (finalXpOverlayRef.current === overlay)
+                finalXpOverlayRef.current = null;
+            }, 40);
+          }
+        };
+      });
+
+      finalXpTravelTimeoutRef.current = null;
+    }, floatUntil);
+
+    finalXpAnimPlayedRef.current = true;
+  };
+
+  rafId = requestAnimationFrame(run);
+
+  return () => {
+    cancelled = true;
+
+    if (rafId !== null) cancelAnimationFrame(rafId);
+
+    if (finalXpSimRafRef.current !== null) {
+      cancelAnimationFrame(finalXpSimRafRef.current);
+      finalXpSimRafRef.current = null;
+    }
+
+    if (finalXpTravelTimeoutRef.current !== null) {
+      window.clearTimeout(finalXpTravelTimeoutRef.current);
+      finalXpTravelTimeoutRef.current = null;
+    }
+
+    finalXpOverlayRef.current?.remove();
+    finalXpOverlayRef.current = null;
+  };
+}, [phase, selfId, selfName, xpByPgId, finalRows]);
+
 
   useEffect(() => {
     if (phase === "playing") inputRef.current?.focus();
@@ -815,7 +1346,13 @@ export default function RoomPage() {
   };
 
   const showMultipleChoice = () => {
-    if (!socket || phase !== "playing" || lives <= 0 || feedbackWasCorrect === true) return;
+    if (
+      !socket ||
+      phase !== "playing" ||
+      lives <= 0 ||
+      feedbackWasCorrect === true
+    )
+      return;
     setChoicesRevealed(true);
     socket.emit("request_choices");
   };
@@ -896,7 +1433,8 @@ export default function RoomPage() {
   const hasScrollableLeaderboard = leaderboard.length > LB_VISIBLE;
 
   const questionTrackerItems = useMemo(
-    () => Array.from({ length: total }, (_, idx) => questionStatuses[idx] ?? "pending"),
+    () =>
+      Array.from({ length: total }, (_, idx) => questionStatuses[idx] ?? "pending"),
     [questionStatuses, total]
   );
 
@@ -967,7 +1505,8 @@ export default function RoomPage() {
       const isCorrect = agg.attempts.some((attempt) => attempt.correct);
       return {
         ...agg,
-        status: agg.attempts.length === 0 ? "pending" : isCorrect ? "correct" : "wrong",
+        status:
+          agg.attempts.length === 0 ? "pending" : isCorrect ? "correct" : "wrong",
       };
     });
   }, [finalRecap]);
@@ -1021,7 +1560,7 @@ export default function RoomPage() {
     } as React.CSSProperties;
   }, [rankLabel]);
 
-  // ✅ rendu unique d'une ligne leaderboard (cellule + badge) => garantit la réplique exacte
+  // ✅ rendu unique d'une ligne leaderboard (cellule + badge)
   const renderLeaderboardLine = (r: LeaderRow, rank: number, isSelf: boolean) => {
     const status = answeredByPg[r.id];
 
@@ -1044,16 +1583,21 @@ export default function RoomPage() {
         : "Pas encore répondu";
 
     const badgeIcon =
-      status === "correct" ? "✓" : status === "correct-mc" ? "~" : status === "wrong" ? "✕" : "";
+      status === "correct"
+        ? "✓"
+        : status === "correct-mc"
+        ? "~"
+        : status === "wrong"
+        ? "✕"
+        : "";
 
     return (
       <div className="flex items-center gap-2">
+        {/* Rang à gauche de la cellule */}
+        <span className="w-8 flex-shrink-0 tabular-nums text-[12px] text-right opacity-80">
+          #{rank}
+        </span>
 
-    {/* Rang à gauche de la cellule */}
-    <span className="w-8 flex-shrink-0 tabular-nums text-[12px] text-right opacity-80">
-      #{rank}
-    </span>
-        
         <div className="flex-1 min-w-0">
           <PlayerCell row={r} rank={rank} isSelf={isSelf} />
         </div>
@@ -1126,7 +1670,6 @@ export default function RoomPage() {
         }
       `}</style>
 
-
       <div className="relative z-10 min-h-[calc(100dvh-64px)] text-white lg:overflow-hidden">
         <div className="relative">
           <div className="relative grid grid-cols-1 lg:block">
@@ -1143,7 +1686,12 @@ export default function RoomPage() {
                       <div className="flex items-center justify-between">
                         {/* Position (rang) + trophy */}
                         <div className="flex items-center gap-2 min-w-0">
-                          <img src={trophy} alt="" className="h-4 w-4 opacity-90" draggable={false} />
+                          <img
+                            src={trophy}
+                            alt=""
+                            className="h-4 w-4 opacity-90"
+                            draggable={false}
+                          />
                           <div
                             key={rankPulseKey}
                             className="rank-pop font-extrabold tabular-nums text-white"
@@ -1158,7 +1706,9 @@ export default function RoomPage() {
                         {/* Score */}
                         <div className="font-extrabold tabular-nums text-white/90">
                           {displayScore}
-                          <span className="ml-1 text-[12px] font-semibold text-white/55">pts</span>
+                          <span className="ml-1 text-[12px] font-semibold text-white/55">
+                            pts
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1167,12 +1717,7 @@ export default function RoomPage() {
                   )}
 
                   <div className="mt-6 flex items-center justify-center gap-3">
-                    <img
-                      src={divider}
-                      alt=""
-                      className="h-3 w-auto opacity-70"
-                      draggable={false}
-                    />
+                    <img src={divider} alt="" className="h-3 w-auto opacity-70" draggable={false} />
 
                     <div className="flex items-center justify-center gap-2 text-white">
                       <img
@@ -1187,23 +1732,21 @@ export default function RoomPage() {
                       </span>
                     </div>
 
-                    <img
-                      src={divider}
-                      alt=""
-                      className="h-3 w-auto opacity-70"
-                      draggable={false}
-                    />
+                    <img src={divider} alt="" className="h-3 w-auto opacity-70" draggable={false} />
                   </div>
 
                   <div className="mt-4 flex-1 min-h-0 overflow-x-hidden">
-                      {leaderboard.length === 0 ? (
+                    {leaderboard.length === 0 ? (
                       <div className="text-white/45 text-sm">—</div>
                     ) : (
                       <>
                         <ol
-                          className={["lb-scroll", "m-0 space-y-2", "overflow-y-auto overflow-x-hidden", "pr-3"].join(
-                            " "
-                          )}
+                          className={[
+                            "lb-scroll",
+                            "m-0 space-y-2",
+                            "overflow-y-auto overflow-x-hidden",
+                            "pr-3",
+                          ].join(" ")}
                           style={{ maxHeight: "55vh" }}
                         >
                           {leaderboard.map((r, i) => {
@@ -1306,7 +1849,6 @@ export default function RoomPage() {
                             : "Préparation du prochain round…"}
                         </div>
                       )}
-
                     </div>
                   </div>
                 </div>
@@ -1343,6 +1885,7 @@ export default function RoomPage() {
                       </div>
                     </div>
                   ) : null}
+
                   <div className="rounded-[6px] bg-[#1F2128] px-6 py-6 flex flex-col overflow-x-hidden">
                     <div>
                       <div className="grid grid-cols-6 gap-2">
@@ -1401,6 +1944,7 @@ export default function RoomPage() {
                       </div>
                     </div>
                   </div>
+
                   {phase === "final" ? (
                     <div className="rounded-[6px] bg-[#1F2128] px-6 py-6 flex flex-col overflow-x-hidden">
                       {selectedFinalQuestion ? (
@@ -1799,7 +2343,11 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
           <button
             onClick={() => report(selected)}
             disabled={reported.has(selected.questionId)}
-            className={reported.has(selected.questionId) ? "p-1 text-white/25" : "p-1 text-white/60 hover:text-white"}
+            className={
+              reported.has(selected.questionId)
+                ? "p-1 text-white/25"
+                : "p-1 text-white/60 hover:text-white"
+            }
             title={reported.has(selected.questionId) ? "Signalée" : "Signaler"}
             type="button"
           >
@@ -1822,7 +2370,9 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
               key={q.questionId}
               onClick={() => setSelectedIdx(i)}
               className={`${base} ${color} ${
-                i === selectedIdx ? "ring-2 ring-white/40 ring-offset-2 ring-offset-black/20" : ""
+                i === selectedIdx
+                  ? "ring-2 ring-white/40 ring-offset-2 ring-offset-black/20"
+                  : ""
               }`}
               aria-label={`Voir la question ${i + 1}`}
               type="button"

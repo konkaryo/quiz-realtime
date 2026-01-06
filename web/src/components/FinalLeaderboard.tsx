@@ -1,3 +1,5 @@
+// web/src/components/FinalLeaderboard.tsx
+
 import React, { useEffect, useMemo, useRef } from "react";
 import laurier from "../assets/laurier.png";
 import starUrl from "../assets/star.png";
@@ -220,7 +222,9 @@ export function FinalLeaderboard({
                         </div>
                         <div className="text-[10px] leading-[12px] opacity-70">
                           Niveau{" "}
-                          {getLevelFromExperience((r.experience ?? 0) + (r.xp ?? 0))}
+                          {getLevelFromExperience(
+                            (r.experience ?? 0) + (r.xp ?? 0)
+                          )}
                         </div>
                       </div>
                     </div>
@@ -231,9 +235,12 @@ export function FinalLeaderboard({
                         <span className="text-right tabular-nums text-[13px] font-semibold text-white">
                           +{r.xp ?? 0}
                         </span>
+
+                        {/* ✅ SOURCE pour l'animation "flying stars" (uniquement sur la ligne self) */}
                         <span
                           className="relative w-6 h-6 shrink-0"
                           aria-hidden="true"
+                          data-xp-source={isSelf ? "final-leaderboard-self" : undefined}
                         >
                           <img
                             src={starUrl}
@@ -255,6 +262,7 @@ export function FinalLeaderboard({
                           </span>
                         </span>
                       </div>
+
                       <span className="w-[64px] text-right tabular-nums text-[11px] text-emerald-200/90">
                         +{r.bits ?? 0}b
                       </span>

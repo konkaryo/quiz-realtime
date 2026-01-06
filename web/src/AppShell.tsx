@@ -184,8 +184,10 @@ export default function AppShell() {
   const [loading, setLoading] = useState(true);
   const [displayBits, setDisplayBits] = useState(0);
   const displayBitsRef = useRef(0);
+
   const [displayExperience, setDisplayExperience] = useState(0);
   const displayExperienceRef = useRef(0);
+
   const animationRef = useRef<number | null>(null);
   const experienceAnimationRef = useRef<number | null>(null);
 
@@ -200,6 +202,12 @@ export default function AppShell() {
 
   // ✅ ref du header pour éviter fermeture quand on se déplace vers le dropdown
   const headerRef = useRef<HTMLElement | null>(null);
+
+  // ✅ XP burst (remplissage progressif au rythme des étoiles)
+  const xpBurstQueueRef = useRef<number[]>([]);
+  const xpBurstRafRef = useRef<number | null>(null);
+  const xpBurstActiveRef = useRef(false);
+  const xpPendingUserExperienceRef = useRef<number | null>(null);
 
   const navItemStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -304,16 +312,16 @@ export default function AppShell() {
     };
   }, [user?.bits]);
 
-  useEffect(() => {
-    if (typeof user?.experience !== "number") return;
+  // ✅ helper: anime un incrément XP (utilisé par burst + fallback vers total)
+  const animateExperienceTo = (end: number, duration: number) => {
     const start = displayExperienceRef.current;
-    const end = user.experience;
     if (start === end) return;
+
     if (experienceAnimationRef.current !== null) {
       cancelAnimationFrame(experienceAnimationRef.current);
       experienceAnimationRef.current = null;
     }
-    const duration = 900;
+
     const startTime = performance.now();
 
     const tick = (now: number) => {
@@ -321,6 +329,7 @@ export default function AppShell() {
       const eased = 1 - Math.pow(1 - progress, 3);
       const value = Math.round(start + (end - start) * eased);
       setDisplayExperience(value);
+
       if (progress < 1) {
         experienceAnimationRef.current = requestAnimationFrame(tick);
       } else {
@@ -329,12 +338,26 @@ export default function AppShell() {
     };
 
     experienceAnimationRef.current = requestAnimationFrame(tick);
+  };
+
+  // ✅ XP "normal" (quand on reçoit user.experience) — mais on le met en attente si un burst est en cours
+  useEffect(() => {
+    if (typeof user?.experience !== "number") return;
+
+    if (xpBurstActiveRef.current) {
+      xpPendingUserExperienceRef.current = user.experience;
+      return;
+    }
+
+    animateExperienceTo(user.experience, 900);
+
     return () => {
       if (experienceAnimationRef.current !== null) {
         cancelAnimationFrame(experienceAnimationRef.current);
         experienceAnimationRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.experience]);
 
   useEffect(() => {
@@ -365,6 +388,115 @@ export default function AppShell() {
         "experience-updated",
         onExperienceUpdated as EventListener
       );
+  }, []);
+
+  // ✅ écoute les ticks burst envoyés par RoomPage:
+  // - experience-burst-step : +10 à chaque étoile (remplit progressivement)
+  // - experience-burst-end  : ajoute le résiduel à la fin
+  useEffect(() => {
+    const stopBurstRaf = () => {
+      if (xpBurstRafRef.current !== null) {
+        cancelAnimationFrame(xpBurstRafRef.current);
+        xpBurstRafRef.current = null;
+      }
+    };
+
+    const drainQueue = () => {
+      if (xpBurstActiveRef.current) return;
+      if (!xpBurstQueueRef.current.length) return;
+
+      xpBurstActiveRef.current = true;
+
+      const playNext = () => {
+        const delta = xpBurstQueueRef.current.shift();
+        if (!Number.isFinite(delta) || (delta ?? 0) <= 0) {
+          // skip invalid
+          if (xpBurstQueueRef.current.length) return playNext();
+        }
+
+        const current = displayExperienceRef.current;
+        const nextValue = current + Math.max(0, Number(delta ?? 0));
+
+        // ✅ chaque étoile remplit sa part (petite anim, lisible)
+        animateExperienceTo(nextValue, 220);
+
+        // on attend la fin approx de l'anim, puis on enchaine
+        const start = performance.now();
+        const wait = (t: number) => {
+          if (t - start >= 220) {
+            if (xpBurstQueueRef.current.length) {
+              xpBurstRafRef.current = requestAnimationFrame(() => playNext());
+              return;
+            }
+
+            // fini
+            xpBurstActiveRef.current = false;
+            xpBurstRafRef.current = null;
+
+            // si on avait reçu le total serveur pendant le burst, on s'aligne maintenant
+            const pendingTotal = xpPendingUserExperienceRef.current;
+            xpPendingUserExperienceRef.current = null;
+
+            if (Number.isFinite(pendingTotal)) {
+              animateExperienceTo(Number(pendingTotal), 450);
+            }
+
+            return;
+          }
+          xpBurstRafRef.current = requestAnimationFrame(wait);
+        };
+
+        stopBurstRaf();
+        xpBurstRafRef.current = requestAnimationFrame(wait);
+      };
+
+      playNext();
+    };
+
+    const onBurstStep = (event: Event) => {
+      const custom = event as CustomEvent<{ delta?: number }>;
+      const delta = custom.detail?.delta;
+      if (!Number.isFinite(delta) || (delta ?? 0) <= 0) return;
+
+      xpBurstQueueRef.current.push(Number(delta));
+      drainQueue();
+    };
+
+    const onBurstEnd = (event: Event) => {
+      const custom = event as CustomEvent<{ residual?: number }>;
+      const residual = custom.detail?.residual;
+      if (!Number.isFinite(residual) || (residual ?? 0) <= 0) return;
+
+      xpBurstQueueRef.current.push(Number(residual));
+      drainQueue();
+    };
+
+    window.addEventListener("experience-burst-step", onBurstStep as EventListener);
+    window.addEventListener("experience-burst-end", onBurstEnd as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        "experience-burst-step",
+        onBurstStep as EventListener
+      );
+      window.removeEventListener(
+        "experience-burst-end",
+        onBurstEnd as EventListener
+      );
+
+      if (experienceAnimationRef.current !== null) {
+        cancelAnimationFrame(experienceAnimationRef.current);
+        experienceAnimationRef.current = null;
+      }
+      if (xpBurstRafRef.current !== null) {
+        cancelAnimationFrame(xpBurstRafRef.current);
+        xpBurstRafRef.current = null;
+      }
+      xpBurstQueueRef.current = [];
+      xpBurstActiveRef.current = false;
+      xpPendingUserExperienceRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -720,8 +852,10 @@ export default function AppShell() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* ✅ CIBLE XP : on met data-xp-target sur le wrapper + sur l'image (fiable) */}
             <div
               aria-label={`Niveau ${xpProgress.level}`}
+              data-xp-target="nav-xp"
               style={{
                 width: 30,
                 height: 30,
@@ -736,6 +870,7 @@ export default function AppShell() {
                 src={starUrl}
                 alt=""
                 aria-hidden
+                data-xp-target="nav-xp"
                 style={{
                   position: "absolute",
                   inset: 0,
@@ -793,6 +928,7 @@ export default function AppShell() {
                     width: `${xpProgress.progress * 100}%`,
                     background: "linear-gradient(90deg,#38bdf8,#22d3ee)",
                     boxShadow: "inset 0 0 6px rgba(255,255,255,.25)",
+                    transition: "width 120ms linear",
                   }}
                 />
                 <div
