@@ -42,24 +42,55 @@ function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
         background: "transparent",
         color: "inherit",
         textDecoration: "none",
-        transition: "background .15s ease, transform .15s ease",
+        position: "relative",
+        overflow: "hidden", // ✅ l’overlay respecte l’arrondi
+        transition: "transform .15s ease",
       }}
       onMouseEnter={(e) => {
         const titleEl = e.currentTarget.querySelector<HTMLElement>(
           "[data-menu-title]"
         );
         if (titleEl) titleEl.style.color = "#ffffff";
-        e.currentTarget.style.background = "#272930";
+
+        const overlay = e.currentTarget.querySelector<HTMLElement>(
+          "[data-hover-overlay]"
+        );
+        if (overlay) overlay.style.opacity = "0.10"; // ✅ layer +10% plus clair
       }}
       onMouseLeave={(e) => {
         const titleEl = e.currentTarget.querySelector<HTMLElement>(
           "[data-menu-title]"
         );
         if (titleEl) titleEl.style.color = "#e2e8f0";
-        e.currentTarget.style.background = "transparent";
+
+        const overlay = e.currentTarget.querySelector<HTMLElement>(
+          "[data-hover-overlay]"
+        );
+        if (overlay) overlay.style.opacity = "0";
       }}
     >
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      {/* ✅ overlay hover (layer) */}
+      <span
+        data-hover-overlay
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "#ffffff",
+          opacity: 0,
+          transition: "opacity .15s ease",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          position: "relative", // ✅ au-dessus de l’overlay
+        }}
+      >
         {/* ✅ icône: pas de carré de fond, juste l'image / icône */}
         <div
           style={{
@@ -626,9 +657,11 @@ export default function AppShell() {
           alignItems: "center",
           gap: 16,
           padding: "0 16px",
-          background: "#151827",
+          background: "#1A1D2C",
           zIndex: 60,
           color: "#e5e7eb",
+          boxShadow: "0 10px 30px rgba(0,0,0,.55)",
+          borderBottom: "1px solid rgba(255,255,255,.06)",
         }}
       >
         {/* Left: logo → renvoie à la home */}
@@ -684,7 +717,7 @@ export default function AppShell() {
                   width: 320,
                   padding: 12,
                   borderRadius: 8,
-                  background: "#15171E",
+                  background: "#13141F",
                   border: "1px solid rgba(255,255,255,.12)",
                   boxShadow: "0 20px 60px rgba(0,0,0,.35)",
                   zIndex: 70,
@@ -741,7 +774,7 @@ export default function AppShell() {
                   width: 320,
                   padding: 12,
                   borderRadius: 8,
-                  background: "#15171E",
+                  background: "#13141F",
                   border: "1px solid rgba(255,255,255,.12)",
                   boxShadow: "0 20px 60px rgba(0,0,0,.35)",
                   zIndex: 70,
@@ -800,7 +833,7 @@ export default function AppShell() {
                   width: 320,
                   padding: 12,
                   borderRadius: 8,
-                  background: "#15171E",
+                  background: "#13141F",
                   border: "1px solid rgba(255,255,255,.12)",
                   boxShadow: "0 20px 60px rgba(0,0,0,.35)",
                   zIndex: 70,

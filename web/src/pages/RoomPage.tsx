@@ -5,8 +5,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
+import Background from "../components/Background";
 import trophy from "../assets/trophy.png";
-import divider from "../assets/divider.png";
 import playerIcon from "../assets/player.png";
 import starUrl from "../assets/star.png";
 import QuestionPanel, {
@@ -126,7 +126,7 @@ function PlayerCell({
           isSelf
             ? {
                 background:
-                  "linear-gradient(to bottom, #D30E72 0%, #770577 100%)",
+                  "linear-gradient(to bottom, #C51D71 0%, #6F0D6F 100%)",
               }
             : undefined
         }
@@ -1566,7 +1566,7 @@ useEffect(() => {
         : status === "correct-mc"
         ? "bg-amber-400 text-white"
         : status === "wrong"
-        ? "bg-red-500 text-white"
+        ? "bg-[#E54F4F] text-white"
         : "bg-white/20 text-white/0";
 
     const badgeTitle =
@@ -1615,31 +1615,31 @@ useEffect(() => {
   return (
     <>
       {/* ✅ fond uni demandé */}
-      <div aria-hidden className="fixed inset-0 bg-[#0D0E17]" />
+      <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
 
       {/* ✅ Scrollbar style global */}
       <style>{`
         .lb-scroll {
           scrollbar-width: thin;
-          scrollbar-color: #57585A #24252B;
+          scrollbar-color: #4A4B56 #1E1F28;
         }
         .lb-scroll::-webkit-scrollbar { width: 12px; }
         .lb-scroll::-webkit-scrollbar-track {
-          background: #24252B;
+          background: #1E1F28;
           border-radius: 999px;
         }
         .lb-scroll::-webkit-scrollbar-button {
-          background-color: #57585A;
+          background-color: #4A4B56;
           height: 12px;
         }
         .lb-scroll::-webkit-scrollbar-thumb {
-          background: #57585A;
+          background: #4A4B56;
           border-radius: 999px;
           border: 3px solid rgba(0,0,0,0);
           background-clip: padding-box;
         }
         .lb-scroll::-webkit-scrollbar-thumb:hover {
-          background: #57585A;
+          background: #4A4B56;
           border: 3px solid rgba(0,0,0,0);
           background-clip: padding-box;
         }
@@ -1678,7 +1678,11 @@ useEffect(() => {
                 <div className="rounded-[6px] bg-transparent px-4 pt-6 pb-10 flex flex-col overflow-x-hidden">
                   {/* ✅ Position + Score */}
                   {rankLabel || selfRow ? (
-                    <div className="rounded-[6px] border border-white/10 bg-transparent px-3 py-2">
+                    <div 
+                      className="rounded-[6px] bg-[#1C1F2E] px-3 py-2"
+                      style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
+                    >
+                      
                       <div className="flex items-center justify-between">
                         {/* Position (rang) + trophy */}
                         <div className="flex items-center gap-2 min-w-0">
@@ -1713,8 +1717,6 @@ useEffect(() => {
                   )}
 
                   <div className="mt-6 flex items-center justify-center gap-3">
-                    <img src={divider} alt="" className="h-3 w-auto opacity-70" draggable={false} />
-
                     <div className="flex items-center justify-center gap-2 text-white">
                       <img
                         src={playerIcon}
@@ -1727,8 +1729,6 @@ useEffect(() => {
                         {Math.max(leaderboard.length, 1)}
                       </span>
                     </div>
-
-                    <img src={divider} alt="" className="h-3 w-auto opacity-70" draggable={false} />
                   </div>
 
                   <div className="mt-4 flex-1 min-h-0 overflow-x-hidden">
@@ -1854,10 +1854,12 @@ useEffect(() => {
               className="hidden lg:block fixed bottom-0 right-0 z-20"
               style={{ top: fixedTop, width: rightW }}
             >
-              <div className="h-full overflow-x-hidden bg-transparent pb-3 pl-3 pr-6 pt-3">
-                <div className="flex flex-col gap-4 overflow-x-hidden">
+              <div className="h-full overflow-visible bg-transparent pb-3 pl-3 pr-6 pt-3">
+                <div className="flex flex-col gap-4 overflow-visible">
                   {phase === "final" && finalRemaining !== null ? (
-                    <div className="rounded-[6px] bg-[#1A1E33] px-6 py-6">
+                    <div className=
+                      "rounded-[6px] bg-[#1C1F2E] px-6 py-6 shadow-[0_18px_50px_rgba(0,0,0,.55),0_2px_0_rgba(255,255,255,.06)]">
+
                       <div className="rounded-[8px] border border-white/10 bg-[#0D0E17] px-4 py-4">
                         <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
                           <div
@@ -1880,7 +1882,10 @@ useEffect(() => {
                     </div>
                   ) : null}
 
-                  <div className="rounded-[6px] bg-[#1A1E33] px-6 py-6 flex flex-col overflow-x-hidden">
+                  <div 
+                    className="relative rounded-[6px] bg-[#1C1F2E] px-6 py-6 before:pointer-events-none"
+                    style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
+                  >
                     <div>
                       <div className="grid grid-cols-6 gap-2">
                         {finalTrackerItems.length ? (
@@ -1896,7 +1901,7 @@ useEffect(() => {
                                 : status === "correct-mc"
                                 ? "bg-amber-400 text-white"
                                 : status === "wrong"
-                                ? "bg-red-500 text-white"
+                                ? "bg-[#E54F4F] text-white"
                                 : "bg-white/20 text-white/70";
 
                             const trackerClasses = [
@@ -1940,7 +1945,10 @@ useEffect(() => {
                   </div>
 
                   {phase === "final" ? (
-                    <div className="rounded-[6px] bg-[#1A1E33] px-6 py-6 flex flex-col overflow-x-hidden">
+                    <div 
+                      className="rounded-[6px] bg-[#1C1F2E] px-6 py-6 flex flex-col overflow-x-hidden"
+                      style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
+                    >
                       {selectedFinalQuestion ? (
                         <>
                           <div className="text-[13px] font-semibold leading-snug text-white">
@@ -1974,7 +1982,7 @@ useEffect(() => {
                                 <span className="tabular-nums font-semibold">
                                   {selectedFinalQuestion.stats.wrong}
                                 </span>
-                                <span className="flex h-4 w-4 items-center justify-center rounded-[4px] bg-red-500 text-[10px] font-bold text-white">
+                                <span className="flex h-4 w-4 items-center justify-center rounded-[4px] ? [#E54F4F] text-[10px] font-bold text-white">
                                   ✕
                                 </span>
                               </div>
@@ -2087,7 +2095,7 @@ useEffect(() => {
                             : status === "correct-mc"
                             ? "bg-amber-400 text-white"
                             : status === "wrong"
-                            ? "bg-red-500 text-white"
+                            ? "bg-[#E54F4F] text-white"
                             : "bg-white/20 text-white/70";
 
                         return (
@@ -2259,7 +2267,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
         <div className="h-[8px] rounded-full overflow-hidden border border-white/10 bg-white/5 flex">
           <div className="h-full bg-emerald-400" style={{ width: `${wCorrect}%` }} />
           <div className="h-full bg-amber-400" style={{ width: `${wQcm}%` }} />
-          <div className="h-full bg-red-500" style={{ width: `${wWrong}%` }} />
+          <div className="h-full ? bg-[#E54F4F]" style={{ width: `${wWrong}%` }} />
         </div>
       </div>
     );
@@ -2310,7 +2318,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
               key={idx}
               className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2"
             >
-              <span className={a.correct ? "text-emerald-400" : "text-red-500"} aria-hidden>
+              <span className={a.correct ? "text-emerald-400" : "text-[#E54F4F]"} aria-hidden>
                 {a.correct ? "✅" : "❌"}
               </span>
 
@@ -2357,7 +2365,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
             "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold cursor-pointer transition-all";
           let color = "bg-white/20 text-white/70";
           if (state === "correct") color = "bg-emerald-400 text-white";
-          if (state === "wrong") color = "bg-red-500 text-white";
+          if (state === "wrong") color = "bg-[#E54F4F] text-white";
 
           return (
             <button

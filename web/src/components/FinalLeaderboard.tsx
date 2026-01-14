@@ -41,8 +41,8 @@ export function FinalLeaderboard({
     (!!selfId && r.id === selfId) ||
     (!!selfName && r.name?.toLowerCase() === selfName.toLowerCase());
 
-  const podiumStepBackgroundClass = "bg-[#1A1E33]";
-  const listAlternateBackgroundClass = "bg-[#151827]";
+  const podiumStepBackgroundClass = "bg-[#1C1F2E]";
+  const listAlternateBackgroundClass = "bg-[#1C1F2E]";
 
   const listWrapRef = useRef<HTMLDivElement | null>(null);
   const activeItemRef = useRef<HTMLLIElement | null>(null);

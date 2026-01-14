@@ -176,11 +176,11 @@ export default function DailyQuestionPanel(props: Props) {
         <div
           className={[
             "relative w-full shadow-none ring-0 outline-none filter-none",
-            "bg-[#151827]",
+            "bg-[#1C1F2E]",
             "rounded-[9px]",
             "p-6",
-            "border border-white/30",
           ].join(" ")}
+          style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.6), -4px 8px 8px rgba(0,0,0,0.6), 4px -4px 4px rgba(0,0,0,0.6), -4px -4px 4px rgba(0,0,0,0.4)"  }}
         >
           {/* bandeau supérieur : timer / info / vies */}
           <div className="flex flex-col md:flex-row md:flex-nowrap md:items-center md:justify-between gap-3">
@@ -209,13 +209,13 @@ export default function DailyQuestionPanel(props: Props) {
           {/* barre de progression */}
           <div
             className="mt-4 h-[2px] w-full rounded-full"
-            style={{ backgroundColor: "#15171E" }}
+            style={{ backgroundColor: "#13141F" }}
           >
             <div
               className="h-full rounded-full transition-all"
               style={{
                 width: `${timerProgress * 100}%`,
-                backgroundColor: "#02B0FF",
+                backgroundColor: "#7279DA",
               }}
             />
           </div>
@@ -226,7 +226,7 @@ export default function DailyQuestionPanel(props: Props) {
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <div
                   className={[
-                    "inline-flex items-center border border-slate-700/80 bg-[#15171E] font-semibold uppercase text-slate-100 whitespace-nowrap",
+                    "inline-flex items-center border border-slate-700/80 bg-[#13141F] font-semibold uppercase text-slate-100 whitespace-nowrap",
                     "gap-2",
                     "rounded-[9px]",
                     "px-3 py-1.5",
@@ -319,7 +319,7 @@ export default function DailyQuestionPanel(props: Props) {
                   onClick={onSubmitText}
                   disabled={textInputDisabled}
                   className={[
-                    "inline-flex items-center justify-center bg-[#02B0FF] text-slate-50 transition duration-150 hover:brightness-110",
+                    "inline-flex items-center justify-center bg-[#0FACF3] text-slate-50 transition duration-150 hover:brightness-110",
                     "rounded-[9px]",
                     "px-4 py-2",
                     "font-semibold uppercase",

@@ -15,25 +15,9 @@ export default function Background({
     <>
       <div
         aria-hidden
-        className={`${sharedClassName} bg-gradient-to-br from-[#050815] via-[#050014] to-[#1b0308]`}
+        // className={`${sharedClassName} pointer-events-none bg-[linear-gradient(to_bottom,rgba(194,115,247,0.15),transparent_0%),radial-gradient(circle_at_bottom,rgba(12,18,34,0.95),#020617)]`}
+        className={`${sharedClassName} pointer-events-none bg-[linear-gradient(to_bottom,rgba(194,115,247,0.15),transparent_30%),radial-gradient(circle_at_bottom,rgba(12,18,34,1),#0D0E17)]`}
       />
-      <div
-        aria-hidden
-        className={`${sharedClassName} pointer-events-none bg-[linear-gradient(to_top,rgba(194,115,247,0.15),transparent_60%),radial-gradient(circle_at_top,rgba(12,18,34,0.95),#020617)]`}
-      />
-      <div aria-hidden className={`${sharedClassName} pointer-events-none`}>
-        {Array.from({ length: particleCount }).map((_, index) => (
-          <div
-            key={index}
-            className="absolute h-[3px] w-[3px] rounded-full bg-rose-200/40"
-            style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              opacity: 0.55,
-            }}
-          />
-        ))}
-      </div>
     </>
   );
 }
