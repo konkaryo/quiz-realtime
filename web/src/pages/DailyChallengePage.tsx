@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getThemeMeta } from "../lib/themeMeta";
-import BronzeMedal from "../assets/bronze-feather.png";
-import SilverMedal from "../assets/silver-feather.png";
-import GoldMedal from "../assets/gold-feather.png";
-import EliteMedal from "../assets/elite-feather.png";
-import { User } from "lucide-react";
-import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -380,30 +374,9 @@ export default function DailyChallengePage() {
     }
   }
 
-  // Choix de la médaille en fonction du score (Bronze <1000, Argent 1000–1499, Or 1500–1999, Elite ≥2000)
-  let medalSrc: string | null = null;
-  let medalAlt = "";
-
-  if (selectedProgress) {
-    const s = selectedProgress.score;
-    if (s < 1000) {
-      medalSrc = BronzeMedal;
-      medalAlt = "Médaille bronze";
-    } else if (s < 1500) {
-      medalSrc = SilverMedal;
-      medalAlt = "Médaille argent";
-    } else if (s < 2000) {
-      medalSrc = GoldMedal;
-      medalAlt = "Médaille or";
-    } else {
-      medalSrc = EliteMedal;
-      medalAlt = "Médaille élite";
-    }
-  }
-
   return (
     <div className="relative text-slate-50">
-      <Background />
+      <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
 
       {/* CONTENU : même pattern que Home → relative + z-10, pas de min-h-screen */}
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-10 sm:px-8 lg:px-10">
@@ -417,60 +390,45 @@ export default function DailyChallengePage() {
           {!loading && error && <span className="text-rose-200">{error}</span>}
         </div>
 
-        {/* CARTE PRINCIPALE : prend l'espace dispo, sans forcer le viewport */}
+        {/* PANNEAUX SÉPARÉS */}
         <div className="min-h-0">
-          <div
-            className={[
-              "relative w-full rounded-[40px] border border-slate-800/80",
-              "bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.96),rgba(15,23,42,0.98)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.8),#020617)]",
-              "shadow-[0_30px_80px_rgba(0,0,0,0.95)]",
-              "p-5 sm:p-6 lg:p-7",
-            ].join(" ")}
-          >
-            <div className="grid gap-6 lg:grid-cols-[300px,minmax(0,1fr),260px]">
-              {/* CLASSEMENT */}
-              <aside className="rounded-[24px] border border-slate-800/80 bg-black/70 p-4 shadow-inner shadow-black/70 backdrop-blur-xl">
+          <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr),320px]">
+            {/* CLASSEMENT */}
+            <div className="space-y-3">
+              <div className="flex justify-center">
+                <div className="flex items-center gap-1 rounded-md border border-[#2A2D3C] bg-[#141625] p-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">
+                  <button
+                    type="button"
+                    onClick={() => setLeaderboardMode("monthly")}
+                    className={[
+                      "rounded-md px-3 py-1 transition",
+                      leaderboardMode === "monthly"
+                        ? "bg-[#2D7CFF] text-white shadow-[0_0_12px_rgba(45,124,255,0.45)]"
+                        : "hover:text-white",
+                    ].join(" ")}
+                  >
+                    Mensuel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!selectedDate}
+                    onClick={() => selectedDate && setLeaderboardMode("daily")}
+                    className={[
+                      "rounded-md px-3 py-1 transition",
+                      leaderboardMode === "daily"
+                        ? "bg-[#2D7CFF] text-white shadow-[0_0_12px_rgba(45,124,255,0.45)]"
+                        : "hover:text-white",
+                      !selectedDate ? "cursor-not-allowed opacity-40" : "",
+                    ].join(" ")}
+                  >
+                    Quotidien
+                  </button>
+                </div>
+              </div>
+              <aside className="rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
                 <div className="flex h-full flex-col">
-                  <div className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-100 sm:text-base">
-                    <span>Classement</span>
-                    <span className="flex items-center gap-1 text-[11px] text-slate-100">
-                      (
-                      <User className="h-3 w-3 text-white" />
-                      <span>{leaderboard.length}</span>
-                      )
-                    </span>
-                  </div>
-
-                  {/* Switch centré */}
-                  <div className="mt-4 flex justify-center">
-                    <div className="flex items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/60 p-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300">
-                      <button
-                        type="button"
-                        onClick={() => setLeaderboardMode("monthly")}
-                        className={[
-                          "rounded-full px-3 py-1 transition",
-                          leaderboardMode === "monthly"
-                            ? "bg-[#2563ff] text-white shadow-[0_0_12px_rgba(37,99,255,0.45)]"
-                            : "hover:text-white",
-                        ].join(" ")}
-                      >
-                        Mensuel
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!selectedDate}
-                        onClick={() => selectedDate && setLeaderboardMode("daily")}
-                        className={[
-                          "rounded-full px-3 py-1 transition",
-                          leaderboardMode === "daily"
-                            ? "bg-[#2563ff] text-white shadow-[0_0_12px_rgba(37,99,255,0.45)]"
-                            : "hover:text-white",
-                          !selectedDate ? "cursor-not-allowed opacity-40" : "",
-                        ].join(" ")}
-                      >
-                        Quotidien
-                      </button>
-                    </div>
+                  <div className="mt-1 text-center text-sm font-semibold text-slate-100">
+                    {leaderboard.length} joueurs
                   </div>
 
                   <div className="mt-4 max-h-[520px] flex-1 space-y-2 overflow-y-auto pr-2 lb-scroll">
@@ -487,21 +445,21 @@ export default function DailyChallengePage() {
                       leaderboard.map((entry, index) => (
                         <div
                           key={`${entry.playerId}-${index}`}
-                          className="mx-auto flex items-center gap-2 rounded-[10px] border border-slate-700/80 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/10 px-2.5 py-1.5 text-slate-50 shadow-[0_14px_30px_rgba(0,0,0,0.85)]"
+                          className="mx-auto flex items-center gap-2 rounded-[12px] border border-[#2A2D3C] bg-[#151726] px-3 py-2 text-slate-50"
                         >
-                          <div className="w-4 text-left text-[11px] font-bold text-slate-400">
+                          <div className="w-5 text-left text-[11px] font-bold text-slate-400">
                             #{index + 1}
                           </div>
                           {entry.img ? (
                             <img
                               src={entry.img}
                               alt=""
-                              className="h-5 w-5 flex-shrink-0 rounded-[4px] object-cover"
+                              className="h-7 w-7 flex-shrink-0 rounded-[6px] object-cover"
                               loading="lazy"
                             />
                           ) : (
                             <div
-                              className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-xl text-[9px] font-semibold text-slate-50"
+                              className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-xl text-[10px] font-semibold text-slate-50"
                               style={{ background: avatarColor(entry.playerName, index) }}
                             >
                               {entry.playerName
@@ -517,7 +475,7 @@ export default function DailyChallengePage() {
                               {entry.playerName}
                             </div>
                             <div className="flex-shrink-0 text-[11px] font-semibold text-slate-100">
-                              {entry.score} pts
+                              {entry.score}
                             </div>
                           </div>
                         </div>
@@ -525,94 +483,114 @@ export default function DailyChallengePage() {
                   </div>
                 </div>
               </aside>
+            </div>
 
-              {/* CALENDRIER */}
-              <section className="rounded-[24px] border border-slate-800/80 bg-black/70 p-5 shadow-inner shadow-black/70 backdrop-blur-xl">
-                <div className="mb-6 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => goToMonth(-1)}
-                    className="flex h-8 w-8 items-center justify-center text-sm font-semibold text-slate-300 hover:text-[#2563ff] focus:outline-none"
-                  >
-                    <span className="sr-only">Mois précédent</span>
-                    <span className="text-lg leading-none">‹</span>
-                  </button>
+            {/* CALENDRIER */}
+            <section className="rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+              <div className="mb-6 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => goToMonth(-1)}
+                  className="flex h-8 w-8 items-center justify-center text-sm font-semibold text-slate-300 hover:text-[#2D7CFF] focus:outline-none"
+                >
+                  <span className="sr-only">Mois précédent</span>
+                  <span className="text-lg leading-none">‹</span>
+                </button>
 
-                  <div className="text-sm font-semibold text-slate-100 sm:text-base">
-                    {MONTH_NAMES[viewMonthIndex]} {viewYear}
+                <div className="text-sm font-semibold text-slate-100 sm:text-base">
+                  {MONTH_NAMES[viewMonthIndex]} {viewYear}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => goToMonth(1)}
+                  className="flex h-8 w-8 items-center justify-center text-sm font-semibold text-slate-300 hover:text-[#2D7CFF] focus:outline-none"
+                >
+                  <span className="sr-only">Mois suivant</span>
+                  <span className="text-lg leading-none">›</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-2 text-center text-xs text-slate-400">
+                {WEEKDAY_LABELS.map((label) => (
+                  <div key={label} className="uppercase tracking-[0.32em]">
+                    {label}
                   </div>
+                ))}
+              </div>
 
-                  <button
-                    type="button"
-                    onClick={() => goToMonth(1)}
-                    className="flex h-8 w-8 items-center justify-center text-sm font-semibold text-slate-300 hover:text-[#2563ff] focus:outline-none"
-                  >
-                    <span className="sr-only">Mois suivant</span>
-                    <span className="text-lg leading-none">›</span>
-                  </button>
-                </div>
+              <div className="mt-4 grid grid-cols-7 gap-3">
+                {calendarCells.map((day, idx) => {
+                  if (!day) {
+                    return (
+                      <div key={`empty-${idx}`} className="flex flex-col items-center gap-0.5">
+                        <div className="flex h-3 items-end gap-0 opacity-0 leading-none">
+                          <span className="text-[12px]">★</span>
+                          <span className="text-[16px]">★</span>
+                          <span className="text-[12px]">★</span>
+                        </div>
+                        <div className="flex aspect-square w-full rounded-[10px] opacity-0" />
+                      </div>
+                    );
+                  }
 
-                <div className="grid grid-cols-7 gap-2 text-center text-xs text-slate-400">
-                  {WEEKDAY_LABELS.map((label) => (
-                    <div key={label} className="uppercase tracking-[0.32em]">
-                      {label}
-                    </div>
-                  ))}
-                </div>
+                  const iso = isoFromParts(viewYear, viewMonthIndex, day);
+                  const challenge = challengeMap.get(iso);
+                  const isToday = iso === todayIso;
+                  const isSelected = iso === selectedDate;
+                  const completion = progress[iso];
+                  const disabled = !challenge;
 
-                <div className="mt-2 grid grid-cols-7 gap-2">
-                  {calendarCells.map((day, idx) => {
-                    if (!day) {
-                      return <div key={`empty-${idx}`} />;
-                    }
+                  const totalQuestions = completion?.questionStates?.length ?? 0;
+                  const correctCount = completion?.questionStates?.filter(
+                    (state) => state === "correct",
+                  ).length ?? 0;
+                  const ratio = totalQuestions > 0 ? correctCount / totalQuestions : 0;
+                  const filledStars = Math.round(ratio * 3);
 
-                    const iso = isoFromParts(viewYear, viewMonthIndex, day);
-                    const challenge = challengeMap.get(iso);
-                    const isToday = iso === todayIso;
-                    const isSelected = iso === selectedDate;
-                    const completion = progress[iso];
-                    const disabled = !challenge;
-
-                    if (disabled) {
-                      return (
+                  if (disabled) {
+                    return (
+                      <div key={iso} className="flex flex-col items-center gap-0.5">
+                        <div className="flex h-3 items-end gap-0 text-slate-700 leading-none">
+                          <span className="text-[12px]">☆</span>
+                          <span className="text-[16px]">☆</span>
+                          <span className="text-[12px]">☆</span>
+                        </div>
                         <button
-                          key={iso}
                           type="button"
                           disabled
-                          className="relative flex h-12 w-full cursor-not-allowed items-center justify-center rounded-2xl bg-transparent text-sm font-semibold text-slate-600/60"
+                          className="flex aspect-square w-full cursor-not-allowed items-center justify-center rounded-[10px] bg-[#171828] text-sm font-semibold text-slate-500/80"
                         >
                           <span>{day}</span>
                         </button>
-                      );
-                    }
+                      </div>
+                    );
+                  }
 
-                    const isTodayNotSelected = isToday && !isSelected;
+                  const classes = [
+                    "flex aspect-square w-full items-center justify-center rounded-[10px] text-sm font-semibold transition-colors",
+                    isSelected
+                      ? "border border-white bg-[#621A64] text-white shadow-[0_10px_18px_rgba(0,0,0,0.4)]"
+                      : "bg-[#572658] text-white hover:bg-[#7C367E]",
+                    isToday && !isSelected ? "ring-1 ring-[#2D7CFF]/50" : "",
+                  ].join(" ");
 
-                    const classes = [
-                      "relative flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-colors border",
-                      isSelected
-                        ? "border-transparent bg-[#2563ff] text-white hover:bg-[#2563ff]"
-                        : "border-slate-700/80 bg-slate-900/80 hover:bg-slate-900 hover:border-slate-300",
-                      isTodayNotSelected ? "text-[#2563ff]" : "text-slate-100",
-                    ].join(" ");
-
-                    let dotColor: string | null = null;
-                    if (completion && !isSelected) {
-                      const s = completion.score;
-                      if (s < 1000) {
-                        dotColor = "#b45309";
-                      } else if (s < 1500) {
-                        dotColor = "#d1d5db";
-                      } else if (s < 2000) {
-                        dotColor = "#facc15";
-                      } else {
-                        dotColor = "#a855f7";
-                      }
-                    }
-
-                    return (
+                  return (
+                    <div key={iso} className="flex flex-col items-center gap-0.5">
+                      <div className="flex h-3 items-end gap-0 leading-none">
+                        {Array.from({ length: 3 }).map((_, starIndex) => (
+                          <span
+                            key={starIndex}
+                            className={[
+                              starIndex < filledStars ? "text-[#FACC15]" : "text-[#2A2D3C]",
+                              starIndex === 1 ? "text-[16px]" : "text-[12px]",
+                            ].join(" ")}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </div>
                       <button
-                        key={iso}
                         type="button"
                         onClick={() => {
                           setSelectedDate(iso);
@@ -621,116 +599,103 @@ export default function DailyChallengePage() {
                         className={classes}
                       >
                         <span>{day}</span>
-                        {dotColor && (
-                          <span
-                            className="absolute bottom-1 h-1.5 w-1.5 rounded-full"
-                            style={{ backgroundColor: dotColor }}
-                          />
-                        )}
                       </button>
-                    );
-                  })}
+
+                    </div>
+
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* PANNEAU DÉTAIL DU DÉFI */}
+            <aside className="rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+              {selectedChallenge ? (
+                <div className="flex h-full flex-col">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                        Défi du
+                      </div>
+                      <div className="mt-1 text-2xl font-semibold text-slate-50">
+                        {selectedDayLabel} {selectedMonthLabel}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-3 text-sm text-slate-200">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-slate-300">Difficulté</span>
+                      <span className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
+                        {selectedDifficultyLabel}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-slate-300">Nombre de questions</span>
+                      <span className="font-semibold text-slate-50">
+                        {selectedChallenge.questionCount}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-slate-300">Score</span>
+                      <span className="font-semibold text-slate-50">
+                        {selectedProgress ? `${selectedProgress.score} pts` : "—"}
+                      </span>
+                    </div>
+                  </div>
+                  {selectedProgress?.questionStates &&
+                    selectedProgress.questionStates.length > 0 && (
+                      <div className="mt-5 grid grid-cols-8 gap-1.5">
+                        {Array.from({
+                          length: selectedChallenge.questionCount,
+                        }).map((_, i) => {
+                          const state = selectedProgress.questionStates?.[i];
+                          let colorClasses =
+                            "border-slate-700/90 bg-slate-700/60 text-slate-100";
+
+                          if (state === "correct") {
+                            colorClasses =
+                              "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
+                          } else if (state === "wrong") {
+                            colorClasses =
+                              "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]";
+                          }
+
+                          return (
+                            <div
+                              key={i}
+                              className={[
+                                "flex aspect-square w-full items-center justify-center rounded-md text-[11px] font-semibold",
+                                "border",
+                                colorClasses,
+                              ].join(" ")}
+                            >
+                              {i + 1}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                  <button
+                    type="button"
+                    disabled={!selectedChallenge}
+                    onClick={() => selectedDate && navigate(`/solo/daily/${selectedDate}`)}
+                    className={[
+                      "mt-auto inline-flex items-center justify-center rounded-[6px] px-6 py-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] transition",
+                      "border border-transparent bg-[#2D7CFF] text-slate-50 hover:bg-[#1F65DB]",
+                      !selectedChallenge ? "cursor-not-allowed opacity-40" : "",
+                    ].join(" ")}
+                  >
+                    Jouer
+                  </button>
                 </div>
-              </section>
-
-              {/* PANNEAU DÉTAIL DU DÉFI */}
-              <aside className="rounded-[24px] border border-slate-800/80 bg-black/70 p-5 shadow-inner shadow-black/70 backdrop-blur-xl">
-                {selectedChallenge ? (
-                  <div className="flex h-full flex-col">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                          Défi du
-                        </div>
-                        <div className="mt-1 text-2xl font-semibold text-slate-50">
-                          {selectedDayLabel} {selectedMonthLabel}
-                        </div>
-                      </div>
-                      {medalSrc && (
-                        <img
-                          src={medalSrc}
-                          alt={medalAlt}
-                          className="h-10 w-10 flex-shrink-0"
-                        />
-                      )}
-                    </div>
-
-                    <div className="mt-4 space-y-3 text-sm text-slate-200">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-slate-300">Difficulté</span>
-                        <span className="rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold text-slate-100">
-                          {selectedDifficultyLabel}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-slate-300">Nombre de questions</span>
-                        <span className="font-semibold text-slate-50">
-                          {selectedChallenge.questionCount}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-slate-300">Score</span>
-                        <span className="font-semibold text-slate-50">
-                          {selectedProgress ? `${selectedProgress.score} pts` : "—"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {selectedProgress?.questionStates &&
-                      selectedProgress.questionStates.length > 0 && (
-                        <div className="mt-5 grid grid-cols-8 gap-1.5">
-                          {Array.from({
-                            length: selectedChallenge.questionCount,
-                          }).map((_, i) => {
-                            const state = selectedProgress.questionStates?.[i];
-                            let colorClasses =
-                              "border-slate-700/90 bg-slate-700/60 text-slate-100";
-
-                            if (state === "correct") {
-                              colorClasses =
-                                "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
-                            } else if (state === "wrong") {
-                              colorClasses =
-                                "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]";
-                            }
-
-                            return (
-                              <div
-                                key={i}
-                                className={[
-                                  "flex aspect-square w-full items-center justify-center rounded-md text-[11px] font-semibold",
-                                  "border",
-                                  colorClasses,
-                                ].join(" ")}
-                              >
-                                {i + 1}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                    <button
-                      type="button"
-                      disabled={!selectedChallenge}
-                      onClick={() => selectedDate && navigate(`/solo/daily/${selectedDate}`)}
-                      className={[
-                        "mt-auto inline-flex items-center justify-center rounded-[14px] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] transition",
-                        "border border-transparent bg-[#2563ff] text-slate-50 hover:bg-[#1d4ed8]",
-                        !selectedChallenge ? "cursor-not-allowed opacity-40" : "",
-                      ].join(" ")}
-                    >
-                      <span className="mr-2 text-xs">▶</span>
-                      Lancer le défi
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center text-center text-sm text-slate-300">
-                    <p>Aucun défi sélectionné.</p>
-                  </div>
-                )}
-              </aside>
-            </div>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center text-center text-sm text-slate-300">
+                  <p>Aucun défi sélectionné.</p>
+                </div>
+              )}
+            </aside>
           </div>
         </div>
       </div>

@@ -180,7 +180,7 @@ export default function DailyQuestionPanel(props: Props) {
             "rounded-[9px]",
             "p-6",
           ].join(" ")}
-          style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.6), -4px 8px 8px rgba(0,0,0,0.6), 4px -4px 4px rgba(0,0,0,0.6), -4px -4px 4px rgba(0,0,0,0.4)"  }}
+          style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.6)"  }}
         >
           {/* bandeau supérieur : timer / info / vies */}
           <div className="flex flex-col md:flex-row md:flex-nowrap md:items-center md:justify-between gap-3">
