@@ -458,8 +458,8 @@ export default function ProfilePage() {
   const experienceValue = user?.experience ?? 0;
   const xpProgress = getLevelProgress(experienceValue);
 
-  const barRowPx = 28;
-  const minChartH = 210;
+  const barRowPx = 42;
+  const minChartH = 320;
   const unifiedChartH = Math.max(minChartH, maxRows * barRowPx);
 
   const handleAvatarFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -491,14 +491,14 @@ export default function ProfilePage() {
   };
 
   const ChartBlock = ({ data, height }: { data: Row[]; height: number }) => (
-    <div className="rounded-[6px] bg-[#1C1F2E] p-1.5 sm:p-2">
+    <div className="rounded-[6px] bg-[#1C1F2E] p-1 sm:p-2">
       <div style={{ height }} className="w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
             layout="vertical"
-            margin={{ top: 6, right: 86, left: 6, bottom: 12 }}
-            barCategoryGap={14}
+            margin={{ top: 4, right: 64, left: 0, bottom: 8 }}
+            barCategoryGap={10}
           >
             <XAxis
               type="number"
@@ -512,12 +512,12 @@ export default function ProfilePage() {
             <YAxis
               type="category"
               dataKey="labelWithRank"
-              width={200}
+              width={220}
               tickLine={false}
               axisLine={false}
               tick={<RankTick />}
               interval={0}
-              tickMargin={8}
+              tickMargin={10}
             />
 
             <Tooltip
@@ -528,7 +528,7 @@ export default function ProfilePage() {
             <Bar
               dataKey="full"
               isAnimationActive={false}
-              barSize={18}
+              barSize={24}
               shape={SegmentedBarShape as any}
             >
               <LabelList dataKey="accuracy" content={<PercentLabel />} />
@@ -644,7 +644,7 @@ export default function ProfilePage() {
           {/* Graph en 2 colonnes */}
           <SectionCard className="mt-4" title="Taux de réussite par catégorie">
 
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-2 lg:grid-cols-2">
               <ChartBlock data={leftData} height={unifiedChartH} />
               <ChartBlock data={rightData} height={unifiedChartH} />
             </div>
