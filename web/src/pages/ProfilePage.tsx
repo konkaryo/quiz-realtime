@@ -174,7 +174,7 @@ const PercentLabel = (props: any) => {
       y={ty}
       textAnchor="start"
       fill="#E5E7EB"
-      fontSize={12}
+      fontSize={10}
       fontWeight={700}
       style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif" }}
     >
@@ -198,7 +198,7 @@ const RankTick = (props: any) => {
       dy={4}
       textAnchor="end"
       fill="#E5E7EB"
-      fontSize={12}
+      fontSize={10}
       style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif" }}
     >
       {ellipsize(v, 30)}
@@ -302,15 +302,15 @@ type SectionCardProps = {
 
 function SectionCard({ title, children, right, className }: SectionCardProps) {
   const base =
-    "rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)] sm:p-5 backdrop-blur-xl";
+    "rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-3 shadow-[4px_8px_8px_rgba(0,0,0,0.6)] sm:p-4 backdrop-blur-xl";
   const finalClassName = className
     ? `${base} ${className}`
     : base;
 
   return (
     <section className={finalClassName}>
-      <header className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-slate-100 sm:text-lg">{title}</h3>
+      <header className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-100 sm:text-base">{title}</h3>
         {right}
       </header>
       {children}
@@ -458,8 +458,8 @@ export default function ProfilePage() {
   const experienceValue = user?.experience ?? 0;
   const xpProgress = getLevelProgress(experienceValue);
 
-  const barRowPx = 34;
-  const minChartH = 260;
+  const barRowPx = 28;
+  const minChartH = 210;
   const unifiedChartH = Math.max(minChartH, maxRows * barRowPx);
 
   const handleAvatarFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -491,7 +491,7 @@ export default function ProfilePage() {
   };
 
   const ChartBlock = ({ data, height }: { data: Row[]; height: number }) => (
-    <div className="rounded-[6px] bg-[#1C1F2E] p-2 sm:p-3">
+    <div className="rounded-[6px] bg-[#1C1F2E] p-1.5 sm:p-2">
       <div style={{ height }} className="w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -543,19 +543,19 @@ export default function ProfilePage() {
     <div className="relative min-h-screen text-slate-50">
       <div className="absolute inset-0 bg-[#13141F]" aria-hidden />
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 py-12 sm:px-8 lg:px-10">
+      <div className="relative z-10 mx-auto max-w-4xl px-3 py-10 sm:px-5 lg:px-6">
         {/* ===================== ENTÊTE ===================== */}
-        <div className="mb-10">
-          <div className="flex items-center gap-8">
+        <div className="mb-8">
+          <div className="flex items-center gap-6">
             {/* AVATAR */}
             <div
               style={{
-                width: 160,
-                height: 160,
+                width: 128,
+                height: 128,
                 borderRadius: 6,
-                padding: 4,
+                padding: 3,
                 background: "linear-gradient(135deg, #fb7185, #a855f7, #3b82f6)",
-                boxShadow: "0 0 24px rgba(248,113,113,0.45)",
+                boxShadow: "0 0 20px rgba(248,113,113,0.45)",
               }}
             >
               <button
@@ -570,8 +570,8 @@ export default function ProfilePage() {
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold text-slate-100 ring-1 ring-white/20">
-                    <Edit3 className="h-3.5 w-3.5" />
+                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] font-semibold text-slate-100 ring-1 ring-white/20">
+                    <Edit3 className="h-3 w-3" />
                     Modifier
                   </span>
                 </div>
@@ -580,21 +580,21 @@ export default function ProfilePage() {
 
             {/* INFOS */}
             <div className="flex flex-col gap-3">
-              <h1 className="font-brutal text-3xl sm:text-4xl text-slate-50">
+              <h1 className="font-brutal text-2xl text-slate-50 sm:text-3xl">
                 {displayName}
               </h1>
 
               <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
                   <span>Niveau {xpProgress.level}</span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-[11px] text-slate-400">
                     {xpProgress.needed > 0
                       ? `${xpProgress.gained} / ${xpProgress.needed} XP`
                       : "Niveau maximum"}
                   </span>
                 </div>
 
-                <div className="h-2 w-full max-w-xs rounded-full bg-slate-800/80">
+                <div className="h-1.5 w-full max-w-[220px] rounded-full bg-slate-800/80">
                   <div
                     className="h-full rounded-full"
                     style={{
@@ -610,64 +610,53 @@ export default function ProfilePage() {
         </div>
 
         {/* ===================== STATISTIQUES FULL WIDTH ===================== */}
-        <div className="mb-10">
+        <div className="mb-8">
           {/* Top 3 stats */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]">
-              <div className="flex items-center justify-between text-sm text-slate-300">
-                <span>Taux global</span>
-                <BadgeCheck className="h-4 w-4 text-emerald-400" />
-              </div>
-              <p className="mt-2 text-3xl font-semibold text-emerald-100">89%</p>
-              <p className="text-xs text-slate-400">+2% vs semaine dernière</p>
-            </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <SectionCard
+              title="Taux de bonnes réponses"
+              right={<BadgeCheck className="h-4 w-4 text-emerald-400" />}
+            >
+              <p className="text-[22px] font-semibold">89%</p>
+            </SectionCard>
 
-            <div className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]">
-              <div className="flex items-center justify-between text-sm text-slate-300">
-                <span>Temps moyen</span>
-                <Clock className="h-4 w-4 text-amber-300" />
-              </div>
-              <p className="mt-2 text-3xl font-semibold text-amber-100">
+            <SectionCard
+              title="Temps de réponse moyen"
+              right={<Clock className="h-4 w-4 text-amber-300" />}
+            >
+              <p className="text-[22px] font-semibold">
                 {avgTextResponseMs !== null
                   ? `${(avgTextResponseMs / 1000).toFixed(1)}s`
                   : "--"}
               </p>
-              <p className="text-xs text-slate-400">
-                Moyenne sur les réponses libres correctes
-              </p>
-            </div>
+            </SectionCard>
 
-            <div className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]">
-              <div className="flex items-center justify-between text-sm text-slate-300">
-                <span>Questions jouées</span>
-                <Users className="h-4 w-4 text-sky-300" />
-              </div>
-              <p className="mt-2 text-3xl font-semibold text-sky-100">
+            <SectionCard
+              title="Questions répondues"
+              right={<Users className="h-4 w-4 text-sky-300" />}
+            >
+              <p className="text-[22px] font-semibold">
                 {totalQuestions.toLocaleString("fr-FR")}
               </p>
-              <p className="text-xs text-slate-400">Total de questions répondues</p>
-            </div>
+            </SectionCard>
           </div>
 
-            {/* Graph en 2 colonnes */}
-          <div className="mt-5 rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]">
-              <div className="mb-3 flex items-center justify-between text-sm text-slate-300">
-                <span>Taux de réussite par catégorie</span>
-              </div>
+          {/* Graph en 2 colonnes */}
+          <SectionCard className="mt-4" title="Taux de réussite par catégorie">
 
             <div className="grid gap-4 lg:grid-cols-2">
               <ChartBlock data={leftData} height={unifiedChartH} />
               <ChartBlock data={rightData} height={unifiedChartH} />
             </div>
-          </div>
+          </SectionCard>
         </div>
 
         {/* ===================== GRILLE : GAUCHE / DROITE ===================== */}
-        <div className="grid gap-6 lg:grid-cols-[280px,minmax(0,1fr)]">
+        <div className="grid gap-5 lg:grid-cols-[230px,minmax(0,1fr)]">
           {/* COLONNE GAUCHE */}
-          <aside className="flex flex-col gap-4">
-            <div className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] shadow-[4px_8px_8px_rgba(0,0,0,0.6)] overflow-hidden">
-              <div className="relative h-32 w-full rounded-[6px] bg-gradient-to-br from-rose-500/40 via-purple-500/30 to-blue-500/25" />
+          <aside className="flex flex-col gap-3">
+            <div className="overflow-hidden rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] shadow-[4px_8px_8px_rgba(0,0,0,0.6)]">
+              <div className="relative h-28 w-full rounded-[6px] bg-gradient-to-br from-rose-500/40 via-purple-500/30 to-blue-500/25" />
             </div>
 
             <SectionCard title="Liste d'amis">
@@ -675,20 +664,20 @@ export default function ProfilePage() {
                 {friends.map((f) => (
                   <div
                     key={f.name}
-                    className="flex items-center gap-3 rounded-[6px] border border-slate-800/60 bg-[#1C1F2E] px-3 py-2 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]"
+                    className="flex items-center gap-3 rounded-[6px] border border-slate-800/60 bg-[#1C1F2E] px-3 py-1.5 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]"
                   >
                     <img
                       src={f.avatar}
                       alt={`Avatar ${f.name}`}
-                      className="h-10 w-10 rounded-[6px] object-cover"
+                      className="h-9 w-9 rounded-[6px] object-cover"
                     />
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-slate-100">{f.name}</p>
-                      <p className="text-xs text-slate-400">{f.status}</p>
+                      <p className="text-xs font-semibold text-slate-100">{f.name}</p>
+                      <p className="text-[11px] text-slate-400">{f.status}</p>
                     </div>
                     <button
                       type="button"
-                      className="inline-flex items-center rounded-full bg-rose-200/10 px-3 py-1 text-xs font-semibold text-rose-100 ring-1 ring-rose-200/40 hover:-translate-y-0.5 hover:bg-rose-200/15 transition"
+                      className="inline-flex items-center rounded-full bg-rose-200/10 px-2.5 py-1 text-[11px] font-semibold text-rose-100 ring-1 ring-rose-200/40 transition hover:-translate-y-0.5 hover:bg-rose-200/15"
                     >
                       Inviter
                     </button>
@@ -699,10 +688,10 @@ export default function ProfilePage() {
           </aside>
 
           {/* COLONNE DROITE */}
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4">
             <SectionCard
               title="Succès"
-              right={<button className="text-xs font-semibold text-rose-100">Tout voir</button>}
+              right={<button className="text-[11px] font-semibold">Tout voir</button>}
             >
               <div className="grid gap-3 md:grid-cols-3">
                 {achievements.map((a) => {
@@ -710,23 +699,23 @@ export default function ProfilePage() {
                   return (
                     <div
                       key={a.title}
-                      className={`flex flex-col gap-3 rounded-[6px] border border-slate-800/60 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)] ${
+                      className={`flex flex-col gap-2 rounded-[6px] border border-slate-800/60 bg-[#1C1F2E] p-3 shadow-[4px_8px_8px_rgba(0,0,0,0.6)] ${
                         a.highlight ? "ring-1 ring-rose-200/40" : ""
                       }`}
                     >
-                      <div className="flex items-center justify-between text-sm text-slate-200">
+                      <div className="flex items-center justify-between text-xs text-slate-200">
                         <span className="flex items-center gap-2 font-semibold text-white">
-                          <span className="grid h-9 w-9 place-items-center rounded-xl bg-rose-200/10 text-rose-100 ring-1 ring-rose-200/40">
+                          <span className="grid h-8 w-8 place-items-center rounded-xl bg-rose-200/10 text-rose-100 ring-1 ring-rose-200/40">
                             {a.icon}
                           </span>
                           {a.title}
                         </span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-[11px] text-slate-400">
                           {a.progress} / {a.goal}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400">{a.desc}</p>
-                      <div className="h-2 rounded-full bg-slate-800">
+                      <p className="text-[11px] text-slate-400">{a.desc}</p>
+                      <div className="h-1.5 rounded-full bg-slate-800">
                         <div
                           className={`h-full rounded-full ${
                             a.highlight
@@ -747,17 +736,17 @@ export default function ProfilePage() {
                 {history.map((e) => (
                   <div
                     key={e.title}
-                    className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 text-sm text-slate-100 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]"
+                    className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-3 text-xs text-slate-100 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                        <p className="text-[11px] uppercase tracking-wide text-slate-400">
                           {e.title}
                         </p>
-                        <p className="text-base font-semibold text-white">{e.detail}</p>
+                        <p className="text-sm font-semibold text-white">{e.detail}</p>
                       </div>
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                           e.trend === "up"
                             ? "bg-emerald-500/15 text-emerald-100 ring-1 ring-emerald-400/50"
                             : "bg-rose-500/15 text-rose-100 ring-1 ring-rose-400/50"
@@ -766,7 +755,7 @@ export default function ProfilePage() {
                         {e.result}
                       </span>
                     </div>
-                    <p className="mt-3 text-xs text-slate-400">
+                    <p className="mt-2 text-[11px] text-slate-400">
                       Mise à jour automatique côté serveur dès qu'une partie est terminée.
                     </p>
                   </div>
@@ -778,28 +767,28 @@ export default function ProfilePage() {
       </div>
       {isAvatarEditorOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
-          <div className="w-full max-w-lg rounded-[6px] border border-slate-800/80 bg-slate-950 p-6 text-slate-100 shadow-[0_25px_60px_rgba(15,23,42,0.6)]">
+          <div className="w-full max-w-md rounded-[6px] border border-slate-800/80 bg-slate-950 p-5 text-slate-100 shadow-[0_25px_60px_rgba(15,23,42,0.6)]">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-base font-semibold text-white">
                   Mettre à jour la photo de profil
                 </h2>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-[11px] text-slate-400">
                   Importez une image carrée ou recadrez-la pour un rendu optimal.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleAvatarEditorClose}
-                className="rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-200 hover:border-rose-200/60 hover:text-rose-100 transition"
+                className="rounded-full border border-slate-700 px-2.5 py-1 text-[11px] font-semibold text-slate-200 transition hover:border-rose-200/60 hover:text-rose-100"
               >
                 Fermer
               </button>
             </div>
 
-            <div className="mt-5 flex flex-col gap-4">
+            <div className="mt-4 flex flex-col gap-4">
               <div className="flex items-center gap-4">
-                <div className="h-24 w-24 overflow-hidden rounded-[6px] border border-slate-700 bg-slate-900">
+                <div className="h-20 w-20 overflow-hidden rounded-[6px] border border-slate-700 bg-slate-900">
                   <img
                     src={pendingAvatarUrl ?? avatarUrl}
                     alt="Aperçu de la photo de profil"
@@ -807,7 +796,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="flex flex-1 flex-col gap-2">
-                  <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-slate-700 bg-slate-900/40 px-4 py-2 text-sm font-semibold text-slate-100 hover:border-rose-200/60 hover:text-rose-100 transition">
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:border-rose-200/60 hover:text-rose-100">
                     Choisir une image
                     <input
                       type="file"
@@ -816,18 +805,18 @@ export default function ProfilePage() {
                       onChange={handleAvatarFileChange}
                     />
                   </label>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-[11px] text-slate-400">
                     {pendingAvatarName ?? "Formats acceptés : JPG, PNG, WEBP."}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+            <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={handleAvatarEditorClose}
-                className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-slate-500 hover:text-white transition"
+                className="rounded-full border border-slate-700 px-3 py-1.5 text-[11px] font-semibold text-slate-200 transition hover:border-slate-500 hover:text-white"
               >
                 Annuler
               </button>
@@ -835,7 +824,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={handleAvatarSave}
                 disabled={!pendingAvatarUrl}
-                className="rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(244,63,94,0.3)] transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:bg-slate-700/70 disabled:text-slate-400"
+                className="rounded-full bg-rose-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow-[0_10px_20px_rgba(244,63,94,0.3)] transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:bg-slate-700/70 disabled:text-slate-400"
               >
                 Enregistrer
               </button>
