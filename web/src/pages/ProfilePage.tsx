@@ -1,7 +1,6 @@
 // web/src/pages/ProfilePage.tsx
 
 import React, { useEffect, useMemo, useState, type ReactNode } from "react";
-import Background from "../components/Background";
 import { getLevelProgress } from "../utils/experience";
 
 import { BadgeCheck, Clock, Edit3, Trophy, Users } from "lucide-react";
@@ -303,10 +302,10 @@ type SectionCardProps = {
 
 function SectionCard({ title, children, right, className }: SectionCardProps) {
   const base =
-    "rounded-3xl border border-slate-800/70 p-4 sm:p-5 backdrop-blur-xl";
+    "rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)] sm:p-5 backdrop-blur-xl";
   const finalClassName = className
     ? `${base} ${className}`
-    : `${base} bg-black/70 shadow-[0_20px_60px_rgba(15,23,42,0.9)]`;
+    : base;
 
   return (
     <section className={finalClassName}>
@@ -492,7 +491,7 @@ export default function ProfilePage() {
   };
 
   const ChartBlock = ({ data, height }: { data: Row[]; height: number }) => (
-    <div className="rounded-2xl border border-slate-800/70 bg-black/50 p-2 sm:p-3">
+    <div className="rounded-[6px] bg-[#1C1F2E] p-2 sm:p-3">
       <div style={{ height }} className="w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -541,8 +540,8 @@ export default function ProfilePage() {
   );
 
   return (
-    <div className="relative text-slate-50">
-      <Background />
+    <div className="relative min-h-screen text-slate-50">
+      <div className="absolute inset-0 bg-[#13141F]" aria-hidden />
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-12 sm:px-8 lg:px-10">
         {/* ===================== ENTÊTE ===================== */}
@@ -553,7 +552,7 @@ export default function ProfilePage() {
               style={{
                 width: 160,
                 height: 160,
-                borderRadius: 24,
+                borderRadius: 6,
                 padding: 4,
                 background: "linear-gradient(135deg, #fb7185, #a855f7, #3b82f6)",
                 boxShadow: "0 0 24px rgba(248,113,113,0.45)",
@@ -562,7 +561,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setIsAvatarEditorOpen(true)}
-                className="group relative block h-full w-full overflow-hidden rounded-[20px] bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-200/80"
+                className="group relative block h-full w-full overflow-hidden rounded-[6px] bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-200/80"
                 aria-label="Modifier la photo de profil"
               >
                 <img
@@ -612,74 +611,63 @@ export default function ProfilePage() {
 
         {/* ===================== STATISTIQUES FULL WIDTH ===================== */}
         <div className="mb-10">
-          <SectionCard
-            title="Statistiques"
-            className="shadow-none bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.96),rgba(15,23,42,0.98)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.8),#020617)]"
-            right={
-              <button className="inline-flex items-center gap-1 rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-100 hover:-translate-y-0.5 hover:border-rose-200/60 hover:text-rose-100 transition">
-                <Edit3 className="h-4 w-4" /> Personnaliser
-              </button>
-            }
-          >
-            {/* Top 3 stats */}
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-slate-800/70 bg-black/70 p-4">
-                <div className="flex items-center justify-between text-sm text-slate-300">
-                  <span>Taux global</span>
-                  <BadgeCheck className="h-4 w-4 text-emerald-400" />
-                </div>
-                <p className="mt-2 text-3xl font-semibold text-emerald-100">89%</p>
-                <p className="text-xs text-slate-400">+2% vs semaine dernière</p>
+          {/* Top 3 stats */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]">
+              <div className="flex items-center justify-between text-sm text-slate-300">
+                <span>Taux global</span>
+                <BadgeCheck className="h-4 w-4 text-emerald-400" />
               </div>
-
-              <div className="rounded-2xl border border-slate-800/70 bg-black/70 p-4">
-                <div className="flex items-center justify-between text-sm text-slate-300">
-                  <span>Temps moyen</span>
-                  <Clock className="h-4 w-4 text-amber-300" />
-                </div>
-                <p className="mt-2 text-3xl font-semibold text-amber-100">
-                  {avgTextResponseMs !== null
-                    ? `${(avgTextResponseMs / 1000).toFixed(1)}s`
-                    : "--"}
-                </p>
-                <p className="text-xs text-slate-400">
-                  Moyenne sur les réponses libres correctes
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-800/70 bg-black/70 p-4">
-                <div className="flex items-center justify-between text-sm text-slate-300">
-                  <span>Questions jouées</span>
-                  <Users className="h-4 w-4 text-sky-300" />
-                </div>
-                <p className="mt-2 text-3xl font-semibold text-sky-100">
-                  {totalQuestions.toLocaleString("fr-FR")}
-                </p>
-                <p className="text-xs text-slate-400">Total de questions répondues</p>
-              </div>
+              <p className="mt-2 text-3xl font-semibold text-emerald-100">89%</p>
+              <p className="text-xs text-slate-400">+2% vs semaine dernière</p>
             </div>
+
+            <div className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]">
+              <div className="flex items-center justify-between text-sm text-slate-300">
+                <span>Temps moyen</span>
+                <Clock className="h-4 w-4 text-amber-300" />
+              </div>
+              <p className="mt-2 text-3xl font-semibold text-amber-100">
+                {avgTextResponseMs !== null
+                  ? `${(avgTextResponseMs / 1000).toFixed(1)}s`
+                  : "--"}
+              </p>
+              <p className="text-xs text-slate-400">
+                Moyenne sur les réponses libres correctes
+              </p>
+            </div>
+
+            <div className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]">
+              <div className="flex items-center justify-between text-sm text-slate-300">
+                <span>Questions jouées</span>
+                <Users className="h-4 w-4 text-sky-300" />
+              </div>
+              <p className="mt-2 text-3xl font-semibold text-sky-100">
+                {totalQuestions.toLocaleString("fr-FR")}
+              </p>
+              <p className="text-xs text-slate-400">Total de questions répondues</p>
+            </div>
+          </div>
 
             {/* Graph en 2 colonnes */}
-            <div className="mt-5 rounded-2xl border border-slate-800/70 bg-black/70 p-4">
+          <div className="mt-5 rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]">
               <div className="mb-3 flex items-center justify-between text-sm text-slate-300">
                 <span>Taux de réussite par catégorie</span>
-                <span className="text-xs text-slate-400">Mise à jour quotidienne</span>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                <ChartBlock data={leftData} height={unifiedChartH} />
-                <ChartBlock data={rightData} height={unifiedChartH} />
-              </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ChartBlock data={leftData} height={unifiedChartH} />
+              <ChartBlock data={rightData} height={unifiedChartH} />
             </div>
-          </SectionCard>
+          </div>
         </div>
 
         {/* ===================== GRILLE : GAUCHE / DROITE ===================== */}
         <div className="grid gap-6 lg:grid-cols-[280px,minmax(0,1fr)]">
           {/* COLONNE GAUCHE */}
           <aside className="flex flex-col gap-4">
-            <div className="rounded-3xl border border-slate-800/70 bg-black/70 shadow-[0_20px_60px_rgba(15,23,42,0.9)] overflow-hidden">
-              <div className="relative h-32 w-full bg-gradient-to-br from-rose-500/40 via-purple-500/30 to-blue-500/25" />
+            <div className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] shadow-[4px_8px_8px_rgba(0,0,0,0.6)] overflow-hidden">
+              <div className="relative h-32 w-full rounded-[6px] bg-gradient-to-br from-rose-500/40 via-purple-500/30 to-blue-500/25" />
             </div>
 
             <SectionCard title="Liste d'amis">
@@ -687,12 +675,12 @@ export default function ProfilePage() {
                 {friends.map((f) => (
                   <div
                     key={f.name}
-                    className="flex items-center gap-3 rounded-2xl border border-slate-800/60 bg-black/70 px-3 py-2"
+                    className="flex items-center gap-3 rounded-[6px] border border-slate-800/60 bg-[#1C1F2E] px-3 py-2 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]"
                   >
                     <img
                       src={f.avatar}
                       alt={`Avatar ${f.name}`}
-                      className="h-10 w-10 rounded-2xl object-cover"
+                      className="h-10 w-10 rounded-[6px] object-cover"
                     />
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-slate-100">{f.name}</p>
@@ -722,7 +710,7 @@ export default function ProfilePage() {
                   return (
                     <div
                       key={a.title}
-                      className={`flex flex-col gap-3 rounded-2xl border border-slate-800/60 bg-black/70 p-4 ${
+                      className={`flex flex-col gap-3 rounded-[6px] border border-slate-800/60 bg-[#1C1F2E] p-4 shadow-[4px_8px_8px_rgba(0,0,0,0.6)] ${
                         a.highlight ? "ring-1 ring-rose-200/40" : ""
                       }`}
                     >
@@ -759,7 +747,7 @@ export default function ProfilePage() {
                 {history.map((e) => (
                   <div
                     key={e.title}
-                    className="rounded-2xl border border-slate-800/70 bg-black/70 p-4 text-sm text-slate-100"
+                    className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-4 text-sm text-slate-100 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -790,7 +778,7 @@ export default function ProfilePage() {
       </div>
       {isAvatarEditorOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
-          <div className="w-full max-w-lg rounded-3xl border border-slate-800/80 bg-slate-950 p-6 text-slate-100 shadow-[0_25px_60px_rgba(15,23,42,0.6)]">
+          <div className="w-full max-w-lg rounded-[6px] border border-slate-800/80 bg-slate-950 p-6 text-slate-100 shadow-[0_25px_60px_rgba(15,23,42,0.6)]">
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-white">
@@ -811,7 +799,7 @@ export default function ProfilePage() {
 
             <div className="mt-5 flex flex-col gap-4">
               <div className="flex items-center gap-4">
-                <div className="h-24 w-24 overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">
+                <div className="h-24 w-24 overflow-hidden rounded-[6px] border border-slate-700 bg-slate-900">
                   <img
                     src={pendingAvatarUrl ?? avatarUrl}
                     alt="Aperçu de la photo de profil"
