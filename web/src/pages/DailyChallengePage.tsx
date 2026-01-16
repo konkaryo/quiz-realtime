@@ -396,14 +396,14 @@ export default function DailyChallengePage() {
             {/* CLASSEMENT */}
             <div className="space-y-3">
               <div className="flex justify-center">
-                <div className="flex items-center gap-1 rounded-md border border-[#2A2D3C] bg-[#141625] p-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">
+                <div className="flex items-center gap-1 rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300">
                   <button
                     type="button"
                     onClick={() => setLeaderboardMode("monthly")}
                     className={[
-                      "rounded-md px-3 py-1 transition",
+                      "rounded-[6px] px-3 py-1 transition",
                       leaderboardMode === "monthly"
-                        ? "bg-[#2D7CFF] text-white shadow-[0_0_12px_rgba(45,124,255,0.45)]"
+                        ? "bg-[#0FACF3] text-white"
                         : "hover:text-white",
                     ].join(" ")}
                   >
@@ -414,9 +414,9 @@ export default function DailyChallengePage() {
                     disabled={!selectedDate}
                     onClick={() => selectedDate && setLeaderboardMode("daily")}
                     className={[
-                      "rounded-md px-3 py-1 transition",
+                      "rounded-[6px] px-3 py-1 transition",
                       leaderboardMode === "daily"
-                        ? "bg-[#2D7CFF] text-white shadow-[0_0_12px_rgba(45,124,255,0.45)]"
+                        ? "bg-[#2D7CFF] text-white"
                         : "hover:text-white",
                       !selectedDate ? "cursor-not-allowed opacity-40" : "",
                     ].join(" ")}
@@ -445,7 +445,7 @@ export default function DailyChallengePage() {
                       leaderboard.map((entry, index) => (
                         <div
                           key={`${entry.playerId}-${index}`}
-                          className="mx-auto flex items-center gap-2 rounded-[12px] border border-[#2A2D3C] bg-[#151726] px-3 py-2 text-slate-50"
+                          className="mx-auto flex items-center gap-2 rounded-[6px] border border-[#2A2D3C] bg-[#181A28] px-3 py-2 text-slate-50"
                         >
                           <div className="w-5 text-left text-[11px] font-bold text-slate-400">
                             #{index + 1}
@@ -559,7 +559,7 @@ export default function DailyChallengePage() {
                         <button
                           type="button"
                           disabled
-                          className="flex aspect-square w-full cursor-not-allowed items-center justify-center rounded-[10px] bg-[#171828] text-sm font-semibold text-slate-500/80"
+                          className="flex aspect-square w-full cursor-not-allowed items-center justify-center rounded-[6px] bg-[#191C29] text-sm font-semibold text-slate-500/80"
                         >
                           <span>{day}</span>
                         </button>
@@ -568,10 +568,10 @@ export default function DailyChallengePage() {
                   }
 
                   const classes = [
-                    "flex aspect-square w-full items-center justify-center rounded-[10px] text-sm font-semibold transition-colors",
+                    "flex aspect-square w-full items-center justify-center rounded-[6px] text-sm font-semibold transition-colors",
                     isSelected
-                      ? "border border-white bg-[#621A64] text-white shadow-[0_10px_18px_rgba(0,0,0,0.4)]"
-                      : "bg-[#572658] text-white hover:bg-[#7C367E]",
+                      ? "border border-white bg-[#284783] text-white shadow-[0_10px_18px_rgba(0,0,0,0.4)]"
+                      : "bg-[#27314E] text-white hover:bg-[#284783]",
                     isToday && !isSelected ? "ring-1 ring-[#2D7CFF]/50" : "",
                   ].join(" ");
 
@@ -631,12 +631,6 @@ export default function DailyChallengePage() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-300">Nombre de questions</span>
-                      <span className="font-semibold text-slate-50">
-                        {selectedChallenge.questionCount}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-300">Score</span>
                       <span className="font-semibold text-slate-50">
                         {selectedProgress ? `${selectedProgress.score} pts` : "—"}
@@ -655,7 +649,7 @@ export default function DailyChallengePage() {
 
                           if (state === "correct") {
                             colorClasses =
-                              "border-emerald-600 bg-emerald-600 text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
+                              "border-[#376D63] bg-[#376D63] text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
                           } else if (state === "wrong") {
                             colorClasses =
                               "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]";

@@ -94,7 +94,7 @@ function SegmentedBarShape(props: SegmentedBarShapeProps): React.ReactElement {
   if (payload?.isPlaceholder) return <g />;
 
   const accuracy = clampAccuracy(Number(payload?.accuracy ?? 0));
-  const color = String(payload?.color ?? "#22D3EE");
+  const color = "#02B0FF";
 
   const segW = width / SEGMENTS;
 
@@ -165,7 +165,7 @@ const PercentLabel = (props: any) => {
   if (!Number.isFinite(num)) return null;
 
   const v = Math.round(num);
-  const tx = Number(x) + Number(width) + 26;
+  const tx = Number(x) + Number(width) + 16;
   const ty = Number(y) + Number(height) / 2 + 4;
 
   return (
@@ -193,7 +193,7 @@ const RankTick = (props: any) => {
 
   return (
     <text
-      x={Number(x) - 10}
+      x={Number(x) - 6}
       y={Number(y)}
       dy={4}
       textAnchor="end"
@@ -201,7 +201,7 @@ const RankTick = (props: any) => {
       fontSize={10}
       style={{ fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif" }}
     >
-      {ellipsize(v, 30)}
+      {ellipsize(v, 36)}
     </text>
   );
 };
@@ -458,7 +458,7 @@ export default function ProfilePage() {
   const experienceValue = user?.experience ?? 0;
   const xpProgress = getLevelProgress(experienceValue);
 
-  const barRowPx = 42;
+  const barRowPx = 40;
   const minChartH = 320;
   const unifiedChartH = Math.max(minChartH, maxRows * barRowPx);
 
@@ -497,8 +497,8 @@ export default function ProfilePage() {
           <BarChart
             data={data}
             layout="vertical"
-            margin={{ top: 4, right: 64, left: 0, bottom: 8 }}
-            barCategoryGap={10}
+            margin={{ top: 2, right: 48, left: 0, bottom: 6 }}
+            barCategoryGap={4}
           >
             <XAxis
               type="number"
@@ -512,12 +512,12 @@ export default function ProfilePage() {
             <YAxis
               type="category"
               dataKey="labelWithRank"
-              width={220}
+              width={170}
               tickLine={false}
               axisLine={false}
               tick={<RankTick />}
               interval={0}
-              tickMargin={10}
+              tickMargin={4}
             />
 
             <Tooltip
@@ -528,7 +528,7 @@ export default function ProfilePage() {
             <Bar
               dataKey="full"
               isAnimationActive={false}
-              barSize={24}
+              barSize={20}
               shape={SegmentedBarShape as any}
             >
               <LabelList dataKey="accuracy" content={<PercentLabel />} />
