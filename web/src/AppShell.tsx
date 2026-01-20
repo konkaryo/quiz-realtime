@@ -644,8 +644,8 @@ export default function AppShell() {
       <header
         ref={headerRef}
         onMouseLeave={(e) => {
-          const next = e.relatedTarget as Node | null;
-          if (next && headerRef.current?.contains(next)) return;
+          const next = e.relatedTarget;
+          if (next instanceof Node && headerRef.current?.contains(next)) return;
           setOpenMenu(null);
         }}
         style={{
