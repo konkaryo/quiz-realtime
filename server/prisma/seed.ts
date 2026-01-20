@@ -4,7 +4,6 @@ import path from "path";
 import { importQuestions } from "../src/import/questions.ingest";
 import { importBots } from "../src/import/bots.ingest";
 import { importDailyChallenges } from "../src/import/daily-challenges.ingest";
-import { importRoomNames } from "../src/import/room-names.ingest";
 
 async function main() {
   const questionsPath = process.env.QUESTIONS_CSV;
@@ -50,23 +49,6 @@ async function main() {
     }
   } else {
     console.warn("[seed] Aucun daily_challenge.csv trouvé — import daily ignoré.");
-  }
-
-  // ---- Room names ----
-  const roomNamesPath = process.env.ROOM_NAMES_CSV;
-  const roomNamesCsv = roomNamesPath
-    ? path.resolve(process.cwd(), roomNamesPath)
-    : path.resolve(process.cwd(), "./import/room_names.csv");
-
-  if (fs.existsSync(roomNamesCsv)) {
-    try {
-      console.log(`[seed] Import room names depuis ${roomNamesCsv}`);
-      await importRoomNames(roomNamesCsv);
-    } catch (e: any) {
-      console.warn("[seed] room names CSV ignoré:", e?.message || e);
-    }
-  } else {
-    console.warn("[seed] Aucun room_names.csv trouvé — import room names ignoré.");
   }
 
   console.log("[seed] Terminé.");

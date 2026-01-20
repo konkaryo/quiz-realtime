@@ -49,7 +49,13 @@ export default function Home() {
     try {
       const data = await fetchJSON("/rooms");
       const list = Array.isArray((data as any).rooms) ? ((data as any).rooms as RoomListItem[]) : [];
-      setRooms(list);
+      const sorted = [...list].sort((a, b) => {
+        const aDiff = typeof a.difficulty === "number" ? a.difficulty : Number.POSITIVE_INFINITY;
+        const bDiff = typeof b.difficulty === "number" ? b.difficulty : Number.POSITIVE_INFINITY;
+        if (aDiff !== bDiff) return aDiff - bDiff;
+        return a.id.localeCompare(b.id);
+      });
+      setRooms(sorted);
     } catch (e: any) {
       setErr(e?.message || "Erreur");
     } finally {
@@ -87,7 +93,7 @@ export default function Home() {
   }
 
   return (
-    <div className="relative min-h-screen text-slate-50">
+    <div className="relative min-h-full overflow-hidden text-slate-50">
       <div aria-hidden className="fixed inset-0 bg-[#0A0B12]" />
 
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-12 sm:px-8 lg:px-10">
@@ -105,7 +111,7 @@ export default function Home() {
         )}
 
         {!loading && !err && rooms.length > 0 && (
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-16 flex flex-wrap justify-center gap-8">
             {rooms.map((room) => {
               const imageUrl = room.image ? `${API_BASE}/img/interface/${room.image}.avif` : "";
               const label = room.name?.trim() || "Salon public";
@@ -116,7 +122,7 @@ export default function Home() {
               return (
                 <div
                   key={room.id}
-                  className="group flex flex-col items-center gap-3 transition-transform duration-200 hover:scale-[1.05] hover:z-10"
+                  className="group flex w-full max-w-[240px] flex-col items-center gap-3 transition-transform duration-200 hover:z-10 hover:scale-[1.05]"
                 >
                   <div className="text-xl font-semibold tracking-wide text-amber-400">
                     {stars}
@@ -141,8 +147,8 @@ export default function Home() {
                     </div>
                   </button>
                   <div className="w-full text-center">
-                    <div className="flex min-h-[42px] items-center justify-center rounded-[6px] border-2 border-white/25 px-3 py-2 text-center text-sm font-brand uppercase tracking-[0.12em] text-white transition group-hover:bg-white group-hover:text-slate-900">
-                      <span className="text-center leading-none">{label}</span>
+                    <div className="flex min-h-[42px] items-center justify-center rounded-[6px] border-2 border-white/25 px-3 py-2 text-center text-m font-brand uppercase tracking-[0.12em] text-white transition group-hover:bg-white group-hover:text-slate-900">
+                        <span className="text-center leading-none">{label}</span>
                     </div>
                     <div className="mt-2 flex items-center justify-center gap-2 text-sm text-white">
                       <span>{players ?? "—"}</span>

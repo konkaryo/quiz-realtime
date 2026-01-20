@@ -15,7 +15,7 @@ import { authRoutes } from "./routes/auth";
 import { dailyRoutes } from "./routes/daily";
 import { leaderboardRoutes } from "./routes/leaderboard";
 import { registerSocketHandlers } from "./sockets/handlers";
-import { clientsInRoom, isCodeValid, genCode, genRoomId, getRandomPublicRoomName } from "./domain/room/room.service";
+import { clientsInRoom, isCodeValid, genCode, genRoomId, getNextArenaRoomName } from "./domain/room/room.service";
 import { getInterfaceImages, resolveRoomImage } from "./domain/room/room-images";
 import { raceRoutes } from "./routes/race";
 import { Theme, RoomVisibility } from "@prisma/client";
@@ -95,13 +95,10 @@ async function main() {
 
       const user = await prisma.user.findUnique({
         where: { id: session.userId },
-        select: { displayName: true },
+        select: { id: true },
       });
       if (!user) return reply.code(401).send({ error: "Unauthorized" });
 
-      const privateName = user.displayName.trim();
-      const publicName = await getRandomPublicRoomName(prisma);
-      const roomName = visibility === "PUBLIC" ? publicName ?? "Salon public" : privateName;
       const interfaceImages = getInterfaceImages();
       const roomImage =
         visibility === "PUBLIC"
@@ -110,6 +107,7 @@ async function main() {
 
       // 3) Création room + game (owner = session.userId)
       const result = await prisma.$transaction(async (tx) => {
+        const roomName = await getNextArenaRoomName(tx);
         const room = await tx.room.create({
           data: {
             id: roomId,

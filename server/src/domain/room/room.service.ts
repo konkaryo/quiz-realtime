@@ -48,19 +48,19 @@ export function clientsInRoom(clients: Map<string, Client>, roomId: string) {
 /* ---------------------------------------------------------------------------------------- */
 
 /* ---------------------------------------------------------------------------------------- */
-export async function getRandomPublicRoomName(
+export async function getNextArenaRoomName(
   prisma: PrismaClient | Prisma.TransactionClient,
-): Promise<string | null> {
-  const total = await prisma.roomName.count();
-  if (total <= 0) return null;
-  const skip = randomInt(total);
-  const [picked] = await prisma.roomName.findMany({
-    orderBy: { name: "asc" },
-    skip,
-    take: 1,
+): Promise<string> {
+  const prefix = "Arène - ";
+  const last = await prisma.room.findFirst({
+    where: { name: { startsWith: prefix } },
+    orderBy: { name: "desc" },
     select: { name: true },
   });
-  return picked?.name ?? null;
+  const match = last?.name?.match(/^Arène - (\d+)$/);
+  const nextIndex = match ? Number.parseInt(match[1], 10) + 1 : 0;
+  const padded = String(nextIndex).padStart(3, "0");
+  return `${prefix}${padded}`;
 }
 /* ---------------------------------------------------------------------------------------- */
 

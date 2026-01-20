@@ -135,11 +135,6 @@ model Room {
   @@index([status, createdAt])
 }
 
-model RoomName {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-}
 
 model Game {
   id          String       @id @default(cuid())
