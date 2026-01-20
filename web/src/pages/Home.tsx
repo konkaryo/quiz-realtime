@@ -125,7 +125,7 @@ export default function Home() {
                     type="button"
                     onClick={() => openRoom(room.id)}
                     aria-label={`Ouvrir ${label}`}
-                    className="relative w-full overflow-hidden rounded-[6px] border border-white/20 bg-white/5 shadow-[0_18px_40px_rgba(0,0,0,.45)] transition hover:-translate-y-1 group-hover:border-white"
+                    className="relative w-full overflow-hidden rounded-[6px] border-2 border-white/20 bg-white/5 shadow-[0_18px_40px_rgba(0,0,0,.45)] transition group-hover:border-white"
                   >
                     <div className="relative aspect-[5/7] w-full overflow-hidden">
                       {imageUrl ? (
@@ -141,7 +141,7 @@ export default function Home() {
                     </div>
                   </button>
                   <div className="w-full text-center">
-                    <div className="flex min-h-[42px] items-center justify-center rounded-[6px] border border-white/25 px-3 py-2 text-center text-sm font-brand uppercase tracking-[0.12em] text-white transition group-hover:bg-white group-hover:text-slate-900">
+                    <div className="flex min-h-[42px] items-center justify-center rounded-[6px] border-2 border-white/25 px-3 py-2 text-center text-sm font-brand uppercase tracking-[0.12em] text-white transition group-hover:bg-white group-hover:text-slate-900">
                       <span className="text-center leading-none">{label}</span>
                     </div>
                     <div className="mt-2 flex items-center justify-center gap-2 text-sm text-white">
