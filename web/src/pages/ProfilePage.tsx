@@ -302,15 +302,15 @@ type SectionCardProps = {
 
 function SectionCard({ title, children, right, className }: SectionCardProps) {
   const base =
-    "rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-3 shadow-[4px_8px_8px_rgba(0,0,0,0.6)] sm:p-4 backdrop-blur-xl";
-  const finalClassName = className
-    ? `${base} ${className}`
-    : base;
+    "rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.45)] sm:p-5 backdrop-blur-xl";
+  const finalClassName = className ? `${base} ${className}` : base;
 
   return (
     <section className={finalClassName}>
       <header className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-100 sm:text-base">{title}</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+          {title}
+        </h3>
         {right}
       </header>
       {children}
@@ -491,7 +491,7 @@ export default function ProfilePage() {
   };
 
   const ChartBlock = ({ data, height }: { data: Row[]; height: number }) => (
-    <div className="rounded-[6px] bg-[#1C1F2E] p-1 sm:p-2">
+    <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-1 sm:p-2">
       <div style={{ height }} className="w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -655,7 +655,7 @@ export default function ProfilePage() {
         <div className="grid gap-5 lg:grid-cols-[230px,minmax(0,1fr)]">
           {/* COLONNE GAUCHE */}
           <aside className="flex flex-col gap-3">
-            <div className="overflow-hidden rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] shadow-[4px_8px_8px_rgba(0,0,0,0.6)]">
+            <div className="overflow-hidden rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
               <div className="relative h-28 w-full rounded-[6px] bg-gradient-to-br from-rose-500/40 via-purple-500/30 to-blue-500/25" />
             </div>
 
@@ -664,7 +664,7 @@ export default function ProfilePage() {
                 {friends.map((f) => (
                   <div
                     key={f.name}
-                    className="flex items-center gap-3 rounded-[6px] border border-slate-800/60 bg-[#1C1F2E] px-3 py-1.5 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]"
+                    className="flex items-center gap-3 rounded-[6px] border border-[#2A2D3C] bg-[#181A28] px-3 py-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
                   >
                     <img
                       src={f.avatar}
@@ -699,7 +699,7 @@ export default function ProfilePage() {
                   return (
                     <div
                       key={a.title}
-                      className={`flex flex-col gap-2 rounded-[6px] border border-slate-800/60 bg-[#1C1F2E] p-3 shadow-[4px_8px_8px_rgba(0,0,0,0.6)] ${
+                      className={`flex flex-col gap-2 rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.35)] ${
                         a.highlight ? "ring-1 ring-rose-200/40" : ""
                       }`}
                     >
@@ -736,7 +736,7 @@ export default function ProfilePage() {
                 {history.map((e) => (
                   <div
                     key={e.title}
-                    className="rounded-[6px] border border-slate-800/70 bg-[#1C1F2E] p-3 text-xs text-slate-100 shadow-[4px_8px_8px_rgba(0,0,0,0.6)]"
+                    className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-3 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
                   >
                     <div className="flex items-center justify-between">
                       <div>

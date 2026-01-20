@@ -154,21 +154,12 @@ export default function JoinPrivateRoomPage() {
           )}
 
           <div className="mx-auto w-full max-w-3xl rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
-            <div className="mb-5">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                Code du salon
-              </div>
-              <div className="mt-1 text-sm font-semibold text-slate-100">
-                Saisis les 4 caractères pour rejoindre
-              </div>
-            </div>
 
             {/* Zone cliquable qui focus un input caché */}
             <div
               onClick={() => hiddenInput.current?.focus()}
               role="group"
               aria-label="Saisir le code du salon"
-              className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4"
             >
               <div className="flex justify-center gap-3 sm:gap-4">
                 {chars.map((ch, idx) => (
@@ -210,40 +201,40 @@ export default function JoinPrivateRoomPage() {
               </div>
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleChange("")}
-                className={[
-                  "inline-flex h-12 items-center justify-center rounded-[6px] px-5",
-                  "border border-[#2A2D3C] bg-[#181A28]",
-                  "text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-200",
-                  "transition hover:text-white",
-                ].join(" ")}
-              >
-                Effacer
-              </button>
-
-              <button
-                type="button"
-                onClick={resolveAndGo}
-                disabled={loading || normalized.length !== MAX_LEN}
-                className={[
-                  "inline-flex h-12 items-center justify-center rounded-[6px] px-8",
-                  "text-[11px] font-semibold uppercase tracking-[0.22em] transition",
-                  "border border-transparent bg-[#2D7CFF] text-slate-50 hover:bg-[#1F65DB]",
-                  loading || normalized.length !== MAX_LEN
-                    ? "cursor-not-allowed opacity-40 hover:bg-[#2D7CFF]"
-                    : "",
-                ].join(" ")}
-              >
-                {loading ? "Connexion…" : "Rejoindre"}
-              </button>
-            </div>
-
             <div className="sr-only" aria-live="polite">
               {normalized.length === MAX_LEN ? "Code complet." : "Code incomplet."}
             </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => handleChange("")}
+              className={[
+                "inline-flex h-12 w-40 items-center justify-center rounded-[6px]",
+                "border border-[#2A2D3C] bg-[#181A28]",
+                "text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200",
+                "transition hover:text-white",
+              ].join(" ")}
+            >
+              Effacer
+            </button>
+
+            <button
+              type="button"
+              onClick={resolveAndGo}
+              disabled={loading || normalized.length !== MAX_LEN}
+              className={[
+                "inline-flex h-12 w-40 items-center justify-center rounded-[6px]",
+                "text-[11px] font-semibold uppercase tracking-[0.22em] transition",
+                "border border-transparent bg-[#2D7CFF] text-slate-50 hover:bg-[#1F65DB]",
+                loading || normalized.length !== MAX_LEN
+                  ? "cursor-not-allowed opacity-40 hover:bg-[#2D7CFF]"
+                  : "",
+              ].join(" ")}
+            >
+              {loading ? "Connexion…" : "Rejoindre"}
+            </button>
           </div>
 
           <div className="h-10" />

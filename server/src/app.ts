@@ -16,6 +16,7 @@ import { dailyRoutes } from "./routes/daily";
 import { leaderboardRoutes } from "./routes/leaderboard";
 import { registerSocketHandlers } from "./sockets/handlers";
 import { clientsInRoom, isCodeValid, genCode, genRoomId, getRandomPublicRoomName } from "./domain/room/room.service";
+import { getInterfaceImages, resolveRoomImage } from "./domain/room/room-images";
 import { raceRoutes } from "./routes/race";
 import { Theme, RoomVisibility } from "@prisma/client";
 
@@ -101,6 +102,11 @@ async function main() {
       const privateName = user.displayName.trim();
       const publicName = await getRandomPublicRoomName(prisma);
       const roomName = visibility === "PUBLIC" ? publicName ?? "Salon public" : privateName;
+      const interfaceImages = getInterfaceImages();
+      const roomImage =
+        visibility === "PUBLIC"
+          ? resolveRoomImage(roomId, interfaceImages)
+          : null;
 
       // 3) Création room + game (owner = session.userId)
       const result = await prisma.$transaction(async (tx) => {
@@ -114,7 +120,8 @@ async function main() {
             bannedThemes,
             questionCount,
             roundMs,
-            visibility
+            visibility,
+            image: roomImage,
           },
           select: { id: true },
         });
@@ -172,6 +179,12 @@ async function main() {
     } catch (e) { return reply.code(500).send({ error: "Server error" }); }
   });
 
+  function normalizeRoomImage(image: string | null) {
+    if (!image) return null;
+    const base = path.basename(image);
+    return base.replace(/\.avif$/i, "");
+  }
+
   app.get("/rooms", async (req, reply) => {
     // 1) Qui est connecté ? (optionnel : si pas de cookie => userId=null)
     const sid = (req.cookies as any)?.sid as string | undefined;
@@ -204,18 +217,35 @@ async function main() {
         name: true,
         createdAt: true,
         difficulty: true,
+        image: true,
         owner: { select: { id: true, displayName: true } },
       },
     });
 
     // 3) Ajoute canClose selon user courant (owner ou ADMIN)
-    const rooms = rows.map((r) => ({
-      ...r,
-      playerCount: clientsInRoom(clients, r.id).length,
-      canClose:
-        (!!userId && r.owner?.id === userId) ||
-        userRole === "ADMIN",
-    }));
+    const interfaceImages = getInterfaceImages();
+    const updates: { id: string; image: string }[] = [];
+    const rooms = rows.map((r) => {
+      const normalizedImage = normalizeRoomImage(r.image);
+      const resolvedImage = normalizedImage ?? resolveRoomImage(r.id, interfaceImages);
+      if (resolvedImage && normalizedImage !== resolvedImage) {
+        updates.push({ id: r.id, image: resolvedImage });
+      }
+      return {
+        ...r,
+        image: resolvedImage,
+        playerCount: clientsInRoom(clients, r.id).length,
+        canClose:
+          (!!userId && r.owner?.id === userId) ||
+          userRole === "ADMIN",
+      };
+    });
+
+    if (updates.length > 0) {
+      await prisma.$transaction(
+        updates.map((r) => prisma.room.update({ where: { id: r.id }, data: { image: r.image } })),
+      );
+    }
 
     reply.send({ rooms });
   });

@@ -129,6 +129,7 @@ model Room {
   questionCount Int            @default(10)
   roundMs       Int            @default(10000)
   visibility    RoomVisibility @default(PRIVATE)
+  image         String?
 
   @@index([ownerId])
   @@index([status, createdAt])
