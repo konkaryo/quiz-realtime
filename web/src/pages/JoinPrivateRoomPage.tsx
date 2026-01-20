@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+// web/src/pages/JoinPrivateRoomPage.tsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Background from "../components/Background";
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE ??
-  (typeof window !== "undefined" ? window.location.origin : "");
+const API_BASE = import.meta.env.VITE_API_BASE as string;
+
+// Ajuste si ta navbar est plus haute/basse
+const NAVBAR_HEIGHT_PX = 72;
 
 async function fetchJSON(path: string, init?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -15,7 +16,10 @@ async function fetchJSON(path: string, init?: RequestInit) {
   const ct = res.headers.get("content-type") || "";
   const isJson = ct.includes("application/json");
   const data = isJson ? await res.json() : undefined;
-  if (!res.ok) throw new Error((data as any)?.error || (data as any)?.message || `HTTP ${res.status}`);
+  if (!res.ok) {
+    const msg = (data as any)?.error || (data as any)?.message || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
   return data;
 }
 
@@ -23,18 +27,43 @@ const MAX_LEN = 4;
 
 export default function JoinPrivateRoomPage() {
   const nav = useNavigate();
+
   const [code, setCode] = useState<string>("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
   const hiddenInput = useRef<HTMLInputElement | null>(null);
 
-  // focus auto (clic sur la zone)
+  const normalized = useMemo(
+    () => code.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, MAX_LEN),
+    [code],
+  );
+
+  const chars = useMemo(
+    () => Array.from({ length: MAX_LEN }).map((_, i) => normalized[i] || ""),
+    [normalized],
+  );
+
+  // ✅ Empêcher le scroll global (sinon double scrollbar)
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+    };
+  }, []);
+
+  // focus auto
   useEffect(() => {
     hiddenInput.current?.focus();
   }, []);
-
-  const normalized = code.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, MAX_LEN);
-  const chars = Array.from({ length: MAX_LEN }).map((_, i) => normalized[i] || "");
 
   function handleChange(v: string) {
     const next = v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, MAX_LEN);
@@ -51,19 +80,22 @@ export default function JoinPrivateRoomPage() {
     setLoading(true);
     setErr(null);
     try {
-      // Route principale (POST /rooms/resolve { code }) -> { roomId }
       let roomId: string | undefined;
+
       try {
         const r1 = (await fetchJSON("/rooms/resolve", {
           method: "POST",
           body: JSON.stringify({ code: c }),
         })) as { roomId?: string; room?: { id: string } };
+
         roomId = r1?.roomId ?? r1?.room?.id;
       } catch {
-        // Fallback GET /rooms/by-code/:code -> { room:{ id } }
-        const r2 = (await fetchJSON(`/rooms/by-code/${encodeURIComponent(c)}`)) as { room?: { id: string } };
+        const r2 = (await fetchJSON(`/rooms/by-code/${encodeURIComponent(c)}`)) as {
+          room?: { id: string };
+        };
         roomId = r2?.room?.id;
       }
+
       if (!roomId) throw new Error("Code invalide ou introuvable.");
       nav(`/room/${roomId}`);
     } catch (e: any) {
@@ -74,32 +106,85 @@ export default function JoinPrivateRoomPage() {
   }
 
   return (
-    <div className="relative min-h-screen text-slate-50">
-      <Background />
+    <div className="relative text-slate-50">
+      <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-4 py-10 sm:px-8">
-        <div className="w-full rounded-[38px] border border-slate-800/70 bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.96),rgba(15,23,42,0.98)),radial-gradient(circle_at_bottom,_rgba(37,99,255,0.12),#020617)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.85)] sm:p-8">
-          <header className="mb-8 text-center">
-            <h1 className="font-brand text-4xl leading-tight text-white sm:text-5xl">SAISIR LE CODE</h1>
+      <style>{`
+        /* ✅ Scrollbar style appliqué au conteneur scroll (lb-scroll) */
+        .lb-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #4A4B56 #1E1F28;
+        }
+        .lb-scroll::-webkit-scrollbar { width: 12px; }
+        .lb-scroll::-webkit-scrollbar-track {
+          background: #1E1F28;
+          border-radius: 999px;
+        }
+        .lb-scroll::-webkit-scrollbar-button {
+          background-color: #4A4B56;
+          height: 12px;
+        }
+        .lb-scroll::-webkit-scrollbar-thumb {
+          background: #4A4B56;
+          border-radius: 999px;
+          border: 3px solid rgba(0,0,0,0);
+          background-clip: padding-box;
+        }
+        .lb-scroll::-webkit-scrollbar-thumb:hover {
+          background: #4A4B56;
+          border: 3px solid rgba(0,0,0,0);
+          background-clip: padding-box;
+        }
+      `}</style>
+
+      {/* ✅ Zone scrollable: top = navbar, bottom = 0 */}
+      <div
+        className="fixed left-0 right-0 bottom-0 z-10 lb-scroll overflow-y-auto"
+        style={{ top: `${NAVBAR_HEIGHT_PX}px` }}
+      >
+        <div className="mx-auto flex max-w-6xl flex-col px-4 py-10 sm:px-8 lg:px-10">
+          <header className="mb-12 text-center">
+            <h1 className="text-5xl font-brand text-slate-50">REJOINDRE UN SALON PRIVÉ</h1>
           </header>
 
-          <div className="flex flex-col items-center gap-6">
+          {err && (
+            <div className="mx-auto mb-6 w-full max-w-3xl rounded-[6px] border border-rose-800/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-200 shadow-[0_18px_40px_rgba(0,0,0,0.25)]">
+              {err}
+            </div>
+          )}
+
+          <div className="mx-auto w-full max-w-3xl rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+            <div className="mb-5">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                Code du salon
+              </div>
+              <div className="mt-1 text-sm font-semibold text-slate-100">
+                Saisis les 4 caractères pour rejoindre
+              </div>
+            </div>
+
             {/* Zone cliquable qui focus un input caché */}
             <div
               onClick={() => hiddenInput.current?.focus()}
               role="group"
               aria-label="Saisir le code du salon"
-              className="relative w-full max-w-3xl rounded-[28px] border border-slate-800/70 bg-black/30 p-5 shadow-inner shadow-black/60 backdrop-blur"
+              className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4"
             >
-              <div className="flex flex-wrap justify-center gap-4 sm:gap-5">
+              <div className="flex justify-center gap-3 sm:gap-4">
                 {chars.map((ch, idx) => (
                   <div
                     key={idx}
-                    className="flex h-20 w-20 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900/60 text-4xl font-semibold uppercase tracking-[0.2em] text-white shadow-[0_14px_35px_rgba(0,0,0,0.45)] transition hover:border-slate-200/70 hover:text-white sm:h-24 sm:w-24"
+                    className={[
+                      "flex h-16 w-16 items-center justify-center sm:h-20 sm:w-20",
+                      "rounded-[10px] border border-[#2A2D3C] bg-[#141625]",
+                      "font-mono text-3xl sm:text-4xl font-extrabold tracking-[0.22em] text-slate-50",
+                      "shadow-[0_14px_35px_rgba(0,0,0,0.35)]",
+                    ].join(" ")}
                   >
                     {ch}
                   </div>
                 ))}
+
                 {/* input invisible pour la saisie/paste */}
                 <input
                   ref={hiddenInput}
@@ -125,26 +210,43 @@ export default function JoinPrivateRoomPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={() => handleChange("")}
-                className="rounded-full border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm font-semibold text-slate-100 shadow-[0_12px_30px_rgba(0,0,0,0.45)] transition hover:border-slate-300/70 hover:text-white"
+                className={[
+                  "inline-flex h-12 items-center justify-center rounded-[6px] px-5",
+                  "border border-[#2A2D3C] bg-[#181A28]",
+                  "text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-200",
+                  "transition hover:text-white",
+                ].join(" ")}
               >
                 Effacer
               </button>
+
               <button
                 type="button"
                 onClick={resolveAndGo}
-                disabled={loading}
-                className="rounded-full border border-[#2563ff] bg-gradient-to-r from-[#2563ff] to-[#7c3aed] px-6 py-2 text-sm font-semibold uppercase tracking-wide text-white shadow-[0_18px_35px_rgba(37,99,255,0.35)] transition hover:shadow-[0_22px_40px_rgba(124,58,237,0.35)] disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={loading || normalized.length !== MAX_LEN}
+                className={[
+                  "inline-flex h-12 items-center justify-center rounded-[6px] px-8",
+                  "text-[11px] font-semibold uppercase tracking-[0.22em] transition",
+                  "border border-transparent bg-[#2D7CFF] text-slate-50 hover:bg-[#1F65DB]",
+                  loading || normalized.length !== MAX_LEN
+                    ? "cursor-not-allowed opacity-40 hover:bg-[#2D7CFF]"
+                    : "",
+                ].join(" ")}
               >
                 {loading ? "Connexion…" : "Rejoindre"}
               </button>
             </div>
 
-            {err && <div className="text-sm font-semibold text-rose-200">{err}</div>}
+            <div className="sr-only" aria-live="polite">
+              {normalized.length === MAX_LEN ? "Code complet." : "Code incomplet."}
+            </div>
           </div>
+
+          <div className="h-10" />
         </div>
       </div>
     </div>

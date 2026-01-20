@@ -143,16 +143,16 @@ function UserMenuItem({
 
   const base: React.CSSProperties = {
     display: "block",
-    padding: "10px 12px",
-    borderRadius: 10,
+    padding: "9px 12px",
+    borderRadius: 6,
     textDecoration: "none",
-    fontFamily: itemFont,
+    fontFamily: "inherit",
     fontWeight: 600,
     fontSize: 14,
     color: danger ? "#ef4444" : "#e5e7eb",
     lineHeight: 1.2,
   };
-  const hoverBg = "rgba(255,255,255,.06)";
+  const hoverBg = "rgba(255,255,255,.1)";
 
   const content = (
     <span
@@ -172,7 +172,7 @@ function UserMenuItem({
           onClick={onClick}
           style={{
             display: "block",
-            borderRadius: 10,
+            borderRadius: 6,
             textDecoration: "none",
             color: "inherit",
           }}
@@ -189,7 +189,7 @@ function UserMenuItem({
             textAlign: "left",
             background: "transparent",
             border: "none",
-            borderRadius: 10,
+            borderRadius: 6,
             padding: 0,
           }}
         >
@@ -882,6 +882,7 @@ export default function AppShell() {
             alignItems: "center",
             gap: 20,
             position: "relative",
+            height: "100%",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1081,19 +1082,29 @@ export default function AppShell() {
               style={{
                 position: "absolute",
                 right: 0,
-                top: "calc(100% + 8px)",
+                top: "100%",
                 width: "fit-content",
                 minWidth: 220,
                 maxWidth: 360,
-                borderRadius: 18,
-                background:
-                  "linear-gradient(180deg,rgba(15,23,42,.98),rgba(17,24,39,.98))",
-                border: "1px solid rgba(255,255,255,.08)",
-                boxShadow: "0 20px 60px rgba(0,0,0,.45)",
-                padding: 10,
+                borderRadius: 8,
+                background: "#13141F",
+                border: "1px solid rgba(255,255,255,.12)",
+                boxShadow: "0 20px 60px rgba(0,0,0,.35)",
+                padding: 12,
                 zIndex: 80,
+                marginTop: 8,
               }}
             >
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: -8,
+                  height: 8,
+                  background: "transparent",
+                }}
+              />
               <UserMenuItem to="/me/profile" label="Profil" />
               <UserMenuItem to="/me/history" label="Historique" />
               <UserMenuItem to="/me/achievements" label="Succès" divider />
