@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
 // Ajuste si ta navbar est plus haute/basse
-const NAVBAR_HEIGHT_PX = 72;
+const NAVBAR_HEIGHT_PX = 52;
 
 async function fetchJSON(path: string, init?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {
