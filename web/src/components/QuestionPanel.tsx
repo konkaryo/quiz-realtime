@@ -1,7 +1,5 @@
 // web/src/components/QuestionPanel.tsx
 import { RefObject, KeyboardEvent } from "react";
-import enterKey from "@/assets/enter-key.svg";
-import tabKey from "@/assets/tab-key.svg";
 import { getThemeMeta } from "../lib/themeMeta";
 
 export type Choice = { id: string; label: string };
@@ -44,7 +42,10 @@ function TimerBadge({ seconds }: { seconds: number | null }) {
   const total = Math.max(0, seconds ?? 0);
   const minutes = Math.floor(total / 60);
   const secs = total % 60;
-  const display = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  const display = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(
+    2,
+    "0",
+  )}`;
   const urgent = total <= 5;
 
   return (
@@ -54,9 +55,7 @@ function TimerBadge({ seconds }: { seconds: number | null }) {
         "inline-flex items-center font-semibold tabular-nums whitespace-nowrap",
         "gap-2 text-[14px]",
         "tracking-[0.30em]",
-        urgent
-          ? "text-rose-400 drop-shadow-none animate-pulse"
-          : "text-slate-100",
+        urgent ? "text-rose-400 animate-pulse" : "text-slate-100",
       ].join(" ")}
     >
       <span className="text-[14px]">⏱</span>
@@ -66,20 +65,17 @@ function TimerBadge({ seconds }: { seconds: number | null }) {
 }
 
 type Props = {
-  // données de la question
   question: QuestionLite;
   index: number;
   totalQuestions: number | null;
   lives: number;
   totalLives: number;
 
-  // timing
   remainingSeconds: number | null;
   timerProgress: number;
-  isReveal: boolean; // phase === "reveal" && remainingSeconds === 0
-  isPlaying: boolean; // phase === "playing" && socketStatus === "connected"
+  isReveal: boolean;
+  isPlaying: boolean;
 
-  // saisie texte
   inputRef: RefObject<HTMLInputElement | null>;
   textAnswer: string;
   textLocked: boolean;
@@ -87,7 +83,6 @@ type Props = {
   onSubmitText: () => void;
   onShowChoices: () => void;
 
-  // feedback
   feedback: string | null;
   feedbackResponseMs: number | null;
   feedbackWasCorrect: boolean | null;
@@ -96,14 +91,12 @@ type Props = {
   answerMode: "text" | "choice" | null;
   choicesRevealed: boolean;
 
-  // QCM
   showChoices: boolean;
   choices: Choice[] | null;
   selectedChoice: string | null;
   correctChoiceId: string | null;
   onSelectChoice: (choice: Choice) => void;
 
-  // barre de progression des questions
   questionProgress: QuestionProgress[];
 };
 
@@ -149,7 +142,9 @@ export default function DailyQuestionPanel(props: Props) {
       (answerMode === null && feedback === "Temps écoulé !" && !choicesRevealed));
 
   const textInputDisabled = !isPlaying || textLocked;
-  const textPlaceholder = textLocked ? "Choisissez une réponse..." : "Tapez votre réponse ici...";
+  const textPlaceholder = textLocked
+    ? "Choisissez une réponse..."
+    : "Tapez votre réponse ici...";
   const textInputColorClass = textInputDisabled
     ? "text-slate-400 caret-slate-600 placeholder:text-slate-500/60"
     : "text-slate-50 caret-[#cccccc] placeholder:text-slate-500/70";
@@ -169,136 +164,100 @@ export default function DailyQuestionPanel(props: Props) {
     }
   };
 
+  const topPanelClass = "relative w-full bg-[#1C1F2E] rounded-[9px] p-6";
+  const bottomPanelClass = "relative w-full bg-[#1C1F2E] rounded-[9px] p-3 md:p-4";
+  const panelStyle = { boxShadow: "4px 8px 8px rgba(0,0,0,0.6)" as const };
+
+  const showAnyFeedbackRow =
+    !!feedback || showCorrectLabelCell || showFeedbackPoints || showResponseTime;
+
   return (
     <div className="mx-auto w-full max-w-6xl">
-      {/* panneau principal */}
-      <div className="relative">
-        <div
-          className={[
-            "relative w-full shadow-none ring-0 outline-none filter-none",
-            "bg-[#1C1F2E]",
-            "rounded-[9px]",
-            "p-6",
-          ].join(" ")}
-          style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.6)"  }}
-        >
-          {/* bandeau supérieur : timer / info / vies */}
-          <div className="flex flex-col md:flex-row md:flex-nowrap md:items-center md:justify-between gap-3">
-            <div className="order-2 md:order-1 whitespace-nowrap font-medium text-slate-100 text-[14px] leading-[18px]">
-              Question {index + 1}
-              {typeof totalQuestions === "number" && totalQuestions > 0 && (
-                <span className="text-slate-500"> / {totalQuestions}</span>
-              )}
-            </div>
-
-            <div className="order-1 md:order-2 flex justify-center whitespace-nowrap">
-              {isReveal ? (
-                <div className="font-semibold uppercase text-slate-300/80 whitespace-nowrap text-[10px] tracking-[0.30em]">
-                  En attente...
-                </div>
-              ) : (
-                <TimerBadge seconds={remainingSeconds} />
-              )}
-            </div>
-
-            <div className="order-3 md:order-3 flex justify-end whitespace-nowrap">
-              <Lives lives={lives} total={totalLives} />
-            </div>
-          </div>
-
-          {/* barre de progression */}
-          <div
-            className="mt-4 h-[2px] w-full rounded-full"
-            style={{ backgroundColor: "#13141F" }}
-          >
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${timerProgress * 100}%`,
-                backgroundColor: "#7279DA",
-              }}
-            />
-          </div>
-
-          {/* question + image */}
-          <div className="flex flex-col md:flex-row md:items-stretch mt-6 gap-4 md:min-h-[14rem]">
-            <div className={question.img ? "md:w-3/5" : "md:w-full"}>
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <div
-                  className={[
-                    "inline-flex items-center border border-slate-700/80 bg-[#13141F] font-semibold uppercase text-slate-100 whitespace-nowrap",
-                    "gap-2",
-                    "rounded-[9px]",
-                    "px-3 py-1.5",
-                    "text-[8px]",
-                    "tracking-[0.18em]",
-                  ].join(" ")}
-                >
-                  <span
-                    aria-hidden
-                    className="inline-block rounded-full"
-                    style={{
-                      backgroundColor: themeMeta.color,
-                      height: 8,
-                      width: 8,
-                    }}
-                  />
-                  {themeMeta.label}
-                </div>
-
-                {question.slotLabel && (
-                  <span
-                    className={[
-                      "rounded-full bg-slate-900/90 font-semibold uppercase text-slate-200 whitespace-nowrap",
-                      "px-3 py-1",
-                      "text-[8px]",
-                      "tracking-[0.22em]",
-                    ].join(" ")}
-                  >
-                    {question.slotLabel}
-                  </span>
-                )}
-              </div>
-
-              <p className="mt-4 font-semibold leading-snug text-slate-50 text-[15px]">
-                {question.text}
-              </p>
-            </div>
-
-            {question.img && (
-              <div className="md:w-2/5">
-                <div className="relative h-full">
-                  <img
-                    src={question.img}
-                    alt=""
-                    className="relative w-full object-cover shadow-none max-h-[168px] rounded-[20px]"
-                    loading="lazy"
-                  />
-                </div>
-              </div>
+      {/* PANNEAU SUPÉRIEUR */}
+      <div className={topPanelClass} style={panelStyle}>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="font-medium text-slate-100 text-[14px] whitespace-nowrap">
+            Question {index + 1}
+            {typeof totalQuestions === "number" && totalQuestions > 0 && (
+              <span className="text-slate-500"> / {totalQuestions}</span>
             )}
           </div>
 
-          {/* zone saisie & boutons */}
-          {/* ✅ FIX : mt-1.5 sur le conteneur commun + labels en absolute pour ne pas impacter l'alignement */}
-          <div className="mt-1.5 flex flex-col md:flex-row md:items-center gap-3">
+          <div className="flex justify-center">
+            {isReveal ? (
+              <div className="text-[10px] font-semibold uppercase tracking-[0.30em] text-slate-300/80">
+                En attente...
+              </div>
+            ) : (
+              <TimerBadge seconds={remainingSeconds} />
+            )}
+          </div>
+
+          <div className="flex justify-end">
+            <Lives lives={lives} total={totalLives} />
+          </div>
+        </div>
+
+        <div className="mt-4 h-[2px] w-full rounded-full bg-[#13141F]">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${timerProgress * 100}%`,
+              backgroundColor: "#7279DA",
+            }}
+          />
+        </div>
+
+        <div className="mt-6 flex flex-col md:flex-row gap-4 md:min-h-[14rem]">
+          <div className={question.img ? "md:w-3/5" : "md:w-full"}>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-[9px] border border-slate-700/80 bg-[#13141F] px-3 py-1.5 text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-100">
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: themeMeta.color }}
+                />
+                {themeMeta.label}
+              </div>
+
+              {question.slotLabel && (
+                <span className="rounded-full bg-slate-900/90 px-3 py-1 text-[8px] font-semibold uppercase tracking-[0.22em] text-slate-200">
+                  {question.slotLabel}
+                </span>
+              )}
+            </div>
+
+            <p className="mt-4 text-[15px] font-semibold leading-snug text-slate-50">
+              {question.text}
+            </p>
+          </div>
+
+          {question.img && (
+            <div className="md:w-2/5">
+              <img
+                src={question.img}
+                alt=""
+                className="max-h-[168px] w-full rounded-[20px] object-cover"
+                loading="lazy"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* PANNEAU INFÉRIEUR – saisie + boutons */}
+      <div className="mt-3">
+        <div className={bottomPanelClass} style={panelStyle}>
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
             <div className="flex-1">
-              <div className="border border-slate-700/80 bg-black/70 shadow-inner shadow-black/80 rounded-[9px] px-2.5 py-1">
+              <div className="rounded-[9px] border border-slate-700/80 bg-black/70 px-2 py-0.5 shadow-inner shadow-black/80">
                 <input
                   ref={inputRef}
                   value={textAnswer}
                   onChange={(e) => onChangeText(e.target.value)}
                   onKeyDown={handleKeyDown}
                   disabled={textInputDisabled}
-                  aria-disabled={textLocked}
-                  spellCheck={false}
-                  autoCorrect="off"
-                  autoCapitalize="off"
                   className={[
-                    "w-full border-none bg-transparent font-medium antialiased focus:outline-none focus:ring-0",
-                    "px-2 py-2",
-                    "text-[11px]",
-                    "tracking-[0.02em]",
+                    "w-full bg-transparent px-2 py-2 text-[11px] font-medium focus:outline-none",
                     textInputColorClass,
                     textInputDisabled ? "opacity-60 cursor-not-allowed" : "",
                   ].join(" ")}
@@ -307,62 +266,31 @@ export default function DailyQuestionPanel(props: Props) {
               </div>
             </div>
 
-            <div className="flex flex-nowrap whitespace-nowrap gap-4 md:ml-3">
-              {/* VALIDER */}
-              <div className="relative flex items-center justify-center">
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.18em] text-white/60">
-                  [Entrée]
-                </div>
+            <div className="flex gap-3 whitespace-nowrap">
+              <button
+                onClick={onSubmitText}
+                disabled={textInputDisabled}
+                className="rounded-[6px] bg-[#2D7CFF] px-4 py-2 text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-50 hover:brightness-110 disabled:opacity-60"
+              >
+                Valider
+              </button>
 
-                <button
-                  type="button"
-                  onClick={onSubmitText}
-                  disabled={textInputDisabled}
-                  className={[
-                    "inline-flex items-center justify-center bg-[#0FACF3] text-slate-50 transition duration-150 hover:brightness-110",
-                    "rounded-[9px]",
-                    "px-4 py-2",
-                    "font-semibold uppercase",
-                    "text-[8px]",
-                    "tracking-[0.18em]",
-                    textInputDisabled ? "opacity-60" : "shadow-none",
-                  ].join(" ")}
-                >
-                  Valider
-                </button>
-              </div>
-
-              {/* PROPOSITIONS */}
-              <div className="relative flex items-center justify-center">
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-[0.18em] text-white/60">
-                  [Tab]
-                </div>
-
-                <button
-                  type="button"
-                  onClick={onShowChoices}
-                  disabled={textInputDisabled}
-                  className={[
-                    "inline-flex items-center justify-center bg-[#15171E] text-slate-50 transition duration-150 hover:brightness-110",
-                    "rounded-[9px]",
-                    "px-3.5 py-2",
-                    "font-semibold uppercase",
-                    "text-[8px]",
-                    "tracking-[0.18em]",
-                    textInputDisabled ? "opacity-60" : "shadow-none",
-                  ].join(" ")}
-                >
-                  Propositions
-                </button>
-              </div>
+              <button
+                onClick={onShowChoices}
+                disabled={textInputDisabled}
+                className="rounded-[6px] bg-[#15171E] px-3.5 py-2 text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-50 hover:brightness-110 disabled:opacity-60"
+              >
+                Propositions
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* feedback + temps de réponse + bonne réponse */}
-          {feedback && (
-            <div className="flex flex-col md:flex-row md:items-stretch mt-3 gap-2 md:gap-3">
-              {/* feedback */}
-              <div className="inline-flex items-center border border-slate-700/80 bg-black/80 text-slate-100 shadow-inner shadow-black/80 min-h-[32px] gap-2 rounded-[9px] px-4 py-2 text-[11px]">
+        {/* FEEDBACKS SUR UNE LIGNE, ALIGNÉS À GAUCHE */}
+        {showAnyFeedbackRow && (
+          <div className="mt-2 flex flex-wrap items-start justify-start gap-2">
+            {feedback && (
+              <div className="inline-flex items-center gap-2 rounded-[9px] border border-slate-700/80 bg-black/80 px-3 py-1.5 text-[11px] text-slate-100 shadow-inner shadow-black/80">
                 <span
                   className={[
                     "text-[12px]",
@@ -375,108 +303,95 @@ export default function DailyQuestionPanel(props: Props) {
                 >
                   {feedback === "Temps écoulé !" ? "⏳" : feedback.includes("Bravo") ? "✅" : "❌"}
                 </span>
-                <div>
-                  <span className="font-medium">{feedback}</span>
+                <span className="font-medium">{feedback}</span>
+              </div>
+            )}
+
+            {showCorrectLabelCell && (
+              <div className="inline-flex items-center rounded-[9px] bg-emerald-600 px-3 py-1.5 text-slate-50">
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[8px] font-semibold uppercase tracking-[0.22em] text-emerald-100 whitespace-nowrap">
+                    Bonne réponse
+                  </span>
+                  <span className="mt-1 text-[10px] font-medium whitespace-nowrap">
+                    {feedbackCorrectLabel}
+                  </span>
                 </div>
               </div>
+            )}
 
-              {/* bonne réponse (mode texte) */}
-              {showCorrectLabelCell && (
-                <div className="inline-flex items-center border border-emerald-600 bg-emerald-600 text-slate-50 shadow-none min-h-[32px] rounded-[9px] px-3.5 py-2">
-                  <div className="flex flex-col leading-tight">
-                    <span className="font-semibold uppercase text-emerald-100 whitespace-nowrap text-[8px] tracking-[0.22em]">
-                      Bonne réponse
-                    </span>
-                    <span className="mt-1 font-medium text-[10px]">{feedbackCorrectLabel}</span>
-                  </div>
+            {showFeedbackPoints && (
+              <div className="inline-flex items-center rounded-[9px] border border-slate-700/80 bg-black/80 px-3 py-1.5 text-[10px] text-slate-100 shadow-inner shadow-black/80">
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[8px] font-semibold uppercase tracking-[0.22em] text-slate-400 whitespace-nowrap">
+                    Points gagnés
+                  </span>
+                  <span className="mt-1 font-mono text-[11px] text-slate-50 whitespace-nowrap">
+                    + {feedbackPoints.toLocaleString("fr-FR")} pts
+                  </span>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* points gagnés */}
-              {showFeedbackPoints && (
-                <div className="inline-flex items-center border border-slate-700/80 bg-black/80 text-slate-100 shadow-inner shadow-black/80 min-h-[32px] rounded-[9px] px-3.5 py-2 text-[10px]">
-                  <div className="flex flex-col leading-tight">
-                    <span className="font-semibold uppercase text-slate-400 whitespace-nowrap text-[8px] tracking-[0.22em]">
-                      Points gagnés
-                    </span>
-                    <span className="mt-1 font-mono text-[11px] text-slate-50 whitespace-nowrap">
-                      + {feedbackPoints.toLocaleString("fr-FR")} pts
-                    </span>
-                  </div>
+            {showResponseTime && feedbackResponseMs !== null && (
+              <div className="inline-flex items-center rounded-[9px] border border-slate-700/80 bg-black/80 px-3 py-1.5 text-[10px] text-slate-100 shadow-inner shadow-black/80">
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[8px] font-semibold uppercase tracking-[0.22em] text-slate-400 whitespace-nowrap">
+                    Temps de réponse
+                  </span>
+                  <span className="mt-1 font-mono text-[11px] text-slate-50 whitespace-nowrap">
+                    {feedbackResponseMs.toLocaleString("fr-FR")} ms
+                  </span>
                 </div>
-              )}
+              </div>
+            )}
+          </div>
+        )}
 
-              {/* temps de réponse */}
-              {showResponseTime && feedbackResponseMs !== null && (
-                <div className="inline-flex items-center border border-slate-700/80 bg-black/80 text-slate-100 shadow-inner shadow-black/80 min-h-[32px] rounded-[9px] px-3.5 py-2 text-[10px]">
-                  <div className="flex flex-col leading-tight">
-                    <span className="font-semibold uppercase text-slate-400 whitespace-nowrap text-[8px] tracking-[0.22em]">
-                      Temps de réponse
-                    </span>
-                    <span className="mt-1 font-mono text-[11px] text-slate-50 whitespace-nowrap">
-                      {feedbackResponseMs.toLocaleString("fr-FR")} ms
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+        {/* QCM */}
+        {showChoices && choices && (
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {choices.map((choice) => {
+              const isSelected = selectedChoice === choice.id;
+              const isCorrect = correctChoiceId === choice.id;
 
-          {/* choix multiples */}
-          {showChoices && choices && (
-            <div className="mt-4 grid gap-2 md:grid-cols-2">
-              {choices.map((choice) => {
-                const isSelected = selectedChoice === choice.id;
-                const isCorrect = correctChoiceId === choice.id;
-                const hoverClasses =
-                  selectedChoice === null ? "hover:border-white hover:bg-slate-900" : "";
-
-                return (
-                  <button
-                    key={choice.id}
-                    type="button"
-                    onClick={() => onSelectChoice(choice)}
-                    disabled={!isPlaying && !isSelected}
-                    className={[
-                      "group relative overflow-hidden border text-left font-medium transition backdrop-blur-xl shadow-none",
-                      "rounded-[9px]",
-                      "px-3.5 py-2.5",
-                      "text-[11px]",
-                      isCorrect
-                        ? "border-emerald-600 bg-emerald-600 text-slate-50"
-                        : isSelected
-                        ? "border-red-500 bg-red-500 text-slate-50"
-                        : `border-slate-700/90 bg-black/75 text-slate-50 ${hoverClasses}`,
-                      !isPlaying ? "cursor-default" : "",
-                    ].join(" ")}
-                  >
-                    {choice.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+              return (
+                <button
+                  key={choice.id}
+                  onClick={() => onSelectChoice(choice)}
+                  disabled={!isPlaying && !isSelected}
+                  className={[
+                    "rounded-[9px] border px-3 py-2 text-left text-[11px] font-medium transition",
+                    isCorrect
+                      ? "border-emerald-600 bg-emerald-600 text-slate-50"
+                      : isSelected
+                      ? "border-red-500 bg-red-500 text-slate-50"
+                      : "border-slate-700/90 bg-black/75 text-slate-50 hover:bg-slate-900",
+                  ].join(" ")}
+                >
+                  {choice.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* barre de progression des questions sous le cadre */}
+      {/* progression des questions */}
       {questionProgress.length > 0 && (
         <div className="mt-4 flex flex-wrap justify-center gap-1.5">
           {questionProgress.map((state, i) => {
-            let colorClasses = "bg-slate-700/60 text-slate-200"; // pending
-            if (state === "correct") colorClasses = "bg-emerald-600 text-slate-50";
-            else if (state === "wrong") colorClasses = "bg-red-500 text-slate-50";
+            const color =
+              state === "correct"
+                ? "bg-emerald-600"
+                : state === "wrong"
+                ? "bg-red-500"
+                : "bg-slate-700/60";
 
             return (
               <div
                 key={i}
-                className={[
-                  "flex items-center justify-center rounded-md font-semibold whitespace-nowrap",
-                  "w-[27px] h-[27px]",
-                  "sm:w-[30px] sm:h-[30px]",
-                  "text-[11px]",
-                  colorClasses,
-                ].join(" ")}
+                className={`flex h-[27px] w-[27px] items-center justify-center rounded-md text-[11px] font-semibold text-slate-50 ${color}`}
               >
                 {i + 1}
               </div>
