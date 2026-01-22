@@ -46,6 +46,7 @@ type RoomMeta = {
   code: string | null;
   visibility: "PUBLIC" | "PRIVATE";
   name?: string | null;
+  image?: string | null;
 };
 type RoomInfoItem = { label: string; value: string | number };
 type AnsweredStatus = "correct" | "correct-mc" | "wrong";
@@ -1523,6 +1524,9 @@ useEffect(() => {
 
   // ✅ Nom du salon affiché en gros à droite
   const roomDisplayName = roomMeta?.name?.trim() || "-";
+  const roomImageUrl = roomMeta?.image
+    ? `${API_BASE}/img/interface/${roomMeta.image}.avif`
+    : null;
 
   const roomInfoItems: RoomInfoItem[] = [
     { label: "Public", value: visibilityLabel },
@@ -1856,6 +1860,24 @@ useEffect(() => {
             >
               <div className="h-full overflow-visible bg-transparent pb-3 pl-3 pr-6 pt-3">
                 <div className="flex flex-col gap-4 overflow-visible">
+                  <div
+                    className="overflow-hidden rounded-[6px] border border-white/10 bg-[#1C1F2E]"
+                    style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
+                  >
+                    <div className="relative aspect-[21/9] w-full">
+                      {roomImageUrl ? (
+                        <img
+                          src={roomImageUrl}
+                          alt={roomDisplayName}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          draggable={false}
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900" />
+                      )}
+                    </div>
+                  </div>
                   {phase === "final" && finalRemaining !== null ? (
                     <div className=
                       "rounded-[6px] bg-[#1C1F2E] px-6 py-6 shadow-[0_18px_50px_rgba(0,0,0,.55),0_2px_0_rgba(255,255,255,.06)]">

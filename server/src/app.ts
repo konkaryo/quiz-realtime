@@ -140,11 +140,35 @@ async function main() {
     const id = (req.params as any).id as string;
     const room = await prisma.room.findUnique({
       where: { id },
-      select: { id: true, code: true, status: true, visibility: true, name: true },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        visibility: true,
+        name: true,
+        image: true,
+      },
     });
     if (!room) return reply.code(404).send({ error: "Room not found" });
-    if (room.status === "CLOSED") { return reply.code(410).send({ error: "Room closed" }); }
-    return { room };
+    if (room.status === "CLOSED") {
+      return reply.code(410).send({ error: "Room closed" });
+    }
+
+    const normalizedImage = normalizeRoomImage(room.image);
+    const resolvedImage =
+      normalizedImage ??
+      (room.visibility === "PUBLIC"
+        ? resolveRoomImage(room.id, getInterfaceImages())
+        : null);
+
+    if (resolvedImage && normalizedImage !== resolvedImage) {
+      await prisma.room.update({
+        where: { id: room.id },
+        data: { image: resolvedImage },
+      });
+    }
+
+    return { room: { ...room, image: resolvedImage } };
   });
 
   app.get("/rooms/new-code", async (_req, reply) => {
