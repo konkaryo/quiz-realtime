@@ -74,7 +74,7 @@ model Session {
 }
 
 model Player {
-  id          String                @id @default(cuid())
+  id          String                @id @default(dbgenerated("random_player_id()")) @db.Text
   userId      String?               @unique
   user        User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
   name        String

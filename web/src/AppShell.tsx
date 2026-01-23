@@ -220,10 +220,18 @@ export default function AppShell() {
   const [showJoinLoading, setShowJoinLoading] = useState(false);
   const [displayExperience, setDisplayExperience] = useState(0);
   const displayExperienceRef = useRef(0);
+  const isRoomRoute = location.pathname.startsWith("/room/");
+  const joinLoadingPending =
+    showJoinLoading ||
+    (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
+  const shouldHideRoomContent = joinLoadingPending && isRoomRoute;
 
   useEffect(() => {
-    if (sessionStorage.getItem("join-loading") !== "1") return;
-    sessionStorage.removeItem("join-loading");
+    const hasJoinLoading = sessionStorage.getItem("join-loading") === "1";
+    if (!hasJoinLoading && !showJoinLoading) return;
+    if (hasJoinLoading) {
+      sessionStorage.removeItem("join-loading");
+    }
     setShowJoinLoading(true);
 
     const hideTimer = window.setTimeout(() => {
@@ -1147,7 +1155,7 @@ export default function AppShell() {
       >
         <Outlet />
       </main>
-      {showJoinLoading && <JoinLoadingScreen offsetTop={HEADER_H} />}
+      {joinLoadingPending && <JoinLoadingScreen offsetTop={HEADER_H} />}
     </div>
   );
 }
