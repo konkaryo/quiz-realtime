@@ -98,6 +98,7 @@ const router = createBrowserRouter([
       { path: "/multi/race", element: <LobbyRacePage /> },
       { path: "/multi/race/play", element: <RacePage /> },
       { path: "/me/profile", element: <ProfilePage /> },
+      { path: "/players/:playerId/profile", element: <ProfilePage /> },
       { path: "/rooms/new", element: <CreateRoomPage /> },
       { path: "/private/join", element: <JoinPrivateRoomPage /> },
       { path: "/room/:roomId", element: <RoomPage /> },

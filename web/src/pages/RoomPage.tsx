@@ -34,6 +34,7 @@ type QuestionLite = {
 type Phase = "idle" | "countdown" | "playing" | "reveal" | "between" | "final";
 type LeaderRow = {
   id: string;
+  playerId?: string | null;
   name: string;
   score: number;
   img?: string | null;
@@ -108,11 +109,21 @@ function PlayerCell({
   row,
   rank,
   isSelf,
+  onNameClick,
 }: {
   row: LeaderRow;
   rank: number;
   isSelf: boolean;
+  onNameClick?: (row: LeaderRow) => void;
 }) {
+  const canNavigate = !!onNameClick && !!row.playerId;
+  const nameClasses = [
+    "truncate text-[13px] font-semibold",
+    canNavigate ? "cursor-pointer hover:underline" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div className="w-full max-w-full overflow-x-hidden">
       <div
@@ -149,7 +160,19 @@ function PlayerCell({
 
           {/* Nom + niveau */}
           <div className="min-w-0 leading-tight overflow-hidden">
-            <div className="truncate text-[13px] font-semibold">{row.name}</div>
+            {canNavigate ? (
+              <button
+                type="button"
+                onClick={() => onNameClick?.(row)}
+                className={nameClasses}
+                title={`Voir le profil de ${row.name}`}
+                aria-label={`Voir le profil de ${row.name}`}
+              >
+                {row.name}
+              </button>
+            ) : (
+              <div className={nameClasses}>{row.name}</div>
+            )}
 
             <div className="text-[11px] text-white/75">
               Niveau {getLevelFromExperience(row.experience ?? 0)}
@@ -173,6 +196,12 @@ function PlayerCell({
 export default function RoomPage() {
   const nav = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
+
+  const handlePlayerProfile = (row: LeaderRow) => {
+    if (!row.playerId) return;
+    nav(`/players/${row.playerId}/profile`);
+  };
+
 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -1599,7 +1628,7 @@ useEffect(() => {
         </span>
 
         <div className="flex-1 min-w-0">
-          <PlayerCell row={r} rank={rank} isSelf={isSelf} />
+          <PlayerCell row={r} rank={rank} isSelf={isSelf} onNameClick={handlePlayerProfile} />
         </div>
 
         <span
@@ -2051,7 +2080,19 @@ useEffect(() => {
                         <span className="w-5 text-right text-white/50 tabular-nums flex-shrink-0">
                           {i + 1}.
                         </span>
-                        <span className="truncate text-[13px] font-semibold">{r.name}</span>
+                        {r.playerId ? (
+                          <button
+                            type="button"
+                            onClick={() => handlePlayerProfile(r)}
+                            className="truncate text-[13px] font-semibold hover:underline"
+                            title={`Voir le profil de ${r.name}`}
+                            aria-label={`Voir le profil de ${r.name}`}
+                          >
+                            {r.name}
+                          </button>
+                        ) : (
+                          <span className="truncate text-[13px] font-semibold">{r.name}</span>
+                        )}
                       </div>
                       <span className="tabular-nums text-[13px] font-semibold text-white/85 flex-shrink-0">
                         {r.score}

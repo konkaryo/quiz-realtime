@@ -6,6 +6,7 @@ import * as media_service from "../media/media.service";
 
 type LeaderboardRow = {
   id: string;
+  playerId: string;
   name: string;
   score: number;
   img: string | null;
@@ -44,18 +45,28 @@ export async function buildLeaderboard(prisma: PrismaClient, gameId: string, onl
     const ids = onlyPgIds && onlyPgIds.length ? onlyPgIds : Array.from(st.playerData.keys());
     if (!ids.length) return [] as LeaderboardRow[];
 
-    const missingMeta = ids.filter((id) => !(st.playerData.get(id)?.name));
-    const metaByPgId = new Map<string, { name: string; img: string | null; experience: number }>();
+    const metaByPgId = new Map<
+      string,
+      { playerId: string; name: string; img: string | null; experience: number }
+    >();
 
-    if (missingMeta.length) {
-      const rows = await prisma.playerGame.findMany({
-        where: { id: { in: missingMeta } },
-        select: { id: true, player: { select: { name: true, img: true, experience: true } } },
-      });
-      rows.forEach((r) =>
-        metaByPgId.set(r.id, { name: r.player.name, img: r.player.img, experience: r.player.experience }),
-      );
-    }
+    const rows = await prisma.playerGame.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        playerId: true,
+        player: { select: { name: true, img: true, experience: true } },
+      },
+    });
+
+    rows.forEach((r) =>
+      metaByPgId.set(r.id, {
+        playerId: r.playerId,
+        name: r.player.name,
+        img: r.player.img,
+        experience: r.player.experience,
+      }),
+    );
 
     const lb = ids
       .map((id) => {
@@ -66,6 +77,7 @@ export async function buildLeaderboard(prisma: PrismaClient, gameId: string, onl
         const img = media_service.toProfileUrl(data.img ?? meta?.img ?? null);
         return {
           id,
+          playerId: meta?.playerId ?? "",
           name,
           score: data.score,
           img,
@@ -85,11 +97,17 @@ export async function buildLeaderboard(prisma: PrismaClient, gameId: string, onl
     where,
     // on garde un premier tri DB par score desc pour limiter le travail en mémoire
     orderBy: [{ score: "desc" }],
-    select: { id: true, score: true, player: { select: { name: true, img: true, experience: true } } },
+    select: {
+      id: true,
+      score: true,
+      playerId: true,
+      player: { select: { name: true, img: true, experience: true } },
+    },
   });
 
   const lb = rows.map((r) => ({
     id: r.id,
+    playerId: r.playerId,
     name: r.player.name,
     score: r.score,
     img: media_service.toProfileUrl(r.player.img),

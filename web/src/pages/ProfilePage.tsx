@@ -1,6 +1,7 @@
 // web/src/pages/ProfilePage.tsx
 
 import React, { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useParams } from "react-router-dom";
 import { getLevelProgress } from "../utils/experience";
 
 import { BadgeCheck, Clock, Edit3, Trophy, Users } from "lucide-react";
@@ -16,6 +17,7 @@ import {
 } from "recharts";
 
 type CurrentUser = {
+  id?: string;
   displayName?: string;
   img?: string | null;
   experience?: number;
@@ -353,6 +355,8 @@ function padRows(rows: Row[], targetLen: number, colId: "L" | "R"): Row[] {
 }
 
 export default function ProfilePage() {
+  const { playerId } = useParams<{ playerId: string }>();
+  const isSelfProfile = !playerId;
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [categoryAccuracy, setCategoryAccuracy] = useState<Record<CategoryKey, number>>(
     emptyCategoryAccuracy
@@ -370,11 +374,35 @@ export default function ProfilePage() {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
-        const { user } = (res.ok ? await res.json() : { user: null }) as {
-          user: CurrentUser | null;
-        };
-        if (mounted) setUser(user ?? null);
+        const endpoint = playerId ? `${API_BASE}/players/${playerId}` : `${API_BASE}/auth/me`;
+        const res = await fetch(endpoint, {
+          credentials: isSelfProfile ? "include" : "omit",
+        });
+        if (!res.ok) {
+          if (mounted) setUser(null);
+          return;
+        }
+
+        if (playerId) {
+          const payload = (await res.json()) as {
+            player?: { id: string; name: string; img?: string | null; experience?: number };
+          };
+          if (mounted) {
+            setUser(
+              payload.player
+                ? {
+                    id: payload.player.id,
+                    displayName: payload.player.name,
+                    img: payload.player.img ?? null,
+                    experience: payload.player.experience ?? 0,
+                  }
+                : null
+            );
+          }
+        } else {
+          const { user } = (await res.json()) as { user: CurrentUser | null };
+          if (mounted) setUser(user ?? null);
+        }
       } catch {
         if (mounted) setUser(null);
       }
@@ -382,14 +410,17 @@ export default function ProfilePage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isSelfProfile, playerId]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/auth/me/stats`, {
-          credentials: "include",
+        const endpoint = playerId
+          ? `${API_BASE}/players/${playerId}/stats`
+          : `${API_BASE}/auth/me/stats`;
+        const res = await fetch(endpoint, {
+          credentials: isSelfProfile ? "include" : "omit",
         });
         if (!res.ok) return;
 
@@ -422,7 +453,7 @@ export default function ProfilePage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isSelfProfile, playerId]);
 
   const sortedCategoryData = useMemo<Row[]>(() => {
     return (Object.keys(CATEGORY_CONFIG) as CategoryKey[])
@@ -457,6 +488,7 @@ export default function ProfilePage() {
   const avatarUrl = appliedAvatarUrl ?? user?.img ?? fallbackAvatar;
   const experienceValue = user?.experience ?? 0;
   const xpProgress = getLevelProgress(experienceValue);
+  const canEditAvatar = isSelfProfile;
 
   const barRowPx = 40;
   const minChartH = 320;
@@ -560,21 +592,28 @@ export default function ProfilePage() {
             >
               <button
                 type="button"
-                onClick={() => setIsAvatarEditorOpen(true)}
-                className="group relative block h-full w-full overflow-hidden rounded-[6px] bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-200/80"
-                aria-label="Modifier la photo de profil"
+                onClick={canEditAvatar ? () => setIsAvatarEditorOpen(true) : undefined}
+                disabled={!canEditAvatar}
+                className="group relative block h-full w-full overflow-hidden rounded-[6px] bg-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-200/80 disabled:cursor-default"
+                aria-label={
+                  canEditAvatar
+                    ? "Modifier la photo de profil"
+                    : `Photo de profil de ${displayName}`
+                }
               >
                 <img
                   src={avatarUrl}
                   alt={`Photo de profil de ${displayName}`}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] font-semibold text-slate-100 ring-1 ring-white/20">
-                    <Edit3 className="h-3 w-3" />
-                    Modifier
-                  </span>
-                </div>
+                {canEditAvatar ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] font-semibold text-slate-100 ring-1 ring-white/20">
+                      <Edit3 className="h-3 w-3" />
+                      Modifier
+                    </span>
+                  </div>
+                ) : null}
               </button>
             </div>
 
