@@ -71,15 +71,19 @@ export default function Home() {
     try {
       const data = (await fetchJSON(`/rooms/${roomId}`)) as { room: RoomDetail };
       const code = (data.room?.code ?? "").trim();
+      const goToRoom = (target: string) => {
+        sessionStorage.setItem("join-loading", "1");
+        nav(target);
+      };
 
-      if (!code) return nav(`/room/${roomId}`);
+      if (!code) return goToRoom(`/room/${roomId}`);
 
       const userCode = (prompt("Cette room est privée. Entrez le code :") || "")
         .trim()
         .toUpperCase();
 
       if (!userCode) return;
-      if (userCode === code.toUpperCase()) nav(`/room/${roomId}`);
+      if (userCode === code.toUpperCase()) goToRoom(`/room/${roomId}`);
       else alert("Code invalide.");
     } catch (e: any) {
       const msg = (e?.message || "").toLowerCase();

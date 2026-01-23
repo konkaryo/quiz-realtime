@@ -1,6 +1,6 @@
 // web/src/AppShell.tsx
 import React, { useEffect, useState, useRef } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoUrl from "@/assets/synapz.png";
 import bitIconUrl from "@/assets/bit.png";
 import starUrl from "@/assets/star.png";
@@ -10,6 +10,7 @@ import addActiveIconUrl from "@/assets/add_active_icon.png";
 import calendarIconUrl from "@/assets/calendar_icon.png";
 import multiplayerIconUrl from "@/assets/multiplayer_icon.png";
 import { getLevelProgress } from "@/utils/experience";
+import JoinLoadingScreen from "@/components/JoinLoadingScreen";
 
 type CurrentUser = {
   displayName?: string;
@@ -211,13 +212,28 @@ function UserMenuItem({
 
 export default function AppShell() {
   const nav = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [displayBits, setDisplayBits] = useState(0);
   const displayBitsRef = useRef(0);
-
+  const [showJoinLoading, setShowJoinLoading] = useState(false);
   const [displayExperience, setDisplayExperience] = useState(0);
   const displayExperienceRef = useRef(0);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("join-loading") !== "1") return;
+    sessionStorage.removeItem("join-loading");
+    setShowJoinLoading(true);
+
+    const hideTimer = window.setTimeout(() => {
+      setShowJoinLoading(false);
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(hideTimer);
+    };
+  }, [location.key]);
 
   const animationRef = useRef<number | null>(null);
   const experienceAnimationRef = useRef<number | null>(null);
@@ -1131,6 +1147,7 @@ export default function AppShell() {
       >
         <Outlet />
       </main>
+      {showJoinLoading && <JoinLoadingScreen offsetTop={HEADER_H} />}
     </div>
   );
 }
