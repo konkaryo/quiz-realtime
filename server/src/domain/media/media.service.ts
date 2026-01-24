@@ -17,6 +17,12 @@ export function toImgUrl(name?: string | null): string | null {
 /* ---------------------------------------------------------------------------------------- */
 export function toProfileUrl(name?: string | null): string | null {
   if (!name || name === "0") { return `/img/profiles/0.avif`; }
-  else { return `/img/profiles/${encodeURIComponent(name)}.avif`; }
+  if (/^https?:\/\//i.test(name) || name.startsWith("/")) { return name; }
+
+  const cleaned = name
+    .replace(/^\.?\/?img\/profiles\//i, "")
+    .replace(/\.(avif|webp|png|jpg|jpeg)$/i, "");
+
+  return `/img/profiles/${encodeURIComponent(cleaned)}.avif`;
 }
 /* ---------------------------------------------------------------------------------------- */

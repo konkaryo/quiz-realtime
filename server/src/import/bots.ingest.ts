@@ -47,6 +47,30 @@ type ParsedBot = {
   img?: string;
 };
 
+const BOT_ID_CHARS = "0123456789abcdefghijklmnopqrstuvwxyz";
+const BOT_ID_BLOCKS = 4;
+const BOT_ID_BLOCK_SIZE = 4;
+
+function randomBotPlayerId(): string {
+  const blocks: string[] = [];
+  for (let i = 0; i < BOT_ID_BLOCKS; i += 1) {
+    let block = "";
+    for (let j = 0; j < BOT_ID_BLOCK_SIZE; j += 1) {
+      const idx = Math.floor(Math.random() * BOT_ID_CHARS.length);
+      block += BOT_ID_CHARS[idx];
+    }
+    blocks.push(block);
+  }
+  return blocks.join("-");
+}
+
+function resolveBotImageName(rawImg?: string, playerId?: string) {
+  const imgName = rawImg?.trim();
+  const source = imgName ? (imgName.endsWith(".avif") ? imgName : `${imgName}.avif`) : undefined;
+  const destination = imgName && playerId ? `${playerId}.avif` : undefined;
+  return { source, destination };
+}
+
 function toNum0_1(raw: unknown): number | undefined {
   if (raw === null || raw === undefined) return undefined;
   let s = String(raw).trim();
@@ -147,10 +171,40 @@ export async function importBots(csvAbsPath = path.resolve(__dirname, "../import
   }
 
   let inserted = 0, updated = 0;
+  const allocatedPlayerIds = new Set<string>();
+  const importProfilesDir = path.resolve(path.dirname(csvAbsPath), "img", "profiles");
+  const destProfilesDir = path.resolve(path.dirname(csvAbsPath), "..", "img", "profiles");
+  await fs.promises.rm(destProfilesDir, { recursive: true, force: true });
+  await fs.promises.mkdir(destProfilesDir, { recursive: true });
+  const defaultProfileSource = path.resolve(importProfilesDir, "0.avif");
+  const defaultProfileDest = path.resolve(destProfilesDir, "0.avif");
+  if (fs.existsSync(defaultProfileSource)) {
+    await fs.promises.copyFile(defaultProfileSource, defaultProfileDest);
+  }
 
   for (const b of bots) {
     await prisma.$transaction(async (tx) => {
-      const playerImg = (b.img && b.img.trim()) || "0";
+    const existingBot = await prisma.bot.findUnique({
+      where: { name: b.name },
+      select: { playerId: true, player: { select: { id: true } } },
+    });
+    let playerId = existingBot?.playerId ?? existingBot?.player?.id;
+    if (!playerId) {
+      do {
+        playerId = randomBotPlayerId();
+      } while (allocatedPlayerIds.has(playerId));
+    }
+    if (playerId) allocatedPlayerIds.add(playerId);
+
+    const { source, destination } = resolveBotImageName(b.img, playerId);
+    if (source && destination) {
+      const sourcePath = path.resolve(importProfilesDir, source);
+      const destPath = path.resolve(destProfilesDir, destination);
+      if (fs.existsSync(sourcePath)) {
+        await fs.promises.copyFile(sourcePath, destPath);
+      }
+    }
+      const playerImg = destination ?? "0.avif";
       const bot = await tx.bot.upsert({
         where: { name: b.name },
         update: {
@@ -163,7 +217,7 @@ export async function importBots(csvAbsPath = path.resolve(__dirname, "../import
           ...(typeof b.night     === "number" ? { night:     b.night     } : {}),
           player: { upsert: {
             update: { name: b.name, isBot: true, img: playerImg },
-            create: { name: b.name, isBot: true, img: playerImg }
+            create: { id: playerId, name: b.name, isBot: true, img: playerImg }
           }},
         },
         create: {
@@ -174,7 +228,7 @@ export async function importBots(csvAbsPath = path.resolve(__dirname, "../import
           ...(typeof b.afternoon === "number" ? { afternoon: b.afternoon } : {}),
           ...(typeof b.evening   === "number" ? { evening:   b.evening   } : {}),
           ...(typeof b.night     === "number" ? { night:     b.night     } : {}),
-          player: { create: { name: b.name, isBot: true, img: playerImg } },
+          player: { create: { id: playerId, name: b.name, isBot: true, img: playerImg } },
         },
         select: { id: true },
       });
