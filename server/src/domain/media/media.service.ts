@@ -21,8 +21,12 @@ export function toProfileUrl(name?: string | null): string | null {
 
   const cleaned = name
     .replace(/^\.?\/?img\/profiles\//i, "")
-    .replace(/\.(avif|webp|png|jpg|jpeg)$/i, "");
+    .trim();
 
-  return `/img/profiles/${encodeURIComponent(cleaned)}.avif`;
+  const match = cleaned.match(/\.(avif|webp|png|jpg|jpeg)$/i);
+  const ext = match ? match[0].toLowerCase() : ".avif";
+  const base = match ? cleaned.slice(0, -ext.length) : cleaned;
+
+  return `/img/profiles/${encodeURIComponent(base)}${ext}`;
 }
 /* ---------------------------------------------------------------------------------------- */

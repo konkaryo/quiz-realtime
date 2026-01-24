@@ -22,6 +22,7 @@ const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL ??
   (typeof window !== "undefined" ? window.location.origin : "");
 const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
+const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
 
 type ChoiceLite = { id: string; label: string };
 type QuestionLite = {
@@ -246,7 +247,9 @@ export default function RoomPage() {
   const [bitsByPgId, setBitsByPgId] = useState<Record<string, number>>({});
   const [xpByPgId, setXpByPgId] = useState<Record<string, number>>({});
   const [selfId, setSelfId] = useState<string | null>(null);
+  const [selfPlayerId, setSelfPlayerId] = useState<string | null>(null);
   const [selfName, setSelfName] = useState<string | null>(null);
+  const avatarOverridesRef = useRef<Record<string, string>>({});
   const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>([]);
   const [rankPulseKey, setRankPulseKey] = useState(0);
   const rankRef = useRef<number | null>(null);
@@ -321,6 +324,16 @@ export default function RoomPage() {
     return Math.min(1, Math.max(0, progress));
   }, [finalEndsAt, finalDuration, nowTick, skew]);
 
+  const applyAvatarOverrides = (rows: LeaderRow[]) => {
+    const overrides = avatarOverridesRef.current;
+    if (!rows.length || !Object.keys(overrides).length) return rows;
+    return rows.map((row) => {
+      const playerId = row.playerId ?? "";
+      const override = playerId ? overrides[playerId] : null;
+      return override ? { ...row, img: override } : row;
+    });
+  };
+
   useEffect(() => {
     if (!endsAt && !finalEndsAt) return;
     const id = setInterval(() => setNowTick(Date.now()), 1000);
@@ -350,10 +363,38 @@ export default function RoomPage() {
         const data = await res.json();
         const u = data?.user ?? {};
         if (typeof u.id === "string") setSelfId(u.id);
+        if (typeof u.playerId === "string") setSelfPlayerId(u.playerId);
         if (typeof u.displayName === "string") setSelfName(u.displayName);
       } catch {}
     })();
   }, []);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const customEvent = event as CustomEvent<{ img?: string | null; playerId?: string | null }>;
+      const nextImg = customEvent.detail?.img;
+      const playerId = customEvent.detail?.playerId ?? selfPlayerId;
+      if (!nextImg || !playerId) return;
+      avatarOverridesRef.current = { ...avatarOverridesRef.current, [playerId]: nextImg };
+      setLeaderboard((prev) =>
+        prev.map((row) => (row.playerId === playerId ? { ...row, img: nextImg } : row))
+      );
+    };
+    window.addEventListener(PROFILE_AVATAR_UPDATED_EVENT, handler as EventListener);
+    return () => {
+      window.removeEventListener(PROFILE_AVATAR_UPDATED_EVENT, handler as EventListener);
+    };
+  }, [selfPlayerId]);
+
+  useEffect(() => {
+    if (!selfPlayerId || typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(`profile-avatar:${selfPlayerId}`);
+    if (!stored) return;
+    avatarOverridesRef.current = { ...avatarOverridesRef.current, [selfPlayerId]: stored };
+    setLeaderboard((prev) =>
+      prev.map((row) => (row.playerId === selfPlayerId ? { ...row, img: stored } : row))
+    );
+  }, [selfPlayerId]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -596,10 +637,12 @@ export default function RoomPage() {
           return next;
         });
 
-        if (Array.isArray(p.leaderboard)) setLeaderboard(p.leaderboard);
+        if (Array.isArray(p.leaderboard)) setLeaderboard(applyAvatarOverrides(p.leaderboard));
 
         setAnsweredByPg((prev) => {
-          const rows = Array.isArray(p.leaderboard) ? p.leaderboard : leaderboard;
+          const rows = Array.isArray(p.leaderboard)
+            ? applyAvatarOverrides(p.leaderboard)
+            : applyAvatarOverrides(leaderboard);
           if (!rows.length) return prev;
           const next = { ...prev };
           rows.forEach((row) => {
@@ -617,12 +660,12 @@ export default function RoomPage() {
     );
 
     s.on("leaderboard_update", (p: { leaderboard: LeaderRow[] }) => {
-      setLeaderboard(p.leaderboard ?? []);
+      setLeaderboard(applyAvatarOverrides(p.leaderboard ?? []));
     });
 
     s.on("final_leaderboard", (p: { leaderboard: LeaderRow[]; displayMs?: number }) => {
       setPhase("final");
-      setLeaderboard(p.leaderboard ?? []);
+      setLeaderboard(applyAvatarOverrides(p.leaderboard ?? []));
       setBitsByPgId({});
       setXpByPgId({});
       setQuestion(null);

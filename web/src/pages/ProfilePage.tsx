@@ -18,6 +18,7 @@ import {
 
 type CurrentUser = {
   id?: string;
+  playerId?: string | null;
   displayName?: string;
   img?: string | null;
   experience?: number;
@@ -26,6 +27,13 @@ type CurrentUser = {
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
   (typeof window !== "undefined" ? window.location.origin : "");
+
+const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
+const avatarCacheBust = (url: string) => {
+  const stamp = `t=${Date.now()}`;
+  return url.includes("?") ? `${url}&${stamp}` : `${url}?${stamp}`;
+};
+
 
 const fallbackAvatar = "/img/profiles/0.avif";
 
@@ -392,6 +400,7 @@ export default function ProfilePage() {
               payload.player
                 ? {
                     id: payload.player.id,
+                    playerId: payload.player.id,
                     displayName: payload.player.name,
                     img: payload.player.img ?? null,
                     experience: payload.player.experience ?? 0,
@@ -411,6 +420,13 @@ export default function ProfilePage() {
       mounted = false;
     };
   }, [isSelfProfile, playerId]);
+
+  useEffect(() => {
+    if (!isSelfProfile || !user?.playerId || typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(`profile-avatar:${user.playerId}`);
+    if (!stored) return;
+    setAppliedAvatarUrl(stored);
+  }, [isSelfProfile, user?.playerId]);
 
   useEffect(() => {
     let mounted = true;
@@ -513,10 +529,46 @@ export default function ProfilePage() {
     setPendingAvatarName(null);
   };
 
-  const handleAvatarSave = () => {
-    if (pendingAvatarUrl) {
-      setAppliedAvatarUrl(pendingAvatarUrl);
+  const handleAvatarSave = async () => {
+    if (!pendingAvatarUrl) {
+      setIsAvatarEditorOpen(false);
+      return;
     }
+    try {
+      const res = await fetch(`${API_BASE}/auth/me/avatar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          dataUrl: pendingAvatarUrl,
+          filename: pendingAvatarName ?? undefined,
+        }),
+      });
+
+      if (res.ok) {
+        const payload = (await res.json()) as { img?: string | null };
+        if (payload.img) {
+          const nextImg = avatarCacheBust(payload.img);
+          setAppliedAvatarUrl(nextImg);
+          setUser((prev) => (prev ? { ...prev, img: nextImg ?? prev.img } : prev));
+          if (user?.playerId && typeof window !== "undefined") {
+            window.localStorage.setItem(
+              `profile-avatar:${user.playerId}`,
+              nextImg
+            );
+          }
+          window.dispatchEvent(
+            new CustomEvent(PROFILE_AVATAR_UPDATED_EVENT, {
+              detail: { img: nextImg, playerId: user?.playerId ?? null },
+            })
+          );
+        }
+      }
+    } catch {
+      // ignore upload errors for now
+    }
+
+
     setPendingAvatarUrl(null);
     setPendingAvatarName(null);
     setIsAvatarEditorOpen(false);

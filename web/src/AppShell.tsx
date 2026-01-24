@@ -19,6 +19,8 @@ type CurrentUser = {
   experience?: number;
 };
 
+const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
+
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
   (typeof window !== "undefined" ? window.location.origin : "");
@@ -323,6 +325,20 @@ export default function AppShell() {
     })();
     return () => {
       mounted = false;
+    };
+  }, []);
+
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const customEvent = event as CustomEvent<{ img?: string | null }>;
+      const nextImg = customEvent.detail?.img;
+      if (!nextImg) return;
+      setUser((prev) => (prev ? { ...prev, img: nextImg } : prev));
+    };
+    window.addEventListener(PROFILE_AVATAR_UPDATED_EVENT, handler as EventListener);
+    return () => {
+      window.removeEventListener(PROFILE_AVATAR_UPDATED_EVENT, handler as EventListener);
     };
   }, []);
 

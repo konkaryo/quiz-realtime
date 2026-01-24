@@ -1,6 +1,9 @@
 // src/routes/auth.ts
 import type { FastifyPluginAsync } from "fastify";
 import type { PrismaClient } from "@prisma/client";
+import { z } from "zod";
+import path from "path";
+import { promises as fs } from "fs";
 import {
   hashPassword,
   verifyPassword,
@@ -12,11 +15,28 @@ import {
   revokeSession,
 } from "../auth";
 import { toProfileUrl } from "../domain/media/media.service";
+import { CFG } from "../config";
 
 type Opts = { prisma: PrismaClient };
 
 const normEmail = (e: string) => e.trim().toLowerCase();
 const cleanName  = (s: string) => s.trim().slice(0, 64);
+
+const AVATAR_MIME_TO_EXT: Record<string, string> = {
+  "image/avif": "avif",
+  "image/webp": "webp",
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+};
+
+function parseAvatarDataUrl(dataUrl: string) {
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) return null;
+  const mime = match[1].toLowerCase();
+  const base64 = match[2];
+  return { mime, buffer: Buffer.from(base64, "base64") };
+}
 
 export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
   async (app) => {
@@ -137,6 +157,54 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
         },
       });
     });
+
+    // POST /auth/me/avatar
+    app.post("/me/avatar", async (req, reply) => {
+      const { user, session } = await currentUser(prisma, req);
+      if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
+
+      const Body = z.object({
+        dataUrl: z.string().min(1),
+        filename: z.string().optional(),
+      });
+      const parsed = Body.safeParse(req.body);
+      if (!parsed.success) return reply.code(400).send({ error: "invalid_payload" });
+
+      const parsedData = parseAvatarDataUrl(parsed.data.dataUrl);
+      if (!parsedData) return reply.code(400).send({ error: "invalid_image" });
+
+      const ext = AVATAR_MIME_TO_EXT[parsedData.mime];
+      if (!ext) return reply.code(400).send({ error: "unsupported_image_type" });
+
+      const player = await prisma.player.findUnique({
+        where: { userId: user.id },
+        select: { id: true, img: true },
+      });
+      if (!player) return reply.code(404).send({ error: "player_not_found" });
+
+      const profilesDir = path.resolve(CFG.IMG_DIR, "profiles");
+      await fs.mkdir(profilesDir, { recursive: true });
+
+      const fileName = `${player.id}.${ext}`;
+      const filePath = path.join(profilesDir, fileName);
+      await fs.writeFile(filePath, parsedData.buffer);
+
+      let updatedImg = player.img ?? null;
+      if (player.img !== fileName) {
+        const updated = await prisma.player.update({
+          where: { id: player.id },
+          data: { img: fileName },
+          select: { img: true },
+        });
+        updatedImg = updated.img ?? null;
+      }
+
+      return reply.send({
+        img: toProfileUrl(updatedImg ?? fileName),
+        storedAs: fileName,
+      });
+    });
+
 
     // GET /auth/me/stats
     app.get("/me/stats", async (req, reply) => {
