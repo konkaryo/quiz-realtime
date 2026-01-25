@@ -71,19 +71,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 // ---------------------------------------------------------------------------
 
 const router = createBrowserRouter([
-  // Route publique (hors AppShell)
-  {
-    path: "/login",
-    element: (
-      <React.Suspense
-        fallback={<div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>}
-      >
-        <LoginPage />
-      </React.Suspense>
-    ),
-  },
-
-  // Routes protégées sous AppShell
+  // Routes sous AppShell
   {
     element: (
       <RequireAuth>
@@ -91,6 +79,13 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
+      { path: "/login", element: (
+        <React.Suspense
+          fallback={<div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>}
+        >
+          <LoginPage />
+        </React.Suspense>
+      ) },
       { path: "/", element: <Home /> },
 
       { path: "/solo/daily", element: <DailyChallengePage /> },
