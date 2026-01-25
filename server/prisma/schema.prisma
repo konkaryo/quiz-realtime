@@ -49,8 +49,8 @@ enum RoomVisibility {
 
 model User {
   id              String    @id @default(cuid())
-  email           String    @unique
-  passwordHash    String
+  email           String?   @unique
+  passwordHash    String?
   displayName     String
   emailVerifiedAt DateTime?
   createdAt       DateTime  @default(now())
@@ -59,6 +59,7 @@ model User {
   player          Player?
   ownedRooms      Room[]    @relation("UserOwnedRooms")
   role            Role      @default(USER)
+  guest           Boolean   @default(false)
 }
 
 model Session {

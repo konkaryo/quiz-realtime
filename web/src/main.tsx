@@ -51,7 +51,11 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     let mounted = true;
     fetchMe().then(({ user }) => {
       if (!mounted) return;
-      setStatus(user ? "authed" : "guest");
+      if (!user) {
+        setStatus("guest");
+      } else {
+        setStatus(user.guest ? "guest" : "authed");
+      }
     });
     return () => {
       mounted = false;
@@ -60,10 +64,6 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (status === "pending") {
     return <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>;
-  }
-
-  if (status === "guest") {
-    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;

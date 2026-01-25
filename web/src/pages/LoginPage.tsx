@@ -1,19 +1,35 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { login, register } from "../auth/client";
 import { useAuth } from "../auth/AuthContext";
 
 export default function LoginPage() {
   const nav = useNavigate();
-  const { state } = useLocation() as any;
+  const location = useLocation() as any;
+  const { state } = location;
   const { refresh } = useAuth();
 
-  const [mode, setMode] = useState<"login"|"register">("login");
+  const initialMode = (() => {
+    if (state?.mode === "register") return "register";
+    const params = new URLSearchParams(location.search);
+    return params.get("mode") === "register" ? "register" : "login";
+  })();
+  const [mode, setMode] = useState<"login"|"register">(initialMode);
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const redirectTo = state?.from?.pathname || "/";
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("mode") === "register" && mode !== "register") {
+      setMode("register");
+    }
+    if (params.get("mode") !== "register" && mode !== "login" && !state?.mode) {
+      setMode("login");
+    }
+  }, [location.search, mode, state?.mode]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

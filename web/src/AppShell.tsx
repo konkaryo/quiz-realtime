@@ -17,6 +17,7 @@ type CurrentUser = {
   img?: string | null;
   bits?: number;
   experience?: number;
+  guest?: boolean;
 };
 
 const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
@@ -227,6 +228,7 @@ export default function AppShell() {
     showJoinLoading ||
     (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
   const shouldHideRoomContent = joinLoadingPending && isRoomRoute;
+  const isGuest = !user || Boolean(user?.guest);
 
   useEffect(() => {
     const hasJoinLoading = sessionStorage.getItem("join-loading") === "1";
@@ -925,234 +927,268 @@ export default function AppShell() {
             height: "100%",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* ✅ CIBLE XP : on met data-xp-target sur le wrapper + sur l'image (fiable) */}
-            <div
-              aria-label={`Niveau ${xpProgress.level}`}
-              data-xp-target="nav-xp"
-              style={{
-                width: 30,
-                height: 30,
-                position: "relative",
-                display: "grid",
-                placeItems: "center",
-                flexShrink: 0,
-                filter: "drop-shadow(0 2px 6px rgba(0,0,0,.45))",
-              }}
-            >
-              <img
-                src={starUrl}
-                alt=""
-                aria-hidden
-                data-xp-target="nav-xp"
+          {isGuest ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Link
+                to="/login?mode=register"
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
-                  display: "block",
-                  objectFit: "contain",
-                  userSelect: "none",
-                  pointerEvents: "none",
-                }}
-              />
-              <span
-                style={{
-                  position: "relative",
-                  zIndex: 1,
-                  fontWeight: 700,
-                  fontSize: 11,
-                  lineHeight: 1,
-                  color: "#ffffff",
-                  textShadow: "0 1px 0 rgba(0,0,0,.55)",
-                }}
-              >
-                {xpProgress.level}
-              </span>
-            </div>
-
-            <div
-              style={{
-                minWidth: 100,
-                padding: "3px 5px",
-                borderRadius: 10,
-                background:
-                  "linear-gradient(180deg,rgba(15,23,42,.9),rgba(8,10,20,.9))",
-                border: "1px solid rgba(255,255,255,.12)",
-                boxShadow: "inset 0 0 0 1px rgba(0,0,0,.35)",
-              }}
-            >
-              <div
-                aria-label={`Progression ${xpProgress.gained} sur ${
-                  xpProgress.needed || xpProgress.gained
-                } xp`}
-                style={{
-                  position: "relative",
-                  height: 14,
+                  padding: "6px 12px",
                   borderRadius: 8,
-                  background: "linear-gradient(180deg,#0b1224,#0a0f1f)",
-                  overflow: "hidden",
-                  border: "1px solid rgba(255,255,255,.08)",
+                  background: "#ffffff",
+                  color: "#151a22",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  textDecoration: "none",
                 }}
               >
+                S'inscrire
+              </Link>
+              <Link
+                to="/login"
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(255,255,255,.4)",
+                  color: "#e2e8f0",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  textDecoration: "none",
+                }}
+              >
+                Se connecter
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {/* ✅ CIBLE XP : on met data-xp-target sur le wrapper + sur l'image (fiable) */}
                 <div
+                  aria-label={`Niveau ${xpProgress.level}`}
+                  data-xp-target="nav-xp"
                   style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: `${xpProgress.progress * 100}%`,
-                    background: "linear-gradient(90deg,#38bdf8,#22d3ee)",
-                    boxShadow: "inset 0 0 6px rgba(255,255,255,.25)",
-                    transition: "width 120ms linear",
-                  }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
+                    width: 30,
+                    height: 30,
+                    position: "relative",
                     display: "grid",
                     placeItems: "center",
-                    fontSize: 10,
-                    fontWeight: 800,
-                    color: "#e2e8f0",
-                    textShadow: "0 1px 2px rgba(0,0,0,.7)",
+                    flexShrink: 0,
+                    filter: "drop-shadow(0 2px 6px rgba(0,0,0,.45))",
                   }}
                 >
-                  {xpProgress.needed > 0
-                    ? `${xpProgress.gained}/${xpProgress.needed}`
-                    : "MAX"}
+                  <img
+                    src={starUrl}
+                    alt=""
+                    aria-hidden
+                    data-xp-target="nav-xp"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "100%",
+                      height: "100%",
+                      display: "block",
+                      objectFit: "contain",
+                      userSelect: "none",
+                      pointerEvents: "none",
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: "relative",
+                      zIndex: 1,
+                      fontWeight: 700,
+                      fontSize: 11,
+                      lineHeight: 1,
+                      color: "#ffffff",
+                      textShadow: "0 1px 0 rgba(0,0,0,.55)",
+                    }}
+                  >
+                    {xpProgress.level}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    minWidth: 100,
+                    padding: "3px 5px",
+                    borderRadius: 10,
+                    background:
+                      "linear-gradient(180deg,rgba(15,23,42,.9),rgba(8,10,20,.9))",
+                    border: "1px solid rgba(255,255,255,.12)",
+                    boxShadow: "inset 0 0 0 1px rgba(0,0,0,.35)",
+                  }}
+                >
+                  <div
+                    aria-label={`Progression ${xpProgress.gained} sur ${
+                      xpProgress.needed || xpProgress.gained
+                    } xp`}
+                    style={{
+                      position: "relative",
+                      height: 14,
+                      borderRadius: 8,
+                      background: "linear-gradient(180deg,#0b1224,#0a0f1f)",
+                      overflow: "hidden",
+                      border: "1px solid rgba(255,255,255,.08)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: `${xpProgress.progress * 100}%`,
+                        background: "linear-gradient(90deg,#38bdf8,#22d3ee)",
+                        boxShadow: "inset 0 0 6px rgba(255,255,255,.25)",
+                        transition: "width 120ms linear",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        fontSize: 10,
+                        fontWeight: 800,
+                        color: "#e2e8f0",
+                        textShadow: "0 1px 2px rgba(0,0,0,.7)",
+                      }}
+                    >
+                      {xpProgress.needed > 0
+                        ? `${xpProgress.gained}/${xpProgress.needed}`
+                        : "MAX"}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 3,
-              fontWeight: 700,
-              fontSize: 13,
-              color: "#e5e7eb",
-            }}
-          >
-            <span>{displayBits}</span>
-            <img
-              src={bitIconUrl}
-              alt="Bits"
-              width={20}
-              height={20}
-              style={{ display: "block" }}
-            />
-          </div>
-
-          {!loading && (
-            <button
-              onClick={() => setUserOpen((v) => !v)}
-              title={user?.displayName || "Utilisateur"}
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 8,
-                padding: "6px 10px",
-                border: "none",
-                background: "transparent",
-                color: "#e5e7eb",
-                cursor: "pointer",
-                fontWeight: 700,
-              }}
-            >
-              <span
-                aria-hidden
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 6,
-                  overflow: "hidden",
-                  display: "block",
-                  background: "#0f172a",
-                  flexShrink: 0,
-                }}
-              >
-                <img
-                  src={avatarUrl}
-                  alt={`Photo de profil de ${user?.displayName ?? "Utilisateur"}`}
-                  onError={(e) => {
-                    e.currentTarget.src = "/img/profiles/0.avif";
-                  }}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                />
-              </span>
-
-              <span
-                style={{
-                  maxWidth: 140,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  lineHeight: 1.2,
-                  paddingBottom: 2,
-                  marginTop: 2,
-                }}
-              >
-                {user?.displayName ?? "Utilisateur"}
-              </span>
-
-              <span
-                aria-hidden
-                style={{
-                  fontSize: 14,
-                  opacity: 0.7,
-                  lineHeight: 1,
-                  marginTop: 4,
-                  flexShrink: 0,
-                }}
-              >
-                ▾
-              </span>
-            </button>
-          )}
-
-          {userOpen && (
-            <div
-              style={{
-                position: "absolute",
-                right: 0,
-                top: "100%",
-                width: "fit-content",
-                minWidth: 220,
-                maxWidth: 360,
-                borderRadius: 8,
-                background: "#13141F",
-                border: "1px solid rgba(255,255,255,.12)",
-                boxShadow: "0 20px 60px rgba(0,0,0,.35)",
-                padding: 12,
-                zIndex: 80,
-                marginTop: 8,
-              }}
-            >
               <div
                 style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  top: -8,
-                  height: 8,
-                  background: "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  color: "#e5e7eb",
                 }}
-              />
-              <UserMenuItem to="/me/profile" label="Profil" />
-              <UserMenuItem to="/me/history" label="Historique" />
-              <UserMenuItem to="/me/achievements" label="Succès" divider />
-              <UserMenuItem to="/settings" label="Paramètres" />
-              <UserMenuItem to="/help" label="Assistance" />
-              <UserMenuItem to="/account" label="Compte" divider />
-              <UserMenuItem label="Se déconnecter" danger onClick={logout} />
-            </div>
+              >
+                <span>{displayBits}</span>
+                <img
+                  src={bitIconUrl}
+                  alt="Bits"
+                  width={20}
+                  height={20}
+                  style={{ display: "block" }}
+                />
+              </div>
+
+              {!loading && (
+                <button
+                  onClick={() => setUserOpen((v) => !v)}
+                  title={user?.displayName || "Utilisateur"}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 8,
+                    padding: "6px 10px",
+                    border: "none",
+                    background: "transparent",
+                    color: "#e5e7eb",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 6,
+                      overflow: "hidden",
+                      display: "block",
+                      background: "#0f172a",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <img
+                      src={avatarUrl}
+                      alt={`Photo de profil de ${user?.displayName ?? "Utilisateur"}`}
+                      onError={(e) => {
+                        e.currentTarget.src = "/img/profiles/0.avif";
+                      }}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  </span>
+
+                  <span
+                    style={{
+                      maxWidth: 140,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      lineHeight: 1.2,
+                      paddingBottom: 2,
+                      marginTop: 2,
+                    }}
+                  >
+                    {user?.displayName ?? "Utilisateur"}
+                  </span>
+
+                  <span
+                    aria-hidden
+                    style={{
+                      fontSize: 14,
+                      opacity: 0.7,
+                      lineHeight: 1,
+                      marginTop: 4,
+                      flexShrink: 0,
+                    }}
+                  >
+                    ▾
+                  </span>
+                </button>
+              )}
+
+              {userOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "100%",
+                    width: "fit-content",
+                    minWidth: 220,
+                    maxWidth: 360,
+                    borderRadius: 8,
+                    background: "#13141F",
+                    border: "1px solid rgba(255,255,255,.12)",
+                    boxShadow: "0 20px 60px rgba(0,0,0,.35)",
+                    padding: 12,
+                    zIndex: 80,
+                    marginTop: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      top: -8,
+                      height: 8,
+                      background: "transparent",
+                    }}
+                  />
+                  <UserMenuItem to="/me/profile" label="Profil" />
+                  <UserMenuItem to="/me/history" label="Historique" />
+                  <UserMenuItem to="/me/achievements" label="Succès" divider />
+                  <UserMenuItem to="/settings" label="Paramètres" />
+                  <UserMenuItem to="/help" label="Assistance" />
+                  <UserMenuItem to="/account" label="Compte" divider />
+                  <UserMenuItem label="Se déconnecter" danger onClick={logout} />
+                </div>
+              )}
+            </>
           )}
         </div>
       </header>

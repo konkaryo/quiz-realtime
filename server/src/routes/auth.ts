@@ -4,6 +4,7 @@ import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import path from "path";
 import { promises as fs } from "fs";
+import crypto from "crypto";
 import {
   hashPassword,
   verifyPassword,
@@ -21,6 +22,15 @@ type Opts = { prisma: PrismaClient };
 
 const normEmail = (e: string) => e.trim().toLowerCase();
 const cleanName  = (s: string) => s.trim().slice(0, 64);
+const GUEST_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+function genGuestDisplayName() {
+  let suffix = "";
+  for (let i = 0; i < 6; i += 1) {
+    suffix += GUEST_CHARS[crypto.randomInt(0, GUEST_CHARS.length)];
+  }
+  return `invite-${suffix}`;
+}
 
 const AVATAR_MIME_TO_EXT: Record<string, string> = {
   "image/avif": "avif",
@@ -82,6 +92,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           id: user.id,
           email: user.email,
           displayName: user.displayName,
+          guest: user.guest,
           playerId: user.player?.id ?? null,
           img: toProfileUrl(user.player?.img ?? null),
         },
@@ -103,6 +114,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       });
       if (!user) return reply.code(401).send({ error: "invalid-credentials" });
 
+      if (!user.passwordHash) return reply.code(401).send({ error: "invalid-credentials" });
       const ok = await verifyPassword(user.passwordHash, password);
       if (!ok) return reply.code(401).send({ error: "invalid-credentials" });
 
@@ -114,6 +126,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           id: user.id,
           email: user.email,
           displayName: user.displayName,
+          guest: user.guest,
           playerId: user.player?.id ?? null,
           playerName: user.player?.name ?? null,
           img: toProfileUrl(user.player?.img ?? null),
@@ -135,7 +148,40 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     // GET /auth/me
     app.get("/me", async (req, reply) => {
       const { user, session } = await currentUser(prisma, req);
-      if (!user || !session) return reply.code(401).send({ user: null });
+      if (!user || !session) {
+        const displayName = genGuestDisplayName();
+        const guestUser = await prisma.user.create({
+          data: {
+            email: null,
+            passwordHash: null,
+            displayName,
+            guest: true,
+            player: { create: { name: displayName } },
+          },
+        });
+
+        const { token } = await createSession(prisma, guestUser.id);
+        setAuthCookie(reply, token);
+
+        const guestPlayer = await prisma.player.findUnique({
+          where: { userId: guestUser.id },
+          select: { id: true, name: true, img: true, bits: true, experience: true },
+        });
+
+        return reply.send({
+          user: {
+            id: guestUser.id,
+            email: guestUser.email,
+            displayName: guestUser.displayName,
+            guest: guestUser.guest,
+            playerId: guestPlayer?.id ?? null,
+            playerName: guestPlayer?.name ?? null,
+            img: toProfileUrl(guestPlayer?.img ?? null),
+            bits: guestPlayer?.bits ?? 0,
+            experience: guestPlayer?.experience ?? 0,
+          },
+        });
+      }
 
       await maybeRefreshSession(prisma, session); // sliding expiration (optionnel)
 
@@ -149,6 +195,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           id: user.id,
           email: user.email,
           displayName: user.displayName,
+          guest: user.guest,
           playerId: player?.id ?? null,
           playerName: player?.name ?? null,
           img: toProfileUrl(player?.img ?? null),
