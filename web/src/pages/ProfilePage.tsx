@@ -702,35 +702,57 @@ export default function ProfilePage() {
 
         {/* ===================== STATISTIQUES FULL WIDTH ===================== */}
         <div className="mb-8">
-          {/* Top 3 stats */}
-          <div className="grid gap-3 md:grid-cols-3">
-            <SectionCard
-              title="Taux de bonnes réponses"
-              right={<BadgeCheck className="h-4 w-4 text-emerald-400" />}
-            >
-              <p className="text-[22px] font-semibold">89%</p>
-            </SectionCard>
+          <SectionCard title="Statistiques">
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-3 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                      Taux de bonnes réponses
+                    </p>
+                    <p className="mt-2 text-[22px] font-semibold text-white">89%</p>
+                  </div>
+                  <span className="rounded-full bg-emerald-500/15 p-2 text-emerald-200 ring-1 ring-emerald-400/40">
+                    <BadgeCheck className="h-4 w-4" />
+                  </span>
+                </div>
+              </div>
 
-            <SectionCard
-              title="Temps de réponse moyen"
-              right={<Clock className="h-4 w-4 text-amber-300" />}
-            >
-              <p className="text-[22px] font-semibold">
-                {avgTextResponseMs !== null
-                  ? `${(avgTextResponseMs / 1000).toFixed(1)}s`
-                  : "--"}
-              </p>
-            </SectionCard>
+              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-3 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                      Temps de réponse moyen
+                    </p>
+                    <p className="mt-2 text-[22px] font-semibold text-white">
+                      {avgTextResponseMs !== null
+                        ? `${(avgTextResponseMs / 1000).toFixed(1)}s`
+                        : "--"}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-amber-500/15 p-2 text-amber-200 ring-1 ring-amber-400/40">
+                    <Clock className="h-4 w-4" />
+                  </span>
+                </div>
+              </div>
 
-            <SectionCard
-              title="Questions répondues"
-              right={<Users className="h-4 w-4 text-sky-300" />}
-            >
-              <p className="text-[22px] font-semibold">
-                {totalQuestions.toLocaleString("fr-FR")}
-              </p>
-            </SectionCard>
-          </div>
+              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-3 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                      Questions répondues
+                    </p>
+                    <p className="mt-2 text-[22px] font-semibold text-white">
+                      {totalQuestions.toLocaleString("fr-FR")}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-sky-500/15 p-2 text-sky-200 ring-1 ring-sky-400/40">
+                    <Users className="h-4 w-4" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
 
           {/* Graph en 2 colonnes */}
           <SectionCard className="mt-4" title="Taux de réussite par catégorie">
