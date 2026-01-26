@@ -15,6 +15,7 @@ import CreateRoomPage from "./pages/CreateRoomPage";
 import JoinPrivateRoomPage from "./pages/JoinPrivateRoomPage";
 import RacePage from "./pages/RacePage";
 import LobbyRacePage from "./pages/LobbyRacePage";
+import PrivateLobbyPage from "./pages/PrivateLobbyPage";
 
 // ✅ nouvelle page
 import DailyChallengePage from "./pages/DailyChallengePage";
@@ -24,6 +25,9 @@ import "./index.css";
 
 // pages publiques
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
+const ForgotPasswordPage = React.lazy(
+  () => import("./pages/ForgotPasswordPage")
+);
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
@@ -79,13 +83,30 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { path: "/login", element: (
-        <React.Suspense
-          fallback={<div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>}
-        >
-          <LoginPage />
-        </React.Suspense>
-      ) },
+      {
+        path: "/login",
+        element: (
+          <React.Suspense
+            fallback={
+              <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>
+            }
+          >
+            <LoginPage />
+          </React.Suspense>
+        ),
+      },
+      {
+        path: "/forgot-password",
+        element: (
+          <React.Suspense
+            fallback={
+              <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>
+            }
+          >
+            <ForgotPasswordPage />
+          </React.Suspense>
+        ),
+      },
       { path: "/", element: <Home /> },
 
       { path: "/solo/daily", element: <DailyChallengePage /> },
@@ -95,6 +116,7 @@ const router = createBrowserRouter([
       { path: "/me/profile", element: <ProfilePage /> },
       { path: "/players/:playerId/profile", element: <ProfilePage /> },
       { path: "/rooms/new", element: <CreateRoomPage /> },
+      { path: "/rooms/:roomId/lobby", element: <PrivateLobbyPage /> },
       { path: "/private/join", element: <JoinPrivateRoomPage /> },
       { path: "/room/:roomId", element: <RoomPage /> },
       { path: "*", element: <Navigate to="/" replace /> },

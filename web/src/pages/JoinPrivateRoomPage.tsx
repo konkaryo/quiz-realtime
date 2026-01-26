@@ -97,7 +97,7 @@ export default function JoinPrivateRoomPage() {
       }
 
       if (!roomId) throw new Error("Code invalide ou introuvable.");
-      nav(`/room/${roomId}`);
+      nav(`/rooms/${roomId}/lobby`);
     } catch (e: any) {
       setErr(e?.message || "Impossible de rejoindre ce salon.");
     } finally {

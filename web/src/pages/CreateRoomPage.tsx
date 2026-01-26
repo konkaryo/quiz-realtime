@@ -223,7 +223,7 @@ export default function CreateRoomPage() {
       if (!id) throw new Error("Création: id manquant");
 
       if (finalCode && finalCode !== code) setCode(finalCode);
-      nav(`/room/${id}`);
+      nav(`/rooms/${id}/lobby`);
     } catch (e: any) {
       if (e?.status === 409) {
         setErr("Le code vient d’être pris. Nouveau code généré.");

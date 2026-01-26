@@ -11,6 +11,7 @@ import calendarIconUrl from "@/assets/calendar_icon.png";
 import multiplayerIconUrl from "@/assets/multiplayer_icon.png";
 import { getLevelProgress } from "@/utils/experience";
 import JoinLoadingScreen from "@/components/JoinLoadingScreen";
+import { AUTH_UPDATED_EVENT } from "@/auth/events";
 
 type CurrentUser = {
   displayName?: string;
@@ -305,30 +306,37 @@ export default function AppShell() {
     opacity: 1,
   };
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/me`, {
-          credentials: "include",
-        });
-        const { user } = (res.ok
-          ? await res.json()
-          : { user: null }) as { user: CurrentUser | null };
-        if (mounted) {
-          setUser(user ?? null);
-          setDisplayBits(user?.bits ?? 0);
-          setDisplayExperience(user?.experience ?? 0);
-        }
-      } catch {
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
+  const refreshUser = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        credentials: "include",
+      });
+      const { user } = (res.ok
+        ? await res.json()
+        : { user: null }) as { user: CurrentUser | null };
+      setUser(user ?? null);
+      setDisplayBits(user?.bits ?? 0);
+      setDisplayExperience(user?.experience ?? 0);
+    } catch {
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void refreshUser();
+  }, [refreshUser]);
+
+  useEffect(() => {
+    const handler = () => {
+      void refreshUser();
+    };
+    window.addEventListener(AUTH_UPDATED_EVENT, handler);
+    return () => {
+      window.removeEventListener(AUTH_UPDATED_EVENT, handler);
+    };
+  }, [refreshUser]);
 
 
   useEffect(() => {
@@ -588,6 +596,9 @@ export default function AppShell() {
         credentials: "include",
       });
     } catch {}
+    setUser(null);
+    setDisplayBits(0);
+    setDisplayExperience(0);
     nav("/login", { replace: true });
   }
 

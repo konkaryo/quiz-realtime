@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { login } from "../auth/client";
 import { useAuth } from "../auth/AuthContext";
+import { notifyAuthUpdated } from "../auth/events";
 import logoUrl from "@/assets/synapz.png";
 
 export default function LoginPage() {
@@ -22,6 +23,7 @@ export default function LoginPage() {
     try {
       await login(email, password);
       await refresh();
+      notifyAuthUpdated();
       nav(redirectTo, { replace: true });
     } catch (e: any) {
       setErr(e?.message || "Erreur");
@@ -88,7 +90,7 @@ export default function LoginPage() {
         <div style={{ height: 28 }} />
         <form onSubmit={onSubmit} style={{ display: "grid", gap: 14 }}>
           <input
-            placeholder="Email"
+            placeholder="Adresse e-mail"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             type="email"
@@ -155,13 +157,14 @@ export default function LoginPage() {
               >
                 {showPassword ? (
                   <>
-                    <path d="M2.5 12s3.8-6 9.5-6 9.5 6 9.5 6-3.8 6-9.5 6-9.5-6-9.5-6z" />
-                    <circle cx="12" cy="12" r="3.2" />
+                    <path d="M3 12s3.8-6 9-6 9 6 9 6-3.8 6-9 6-9-6-9-6z" />
+                    <path d="M4 4l16 16" />
+
                   </>
                 ) : (
                   <>
-                    <path d="M3 12s3.8-6 9-6 9 6 9 6-3.8 6-9 6-9-6-9-6z" />
-                    <path d="M4 4l16 16" />
+                    <path d="M2.5 12s3.8-6 9.5-6 9.5 6 9.5 6-3.8 6-9.5 6-9.5-6-9.5-6z" />
+                    <circle cx="12" cy="12" r="3.2" />
                   </>
                 )}
               </svg>
@@ -171,12 +174,26 @@ export default function LoginPage() {
             style={{
               textAlign: "right",
               fontSize: 12,
-              color: "rgba(248,250,252,.6)",
               marginTop: -6,
               marginBottom: 6,
             }}
           >
-            Mot de passe oublié ?
+            <Link
+              to="/forgot-password"
+              style={{
+                color: "rgba(248,250,252,.6)",
+                textDecoration: "none",
+                transition: "text-decoration-color 0.2s ease",
+              }}
+              onMouseEnter={(event) => {
+                event.currentTarget.style.textDecoration = "underline";
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.textDecoration = "none";
+              }}
+            >
+              Mot de passe oublié ?
+            </Link>
           </div>
           {err && <div style={{ color: "#f87171" }}>{err}</div>}
           <button

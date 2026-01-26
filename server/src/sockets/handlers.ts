@@ -7,6 +7,7 @@ import { randomUUID } from "crypto";
 
 // Domain services
 import { getOrCreateCurrentGame, clientsInRoom } from "../domain/room/room.service";
+import { toProfileUrl } from "../domain/media/media.service";
 import { computeSpeedBonus } from "../domain/player/scoring.service";
 import { isFuzzyMatch, norm } from "../domain/question/textmatch";
 import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
@@ -759,8 +760,9 @@ socket.on(
         }
 
         const alreadyRunning = !!(st && !st.finished);
+        const shouldAutoStart = room.visibility === "PUBLIC";
 
-        if (game.state !== "running" && !alreadyRunning) {
+        if (game.state !== "running" && !alreadyRunning && shouldAutoStart) {
           try {
             await startGameForRoom(clients, gameStates, io, prisma, room.id);
           } catch (e: any) {
@@ -777,6 +779,75 @@ socket.on(
       }
     });
 
+    /* ---------------- lobby_state ---------------- */
+    socket.on("lobby_state", async (_p: unknown, ack?: (res: {
+      ok: boolean;
+      reason?: string;
+      room?: { id: string; name?: string | null };
+      owner?: { userId?: string | null; playerId?: string | null; name?: string | null; img?: string | null };
+      players?: { id: string; name: string; img?: string | null }[];
+    }) => void) => {
+      const roomId = socket.data.roomId as string | undefined;
+      if (!roomId) return ack?.({ ok: false, reason: "not-in-room" });
+
+      try {
+        const room = await prisma.room.findUnique({
+          where: { id: roomId },
+          select: {
+            id: true,
+            name: true,
+            ownerId: true,
+            owner: {
+              select: {
+                id: true,
+                displayName: true,
+                player: { select: { id: true, name: true, img: true } },
+              },
+            },
+          },
+        });
+        if (!room) return ack?.({ ok: false, reason: "room-not-found" });
+
+        const members = clientsInRoom(clients, roomId);
+        const playerIds = Array.from(new Set(members.map((m) => m.playerId).filter(Boolean)));
+        const playersMeta = playerIds.length
+          ? await prisma.player.findMany({
+              where: { id: { in: playerIds } },
+              select: { id: true, name: true, img: true },
+            })
+          : [];
+        const playersById = new Map(playersMeta.map((p) => [p.id, p]));
+
+        const players = playerIds.map((playerId) => {
+          const meta = playersById.get(playerId);
+          const fallbackName =
+            members.find((member) => member.playerId === playerId)?.name ?? "Joueur";
+          return {
+            id: playerId,
+            name: meta?.name ?? fallbackName,
+            img: toProfileUrl(meta?.img ?? null),
+          };
+        });
+
+        const ownerPlayer = room.owner?.player;
+
+        return ack?.({
+          ok: true,
+          room: { id: room.id, name: room.name ?? null },
+          owner: {
+            userId: room.owner?.id ?? null,
+            playerId: ownerPlayer?.id ?? null,
+            name: room.owner?.displayName ?? ownerPlayer?.name ?? null,
+            img: toProfileUrl(ownerPlayer?.img ?? null),
+          },
+          players,
+        });
+      } catch (error) {
+        console.error("[lobby_state] error", error);
+        return ack?.({ ok: false, reason: "server-error" });
+      }
+    });
+
     /* ---------------- start_game ---------------- */
     socket.on("start_game", async () => {
       const roomId = socket.data.roomId as string | undefined;
@@ -789,6 +860,7 @@ socket.on(
           return;
         }
         await startGameForRoom(clients, gameStates, io, prisma, roomId);
+        io.to(roomId).emit("game_started", { roomId });
         socket.emit("info_msg", "Game started");
       } catch (e) {
         console.error("[start_game error]", e);
