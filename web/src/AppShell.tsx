@@ -941,7 +941,7 @@ export default function AppShell() {
           {isGuest ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Link
-                to="/login?mode=register"
+                to="/register"
                 style={{
                   padding: "6px 12px",
                   borderRadius: 8,

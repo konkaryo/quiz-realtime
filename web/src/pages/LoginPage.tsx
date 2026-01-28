@@ -69,7 +69,7 @@ export default function LoginPage() {
           >
             Vous n&apos;avez pas de compte ?{" "}
             <Link
-              to="/login?mode=register"
+              to="/register"
               style={{
                 color: "#b6a8ff",
                 textDecoration: "none",

@@ -25,6 +25,7 @@ import "./index.css";
 
 // pages publiques
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
+const RegisterPage = React.lazy(() => import("./pages/RegisterPage"));
 const ForgotPasswordPage = React.lazy(
   () => import("./pages/ForgotPasswordPage")
 );
@@ -92,6 +93,18 @@ const router = createBrowserRouter([
             }
           >
             <LoginPage />
+          </React.Suspense>
+        ),
+      },
+      {
+        path: "/register",
+        element: (
+          <React.Suspense
+            fallback={
+              <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>
+            }
+          >
+            <RegisterPage />
           </React.Suspense>
         ),
       },
