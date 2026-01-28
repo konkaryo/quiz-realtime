@@ -23,6 +23,10 @@ type RoomMeta = {
   code?: string | null;
   name?: string | null;
   visibility?: "PUBLIC" | "PRIVATE";
+  difficulty?: number | null;
+  questionCount?: number | null;
+  roundMs?: number | null;
+  bannedThemes?: string[] | null;
 };
 
 type LobbyOwner = {
@@ -43,6 +47,37 @@ type LobbyStatePayload = {
   owner?: LobbyOwner;
   players?: LobbyPlayer[];
 };
+
+// mêmes clés que l'enum Prisma Theme
+const THEME_OPTIONS = [
+  { key: "CINEMA_SERIES", label: "Cinéma & Séries" },
+  { key: "ARTS_CULTURE", label: "Arts & Culture" },
+  { key: "JEUX_BD", label: "Jeux & BD" },
+  { key: "GEOGRAPHIE", label: "Géographie" },
+  { key: "LANGUES_LITTERATURE", label: "Langues & Littérature" },
+  { key: "ECONOMIE_POLITIQUE", label: "Économie & Politique" },
+  { key: "GASTRONOMIE", label: "Gastronomie" },
+  { key: "CROYANCES", label: "Croyances" },
+  { key: "SPORT", label: "Sport" },
+  { key: "HISTOIRE", label: "Histoire" },
+  { key: "DIVERS", label: "Divers" },
+  { key: "SCIENCES_NATURELLES", label: "Sciences naturelles" },
+  { key: "SCIENCES_TECHNIQUES", label: "Sciences & Techniques" },
+  { key: "MUSIQUE", label: "Musique" },
+  { key: "ACTUALITES_MEDIAS", label: "Actualités & Médias" },
+] as const;
+
+function clamp01(n: number) {
+  if (Number.isNaN(n)) return 0;
+  return Math.max(0, Math.min(1, n));
+}
+
+function percent(value: number, min: number, max: number) {
+  if (max <= min) return "0%";
+  const p = clamp01((value - min) / (max - min)) * 100;
+  return `${p}%`;
+}
+
 
 const fallbackAvatar = "/img/profiles/0.avif";
 
@@ -214,6 +249,14 @@ export default function PrivateLobbyPage() {
 
   const [rightTab, setRightTab] = useState<RightTab>("JOUEURS");
 
+  const themeOptionsSorted = useMemo(
+    () =>
+      [...THEME_OPTIONS].sort((a, b) =>
+        a.label.localeCompare(b.label, "fr", { sensitivity: "base" }),
+      ),
+    [],
+  );
+
   // --- Auth user
   useEffect(() => {
     let mounted = true;
@@ -336,6 +379,25 @@ export default function PrivateLobbyPage() {
     return "PARTIE PRIVÉE";
   }, [ownerData?.name, room?.name]);
 
+  const difficulty = Number.isFinite(room?.difficulty) ? Number(room?.difficulty) : 50;
+  const questionCount = Number.isFinite(room?.questionCount) ? Number(room?.questionCount) : 10;
+  const roundSeconds = Number.isFinite(room?.roundMs)
+    ? Math.max(1, Math.round(Number(room?.roundMs) / 1000))
+    : 10;
+
+  const bannedThemeKeys = useMemo(
+    () => new Set((room?.bannedThemes ?? []) as string[]),
+    [room?.bannedThemes],
+  );
+  const selectedThemeKeys = useMemo(
+    () => THEME_OPTIONS.map((t) => t.key).filter((key) => !bannedThemeKeys.has(key)),
+    [bannedThemeKeys],
+  );
+
+  const difficultyP = percent(difficulty, 0, 100);
+  const qcountP = percent(questionCount, 1, 50);
+  const qdurP = percent(roundSeconds, 3, 60);
+
   // ✅ 1er slot = invite, + joueurs, puis placeholders
   const maxSlots = 8;
   const playersWithInviteCount = 1 + participantsCount(players, ownerData?.playerId);
@@ -407,9 +469,57 @@ export default function PrivateLobbyPage() {
     <div className="min-h-screen text-slate-50">
       <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
 
+      <style>{`
+        input[type="range"].syn-range{
+          -webkit-appearance:none;
+          appearance:none;
+          width:100%;
+          background:transparent;
+          outline:none;
+          cursor:default;
+        }
+        input[type="range"].syn-range::-webkit-slider-runnable-track{
+          height:6px;
+          border-radius:2px;
+          background:
+            linear-gradient(var(--fill) 0 0) 0/var(--p) 100% no-repeat,
+            var(--track);
+        }
+        input[type="range"].syn-range::-webkit-slider-thumb{
+          -webkit-appearance:none;
+          appearance:none;
+          margin-top:-7px;
+          width:18px;
+          height:18px;
+          border-radius:999px;
+          background:#ffffff;
+          border:2px solid rgba(255,255,255,0.12);
+          box-shadow:0 8px 18px rgba(0,0,0,0.45);
+        }
+        input[type="range"].syn-range::-moz-range-track{
+          height:6px;
+          border-radius:2px;
+          background: var(--track);
+        }
+        input[type="range"].syn-range::-moz-range-progress{
+          height:6px;
+          border-radius:2px;
+          background: var(--fill);
+        }
+        input[type="range"].syn-range::-moz-range-thumb{
+          width:18px;
+          height:18px;
+          border-radius:999px;
+          background:#ffffff;
+          border:2px solid rgba(255,255,255,0.12);
+          box-shadow:0 8px 18px rgba(0,0,0,0.45);
+        }
+      `}</style>
+
+
       <main
         className="relative mx-auto w-full max-w-6xl px-6 pb-12"
-        style={{ paddingTop: NAVBAR_HEIGHT_PX }}
+        style={{ paddingTop: NAVBAR_HEIGHT_PX, minHeight: "100vh", boxSizing: "border-box" }}
       >
         {/* ✅ Conteneur de largeur "ancienne" + titre aligné avec le panneau */}
         <div className="mx-auto w-full max-w-[600px]">
@@ -492,12 +602,131 @@ export default function PrivateLobbyPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-5">
+                  <div className="space-y-6">
                     <div className="rounded-[8px] border border-[#2A2D3C] bg-[#181A28] p-4">
                       <p className="text-sm font-semibold text-white">Paramètres</p>
                       <p className="mt-1 text-xs text-slate-400">
-                        (UI locale) Tu peux brancher ces options à ton backend plus tard.
+                        Paramètres définis à la création du salon.
                       </p>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-sm font-semibold text-slate-100">Difficulté</div>
+                          <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
+                            {difficulty}%
+                          </div>
+                        </div>
+
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={difficulty}
+                          disabled
+                          className="syn-range mt-3"
+                          style={
+                            {
+                              ["--track" as any]: "rgba(148,163,184,0.18)",
+                              ["--fill" as any]: "#2D7CFF",
+                              ["--p" as any]: difficultyP,
+                            } as React.CSSProperties
+                          }
+                        />
+                      </div>
+
+                      <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-sm font-semibold text-slate-100">Questions</div>
+                          <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
+                            {questionCount}
+                          </div>
+                        </div>
+
+                        <input
+                          type="range"
+                          min={1}
+                          max={50}
+                          step={1}
+                          value={questionCount}
+                          disabled
+                          className="syn-range mt-3"
+                          style={
+                            {
+                              ["--track" as any]: "rgba(148,163,184,0.18)",
+                              ["--fill" as any]: "#0FACF3",
+                              ["--p" as any]: qcountP,
+                            } as React.CSSProperties
+                          }
+                        />
+                      </div>
+
+                      <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-sm font-semibold text-slate-100">Durée / question</div>
+                          <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
+                            {roundSeconds}
+                            <span className="lowercase">s</span>
+                          </div>
+                        </div>
+
+                        <input
+                          type="range"
+                          min={3}
+                          max={60}
+                          step={1}
+                          value={roundSeconds}
+                          disabled
+                          className="syn-range mt-3"
+                          style={
+                            {
+                              ["--track" as any]: "rgba(148,163,184,0.18)",
+                              ["--fill" as any]: "#FACC15",
+                              ["--p" as any]: qdurP,
+                            } as React.CSSProperties
+                          }
+                        />
+                      </div>
+
+                      <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
+                        <div className="flex items-end justify-between gap-3">
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                            Thèmes{" "}
+                            <span className="text-slate-300/80">
+                              ({selectedThemeKeys.length}/{THEME_OPTIONS.length})
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                          {themeOptionsSorted.map(({ key, label }) => {
+                            const active = selectedThemeKeys.includes(key);
+                            return (
+                              <div
+                                key={key}
+                                className={[
+                                  "flex items-center justify-between gap-3 rounded-[6px] border px-3 py-2 text-left text-[13px] font-semibold",
+                                  active
+                                    ? "border-[#2D7CFF]/60 bg-[#27314E] text-slate-50"
+                                    : "border-[#2A2D3C] bg-[#181A28] text-slate-400",
+                                ].join(" ")}
+                              >
+                                <span className="truncate">{label}</span>
+                                <span
+                                  className={[
+                                    "flex h-5 w-5 items-center justify-center rounded-[6px] text-[12px] leading-none",
+                                    active ? "bg-[#2D7CFF] text-white" : "bg-[#141625] text-slate-500",
+                                  ].join(" ")}
+                                  aria-hidden
+                                >
+                                  {active ? "✓" : "—"}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="rounded-[8px] border border-[#2A2D3C] bg-[#181A28] p-4">

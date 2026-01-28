@@ -149,6 +149,10 @@ async function main() {
         visibility: true,
         name: true,
         image: true,
+        difficulty: true,
+        questionCount: true,
+        roundMs: true,
+        bannedThemes: true,
       },
     });
     if (!room) return reply.code(404).send({ error: "Room not found" });

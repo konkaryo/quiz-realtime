@@ -36,6 +36,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
   const raceLobby = new Map<string, { socketId: string; userId: string; name: string }>();
   const ongoingRaces = new Map<string, { players: Map<string, RacePlayerState>; lastTickMs: number }>();
   const raceMembershipBySocket = new Map<string, { raceId: string; userId: string }>();
+  const pendingRoomCleanup = new Map<string, NodeJS.Timeout>();
   const RACE_MAX_POINTS = 10_000;
   const RACE_TICK_MS = 1_000;
   const ENERGY_DECAY_PER_SECOND = 0.98;
@@ -741,6 +742,11 @@ socket.on(
         socket.data.gameId = game.id;
 
         socket.join(room.id);
+        const pending = pendingRoomCleanup.get(room.id);
+        if (pending) {
+          clearTimeout(pending);
+          pendingRoomCleanup.delete(room.id);
+        }
         io.to(room.id).emit("lobby_update");
         socket.emit("joined", { playerGameId: pg.id, name: player.name, roomId: room.id });
 
@@ -1071,17 +1077,25 @@ socket.on(
 
       const left = clientsInRoom(clients, roomId).length;
       if (left === 0) {
-        try {
-          await prisma.game.update({ where: { id: gameId }, data: { state: "lobby" } });
-        } catch (e) {
-          console.warn("[disconnect] can't set game state:", e);
-        }
+        const existing = pendingRoomCleanup.get(roomId);
+        if (existing) clearTimeout(existing);
+        const cleanup = setTimeout(async () => {
+          pendingRoomCleanup.delete(roomId);
+          if (clientsInRoom(clients, roomId).length > 0) return;
 
-        const st = gameStates.get(roomId);
-        if (st?.timer) clearTimeout(st.timer);
-        gameStates.delete(roomId);
+          try {
+            await prisma.game.update({ where: { id: gameId }, data: { state: "lobby" } });
+          } catch (e) {
+            console.warn("[disconnect] can't set game state:", e);
+          }
 
-        io.to(roomId).emit("info_msg", "Tous les joueurs ont quitté. La partie est arrêtée.");
+          const st = gameStates.get(roomId);
+          if (st?.timer) clearTimeout(st.timer);
+          gameStates.delete(roomId);
+
+          io.to(roomId).emit("info_msg", "Tous les joueurs ont quitté. La partie est arrêtée.");
+        }, 3000);
+        pendingRoomCleanup.set(roomId, cleanup);
       }
     });
   });
