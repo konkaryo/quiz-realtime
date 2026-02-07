@@ -1752,10 +1752,29 @@ useEffect(() => {
             >
               <div className="h-full overflow-x-hidden bg-transparent pb-3 pr-3 pt-3 pl-6">
                 <div className="rounded-[6px] bg-transparent px-4 pt-6 pb-10 flex flex-col overflow-x-hidden">
+                  <div
+                    className="overflow-hidden rounded-[6px] border border-white/10 bg-[#1C1F2E]"
+                    style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
+                  >
+                    <div className="relative aspect-[21/9] w-full">
+                      {roomImageUrl ? (
+                        <img
+                          src={roomImageUrl}
+                          alt={roomDisplayName}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          draggable={false}
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900" />
+                      )}
+                    </div>
+                  </div>
+
                   {/* ✅ Position + Score */}
                   {rankLabel || selfRow ? (
                     <div 
-                      className="rounded-[6px] bg-[#1C1F2E] px-3 py-2"
+                      className="mt-4 rounded-[6px] bg-[#1C1F2E] px-3 py-2"
                       style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
                     >
                       
@@ -1933,20 +1952,22 @@ useEffect(() => {
               <div className="h-full overflow-visible bg-transparent pb-3 pl-3 pr-6 pt-3">
                 <div className="flex flex-col gap-4 overflow-visible">
                   <div
-                    className="overflow-hidden rounded-[6px] border border-white/10 bg-[#1C1F2E]"
+                    className="overflow-hidden rounded-[6px] border border-white/10 bg-[#121421]"
                     style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
                   >
-                    <div className="relative aspect-[21/9] w-full">
-                      {roomImageUrl ? (
+                    <div className="relative aspect-video w-full">
+                      {normalizedQuestion?.img ? (
                         <img
-                          src={roomImageUrl}
-                          alt={roomDisplayName}
+                          src={normalizedQuestion.img}
+                          alt="Illustration de la question"
                           className="h-full w-full object-cover"
                           loading="lazy"
                           draggable={false}
                         />
                       ) : (
-                        <div className="h-full w-full bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900" />
+                        <div className="flex h-full w-full items-center justify-center px-4 text-center text-[12px] text-white/45">
+                          L&apos;image de la question apparaîtra ici.
+                        </div>
                       )}
                     </div>
                   </div>
