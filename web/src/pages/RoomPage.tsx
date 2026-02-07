@@ -1880,7 +1880,7 @@ useEffect(() => {
 
                 <div className="relative px-5 md:px-10 py-4" style={{ minHeight: "100%" }}>
                   <div className="flex items-start justify-center">
-                    <div className="w-full max-w-[760px]">
+                    <div className="w-[700px] max-w-full">
                       {gameCountdown !== null ? (
                         <div className="flex min-h-[360px] items-center justify-center">
                           <div className="countdown-pop text-[96px] font-extrabold text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.35)]">

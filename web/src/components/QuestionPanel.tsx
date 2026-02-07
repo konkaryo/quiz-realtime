@@ -164,26 +164,31 @@ export default function DailyQuestionPanel(props: Props) {
     }
   };
 
-  const topPanelClass = "relative w-full bg-[#1C1F2E] rounded-[9px] p-6";
+  const topPanelClass =
+    "relative z-10 h-full w-full rounded-[14px] border border-slate-700/70 bg-[#1C1F2E] px-5 py-5 md:px-8 md:py-6";
   const bottomPanelClass = "relative w-full bg-[#1C1F2E] rounded-[9px] p-3 md:p-4";
-  const panelStyle = { boxShadow: "4px 8px 8px rgba(0,0,0,0.6)" as const };
+  const topPanelStyle = { boxShadow: "none" as const };
+  const bottomPanelStyle = { boxShadow: "4px 8px 8px rgba(0,0,0,0.6)" as const };
 
   const showAnyFeedbackRow =
     !!feedback || showCorrectLabelCell || showFeedbackPoints || showResponseTime;
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
-      {/* PANNEAU SUPÉRIEUR */}
-      <div className={topPanelClass} style={panelStyle}>
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="font-medium text-slate-100 text-[14px] whitespace-nowrap">
+    <div className="mx-auto flex w-full max-w-6xl flex-col items-center">
+      <div className="mb-3 w-[700px] max-w-full space-y-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="font-medium text-[14px] whitespace-nowrap text-slate-100">
             Question {index + 1}
             {typeof totalQuestions === "number" && totalQuestions > 0 && (
               <span className="text-slate-500"> / {totalQuestions}</span>
             )}
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex justify-center md:order-3 md:justify-end">
+            <Lives lives={lives} total={totalLives} />
+          </div>
+
+          <div className="flex justify-start md:order-2 md:justify-center"> 
             {isReveal ? (
               <div className="text-[10px] font-semibold uppercase tracking-[0.30em] text-slate-300/80">
                 En attente...
@@ -193,12 +198,9 @@ export default function DailyQuestionPanel(props: Props) {
             )}
           </div>
 
-          <div className="flex justify-end">
-            <Lives lives={lives} total={totalLives} />
-          </div>
         </div>
 
-        <div className="mt-4 h-[2px] w-full rounded-full bg-[#13141F]">
+        <div className="h-[2px] w-full rounded-full bg-[#13141F]">
           <div
             className="h-full rounded-full transition-all"
             style={{
@@ -207,46 +209,27 @@ export default function DailyQuestionPanel(props: Props) {
             }}
           />
         </div>
+      </div>
 
-        <div className="mt-6 flex flex-col md:flex-row gap-4 md:min-h-[14rem]">
-          <div className={question.img ? "md:w-3/5" : "md:w-full"}>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex items-center gap-2 rounded-[9px] border border-slate-700/80 bg-[#13141F] px-3 py-1.5 text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-100">
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: themeMeta.color }}
-                />
-                {themeMeta.label}
-              </div>
-
-              {question.slotLabel && (
-                <span className="rounded-full bg-slate-900/90 px-3 py-1 text-[8px] font-semibold uppercase tracking-[0.22em] text-slate-200">
-                  {question.slotLabel}
-                </span>
-              )}
-            </div>
-
-            <p className="mt-4 text-[15px] font-semibold leading-snug text-slate-50">
+      {/* PANNEAU SUPÉRIEUR */}
+      <div className="relative w-[460px] max-w-full aspect-[2.24/1]">
+        <div
+          className="pointer-events-none absolute inset-0 translate-y-2.5 rounded-[14px]"
+          style={{ backgroundColor: themeMeta.color }}
+          aria-hidden="true"
+        />
+        <div className={topPanelClass} style={topPanelStyle}>
+          <div className="flex h-full items-center justify-center">
+            <p className="mx-auto max-h-[4.2em] max-w-[86%] overflow-hidden text-center text-[14px] font-semibold leading-snug text-slate-50 md:text-[17px]">
               {question.text}
             </p>
           </div>
-
-          {question.img && (
-            <div className="md:w-2/5">
-              <img
-                src={question.img}
-                alt=""
-                className="max-h-[168px] w-full rounded-[20px] object-cover"
-                loading="lazy"
-              />
-            </div>
-          )}
         </div>
       </div>
 
       {/* PANNEAU INFÉRIEUR – saisie + boutons */}
-      <div className="mt-3">
-        <div className={bottomPanelClass} style={panelStyle}>
+      <div className="mt-10 w-[700px] max-w-full">
+        <div className={bottomPanelClass} style={bottomPanelStyle}>
           <div className="flex flex-col md:flex-row md:items-center gap-3">
             <div className="flex-1">
               <div className="rounded-[9px] border border-slate-700/80 bg-black/70 px-2 py-0.5 shadow-inner shadow-black/80">
