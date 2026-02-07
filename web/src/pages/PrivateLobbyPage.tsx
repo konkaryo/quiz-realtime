@@ -50,21 +50,20 @@ type LobbyStatePayload = {
 
 // mêmes clés que l'enum Prisma Theme
 const THEME_OPTIONS = [
-  { key: "CINEMA_SERIES", label: "Cinéma & Séries" },
-  { key: "ARTS_CULTURE", label: "Arts & Culture" },
-  { key: "JEUX_BD", label: "Jeux & BD" },
-  { key: "GEOGRAPHIE", label: "Géographie" },
-  { key: "LANGUES_LITTERATURE", label: "Langues & Littérature" },
-  { key: "ECONOMIE_POLITIQUE", label: "Économie & Politique" },
-  { key: "GASTRONOMIE", label: "Gastronomie" },
-  { key: "CROYANCES", label: "Croyances" },
-  { key: "SPORT", label: "Sport" },
-  { key: "HISTOIRE", label: "Histoire" },
-  { key: "DIVERS", label: "Divers" },
-  { key: "SCIENCES_NATURELLES", label: "Sciences naturelles" },
-  { key: "SCIENCES_TECHNIQUES", label: "Sciences & Techniques" },
-  { key: "MUSIQUE", label: "Musique" },
-  { key: "ACTUALITES_MEDIAS", label: "Actualités & Médias" },
+  { key: "AUDIOVISUEL",   label: "Audiovisuel" },
+  { key: "ARTS",          label: "Arts" },
+  { key: "CROYANCES",     label: "Croyances" },
+  { key: "DIVERS",        label: "Divers" },
+  { key: "GASTRONOMIE",   label: "Gastronomie" },
+  { key: "GEOGRAPHIE",    label: "Géographie" },
+  { key: "HISTOIRE",      label: "Histoire" },
+  { key: "LITTERATURE",   label: "Littérature" },
+  { key: "MUSIQUE",       label: "Musique" },
+  { key: "NATURE",        label: "Nature" },
+  { key: "POP_CULTURE",   label: "Pop culture" },
+  { key: "SCIENCE",       label: "Science" },
+  { key: "SOCIETE",       label: "Société" },
+  { key: "SPORT",         label: "Sport" },
 ] as const;
 
 function clamp01(n: number) {

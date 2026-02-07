@@ -9,21 +9,20 @@ const prisma = new PrismaClient();
 
 /* ----------------------- mapping entêtes -> enum Theme ----------------------- */
 const THEME_BY_HEADER: Record<string, Theme> = {
-  "arts_culture":         "ARTS_CULTURE",
-  "cinema_series":        "CINEMA_SERIES",
+  "arts":                 "ARTS",
+  "audiovisuel":          "AUDIOVISUEL",
   "croyances":            "CROYANCES",
-  "economie_politique":   "ECONOMIE_POLITIQUE",
+  "divers":               "DIVERS",
   "gastronomie":          "GASTRONOMIE",
   "geographie":           "GEOGRAPHIE",
   "histoire":             "HISTOIRE",
-  "jeux_bd":              "JEUX_BD",
-  "langues_litterature":  "LANGUES_LITTERATURE",
-  "actualites_medias":    "ACTUALITES_MEDIAS",
+  "litterature":          "LITTERATURE",
   "musique":              "MUSIQUE",
-  "sciences_techniques":  "SCIENCES_TECHNIQUES",
-  "sciences_naturelles":  "SCIENCES_NATURELLES",
+  "nature":               "NATURE",
+  "pop_culture":          "POP_CULTURE",
+  "science":              "SCIENCE",
+  "societe":              "SOCIETE",
   "sport":                "SPORT",
-  "divers":               "DIVERS",
 };
 
 /* ----------------------------- CSV -> objets ----------------------------- */

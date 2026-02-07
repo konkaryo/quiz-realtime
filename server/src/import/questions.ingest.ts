@@ -33,20 +33,19 @@ type Parsed = {
 /* ----------------------- normalisation thèmes ----------------------- */
 const THEME_BY_NORM: Record<string, Theme> = {
 
-  "Actualités & Médias":    Theme.ACTUALITES_MEDIAS,
-  "Arts & Culture":         Theme.ARTS_CULTURE,
-  "Cinéma & Séries":        Theme.CINEMA_SERIES,
+  "Arts":                   Theme.ARTS,
+  "Audiovisuel":            Theme.AUDIOVISUEL,
   "Croyances":              Theme.CROYANCES,
   "Divers":                 Theme.DIVERS,
-  "Économie & Politique":   Theme.ECONOMIE_POLITIQUE,
   "Gastronomie":            Theme.GASTRONOMIE,
   "Géographie":             Theme.GEOGRAPHIE,
   "Histoire":               Theme.HISTOIRE,
-  "Jeux & BD":              Theme.JEUX_BD,
-  "Langues & Littérature":  Theme.LANGUES_LITTERATURE,
+  "Littérature":            Theme.LITTERATURE,
   "Musique":                Theme.MUSIQUE,
-  "Sciences & Techniques":  Theme.SCIENCES_TECHNIQUES,
-  "Sciences naturelles":    Theme.SCIENCES_NATURELLES,
+  "Nature":                 Theme.NATURE,
+  "Pop culture":            Theme.POP_CULTURE,
+  "Science":                Theme.SCIENCE,
+  "Société":                Theme.SOCIETE,
   "Sport":                  Theme.SPORT,
 };
 
