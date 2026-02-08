@@ -103,8 +103,6 @@ type Props = {
 export default function DailyQuestionPanel(props: Props) {
   const {
     question,
-    index,
-    totalQuestions,
     lives,
     totalLives,
     remainingSeconds,
@@ -165,7 +163,7 @@ export default function DailyQuestionPanel(props: Props) {
   };
 
   const topPanelClass =
-    "relative z-10 h-full w-full rounded-[14px] border border-slate-700/70 bg-[#1C1F2E] px-5 py-5 md:px-8 md:py-6";
+    "relative z-10 h-full w-full rounded-[14px] border border-slate-700/70 bg-[#1C1F2E] px-4 py-4 md:px-6 md:py-5";
   const bottomPanelClass = "relative w-full bg-[#1C1F2E] rounded-[9px] p-3 md:p-4";
   const topPanelStyle = { boxShadow: "none" as const };
   const bottomPanelStyle = { boxShadow: "4px 8px 8px rgba(0,0,0,0.6)" as const };
@@ -175,28 +173,15 @@ export default function DailyQuestionPanel(props: Props) {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col items-center">
-      <div className="mb-3 w-[700px] max-w-full space-y-3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="font-medium text-[14px] whitespace-nowrap text-slate-100">
-            Question {index + 1}
-            {typeof totalQuestions === "number" && totalQuestions > 0 && (
-              <span className="text-slate-500"> / {totalQuestions}</span>
-            )}
-          </div>
-
-          <div className="flex justify-center md:order-3 md:justify-end">
-            <Lives lives={lives} total={totalLives} />
-          </div>
-
-          <div className="flex justify-start md:order-2 md:justify-center"> 
-            {isReveal ? (
-              <div className="text-[10px] font-semibold uppercase tracking-[0.30em] text-slate-300/80">
-                En attente...
-              </div>
-            ) : (
-              <TimerBadge seconds={remainingSeconds} />
-            )}
-          </div>
+      <div className="w-[700px] max-w-full space-y-3">
+        <div className="flex justify-center"> 
+          {isReveal ? (
+            <div className="text-[10px] font-semibold uppercase tracking-[0.30em] text-slate-300/80">
+              En attente...
+            </div>
+          ) : (
+            <TimerBadge seconds={remainingSeconds} />
+          )}
 
         </div>
 
@@ -212,7 +197,7 @@ export default function DailyQuestionPanel(props: Props) {
       </div>
 
       {/* PANNEAU SUPÉRIEUR */}
-      <div className="relative w-[460px] max-w-full aspect-[2.24/1]">
+      <div className="relative mt-14 w-[430px] max-w-full aspect-[2.24/1]">
         <div
           className="pointer-events-none absolute inset-0 translate-y-2.5 rounded-[14px]"
           style={{ backgroundColor: themeMeta.color }}
@@ -228,7 +213,10 @@ export default function DailyQuestionPanel(props: Props) {
       </div>
 
       {/* PANNEAU INFÉRIEUR – saisie + boutons */}
-      <div className="mt-10 w-[700px] max-w-full">
+      <div className="mt-20 w-[700px] max-w-full">
+        <div className="mb-3 flex justify-center">
+          <Lives lives={lives} total={totalLives} />
+        </div>
         <div className={bottomPanelClass} style={bottomPanelStyle}>
           <div className="flex flex-col md:flex-row md:items-center gap-3">
             <div className="flex-1">
