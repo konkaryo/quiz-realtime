@@ -38,130 +38,34 @@ function Lives({ lives, total }: { lives: number; total: number }) {
   );
 }
 
-/**
- * Timer Overwatch :
- * - Violet custom (#6F5BD4) normalement
- * - Jaune sous 3 secondes
- * - Composants désaturés (ticks + arc)
- * - Texte blanc en normal, jaune en warning
- * - Reveal => timer affiché à 0
- */
-function OverwatchTimerBadge({
-  seconds,
-  progress,
-}: {
-  seconds: number | null;
-  progress: number;
-}) {
-  const s = Math.max(0, seconds ?? 0);
-  const warning = s <= 3;
-
-  const size = 92;
-  const cx = size / 2;
-  const cy = size / 2;
-
-  const tickCount = 60;
-  const rOuter = 40;
-  const tickLen = 7;
-  const tickWidth = 2;
-
-  const clamped = Math.max(0, Math.min(1, progress));
-  const litTicks = Math.round(clamped * tickCount);
-
-  const rArc = 28;
-  const circ = 2 * Math.PI * rArc;
-  const dash = circ * clamped;
-  const gap = circ - dash;
-
-  // 🎨 Couleur exacte demandée
-  const violet = "#3E4566";
-
-  // Texte
-  const textColor = warning ? "text-amber-300" : "text-white";
+function TimerBadge({ seconds }: { seconds: number | null }) {
+  const total = Math.max(0, seconds ?? 0);
+  const minutes = Math.floor(total / 60);
+  const secs = total % 60;
+  const display = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(
+    2,
+    "0",
+  )}`;
+  const urgent = total <= 5;
 
   return (
-    <div aria-live="polite" className="flex items-center justify-center">
-      <div className="relative">
-        <svg
-          width={size}
-          height={size}
-          className="drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
+    <div
+      aria-live="polite"
+      className="flex h-[72px] w-[214px] items-center justify-center rounded-[9px] border border-slate-700/70 bg-[#1C1F2E]"
+    >
+      <div className="flex h-full items-center justify-center">
+        <span
+          className={[
+            "font-semibold tabular-nums text-[22px] leading-none text-slate-100 md:text-[24px]",
+            urgent ? "text-rose-400 animate-pulse" : "",
+          ].join(" ")}
         >
-          {/* fond central */}
-          <circle cx={cx} cy={cy} r={34} className="fill-[#141827]" />
-
-          {/* arc intérieur */}
-          <g transform={`rotate(-90 ${cx} ${cy})`}>
-            {/* arc gris de fond */}
-            <circle
-              cx={cx}
-              cy={cy}
-              r={rArc}
-              className="fill-none stroke-slate-600/25"
-              strokeWidth={5}
-            />
-
-            {/* arc actif */}
-            <circle
-              cx={cx}
-              cy={cy}
-              r={rArc}
-              stroke={warning ? "#FCD34D" : violet}
-              opacity={0.7}
-              fill="none"
-              strokeWidth={5}
-              strokeLinecap="round"
-              strokeDasharray={`${dash} ${gap}`}
-            />
-          </g>
-
-          {/* ticks autour */}
-          <g>
-            {Array.from({ length: tickCount }).map((_, i) => {
-              const a = (i / tickCount) * Math.PI * 2 - Math.PI / 2;
-
-              const x1 = cx + Math.cos(a) * (rOuter - tickLen);
-              const y1 = cy + Math.sin(a) * (rOuter - tickLen);
-              const x2 = cx + Math.cos(a) * rOuter;
-              const y2 = cy + Math.sin(a) * rOuter;
-
-              const isLit = i < litTicks;
-
-              return (
-                <line
-                  key={i}
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke={isLit ? (warning ? "#FCD34D" : violet) : "#64748B"}
-                  opacity={isLit ? 0.7 : 0.15}
-                  strokeWidth={tickWidth}
-                  strokeLinecap="round"
-                />
-              );
-            })}
-          </g>
-        </svg>
-
-        {/* secondes au centre */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span
-            className={[
-              "font-semibold tabular-nums text-[22px] leading-none",
-              textColor,
-              warning ? "animate-pulse" : "",
-            ].join(" ")}
-          >
-            {s}
-          </span>
-        </div>
+          {display}
+        </span>
       </div>
     </div>
   );
 }
-
-/* ------------------- RESTE DU FICHIER STRICTEMENT ORIGINAL ------------------- */
 
 type Props = {
   question: QuestionLite;
@@ -206,7 +110,6 @@ export default function DailyQuestionPanel(props: Props) {
     lives,
     totalLives,
     remainingSeconds,
-    timerProgress,
     isReveal,
     isPlaying,
     inputRef,
@@ -233,15 +136,12 @@ export default function DailyQuestionPanel(props: Props) {
 
   const themeMeta = getThemeMeta(question.theme ?? null);
 
-  const showResponseTime =
-    feedbackWasCorrect === true && feedbackResponseMs !== null;
+  const showResponseTime = feedbackWasCorrect === true && feedbackResponseMs !== null;
   const showFeedbackPoints = typeof feedbackPoints === "number";
   const showCorrectLabelCell =
     !!feedbackCorrectLabel &&
     (answerMode === "text" ||
-      (answerMode === null &&
-        feedback === "Temps écoulé !" &&
-        !choicesRevealed));
+      (answerMode === null && feedback === "Temps écoulé !" && !choicesRevealed));
 
   const textInputDisabled = !isPlaying || textLocked;
   const textPlaceholder = textLocked
@@ -268,25 +168,24 @@ export default function DailyQuestionPanel(props: Props) {
 
   const topPanelClass =
     "relative z-10 h-full w-full rounded-[14px] border border-slate-700/70 bg-[#1C1F2E] px-3 py-3 md:px-5 md:py-4";
-  const bottomPanelClass =
-    "relative w-full bg-[#1C1F2E] rounded-[9px] p-3 md:p-4";
+  const bottomPanelClass = "relative w-full bg-[#1C1F2E] rounded-[9px] p-3 md:p-4";
   const topPanelStyle = { boxShadow: "none" as const };
-  const bottomPanelStyle = {
-    boxShadow: "4px 8px 8px rgba(0,0,0,0.6)" as const,
-  };
+  const bottomPanelStyle = { boxShadow: "4px 8px 8px rgba(0,0,0,0.6)" as const };
 
   const showAnyFeedbackRow =
     !!feedback || showCorrectLabelCell || showFeedbackPoints || showResponseTime;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col items-center">
-      {/* TIMER */}
       <div className="w-[700px] max-w-full">
         <div className="flex justify-center">
-          <OverwatchTimerBadge
-            seconds={isReveal ? 0 : remainingSeconds}
-            progress={isReveal ? 0 : timerProgress}
-          />
+          {isReveal ? (
+            <div className="flex h-[72px] w-[214px] items-center justify-center rounded-[9px] border border-slate-700/70 bg-[#1C1F2E] text-[10px] font-semibold uppercase tracking-[0.30em] text-slate-300/80">
+              En attente...
+            </div>
+          ) : (
+            <TimerBadge seconds={remainingSeconds} />
+          )}
         </div>
       </div>
 
@@ -311,7 +210,6 @@ export default function DailyQuestionPanel(props: Props) {
         <div className="mb-3 flex justify-center">
           <Lives lives={lives} total={totalLives} />
         </div>
-
         <div className={bottomPanelClass} style={bottomPanelStyle}>
           <div className="flex flex-col md:flex-row md:items-center gap-3">
             <div className="flex-1">
@@ -372,11 +270,7 @@ export default function DailyQuestionPanel(props: Props) {
                       : "text-red-500",
                   ].join(" ")}
                 >
-                  {feedback === "Temps écoulé !"
-                    ? "⏳"
-                    : feedback.includes("Bravo")
-                    ? "✅"
-                    : "❌"}
+                  {feedback === "Temps écoulé !" ? "⏳" : feedback.includes("Bravo") ? "✅" : "❌"}
                 </span>
                 <span className="font-medium">{feedback}</span>
               </div>

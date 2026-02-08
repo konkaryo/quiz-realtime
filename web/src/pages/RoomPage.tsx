@@ -1919,6 +1919,7 @@ useEffect(() => {
                             feedbackWasCorrect={feedbackWasCorrect}
                             feedbackCorrectLabel={feedbackCorrectLabel}
                             feedbackPoints={feedbackPoints}
+                            reserveFeedbackSpace
                             answerMode={answerMode}
                             choicesRevealed={choicesRevealed}
                             showChoices={showChoices}
