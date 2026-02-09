@@ -1,6 +1,5 @@
 // web/src/components/QuestionPanel.tsx
 import { RefObject, KeyboardEvent } from "react";
-import { getThemeMeta } from "../lib/themeMeta";
 
 export type Choice = { id: string; label: string };
 
@@ -21,14 +20,16 @@ function Lives({ lives, total }: { lives: number; total: number }) {
       ❤️
     </span>
   ));
-  const empty = Array.from({ length: Math.max(0, total - lives) }).map((_, i) => (
-    <span
-      key={`e${i}`}
-      className="text-[14px] leading-none opacity-25 whitespace-nowrap"
-    >
-      ❤️
-    </span>
-  ));
+  const empty = Array.from({ length: Math.max(0, total - lives) }).map(
+    (_, i) => (
+      <span
+        key={`e${i}`}
+        className="text-[14px] leading-none opacity-25 whitespace-nowrap"
+      >
+        ❤️
+      </span>
+    )
+  );
 
   return (
     <div className="inline-flex items-center whitespace-nowrap gap-1 px-4 py-1.5">
@@ -169,7 +170,7 @@ type Props = {
   totalQuestions: number | null;
   lives: number;
   totalLives: number;
-
+  playerScore?: number;
   remainingSeconds: number | null;
   timerProgress: number;
   isReveal: boolean;
@@ -205,6 +206,7 @@ export default function DailyQuestionPanel(props: Props) {
     question,
     lives,
     totalLives,
+    playerScore = 0,
     remainingSeconds,
     timerProgress,
     isReveal,
@@ -230,8 +232,6 @@ export default function DailyQuestionPanel(props: Props) {
     onSelectChoice,
     questionProgress,
   } = props;
-
-  const themeMeta = getThemeMeta(question.theme ?? null);
 
   const showResponseTime =
     feedbackWasCorrect === true && feedbackResponseMs !== null;
@@ -282,7 +282,57 @@ export default function DailyQuestionPanel(props: Props) {
     <div className="mx-auto flex w-full max-w-6xl flex-col items-center">
       {/* TIMER */}
       <div className="w-[700px] max-w-full">
-        <div className="flex justify-center">
+        <div className="relative flex justify-center">
+          <div
+            className="pointer-events-none absolute top-1/2 h-[72px] w-[152px] drop-shadow-[0_8px_14px_rgba(0,0,0,0.4)]"
+            style={{
+              left: "50%",
+              transform: "translate(calc(-100% - 56px), -50%)",
+            }}
+            aria-label="Score du joueur"
+          >
+            <svg
+              viewBox="0 0 152 72"
+              className="h-full w-full"
+              aria-hidden="true"
+              focusable="false"
+            >
+              {/* ✅ Concave + rayon plus grand (R=48) + aucune “pointe” :
+                  On trace la bordure en UN SEUL path, avec l’arc sur la droite
+                  qui “rentre” (bulge vers la gauche) grâce au sweep=0. */}
+              <path
+                d="
+                  M14 0
+                  H152
+                  A48 48 0 0 0 152 72
+                  H14
+                  A14 14 0 0 1 0 58
+                  V14
+                  A14 14 0 0 1 14 0
+                  Z
+                "
+                fill="#1C1F2E"
+                stroke="#334155"
+                strokeOpacity="0.6"
+                strokeLinejoin="round"
+              />
+            </svg>
+
+            <div className="absolute inset-0 flex items-center px-4">
+              <div className="leading-tight">
+                <div className="text-[9px] font-semibold uppercase tracking-[0.22em] text-white/55">
+                  Score
+                </div>
+                <div className="mt-1 tabular-nums text-[22px] font-extrabold text-white">
+                  {playerScore}
+                  <span className="ml-1 align-middle text-[10px] font-semibold text-white/60">
+                    pts
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <OverwatchTimerBadge
             seconds={isReveal ? 0 : remainingSeconds}
             progress={isReveal ? 0 : timerProgress}
@@ -294,7 +344,7 @@ export default function DailyQuestionPanel(props: Props) {
       <div className="relative mt-14 w-[430px] max-w-full aspect-[2.24/1]">
         <div
           className="pointer-events-none absolute inset-0 translate-y-2 rounded-[14px]"
-          style={{ backgroundColor: themeMeta.color }}
+          style={{ backgroundColor: "#6F5BD4" }}
           aria-hidden="true"
         />
         <div className={topPanelClass} style={topPanelStyle}>
@@ -336,7 +386,7 @@ export default function DailyQuestionPanel(props: Props) {
               <button
                 onClick={onSubmitText}
                 disabled={textInputDisabled}
-                className="rounded-[6px] bg-[#2D7CFF] px-4 py-2 text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-50 hover:brightness-110 disabled:opacity-60"
+                className="rounded-[6px] bg-[#6F5BD4] px-4 py-2 text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-50 hover:brightness-110 disabled:opacity-60"
               >
                 Valider
               </button>
