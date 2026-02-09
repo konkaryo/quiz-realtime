@@ -1,5 +1,6 @@
 // web/src/components/QuestionPanel.tsx
-import { RefObject, KeyboardEvent } from "react";
+import { RefObject, KeyboardEvent, useRef } from "react";
+import { ThumbsUp, ThumbsDown } from "lucide-react";
 
 export type Choice = { id: string; label: string };
 
@@ -32,7 +33,7 @@ function Lives({ lives, total }: { lives: number; total: number }) {
   );
 
   return (
-    <div className="inline-flex items-center whitespace-nowrap gap-1 px-4 py-1.5">
+    <div className="flex items-center justify-start gap-0.5">
       {full}
       {empty}
     </div>
@@ -46,6 +47,11 @@ function Lives({ lives, total }: { lives: number; total: number }) {
  * - Composants désaturés (ticks + arc)
  * - Texte blanc en normal, jaune en warning
  * - Reveal => timer affiché à 0
+ *
+ * ✅ Segmentation FIXE :
+ * - Le nombre total de segments = nombre total de secondes du timer
+ * - Ce total est "gelé" au départ d'une question (ne varie plus pendant le compte à rebours)
+ * - Les segments allumés = secondes restantes (1 segment = 1 seconde)
  */
 function OverwatchTimerBadge({
   seconds,
@@ -54,31 +60,52 @@ function OverwatchTimerBadge({
   seconds: number | null;
   progress: number;
 }) {
-  const s = Math.max(0, seconds ?? 0);
+  const s = Math.max(0, Math.floor(seconds ?? 0));
   const warning = s <= 3;
 
   const size = 92;
   const cx = size / 2;
   const cy = size / 2;
 
-  const tickCount = 60;
-  const rOuter = 40;
-  const tickLen = 7;
-  const tickWidth = 2;
+  const totalSecondsRef = useRef<number | null>(null);
 
-  const clamped = Math.max(0, Math.min(1, progress));
-  const litTicks = Math.round(clamped * tickCount);
+  if (seconds !== null) {
+    const cur = Math.max(0, Math.floor(seconds));
+    const prev = totalSecondsRef.current;
+    if (prev === null) {
+      totalSecondsRef.current = Math.max(1, cur);
+    } else {
+      const p = Math.max(0, Math.min(1, progress));
+      if (cur > prev || p >= 0.98) {
+        totalSecondsRef.current = Math.max(1, cur);
+      }
+    }
+  }
+
+  const totalSeconds = Math.max(1, totalSecondsRef.current ?? 60);
+  const tickCount = totalSeconds;
+  const litTicks = Math.max(0, Math.min(tickCount, s));
 
   const rArc = 28;
   const circ = 2 * Math.PI * rArc;
-  const dash = circ * clamped;
-  const gap = circ - dash;
 
-  // 🎨 Couleur exacte demandée
+  const gapRatio = 0.14;
+  const segLen = circ / tickCount;
+  const dashLen = segLen * (1 - gapRatio);
+  const gapLen = segLen - dashLen;
+
+  const dasharrayBg = Array.from({ length: tickCount })
+    .flatMap(() => [dashLen, gapLen])
+    .join(" ");
+
+  const dasharrayFg = Array.from({ length: tickCount })
+    .flatMap((_, i) => {
+      const isLit = i < litTicks;
+      return isLit ? [dashLen, gapLen] : [0, segLen];
+    })
+    .join(" ");
+
   const violet = "#3E4566";
-
-  // Texte
-  const textColor = warning ? "text-amber-300" : "text-white";
 
   return (
     <div aria-live="polite" className="flex items-center justify-center">
@@ -88,72 +115,37 @@ function OverwatchTimerBadge({
           height={size}
           className="drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
         >
-          {/* fond central */}
           <circle cx={cx} cy={cy} r={34} className="fill-[#141827]" />
 
-          {/* arc intérieur */}
           <g transform={`rotate(-90 ${cx} ${cy})`}>
-            {/* arc gris de fond */}
             <circle
               cx={cx}
               cy={cy}
               r={rArc}
-              className="fill-none stroke-slate-600/25"
+              className="fill-none"
+              stroke="#64748B"
+              opacity={0.18}
               strokeWidth={5}
+              strokeLinecap="butt"
+              strokeDasharray={dasharrayBg}
             />
 
-            {/* arc actif */}
             <circle
               cx={cx}
               cy={cy}
               r={rArc}
-              stroke={warning ? "#FCD34D" : violet}
-              opacity={0.7}
               fill="none"
+              stroke={warning ? "#FCD34D" : violet}
+              opacity={0.8}
               strokeWidth={5}
-              strokeLinecap="round"
-              strokeDasharray={`${dash} ${gap}`}
+              strokeLinecap="butt"
+              strokeDasharray={dasharrayFg}
             />
-          </g>
-
-          {/* ticks autour */}
-          <g>
-            {Array.from({ length: tickCount }).map((_, i) => {
-              const a = (i / tickCount) * Math.PI * 2 - Math.PI / 2;
-
-              const x1 = cx + Math.cos(a) * (rOuter - tickLen);
-              const y1 = cy + Math.sin(a) * (rOuter - tickLen);
-              const x2 = cx + Math.cos(a) * rOuter;
-              const y2 = cy + Math.sin(a) * rOuter;
-
-              const isLit = i < litTicks;
-
-              return (
-                <line
-                  key={i}
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke={isLit ? (warning ? "#FCD34D" : violet) : "#64748B"}
-                  opacity={isLit ? 0.7 : 0.15}
-                  strokeWidth={tickWidth}
-                  strokeLinecap="round"
-                />
-              );
-            })}
           </g>
         </svg>
 
-        {/* secondes au centre */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span
-            className={[
-              "font-semibold tabular-nums text-[22px] leading-none",
-              textColor,
-              warning ? "animate-pulse" : "",
-            ].join(" ")}
-          >
+          <span className="font-semibold tabular-nums text-[22px] leading-none text-white">
             {s}
           </span>
         </div>
@@ -217,6 +209,7 @@ export default function DailyQuestionPanel(props: Props) {
     onChangeText,
     onSubmitText,
     onShowChoices,
+    // ✅ on ne les affiche plus, mais on garde les props pour compat
     feedback,
     feedbackResponseMs,
     feedbackWasCorrect,
@@ -235,7 +228,9 @@ export default function DailyQuestionPanel(props: Props) {
 
   const showResponseTime =
     feedbackWasCorrect === true && feedbackResponseMs !== null;
+
   const showFeedbackPoints = typeof feedbackPoints === "number";
+
   const showCorrectLabelCell =
     !!feedbackCorrectLabel &&
     (answerMode === "text" ||
@@ -244,9 +239,11 @@ export default function DailyQuestionPanel(props: Props) {
         !choicesRevealed));
 
   const textInputDisabled = !isPlaying || textLocked;
+
   const textPlaceholder = textLocked
     ? "Choisissez une réponse..."
     : "Tapez votre réponse ici...";
+
   const textInputColorClass = textInputDisabled
     ? "text-slate-400 caret-slate-600 placeholder:text-slate-500/60"
     : "text-slate-50 caret-[#cccccc] placeholder:text-slate-500/70";
@@ -267,68 +264,52 @@ export default function DailyQuestionPanel(props: Props) {
   };
 
   const topPanelClass =
-    "relative z-10 h-full w-full rounded-[14px] border border-slate-700/70 bg-[#1C1F2E] px-3 py-3 md:px-5 md:py-4";
+    "relative z-10 h-full w-full rounded-[14px] border border-slate-700/70 bg-[#1C1F2E] px-3 py-1 md:px-5 md:py-2";
+
   const bottomPanelClass =
     "relative w-full bg-[#1C1F2E] rounded-[9px] p-3 md:p-4";
+
   const topPanelStyle = { boxShadow: "none" as const };
+
   const bottomPanelStyle = {
     boxShadow: "4px 8px 8px rgba(0,0,0,0.6)" as const,
   };
 
-  const showAnyFeedbackRow =
-    !!feedback || showCorrectLabelCell || showFeedbackPoints || showResponseTime;
+  // ✅ Plus aucun affichage du feedback texte => on ne réserve jamais la ligne pour "feedback"
+  const showAnyFeedbackRow = showFeedbackPoints || showResponseTime;
+
+  const isQcmMode = showChoices && !!choices;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col items-center">
       {/* TIMER */}
       <div className="w-[700px] max-w-full">
         <div className="relative flex justify-center">
+          {/* SCORE (smaller, no "Score" label — timer position unchanged) */}
           <div
-            className="pointer-events-none absolute top-1/2 h-[72px] w-[152px] drop-shadow-[0_8px_14px_rgba(0,0,0,0.4)]"
+            className="pointer-events-none absolute top-1/2"
             style={{
               left: "50%",
               transform: "translate(calc(-100% - 56px), -50%)",
             }}
             aria-label="Score du joueur"
           >
-            <svg
-              viewBox="0 0 152 72"
-              className="h-full w-full"
-              aria-hidden="true"
-              focusable="false"
+            <div
+              className="
+                h-[40px] w-[88px]
+                rounded-[10px]
+                bg-[#1C1F2E]
+                flex items-center justify-center
+                px-2
+              "
             >
-              {/* ✅ Concave + rayon plus grand (R=48) + aucune “pointe” :
-                  On trace la bordure en UN SEUL path, avec l’arc sur la droite
-                  qui “rentre” (bulge vers la gauche) grâce au sweep=0. */}
-              <path
-                d="
-                  M14 0
-                  H152
-                  A48 48 0 0 0 152 72
-                  H14
-                  A14 14 0 0 1 0 58
-                  V14
-                  A14 14 0 0 1 14 0
-                  Z
-                "
-                fill="#1C1F2E"
-                stroke="#334155"
-                strokeOpacity="0.6"
-                strokeLinejoin="round"
-              />
-            </svg>
-
-            <div className="absolute inset-0 flex items-center px-4">
-              <div className="leading-tight">
-                <div className="text-[9px] font-semibold uppercase tracking-[0.22em] text-white/55">
-                  Score
-                </div>
-                <div className="mt-1 tabular-nums text-[22px] font-extrabold text-white">
+              <div className="flex items-baseline gap-1.5">
+                <div className="tabular-nums text-[18px] font-extrabold text-white leading-none">
                   {playerScore}
-                  <span className="ml-1 align-middle text-[10px] font-semibold text-white/60">
-                    pts
-                  </span>
                 </div>
+                <span className="text-[9px] font-semibold text-white/60">
+                  pts
+                </span>
               </div>
             </div>
           </div>
@@ -342,141 +323,50 @@ export default function DailyQuestionPanel(props: Props) {
 
       {/* PANNEAU SUPÉRIEUR */}
       <div className="relative mt-14 w-[430px] max-w-full aspect-[2.24/1]">
+        {/* NOM DU THÈME */}
+        {question.theme && (
+          <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-center">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/70">
+              {question.theme}
+            </div>
+          </div>
+        )}
+
+        {/* BOUTONS THUMB UP / DOWN */}
+        <div className="absolute top-3 -right-12 flex flex-col gap-2 z-20">
+          <button className="group p-2 transition">
+            <ThumbsUp
+              size={18}
+              className="stroke-white/50 fill-none group-hover:stroke-white group-hover:fill-white transition"
+            />
+          </button>
+
+          <button className="group p-2 transition">
+            <ThumbsDown
+              size={18}
+              className="stroke-white/50 fill-none group-hover:stroke-white group-hover:fill-white transition"
+            />
+          </button>
+        </div>
+
         <div
           className="pointer-events-none absolute inset-0 translate-y-2 rounded-[14px]"
           style={{ backgroundColor: "#6F5BD4" }}
-          aria-hidden="true"
         />
         <div className={topPanelClass} style={topPanelStyle}>
           <div className="flex h-full items-center justify-center">
-            <p className="mx-auto max-h-[4.2em] max-w-[86%] overflow-hidden text-center text-[14px] font-semibold leading-snug text-slate-50 md:text-[17px]">
+            <p className="mx-auto max-h-[8.4em] max-w-[86%] overflow-hidden text-center text-[13px] font-semibold leading-snug text-slate-50 md:text-[16px]">
               {question.text}
             </p>
           </div>
         </div>
       </div>
 
-      {/* PANNEAU INFÉRIEUR – saisie + boutons */}
-      <div className="mt-20 w-[700px] max-w-full">
-        <div className="mb-3 flex justify-center">
-          <Lives lives={lives} total={totalLives} />
-        </div>
-
-        <div className={bottomPanelClass} style={bottomPanelStyle}>
-          <div className="flex flex-col md:flex-row md:items-center gap-3">
-            <div className="flex-1">
-              <div className="rounded-[9px] border border-slate-700/80 bg-black/70 px-2 py-0.5 shadow-inner shadow-black/80">
-                <input
-                  ref={inputRef}
-                  value={textAnswer}
-                  onChange={(e) => onChangeText(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  disabled={textInputDisabled}
-                  className={[
-                    "w-full bg-transparent px-2 py-2 text-[11px] font-medium focus:outline-none",
-                    textInputColorClass,
-                    textInputDisabled ? "opacity-60 cursor-not-allowed" : "",
-                  ].join(" ")}
-                  placeholder={textPlaceholder}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 whitespace-nowrap">
-              <button
-                onClick={onSubmitText}
-                disabled={textInputDisabled}
-                className="rounded-[6px] bg-[#6F5BD4] px-4 py-2 text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-50 hover:brightness-110 disabled:opacity-60"
-              >
-                Valider
-              </button>
-
-              <button
-                onClick={onShowChoices}
-                disabled={textInputDisabled}
-                className="rounded-[6px] bg-[#15171E] px-3.5 py-2 text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-50 hover:brightness-110 disabled:opacity-60"
-              >
-                Propositions
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* FEEDBACKS SUR UNE LIGNE, ALIGNÉS À GAUCHE */}
-        {(showAnyFeedbackRow || reserveFeedbackSpace) && (
-          <div
-            className={[
-              "mt-2 flex flex-wrap items-start justify-start gap-2",
-              reserveFeedbackSpace ? "min-h-[38px]" : "",
-            ].join(" ")}
-          >
-            {feedback && (
-              <div className="inline-flex items-center gap-2 rounded-[9px] border border-slate-700/80 bg-black/80 px-3 py-1.5 text-[11px] text-slate-100 shadow-inner shadow-black/80">
-                <span
-                  className={[
-                    "text-[12px]",
-                    feedback === "Temps écoulé !"
-                      ? "text-amber-300"
-                      : feedback.includes("Bravo")
-                      ? "text-emerald-400"
-                      : "text-red-500",
-                  ].join(" ")}
-                >
-                  {feedback === "Temps écoulé !"
-                    ? "⏳"
-                    : feedback.includes("Bravo")
-                    ? "✅"
-                    : "❌"}
-                </span>
-                <span className="font-medium">{feedback}</span>
-              </div>
-            )}
-
-            {showCorrectLabelCell && (
-              <div className="inline-flex items-center rounded-[9px] bg-emerald-600 px-3 py-1.5 text-slate-50">
-                <div className="flex flex-col leading-tight">
-                  <span className="text-[8px] font-semibold uppercase tracking-[0.22em] text-emerald-100 whitespace-nowrap">
-                    Bonne réponse
-                  </span>
-                  <span className="mt-1 text-[10px] font-medium whitespace-nowrap">
-                    {feedbackCorrectLabel}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {showFeedbackPoints && (
-              <div className="inline-flex items-center rounded-[9px] border border-slate-700/80 bg-black/80 px-3 py-1.5 text-[10px] text-slate-100 shadow-inner shadow-black/80">
-                <div className="flex flex-col leading-tight">
-                  <span className="text-[8px] font-semibold uppercase tracking-[0.22em] text-slate-400 whitespace-nowrap">
-                    Points gagnés
-                  </span>
-                  <span className="mt-1 font-mono text-[11px] text-slate-50 whitespace-nowrap">
-                    + {feedbackPoints.toLocaleString("fr-FR")} pts
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {showResponseTime && feedbackResponseMs !== null && (
-              <div className="inline-flex items-center rounded-[9px] border border-slate-700/80 bg-black/80 px-3 py-1.5 text-[10px] text-slate-100 shadow-inner shadow-black/80">
-                <div className="flex flex-col leading-tight">
-                  <span className="text-[8px] font-semibold uppercase tracking-[0.22em] text-slate-400 whitespace-nowrap">
-                    Temps de réponse
-                  </span>
-                  <span className="mt-1 font-mono text-[11px] text-slate-50 whitespace-nowrap">
-                    {feedbackResponseMs.toLocaleString("fr-FR")} ms
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* QCM */}
-        {showChoices && choices && (
-          <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {choices.map((choice) => {
+      {/* ✅ MODE QCM : uniquement les cellules (moins longues + texte centré) */}
+      {isQcmMode ? (
+        <div className="mt-20 w-[640px] max-w-full flex justify-center">
+          <div className="grid gap-3 md:grid-cols-2 w-full max-w-[520px]">
+            {choices!.map((choice) => {
               const isSelected = selectedChoice === choice.id;
               const isCorrect = correctChoiceId === choice.id;
 
@@ -484,14 +374,13 @@ export default function DailyQuestionPanel(props: Props) {
                 <button
                   key={choice.id}
                   onClick={() => onSelectChoice(choice)}
-                  disabled={!isPlaying && !isSelected}
                   className={[
-                    "rounded-[9px] border px-3 py-2 text-left text-[11px] font-medium transition",
+                    "rounded-[10px] border px-4 py-3 text-center text-[12px] font-semibold transition",
                     isCorrect
                       ? "border-emerald-600 bg-emerald-600 text-slate-50"
                       : isSelected
                       ? "border-red-500 bg-red-500 text-slate-50"
-                      : "border-slate-700/90 bg-black/75 text-slate-50 hover:bg-slate-900",
+                      : "border-slate-700/70 bg-[#1C1F2E] text-slate-50 hover:bg-[#23263A]",
                   ].join(" ")}
                 >
                   {choice.label}
@@ -499,10 +388,104 @@ export default function DailyQuestionPanel(props: Props) {
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        /* MODE TEXTE : panneau inférieur original (boutons intégrés) */
+        <div className="mt-20 w-[580px] max-w-full">
+          {/* ✅ Coeurs AU-DESSUS du panneau, horizontaux, alignés à gauche */}
+          <div className="mx-auto w-full mb-3 -mt-1 pl-2 flex justify-start">
+            <Lives lives={lives} total={totalLives} />
+          </div>
 
-      {/* progression des questions */}
+          {/* Panneau de saisie */}
+          <div className="relative mx-auto w-full">
+            <div className={bottomPanelClass} style={bottomPanelStyle}>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 rounded-[9px] border border-slate-700/80 bg-black/70 px-2 py-0.5 shadow-inner shadow-black/80">
+                  <input
+                    ref={inputRef}
+                    value={textAnswer}
+                    onChange={(e) => onChangeText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={textInputDisabled}
+                    className={[
+                      "w-full bg-transparent px-2 py-2 text-[13px] font-medium focus:outline-none",
+                      textInputColorClass,
+                      textInputDisabled ? "opacity-60 cursor-not-allowed" : "",
+                    ].join(" ")}
+                    placeholder={textPlaceholder}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={onSubmitText}
+                    disabled={textInputDisabled}
+                    className="rounded-[6px] bg-[#6F5BD4] px-4 py-2 text-[11px] font-semibold tracking-[0.12em] text-slate-50 hover:brightness-110 disabled:opacity-60"
+                  >
+                    Valider
+                  </button>
+
+                  <button
+                    onClick={onShowChoices}
+                    disabled={textInputDisabled}
+                    className="
+                      rounded-[6px]
+                      border border-slate-600/60
+                      bg-[#1A1D28]
+                      px-4 py-2
+                      text-[11px]
+                      font-semibold tracking-[0.12em]
+                      text-white/85
+                      hover:text-white
+                      hover:border-slate-500
+                      hover:bg-[#23263A]
+                      transition
+                      disabled:opacity-60
+                    "
+                  >
+                    Propositions
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {showCorrectLabelCell && (
+            <div className="mt-4 flex items-center gap-3 whitespace-nowrap">
+              <div className="inline-flex items-center rounded-[6px] border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-slate-50">
+                {feedbackCorrectLabel}
+              </div>
+            </div>
+          )}
+
+          {(showAnyFeedbackRow || reserveFeedbackSpace) && (
+            <div className="mt-2 flex flex-wrap items-start justify-start gap-2">
+              {/* ✅ PLUS AUCUN FEEDBACK TEXTE ICI */}
+
+              {showFeedbackPoints && (
+                <div className="inline-flex items-center gap-2 rounded-[9px] border border-slate-700/80 bg-black/80 px-3 py-1.5 text-[11px] text-slate-100">
+                  <span className="text-[12px]">⭐</span>
+                  <span className="font-medium">
+                    {feedbackPoints! >= 0 ? "+" : ""}
+                    {feedbackPoints} pts
+                  </span>
+                </div>
+              )}
+
+              {showResponseTime && (
+                <div className="inline-flex items-center gap-2 rounded-[9px] border border-slate-700/80 bg-black/80 px-3 py-1.5 text-[11px] text-slate-100">
+                  <span className="text-[12px]">⚡</span>
+                  <span className="font-medium">
+                    {Math.max(0, feedbackResponseMs!)} ms
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {questionProgress.length > 0 && (
         <div className="mt-4 flex flex-wrap justify-center gap-1.5">
           {questionProgress.map((state, i) => {

@@ -139,7 +139,7 @@ function PlayerCell({
           isSelf
             ? {
                 background:
-                  "linear-gradient(to bottom, #C51D71 0%, #6F0D6F 100%)",
+                  "linear-gradient(to bottom, #6B379F 0%, #241668 100%)",
               }
             : undefined
         }
