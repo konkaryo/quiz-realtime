@@ -218,6 +218,7 @@ export default function RoomPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [correctId, setCorrectId] = useState<string | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
+  const [wrongTextAnswer, setWrongTextAnswer] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackResponseMs, setFeedbackResponseMs] = useState<number | null>(
     null
@@ -233,6 +234,7 @@ export default function RoomPage() {
   const [choicesRevealed, setChoicesRevealed] = useState(false);
   const [pending, setPending] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const lastSubmittedTextRef = useRef<string>("");
   const answerModeRef = useRef<"text" | "choice" | null>(null);
   const feedbackWasCorrectRef = useRef<boolean | null>(null);
   const indexRef = useRef(0);
@@ -443,6 +445,8 @@ export default function RoomPage() {
         setMcChoices(null);
         setSelected(null);
         setTextAnswer("");
+        setWrongTextAnswer(null);
+        lastSubmittedTextRef.current = "";
         setCorrectId(null);
         setFeedback(null);
         setFeedbackResponseMs(null);
@@ -490,6 +494,8 @@ export default function RoomPage() {
           return null;
         });
         setTextAnswer("");
+        setWrongTextAnswer(null);
+        lastSubmittedTextRef.current = "";
         setFeedback(null);
         setFeedbackResponseMs(null);
         setFeedbackWasCorrect(null);
@@ -538,6 +544,13 @@ export default function RoomPage() {
         let nextLives = livesRef.current;
 
         if (mcChoicesRef.current === null) {
+          if (!p.correct) {
+            const attempt = lastSubmittedTextRef.current.trim();
+            setWrongTextAnswer(attempt || null);
+          } else {
+            setWrongTextAnswer(null);
+            lastSubmittedTextRef.current = "";
+          }
           if (p.correct) {
             setLives(() => {
               livesRef.current = 0;
@@ -672,6 +685,8 @@ export default function RoomPage() {
       setMcChoices(null);
       setSelected(null);
       setTextAnswer("");
+      setWrongTextAnswer(null);
+      lastSubmittedTextRef.current = "";
       setCorrectId(null);
       setFeedback(null);
       setFeedbackResponseMs(null);
@@ -1402,6 +1417,7 @@ useEffect(() => {
     const t = (textAnswer || "").trim();
     if (!t) return;
 
+    lastSubmittedTextRef.current = t;
     setPending(true);
     setAnswerMode("text");
     socket.emit(
@@ -1409,7 +1425,10 @@ useEffect(() => {
       { text: t },
       (res: { ok: boolean; reason?: string }) => {
         setPending(false);
-        if (!res?.ok && res?.reason === "no-lives") setLives(0);
+        if (!res?.ok && res?.reason === "no-lives") {
+          setLives(0);
+          lastSubmittedTextRef.current = "";
+        }
       }
     );
   };
@@ -1910,6 +1929,7 @@ useEffect(() => {
                             isPlaying={isPlaying}
                             inputRef={inputRef}
                             textAnswer={textAnswer}
+                            wrongTextAnswer={wrongTextAnswer}
                             textLocked={textLocked}
                             onChangeText={setTextAnswer}
                             onSubmitText={sendText}

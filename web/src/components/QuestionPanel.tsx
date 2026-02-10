@@ -191,6 +191,7 @@ type Props = {
   onSelectChoice: (choice: Choice) => void;
 
   questionProgress: QuestionProgress[];
+  wrongTextAnswer?: string | null;
 };
 
 export default function DailyQuestionPanel(props: Props) {
@@ -198,7 +199,7 @@ export default function DailyQuestionPanel(props: Props) {
     question,
     lives,
     totalLives,
-    playerScore = 0,
+    playerScore = 0, // (gardé pour compat, mais plus affiché ici)
     remainingSeconds,
     timerProgress,
     isReveal,
@@ -224,12 +225,8 @@ export default function DailyQuestionPanel(props: Props) {
     correctChoiceId,
     onSelectChoice,
     questionProgress,
+    wrongTextAnswer = null,
   } = props;
-
-  const showResponseTime =
-    feedbackWasCorrect === true && feedbackResponseMs !== null;
-
-  const showFeedbackPoints = typeof feedbackPoints === "number";
 
   const showCorrectLabelCell =
     !!feedbackCorrectLabel &&
@@ -275,45 +272,27 @@ export default function DailyQuestionPanel(props: Props) {
     boxShadow: "4px 8px 8px rgba(0,0,0,0.6)" as const,
   };
 
-  // ✅ Plus aucun affichage du feedback texte => on ne réserve jamais la ligne pour "feedback"
-  const showAnyFeedbackRow = showFeedbackPoints || showResponseTime;
-
   const isQcmMode = showChoices && !!choices;
+
+  // ✅ meta correct (texte uniquement)
+  const showCorrectMeta = feedbackWasCorrect === true;
+  const pointsText =
+    showCorrectMeta && typeof feedbackPoints === "number"
+      ? `+${Math.max(0, feedbackPoints)} pts`
+      : null;
+  const timeText =
+    showCorrectMeta && typeof feedbackResponseMs === "number"
+      ? `${Math.max(0, feedbackResponseMs)} ms`
+      : null;
+
+  const showLeft = showCorrectMeta && !!pointsText;
+  const showRight = showCorrectMeta && !!timeText;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col items-center">
       {/* TIMER */}
       <div className="w-[700px] max-w-full">
         <div className="relative flex justify-center">
-          {/* SCORE (smaller, no "Score" label — timer position unchanged) */}
-          <div
-            className="pointer-events-none absolute top-1/2"
-            style={{
-              left: "50%",
-              transform: "translate(calc(-100% - 56px), -50%)",
-            }}
-            aria-label="Score du joueur"
-          >
-            <div
-              className="
-                h-[40px] w-[88px]
-                rounded-[10px]
-                bg-[#1C1F2E]
-                flex items-center justify-center
-                px-2
-              "
-            >
-              <div className="flex items-baseline gap-1.5">
-                <div className="tabular-nums text-[18px] font-extrabold text-white leading-none">
-                  {playerScore}
-                </div>
-                <span className="text-[9px] font-semibold text-white/60">
-                  pts
-                </span>
-              </div>
-            </div>
-          </div>
-
           <OverwatchTimerBadge
             seconds={isReveal ? 0 : remainingSeconds}
             progress={isReveal ? 0 : timerProgress}
@@ -393,8 +372,15 @@ export default function DailyQuestionPanel(props: Props) {
         /* MODE TEXTE : panneau inférieur original (boutons intégrés) */
         <div className="mt-20 w-[580px] max-w-full">
           {/* ✅ Coeurs AU-DESSUS du panneau, horizontaux, alignés à gauche */}
-          <div className="mx-auto w-full mb-3 -mt-1 pl-2 flex justify-start">
+          <div className="mx-auto w-full mb-3 -mt-1 pl-2 flex items-center justify-between gap-3">
             <Lives lives={lives} total={totalLives} />
+            {wrongTextAnswer ? (
+              <div className="max-w-[58%] inline-flex items-center rounded-[6px] border border-red-500/70 bg-red-500/20 px-3 py-1 text-[11px] font-medium text-red-100">
+                <span className="truncate" title={wrongTextAnswer}>
+                  {wrongTextAnswer}
+                </span>
+              </div>
+            ) : null}
           </div>
 
           {/* Panneau de saisie */}
@@ -451,38 +437,43 @@ export default function DailyQuestionPanel(props: Props) {
             </div>
           </div>
 
+          {/* ✅ points | bonne réponse | temps */}
           {showCorrectLabelCell && (
-            <div className="mt-4 flex items-center gap-3 whitespace-nowrap">
-              <div className="inline-flex items-center rounded-[6px] border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-slate-50">
-                {feedbackCorrectLabel}
+            <div className="mt-4 flex justify-center">
+              <div className="inline-flex max-w-full items-center gap-3">
+                {showLeft ? (
+                  <span className="text-[13px] font-semibold tabular-nums text-white/70">
+                    {pointsText}
+                  </span>
+                ) : null}
+
+                {showLeft ? (
+                  <span className="text-white/35" aria-hidden>
+                    |
+                  </span>
+                ) : null}
+
+                <div className="inline-flex items-center rounded-[6px] border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-slate-50">
+                  {feedbackCorrectLabel}
+                </div>
+
+                {showRight ? (
+                  <span className="text-white/35" aria-hidden>
+                    |
+                  </span>
+                ) : null}
+
+                {showRight ? (
+                  <span className="text-[13px] font-semibold tabular-nums text-white/70">
+                    {timeText}
+                  </span>
+                ) : null}
               </div>
             </div>
           )}
 
-          {(showAnyFeedbackRow || reserveFeedbackSpace) && (
-            <div className="mt-2 flex flex-wrap items-start justify-start gap-2">
-              {/* ✅ PLUS AUCUN FEEDBACK TEXTE ICI */}
-
-              {showFeedbackPoints && (
-                <div className="inline-flex items-center gap-2 rounded-[9px] border border-slate-700/80 bg-black/80 px-3 py-1.5 text-[11px] text-slate-100">
-                  <span className="text-[12px]">⭐</span>
-                  <span className="font-medium">
-                    {feedbackPoints! >= 0 ? "+" : ""}
-                    {feedbackPoints} pts
-                  </span>
-                </div>
-              )}
-
-              {showResponseTime && (
-                <div className="inline-flex items-center gap-2 rounded-[9px] border border-slate-700/80 bg-black/80 px-3 py-1.5 text-[11px] text-slate-100">
-                  <span className="text-[12px]">⚡</span>
-                  <span className="font-medium">
-                    {Math.max(0, feedbackResponseMs!)} ms
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+          {/* ✅ Ligne de feedback du dessous supprimée (devenue inutile) */}
+          {reserveFeedbackSpace ? <div className="mt-2" /> : null}
         </div>
       )}
 
