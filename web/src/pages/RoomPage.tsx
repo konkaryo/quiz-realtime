@@ -15,6 +15,7 @@ import starUrl from "../assets/star.png";
 import crown from "../assets/crown.png";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
+  OverwatchTimerBadge,
   QuestionProgress as QuestionPanelProgress,
 } from "../components/QuestionPanel";
 import { getLevelFromExperience } from "../utils/experience";
@@ -1490,12 +1491,6 @@ useEffect(() => {
     [mcChoices]
   );
 
-  const formatCountdown = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  };
-
   const questionProgress: QuestionPanelProgress[] = [];
   const isPlaying = phase === "playing" && lives > 0;
   const showChoices = !!mcChoices;
@@ -1873,9 +1868,16 @@ return (
 
                       {phase === "final" ? (
                         <div className="space-y-12">
-                          <div className="rounded-[6px] border border-white/10 bg-transparent px-4 py-2 text-center text-[16px] font-semibold text-white">
-                            Partie terminée !
-                          </div>
+                          {finalRemaining !== null ? (
+                            <div className="w-[700px] max-w-full">
+                              <div className="relative flex justify-center">
+                                <OverwatchTimerBadge
+                                  seconds={finalRemaining}
+                                  progress={finalProgress}
+                                />
+                              </div>
+                            </div>
+                          ) : null}
                           <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
                         </div>
                       ) : normalizedQuestion ? (
@@ -1955,32 +1957,6 @@ return (
                       )}
                     </div>
                   </div>
-                  {phase === "final" && finalRemaining !== null ? (
-                    <div className=
-                      "rounded-[6px] bg-[#1C1F2E] px-6 py-6 shadow-[0_18px_50px_rgba(0,0,0,.55),0_2px_0_rgba(255,255,255,.06)]">
-
-                      <div className="rounded-[8px] border border-white/10 bg-[#0D0E17] px-4 py-4">
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-                          <div
-                            className="h-full transition-[width] duration-300"
-                            style={{
-                              width: `${finalProgress * 100}%`,
-                              backgroundColor: "#FFFFFF",
-                            }}
-                          />
-                        </div>
-                        <div className="mt-3 text-center">
-                          <div className="text-[13px] font-semibold text-white/90">
-                            Une nouvelle partie va bientôt commencer...
-                          </div>
-                          <div className="mt-1 text-[12px] text-white/70 tabular-nums">
-                            {formatCountdown(finalRemaining)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
                   <div 
                     className="relative rounded-[6px] bg-[#1C1F2E] px-6 py-6 before:pointer-events-none"
                     style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}

@@ -53,7 +53,7 @@ function Lives({ lives, total }: { lives: number; total: number }) {
  * - Ce total est "gelé" au départ d'une question (ne varie plus pendant le compte à rebours)
  * - Les segments allumés = secondes restantes (1 segment = 1 seconde)
  */
-function OverwatchTimerBadge({
+export function OverwatchTimerBadge({
   seconds,
   progress,
 }: {
