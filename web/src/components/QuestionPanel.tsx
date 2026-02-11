@@ -358,7 +358,7 @@ export default function DailyQuestionPanel(props: Props) {
                     isCorrect
                       ? "border-emerald-600 bg-emerald-600 text-slate-50"
                       : isSelected
-                      ? "border-red-500 bg-red-500 text-slate-50"
+                      ? "border-[#AF2D33] bg-[#AF2D33] text-slate-50"
                       : "border-slate-700/70 bg-[#1C1F2E] text-slate-50 hover:bg-[#23263A]",
                   ].join(" ")}
                 >
@@ -394,8 +394,12 @@ export default function DailyQuestionPanel(props: Props) {
                     onChange={(e) => onChangeText(e.target.value)}
                     onKeyDown={handleKeyDown}
                     disabled={textInputDisabled}
+                    spellCheck={false}
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    autoComplete="off"
                     className={[
-                      "w-full bg-transparent px-2 py-2 text-[13px] font-medium focus:outline-none",
+                      "w-full bg-transparent px-2 py-2 text-[12px] font-medium focus:outline-none",
                       textInputColorClass,
                       textInputDisabled ? "opacity-60 cursor-not-allowed" : "",
                     ].join(" ")}
@@ -407,7 +411,7 @@ export default function DailyQuestionPanel(props: Props) {
                   <button
                     onClick={onSubmitText}
                     disabled={textInputDisabled}
-                    className="rounded-[6px] bg-[#6F5BD4] px-4 py-2 text-[11px] font-semibold tracking-[0.12em] text-slate-50 hover:brightness-110 disabled:opacity-60"
+                    className="rounded-[6px] bg-[#6F5BD4] px-4 py-2 text-[10px] font-semibold tracking-[0.12em] text-slate-50 hover:brightness-110 disabled:opacity-60"
                   >
                     Valider
                   </button>
@@ -420,7 +424,7 @@ export default function DailyQuestionPanel(props: Props) {
                       border border-slate-600/60
                       bg-[#1A1D28]
                       px-4 py-2
-                      text-[11px]
+                      text-[10px]
                       font-semibold tracking-[0.12em]
                       text-white/85
                       hover:text-white
@@ -442,7 +446,7 @@ export default function DailyQuestionPanel(props: Props) {
             <div className="mt-4 flex justify-center">
               <div className="inline-flex max-w-full items-center gap-3">
                 {showLeft ? (
-                  <span className="text-[13px] font-semibold tabular-nums text-white/70">
+                  <span className="text-[12px] font-semibold tabular-nums text-white/70">
                     {pointsText}
                   </span>
                 ) : null}

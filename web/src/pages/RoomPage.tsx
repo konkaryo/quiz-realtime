@@ -8,7 +8,11 @@ import { FinalLeaderboard } from "../components/FinalLeaderboard";
 import Background from "../components/Background";
 import trophy from "../assets/trophy.png";
 import playerIcon from "../assets/player.png";
+import greenArrows from "../assets/green_arrows.png";
+import yellowArrows from "../assets/yellow_arrows.png";
+import redArrows from "../assets/red_arrows.png";
 import starUrl from "../assets/star.png";
+import crown from "../assets/crown.png";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
   QuestionProgress as QuestionPanelProgress,
@@ -118,6 +122,7 @@ function PlayerCell({
   onNameClick?: (row: LeaderRow) => void;
 }) {
   const canNavigate = !!onNameClick && !!row.playerId;
+
   const nameClasses = [
     "truncate text-[13px] font-semibold",
     canNavigate ? "cursor-pointer hover:underline" : "",
@@ -133,20 +138,18 @@ function PlayerCell({
           "rounded-[6px]",
           "py-1 pl-3 pr-4",
           "overflow-hidden",
-          isSelf ? "text-white" : "bg-white/[0.03] text-white",
+          "text-white",
         ].join(" ")}
-        style={
-          isSelf
-            ? {
-                background:
-                  "linear-gradient(to bottom, #6B379F 0%, #241668 100%)",
-              }
-            : undefined
-        }
+        style={{
+          // ✅ Gradient normal + variante self
+          background: isSelf
+            ? "linear-gradient(to bottom, rgba(162, 143, 255, 0.28), rgba(162,143,255,0.2))"
+            : "linear-gradient(to bottom, rgba(187,190,213,0.07), rgba(187,190,213,0.04))",
+
+        }}
       >
-        {/* Bloc gauche : rang + avatar + nom */}
+        {/* Avatar + Nom */}
         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-          {/* Avatar */}
           {row.img ? (
             <img
               src={row.img}
@@ -159,15 +162,12 @@ function PlayerCell({
             <div className="w-7 h-7 rounded-[3px] bg-white/10 flex-shrink-0" />
           )}
 
-          {/* Nom + niveau */}
           <div className="min-w-0 leading-tight overflow-hidden">
             {canNavigate ? (
               <button
                 type="button"
                 onClick={() => onNameClick?.(row)}
                 className={nameClasses}
-                title={`Voir le profil de ${row.name}`}
-                aria-label={`Voir le profil de ${row.name}`}
               >
                 {row.name}
               </button>
@@ -181,7 +181,7 @@ function PlayerCell({
           </div>
         </div>
 
-        {/* Bloc droite : score */}
+        {/* Score */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="tabular-nums text-[13px] font-semibold text-white/90">
             {row.score}
@@ -191,6 +191,7 @@ function PlayerCell({
     </div>
   );
 }
+
 
 /* ============================== PAGE ============================== */
 
@@ -1510,7 +1511,7 @@ useEffect(() => {
   const difficultyLabel = normalizedQuestion?.difficulty ?? "—";
 
   // ✅ Layout widths (LG+)
-  const leftW = 320;
+  const leftW = 360;
   const rightW = 300;
 
   // ✅ panneau haut
@@ -1615,9 +1616,6 @@ useEffect(() => {
 
   // ✅ Nom du salon affiché en gros à droite
   const roomDisplayName = roomMeta?.name?.trim() || "-";
-  const roomImageUrl = roomMeta?.image
-    ? `${API_BASE}/img/interface/${roomMeta.image}.avif`
-    : null;
 
   const roomInfoItems: RoomInfoItem[] = [
     { label: "Public", value: visibilityLabel },
@@ -1655,56 +1653,49 @@ useEffect(() => {
   const renderLeaderboardLine = (r: LeaderRow, rank: number, isSelf: boolean) => {
     const status = answeredByPg[r.id];
 
-    const badgeClass =
-      status === "correct"
-        ? "bg-emerald-400 text-white"
-        : status === "correct-mc"
-        ? "bg-amber-400 text-white"
-        : status === "wrong"
-        ? "bg-[#E54F4F] text-white"
-        : "bg-white/20 text-white/0";
+    const badgeClass = "";
 
-    const badgeTitle =
-      status === "correct"
-        ? "Bonne réponse"
-        : status === "correct-mc"
-        ? "Bonne réponse (QCM)"
-        : status === "wrong"
-        ? "Mauvaise réponse"
-        : "Pas encore répondu";
+const badgeTitle =
+  status === "correct"
+    ? "Bonne réponse"
+    : status === "correct-mc"
+    ? "Bonne réponse (QCM)"
+    : status === "wrong"
+    ? "Mauvaise réponse"
+    : "Pas encore répondu";
 
-    const badgeIcon =
-      status === "correct"
-        ? "✓"
-        : status === "correct-mc"
-        ? "~"
-        : status === "wrong"
-        ? "✕"
-        : "";
+const badgeSymbol =
+  status === "correct"
+    ? { ch: "▲", cls: "text-emerald-400" }
+    : status === "correct-mc"
+    ? { ch: "▲", cls: "text-amber-400" }
+    : status === "wrong"
+    ? { ch: "▼", cls: "text-red-500" }
+    : { ch: "-", cls: "text-white/50" };
 
-    return (
-      <div className="flex items-center gap-2">
-        {/* Rang à gauche de la cellule */}
-        <span className="w-8 flex-shrink-0 tabular-nums text-[12px] text-right opacity-80">
-          #{rank}
-        </span>
+return (
+  <div className="flex items-center gap-2">
+    {/* Rang */}
+    <span className="w-8 flex-shrink-0 tabular-nums text-[14px] text-right opacity-80">
+      #{rank}
+    </span>
 
-        <div className="flex-1 min-w-0">
-          <PlayerCell row={r} rank={rank} isSelf={isSelf} onNameClick={handlePlayerProfile} />
-        </div>
+    <div className="flex-1 min-w-0">
+      <PlayerCell row={r} rank={rank} isSelf={isSelf} onNameClick={handlePlayerProfile} />
+    </div>
 
-        <span
-          className={[
-            "inline-flex h-4 w-4 items-center justify-center rounded-[3px] text-[10px] font-bold leading-none flex-shrink-0",
-            badgeClass,
-          ].join(" ")}
-          title={badgeTitle}
-          aria-label={badgeTitle}
-        >
-          {badgeIcon}
-        </span>
-      </div>
-    );
+    {/* ✅ Badge: taille FIXE dans tous les cas */}
+    <span
+      className="flex-shrink-0 inline-flex items-center justify-center w-5 h-5"
+      title={badgeTitle}
+      aria-label={badgeTitle}
+    >
+      <span className={`leading-none text-[14px] ${badgeSymbol.cls}`}>
+        {badgeSymbol.ch}
+      </span>
+    </span>
+  </div>
+);
   };
 
   return (
@@ -1764,128 +1755,100 @@ useEffect(() => {
       <div className="relative z-10 min-h-[calc(100dvh-64px)] text-white lg:overflow-hidden">
         <div className="relative">
           <div className="relative grid grid-cols-1 lg:block">
-            {/* LEFT */}
-            <aside
-              className="hidden lg:block fixed bottom-0 left-0 z-20 overflow-x-hidden"
-              style={{ top: fixedTop, width: leftW }}
+{/* LEFT */}
+<aside
+  className="hidden lg:block fixed left-0 bottom-12 z-20 overflow-x-hidden"
+  style={{ top: fixedTop, width: leftW }}
+>
+  <div className="h-full overflow-x-hidden bg-transparent pb-3 pr-3 pt-3 pl-6">
+    {/* ✅ Panel style "Classement" */}
+    <div
+      className="h-full rounded-[6px] overflow-hidden bg-[#181A28] border border-white/10"
+    >
+      {/* ✅ Header avec ombre sous la barre */}
+      <div
+        className="h-[48px] bg-[#1E2132] flex items-center justify-center relative z-10"
+        style={{ boxShadow: "0 4px 8px rgba(0,0,0,.25)" }}
+      >
+        {/* léger fondu vers le bas pour renforcer le relief */}
+        <div className="pointer-events-none absolute left-0 right-0 bottom-[-14px] h-[14px] bg-gradient-to-b from-black/25 to-transparent" />
+
+        <div className="flex items-center gap-2">
+          {/* 👑 Crown icon */}
+          <img
+            src={crown}
+            alt=""
+            className="h-5 w-5 object-contain opacity-90"
+            draggable={false}
+          />
+
+          {/* Titre + nombre de joueurs */}
+          <div className="flex items-center gap-2">
+            <div className="text-[16px] font-semibold text-white/90">
+              Classement
+            </div>
+
+            <div className="flex items-center gap-1 text-[13px] font-semibold text-white/90">
+              (
+              <span className="tabular-nums">
+                {Math.max(leaderboard.length, 1)}
+              </span>
+
+              <img
+                src={playerIcon}
+                alt=""
+                className="h-3 w-3 object-contain opacity-80"
+                draggable={false}
+              />
+              )
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contenu */}
+      <div className="h-[calc(100%-48px)] px-4 pt-6 pb-3 flex flex-col min-h-0 overflow-x-hidden">
+        {leaderboard.length === 0 ? (
+          <div className="text-white/45 text-sm">—</div>
+        ) : (
+          <>
+            <ol
+              className={[
+                "lb-scroll",
+                "m-0 space-y-2",
+                "overflow-y-auto overflow-x-hidden",
+                "pr-3",
+                "flex-1 min-h-0",
+              ].join(" ")}
             >
-              <div className="h-full overflow-x-hidden bg-transparent pb-3 pr-3 pt-3 pl-6">
-                <div className="rounded-[6px] bg-transparent px-4 pt-6 pb-10 flex flex-col overflow-x-hidden">
-                  <div
-                    className="overflow-hidden rounded-[6px] border border-white/10 bg-[#1C1F2E]"
-                    style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
-                  >
-                    <div className="relative aspect-[21/9] w-full">
-                      {roomImageUrl ? (
-                        <img
-                          src={roomImageUrl}
-                          alt={roomDisplayName}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                          draggable={false}
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900" />
-                      )}
-                    </div>
-                  </div>
+              {leaderboard.map((r, i) => {
+                const isSelf =
+                  (selfId && r.id === selfId) ||
+                  (!!selfName &&
+                    typeof r.name === "string" &&
+                    r.name.toLowerCase() === selfName.toLowerCase());
 
-                  {/* ✅ Position + Score */}
-                  {rankLabel || selfRow ? (
-                    <div 
-                      className="mt-4 rounded-[6px] bg-[#1C1F2E] px-3 py-2"
-                      style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
-                    >
-                      
-                      <div className="flex items-center justify-between">
-                        {/* Position (rang) + trophy */}
-                        <div className="flex items-center gap-2 min-w-0">
-                          <img
-                            src={trophy}
-                            alt=""
-                            className="h-4 w-4 opacity-90"
-                            draggable={false}
-                          />
-                          <div
-                            key={rankPulseKey}
-                            className="rank-pop font-extrabold tabular-nums text-white"
-                            style={rankLabel ? (rankAnimationVars ?? undefined) : undefined}
-                          >
-                            {rankLabel ? `${rankLabel.value}${rankLabel.suffix}` : "—"}
-                          </div>
-                        </div>
+                return (
+                  <li key={r.id} className="max-w-full overflow-x-hidden">
+                    {renderLeaderboardLine(r, i + 1, isSelf)}
+                  </li>
+                );
+              })}
+            </ol>
 
-                        <span className="mx-3 text-white/35">—</span>
-
-                        {/* Score */}
-                        <div className="font-extrabold tabular-nums text-white/90">
-                          {displayScore}
-                          <span className="ml-1 text-[12px] font-semibold text-white/55">
-                            pts
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-white/45 text-sm">—</div>
-                  )}
-
-                  <div className="mt-6 flex items-center justify-center gap-3">
-                    <div className="flex items-center justify-center gap-2 text-white">
-                      <img
-                        src={playerIcon}
-                        alt=""
-                        className="h-4 w-4 object-contain"
-                        draggable={false}
-                      />
-
-                      <span className="text-[12px] font-semibold uppercase tracking-[0.22em] tabular-nums">
-                        {Math.max(leaderboard.length, 1)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex-1 min-h-0 overflow-x-hidden">
-                    {leaderboard.length === 0 ? (
-                      <div className="text-white/45 text-sm">—</div>
-                    ) : (
-                      <>
-                        <ol
-                          className={[
-                            "lb-scroll",
-                            "m-0 space-y-2",
-                            "overflow-y-auto overflow-x-hidden",
-                            "pr-3",
-                          ].join(" ")}
-                          style={{ maxHeight: "55vh" }}
-                        >
-                          {leaderboard.map((r, i) => {
-                            const isSelf =
-                              (selfId && r.id === selfId) ||
-                              (!!selfName &&
-                                typeof r.name === "string" &&
-                                r.name.toLowerCase() === selfName.toLowerCase());
-
-                            return (
-                              <li key={r.id} className="max-w-full overflow-x-hidden">
-                                {renderLeaderboardLine(r, i + 1, isSelf)}
-                              </li>
-                            );
-                          })}
-                        </ol>
-
-                        {/* ✅ réplique EXACTE de la ligne dans la liste */}
-                        {hasScrollableLeaderboard && selfRow ? (
-                          <div className="mt-4 pt-4 border-t border-white/10 overflow-x-hidden">
-                            {renderLeaderboardLine(selfRow, selfIndex + 1, true)}
-                          </div>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
-                </div>
+            {/* ✅ self row en bas (si scroll) */}
+            {hasScrollableLeaderboard && selfRow ? (
+              <div className="mt-3 pt-3 border-t border-white/10 overflow-x-hidden">
+                {renderLeaderboardLine(selfRow, selfIndex + 1, true)}
               </div>
-            </aside>
+            ) : null}
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+</aside>
+
 
             {/* CENTER */}
             <div
@@ -2037,7 +2000,7 @@ useEffect(() => {
                                 : status === "correct-mc"
                                 ? "bg-amber-400 text-white"
                                 : status === "wrong"
-                                ? "bg-[#E54F4F] text-white"
+                                ? "bg-[#AF2D33] text-white"
                                 : "bg-white/20 text-white/70";
 
                             const trackerClasses = [
@@ -2118,7 +2081,7 @@ useEffect(() => {
                                 <span className="tabular-nums font-semibold">
                                   {selectedFinalQuestion.stats.wrong}
                                 </span>
-                                <span className="flex h-4 w-4 items-center justify-center rounded-[4px] ? [#E54F4F] text-[10px] font-bold text-white">
+                                <span className="flex h-4 w-4 items-center justify-center rounded-[4px] ? [#AF2D33] text-[10px] font-bold text-white">
                                   ✕
                                 </span>
                               </div>
@@ -2243,7 +2206,7 @@ useEffect(() => {
                             : status === "correct-mc"
                             ? "bg-amber-400 text-white"
                             : status === "wrong"
-                            ? "bg-[#E54F4F] text-white"
+                            ? "bg-[#AF2D33] text-white"
                             : "bg-white/20 text-white/70";
 
                         return (
@@ -2415,7 +2378,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
         <div className="h-[8px] rounded-full overflow-hidden border border-white/10 bg-white/5 flex">
           <div className="h-full bg-emerald-400" style={{ width: `${wCorrect}%` }} />
           <div className="h-full bg-amber-400" style={{ width: `${wQcm}%` }} />
-          <div className="h-full ? bg-[#E54F4F]" style={{ width: `${wWrong}%` }} />
+          <div className="h-full ? bg-[#AF2D33]" style={{ width: `${wWrong}%` }} />
         </div>
       </div>
     );
@@ -2466,7 +2429,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
               key={idx}
               className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2"
             >
-              <span className={a.correct ? "text-emerald-400" : "text-[#E54F4F]"} aria-hidden>
+              <span className={a.correct ? "text-emerald-400" : "text-[#AF2D33]"} aria-hidden>
                 {a.correct ? "✅" : "❌"}
               </span>
 
@@ -2513,7 +2476,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
             "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold cursor-pointer transition-all";
           let color = "bg-white/20 text-white/70";
           if (state === "correct") color = "bg-emerald-400 text-white";
-          if (state === "wrong") color = "bg-[#E54F4F] text-white";
+          if (state === "wrong") color = "bg-[#AF2D33] text-white";
 
           return (
             <button
