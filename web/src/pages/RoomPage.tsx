@@ -8,9 +8,6 @@ import { FinalLeaderboard } from "../components/FinalLeaderboard";
 import Background from "../components/Background";
 import trophy from "../assets/trophy.png";
 import playerIcon from "../assets/player.png";
-import greenArrows from "../assets/green_arrows.png";
-import yellowArrows from "../assets/yellow_arrows.png";
-import redArrows from "../assets/red_arrows.png";
 import starUrl from "../assets/star.png";
 import crown from "../assets/crown.png";
 import QuestionPanel, {
@@ -59,6 +56,14 @@ type RoomInfoItem = { label: string; value: string | number };
 type AnsweredStatus = "correct" | "correct-mc" | "wrong";
 type QuestionStatus = "pending" | "correct" | "correct-mc" | "wrong";
 type FinalQuestionStats = { correct: number; correctQcm: number; wrong: number };
+type FinalQuestionSnapshot = {
+  questionId: string;
+  index: number;
+  text: string;
+  img?: string | null;
+  theme?: string | null;
+  correctLabel?: string | null;
+};
 
 /* Récapitulatif final (affiché à gauche uniquement en phase 'final') */
 type RecapItem = {
@@ -66,6 +71,7 @@ type RecapItem = {
   questionId: string;
   text: string;
   img?: string | null;
+  theme?: string | null;
   correctLabel?: string | null;
   yourAnswer?: string | null;
   correct: boolean;
@@ -144,8 +150,10 @@ function PlayerCell({
         style={{
           // ✅ Gradient normal + variante self
           background: isSelf
+            //? "linear-gradient(to bottom, rgba(162, 143, 255, 0.28), rgba(162,143,255,0.2))"
+            //: "linear-gradient(to bottom, rgba(187,190,213,0.07), rgba(187,190,213,0.04))",
             ? "linear-gradient(to bottom, rgba(162, 143, 255, 0.28), rgba(162,143,255,0.2))"
-            : "linear-gradient(to bottom, rgba(187,190,213,0.07), rgba(187,190,213,0.04))",
+            : "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.15))",
 
         }}
       >
@@ -273,6 +281,7 @@ export default function RoomPage() {
 
   /* ---- recap des questions reçu en fin de partie ---- */
   const [finalRecap, setFinalRecap] = useState<RecapItem[] | null>(null);
+  const [finalQuestionSnapshots, setFinalQuestionSnapshots] = useState<FinalQuestionSnapshot[]>([]);
   const [selectedFinalIndex, setSelectedFinalIndex] = useState(0);
 
   // ✅ Top 10 visibles (le reste accessible via scroll)
@@ -300,6 +309,7 @@ export default function RoomPage() {
   const [finalDuration, setFinalDuration] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
   const [gameCountdown, setGameCountdown] = useState<number | null>(null);
+  const [gameCountdownTotal, setGameCountdownTotal] = useState<number | null>(null);
 
   const remaining = useMemo(
     () => (endsAt ? Math.max(0, Math.ceil((endsAt - nowServer()) / 1000)) : null),
@@ -327,6 +337,12 @@ export default function RoomPage() {
     const progress = remainingMs / finalDuration;
     return Math.min(1, Math.max(0, progress));
   }, [finalEndsAt, finalDuration, nowTick, skew]);
+
+  const gameCountdownProgress = useMemo(() => {
+    if (!gameCountdown || !gameCountdownTotal || gameCountdownTotal <= 0) return 0;
+    const progress = gameCountdown / gameCountdownTotal;
+    return Math.min(1, Math.max(0, progress));
+  }, [gameCountdown, gameCountdownTotal]);
 
   const applyAvatarOverrides = (rows: LeaderRow[]) => {
     const overrides = avatarOverridesRef.current;
@@ -443,6 +459,7 @@ export default function RoomPage() {
 
         setPhase("countdown");
         setGameCountdown(seconds);
+        setGameCountdownTotal(seconds);
         setQuestion(null);
         setMcChoices(null);
         setSelected(null);
@@ -458,6 +475,7 @@ export default function RoomPage() {
         setAnswerMode(null);
         setChoicesRevealed(false);
         setFinalRecap(null);
+        setFinalQuestionSnapshots([]);
         setPending(false);
         setQuestionStatuses([]);
       }
@@ -475,6 +493,7 @@ export default function RoomPage() {
         if (typeof p.serverNow === "number") setSkew(p.serverNow - Date.now());
 
         setGameCountdown(null);
+        setGameCountdownTotal(null);
         setPhase("playing");
         setIndex(p.index);
         setTotal(p.total);
@@ -510,6 +529,19 @@ export default function RoomPage() {
           return TEXT_LIVES;
         });
         setFinalRecap(null);
+        setFinalQuestionSnapshots((prev) => {
+          const next = Array.from({ length: p.total }, (_, idx) => prev[idx] ?? null);
+          const existing = next[p.index];
+          next[p.index] = {
+            questionId: p.question.id,
+            index: p.index,
+            text: p.question.text,
+            img: p.question.img ?? existing?.img ?? null,
+            theme: p.question.theme ?? existing?.theme ?? null,
+            correctLabel: existing?.correctLabel ?? null,
+          };
+          return next.filter((item): item is FinalQuestionSnapshot => !!item);
+        });
         setPending(false);
         setQuestionStatuses((prev) =>
           Array.from({ length: p.total }, (_, idx) => prev[idx] ?? "pending")
@@ -668,6 +700,13 @@ export default function RoomPage() {
 
         setFeedback((prev) => prev ?? "Temps écoulé !");
         if (p.correctLabel) setFeedbackCorrectLabel(p.correctLabel);
+        if (typeof p.index === "number") {
+          setFinalQuestionSnapshots((prev) =>
+            prev.map((item, idx) =>
+              idx === p.index ? { ...item, correctLabel: p.correctLabel ?? item.correctLabel ?? null } : item
+            )
+          );
+        }
         setEndsAt(null);
         setRoundDuration(null);
         setPending(false);
@@ -680,6 +719,7 @@ export default function RoomPage() {
 
     s.on("final_leaderboard", (p: { leaderboard: LeaderRow[]; displayMs?: number }) => {
       setPhase("final");
+      setSelectedFinalIndex(0);
       setLeaderboard(applyAvatarOverrides(p.leaderboard ?? []));
       setBitsByPgId({});
       setXpByPgId({});
@@ -781,6 +821,7 @@ export default function RoomPage() {
       setFinalDuration(null);
       setPending(false);
       setGameCountdown(null);
+      setGameCountdownTotal(null);
     });
 
     (async () => {
@@ -1529,6 +1570,8 @@ useEffect(() => {
       questionId: string;
       index: number;
       text: string;
+      img?: string | null;
+      theme?: string | null;
       correctLabel?: string | null;
       stats?: FinalQuestionStats;
       attempts: { correct: boolean }[];
@@ -1571,6 +1614,8 @@ useEffect(() => {
           questionId: item.questionId,
           index: item.index,
           text: item.text,
+          img: item.img ?? null,
+          theme: item.theme ?? null,
           correctLabel: item.correctLabel ?? null,
           stats,
           attempts: [],
@@ -1582,6 +1627,7 @@ useEffect(() => {
       }
 
       if (item.correctLabel) agg.correctLabel = item.correctLabel;
+      if (item.theme && !agg.theme) agg.theme = item.theme;
       agg.attempts.push({ correct: !!item.correct });
     }
 
@@ -1597,17 +1643,49 @@ useEffect(() => {
 
   const finalTrackerItems = useMemo(
     () =>
-      phase === "final" && finalQuestions.length
-        ? finalQuestions.map((q) => q.status)
+      phase === "final"
+        ? (["pending" as QuestionStatus, ...questionTrackerItems])
         : questionTrackerItems,
-    [finalQuestions, phase, questionTrackerItems]
+    [phase, questionTrackerItems]
   );
 
-  const selectedFinalQuestion = finalQuestions[selectedFinalIndex] ?? null;
+  const finalStatsByQuestionId = useMemo(() => {
+    const map = new Map<string, FinalQuestionStats>();
+    finalQuestions.forEach((q) => {
+      if (q.stats) map.set(q.questionId, q.stats);
+    });
+    return map;
+  }, [finalQuestions]);
 
-  useEffect(() => {
-    setSelectedFinalIndex(0);
-  }, [finalQuestions.length]);
+  const selectedFinalQuestionSnapshot =
+    selectedFinalIndex > 0 ? finalQuestionSnapshots[selectedFinalIndex - 1] ?? null : null;
+
+  const selectedFinalQuestion = useMemo(() => {
+    if (!selectedFinalQuestionSnapshot) return null;
+    return {
+      ...selectedFinalQuestionSnapshot,
+      stats: finalStatsByQuestionId.get(selectedFinalQuestionSnapshot.questionId),
+    };
+  }, [selectedFinalQuestionSnapshot, finalStatsByQuestionId]);
+  const isFinalLeaderboardSelected = selectedFinalIndex === 0;
+
+  const selectedFinalQuestionPanel = useMemo(() => {
+    if (!selectedFinalQuestion) return null;
+    const img = selectedFinalQuestion.img
+      ? selectedFinalQuestion.img.startsWith("http") || selectedFinalQuestion.img.startsWith("/")
+        ? selectedFinalQuestion.img
+        : "/" + selectedFinalQuestion.img.replace(/^\.?\//, "")
+      : null;
+
+    return {
+      id: selectedFinalQuestion.questionId,
+      text: selectedFinalQuestion.text,
+      theme: selectedFinalQuestion.theme ?? null,
+      difficulty: null,
+      img,
+      slotLabel: null,
+    };
+  }, [selectedFinalQuestion]);
 
   // ✅ Nom du salon affiché en gros à droite
   const roomDisplayName = roomMeta?.name?.trim() || "-";
@@ -1725,16 +1803,6 @@ return (
           background-clip: padding-box;
         }
 
-        @keyframes countdownPop {
-          0% { transform: scale(0.6); opacity: 0; }
-          35% { transform: scale(1.1); opacity: 1; }
-          70% { transform: scale(1); opacity: 0.9; }
-          100% { transform: scale(0.85); opacity: 0; }
-        }
-        .countdown-pop {
-          animation: countdownPop 1s ease-in-out infinite;
-        }
-
         @keyframes rankPop {
           0% {
             transform: translateY(var(--rank-pop-translate, 4px)) scale(var(--rank-pop-scale, 0.98));
@@ -1758,11 +1826,11 @@ return (
   <div className="h-full overflow-x-hidden bg-transparent pb-3 pr-3 pt-3 pl-6">
     {/* ✅ Panel style "Classement" */}
     <div
-      className="h-full rounded-[6px] overflow-hidden bg-[#181A28] border border-white/10"
+      className="h-full rounded-[6px] overflow-hidden bg-[#1B1D2D] border border-white/10"
     >
       {/* ✅ Header avec ombre sous la barre */}
       <div
-        className="h-[48px] bg-[#1E2132] flex items-center justify-center relative z-10"
+        className="h-[48px] bg-[#222538] flex items-center justify-center relative z-10"
         style={{ boxShadow: "0 4px 8px rgba(0,0,0,.25)" }}
       >
         {/* léger fondu vers le bas pour renforcer le relief */}
@@ -1860,8 +1928,11 @@ return (
                     <div className="w-[700px] max-w-full">
                       {gameCountdown !== null ? (
                         <div className="flex min-h-[360px] items-center justify-center">
-                          <div className="countdown-pop text-[96px] font-extrabold text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.35)]">
-                            {gameCountdown}
+                          <div className="origin-center scale-[2.35] md:scale-[2.6]">
+                            <OverwatchTimerBadge
+                              seconds={gameCountdown}
+                              progress={gameCountdownProgress}
+                            />
                           </div>
                         </div>
                       ) : null}
@@ -1878,7 +1949,80 @@ return (
                               </div>
                             </div>
                           ) : null}
-                          <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
+
+                          {isFinalLeaderboardSelected || !selectedFinalQuestionPanel ? (
+                            <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
+                          ) : (
+                            <div className="flex flex-col items-center">
+                              <QuestionPanel
+                                question={selectedFinalQuestionPanel}
+                                index={selectedFinalIndex - 1}
+                                totalQuestions={finalQuestionSnapshots.length}
+                                lives={0}
+                                totalLives={TEXT_LIVES}
+                                remainingSeconds={null}
+                                timerProgress={0}
+                                isReveal={false}
+                                isPlaying={false}
+                                inputRef={inputRef}
+                                textAnswer=""
+                                wrongTextAnswer={null}
+                                textLocked
+                                onChangeText={() => {}}
+                                onSubmitText={() => {}}
+                                onShowChoices={() => {}}
+                                feedback={null}
+                                feedbackResponseMs={null}
+                                feedbackWasCorrect={null}
+                                feedbackCorrectLabel={selectedFinalQuestion?.correctLabel ?? null}
+                                feedbackPoints={null}
+                                reserveFeedbackSpace
+                                answerMode={null}
+                                choicesRevealed={false}
+                                showChoices={false}
+                                choices={null}
+                                selectedChoice={null}
+                                correctChoiceId={null}
+                                onSelectChoice={() => {}}
+                                questionProgress={[]}
+                                showTimer={false}
+                                showAnswerSection={false}
+                                showProgress={false}
+                              />
+
+                              {selectedFinalQuestion?.correctLabel ? (
+                                <div className="mt-10 inline-flex items-center rounded-[6px] border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-slate-50">
+                                  {selectedFinalQuestion.correctLabel}
+                                </div>
+                              ) : null}
+
+
+                              {selectedFinalQuestion?.stats ? (
+                                <div className="mt-8 flex items-center justify-center gap-6 text-[13px] text-white/85">
+                                  <div className="inline-flex items-center gap-1.5" aria-label="Bonnes réponses">
+                                    <span className="tabular-nums font-semibold">
+                                      {selectedFinalQuestion.stats.correct}
+                                    </span>
+                                    <span className="leading-none text-[16px] text-emerald-400">▲</span>
+                                  </div>
+
+                                  <div className="inline-flex items-center gap-1.5" aria-label="Réponses QCM">
+                                    <span className="tabular-nums font-semibold">
+                                      {selectedFinalQuestion.stats.correctQcm}
+                                    </span>
+                                    <span className="leading-none text-[16px] text-amber-400">▲</span>
+                                  </div>
+
+                                  <div className="inline-flex items-center gap-1.5" aria-label="Mauvaises réponses">
+                                    <span className="tabular-nums font-semibold">
+                                      {selectedFinalQuestion.stats.wrong}
+                                    </span>
+                                    <span className="leading-none text-[16px] text-red-500">▼</span>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                       ) : normalizedQuestion ? (
                         <div>
@@ -1942,9 +2086,9 @@ return (
                     style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
                   >
                     <div className="relative aspect-video w-full">
-                      {normalizedQuestion?.img ? (
+                      {(phase === "final" ? selectedFinalQuestionPanel?.img : normalizedQuestion?.img) ? (
                         <img
-                          src={normalizedQuestion.img}
+                          src={(phase === "final" ? selectedFinalQuestionPanel?.img : normalizedQuestion?.img) ?? ""}
                           alt="Illustration de la question"
                           className="h-full w-full object-cover"
                           loading="lazy"
@@ -1958,7 +2102,7 @@ return (
                     </div>
                   </div>
                   <div 
-                    className="relative rounded-[6px] bg-[#1C1F2E] px-6 py-6 before:pointer-events-none"
+                    className="relative rounded-[6px] bg-[#202334] px-6 py-6 before:pointer-events-none"
                     style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
                   >
                     <div>
@@ -1966,6 +2110,7 @@ return (
                         {finalTrackerItems.length ? (
                           finalTrackerItems.map((status, idx) => {
                             const isFinal = phase === "final";
+                            const isLeaderboardTile = isFinal && idx === 0;
                             const isCurrent = isFinal
                               ? idx === selectedFinalIndex
                               : idx === index && phase !== "between";
@@ -1988,18 +2133,36 @@ return (
                                 : "",
                             ].join(" ");
 
-                            const trackerLabel = `Question ${idx + 1}`;
+                            const trackerLabel = isLeaderboardTile
+                              ? "Classement final"
+                              : `Question ${idx}`;
 
                             return isFinal ? (
                               <button
-                                key={`q-${idx + 1}`}
+                                key={isLeaderboardTile ? "final-leaderboard" : `q-${idx}`}
                                 type="button"
                                 onClick={() => setSelectedFinalIndex(idx)}
                                 className={trackerClasses}
                                 aria-label={`Voir ${trackerLabel}`}
                                 title={`Voir ${trackerLabel}`}
                               >
-                                {idx + 1}
+                                {isLeaderboardTile ? (
+                                  <span aria-hidden className="grid h-full w-full grid-cols-3 gap-[1px] rounded-[4px] overflow-hidden">
+                                    {Array.from({ length: 9 }, (_, checkerIdx) => {
+                                      const row = Math.floor(checkerIdx / 3);
+                                      const col = checkerIdx % 3;
+                                      const isDark = (row + col) % 2 === 0;
+                                      return (
+                                        <span
+                                          key={checkerIdx}
+                                          className={isDark ? "bg-white/85" : "bg-black/70"}
+                                        />
+                                      );
+                                    })}
+                                  </span>
+                                ) : (
+                                  idx
+                                )}
                               </button>
                             ) : (
                               <div
@@ -2018,61 +2181,6 @@ return (
                       </div>
                     </div>
                   </div>
-
-                  {phase === "final" ? (
-                    <div 
-                      className="rounded-[6px] bg-[#1C1F2E] px-6 py-6 flex flex-col overflow-x-hidden"
-                      style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
-                    >
-                      {selectedFinalQuestion ? (
-                        <>
-                          <div className="text-[13px] font-semibold leading-snug text-white">
-                            {selectedFinalQuestion.text}
-                          </div>
-                          <div className="mt-3 text-[12px] text-white/70">
-                            <span className="text-white/45">Réponse :</span>{" "}
-                            <span className="font-semibold text-white">
-                              {selectedFinalQuestion.correctLabel ?? "—"}
-                            </span>
-                          </div>
-                          {selectedFinalQuestion.stats ? (
-                            <div className="mt-4 flex items-center justify-between gap-3 text-[12px]">
-                              <div className="flex items-center gap-2 text-white/80">
-                                <span className="tabular-nums font-semibold">
-                                  {selectedFinalQuestion.stats.correct}
-                                </span>
-                                <span className="flex h-4 w-4 items-center justify-center rounded-[4px] bg-emerald-400 text-[10px] font-bold text-white">
-                                  ✓
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-white/80">
-                                <span className="tabular-nums font-semibold">
-                                  {selectedFinalQuestion.stats.correctQcm}
-                                </span>
-                                <span className="flex h-4 w-4 items-center justify-center rounded-[4px] bg-amber-400 text-[10px] font-bold text-white">
-                                  ~
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-white/80">
-                                <span className="tabular-nums font-semibold">
-                                  {selectedFinalQuestion.stats.wrong}
-                                </span>
-                                <span className="flex h-4 w-4 items-center justify-center rounded-[4px] ? [#AF2D33] text-[10px] font-bold text-white">
-                                  ✕
-                                </span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="mt-4 text-[12px] text-white/45">
-                              Statistiques indisponibles.
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="mt-4 text-[12px] text-white/45">—</div>
-                      )}
-                    </div>
-                  ) : null}
                 </div>
               </div>
             </aside>

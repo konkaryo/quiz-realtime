@@ -19,6 +19,7 @@ import { registerSocketHandlers } from "./sockets/handlers";
 import { clientsInRoom, isCodeValid, genCode, genRoomId, getNextArenaRoomName } from "./domain/room/room.service";
 import { getInterfaceImages, resolveRoomImage } from "./domain/room/room-images";
 import { raceRoutes } from "./routes/race";
+import { questionRoutes } from "./routes/questions";
 import { Theme, RoomVisibility } from "@prisma/client";
 
 /* ---------------- runtime maps ---------------- */
@@ -51,6 +52,7 @@ async function main() {
   await app.register(leaderboardRoutes({ prisma }), { prefix: "/leaderboard" });
   await app.register(playerRoutes({ prisma }), { prefix: "/players" });
   await app.register(raceRoutes({ prisma }), { prefix: "/race" });
+  await app.register(questionRoutes({ prisma }), { prefix: "/questions" });
 
   app.get("/health", async () => ({ ok: true }));
 

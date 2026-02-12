@@ -46,6 +46,15 @@ enum RoomVisibility {
   PRIVATE
 }
 
+enum QuestionReportReason {
+  ANSWER_INCORRECT_OR_MISSING
+  SPELLING_ERRORS
+  IMAGE_ISSUE
+  UNINTERESTING_QUESTION
+  OTHER
+}
+
+
 model User {
   id              String    @id @default(cuid())
   email           String?   @unique
@@ -86,6 +95,7 @@ model Player {
   createdAt   DateTime              @default(now())
   playerGames PlayerGame[]
   dailyScores DailyChallengeScore[]
+  reports     QuestionReport[]
 }
 
 model Bot {
@@ -156,6 +166,7 @@ model Question {
   acceptedAnswers AcceptedAnswer[]
   answers         Answer[]
   dailyEntries    DailyChallengeQuestion[]
+  reports         QuestionReport[]
 }
 
 model PlayerGame {
@@ -238,4 +249,18 @@ model DailyChallengeScore {
   @@unique([challengeId, playerId], name: "challenge_player_unique")
   @@index([challengeId])
   @@index([playerId])
+}
+
+model QuestionReport {
+  id         String               @id @default(cuid())
+  questionId String
+  question   Question             @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  playerId   String
+  player     Player               @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  reason     QuestionReportReason
+  createdAt  DateTime             @default(now())
+
+  @@index([questionId])
+  @@index([playerId])
+  @@index([createdAt])
 }

@@ -1,5 +1,5 @@
 // web/src/components/QuestionPanel.tsx
-import { RefObject, KeyboardEvent, useRef } from "react";
+import { RefObject, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 
 export type Choice = { id: string; label: string };
@@ -14,6 +14,11 @@ export type QuestionLite = {
 };
 
 export type QuestionProgress = "pending" | "correct" | "wrong";
+
+const API_BASE =
+  import.meta.env.VITE_API_BASE ??
+  (typeof window !== "undefined" ? window.location.origin : "");
+
 
 function Lives({ lives, total }: { lives: number; total: number }) {
   const full = Array.from({ length: lives }).map((_, i) => (
@@ -105,7 +110,7 @@ export function OverwatchTimerBadge({
     })
     .join(" ");
 
-  const violet = "#3E4566";
+  const violet = "#434B71";
 
   return (
     <div aria-live="polite" className="flex items-center justify-center">
@@ -115,7 +120,7 @@ export function OverwatchTimerBadge({
           height={size}
           className="drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
         >
-          <circle cx={cx} cy={cy} r={34} className="fill-[#141827]" />
+          <circle cx={cx} cy={cy} r={34} className="fill-[#161A2C]" />
 
           <g transform={`rotate(-90 ${cx} ${cy})`}>
             <circle
@@ -192,6 +197,9 @@ type Props = {
 
   questionProgress: QuestionProgress[];
   wrongTextAnswer?: string | null;
+  showTimer?: boolean;
+  showAnswerSection?: boolean;
+  showProgress?: boolean;
 };
 
 export default function DailyQuestionPanel(props: Props) {
@@ -226,6 +234,9 @@ export default function DailyQuestionPanel(props: Props) {
     onSelectChoice,
     questionProgress,
     wrongTextAnswer = null,
+    showTimer = true,
+    showAnswerSection = true,
+    showProgress = true,
   } = props;
 
   const showCorrectLabelCell =
@@ -261,15 +272,15 @@ export default function DailyQuestionPanel(props: Props) {
   };
 
   const topPanelClass =
-    "relative z-10 h-full w-full rounded-[14px] border border-slate-700/70 bg-[#1C1F2E] px-3 py-1 md:px-5 md:py-2";
+    "relative z-10 h-full w-full rounded-[14px] border border-slate-700/70 bg-[#202334] px-3 py-1 md:px-5 md:py-2";
 
   const bottomPanelClass =
-    "relative w-full bg-[#1C1F2E] rounded-[9px] p-3 md:p-4";
+    "relative w-full bg-[#202334] rounded-[9px] p-3 md:p-4";
 
   const topPanelStyle = { boxShadow: "none" as const };
 
   const bottomPanelStyle = {
-    boxShadow: "4px 8px 8px rgba(0,0,0,0.6)" as const,
+    boxShadow: "4px 8px 8px rgba(0,0,0,0.3)" as const,
   };
 
   const isQcmMode = showChoices && !!choices;
@@ -287,21 +298,87 @@ export default function DailyQuestionPanel(props: Props) {
 
   const showLeft = showCorrectMeta && !!pointsText;
   const showRight = showCorrectMeta && !!timeText;
+  const thumbDownReasons = [
+    "Réponse erronée ou manquante",
+    "Faute(s) d'orthographe",
+    "Problème lié à l'image",
+    "Question sans intérêt",
+    "Autre",
+  ] as const;
+  const [thumbVote, setThumbVote] = useState<"up" | "down" | null>(null);
+  const [thumbDownReason, setThumbDownReason] = useState<(typeof thumbDownReasons)[number] | null>(null);
+  const [thumbDownMenuPos, setThumbDownMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const thumbDownButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    setThumbVote(null);
+    setThumbDownReason(null);
+  }, [question.id]);
+
+  useEffect(() => {
+    if (thumbVote !== "down") {
+      setThumbDownMenuPos(null);
+      return;
+    }
+
+    const updateMenuPos = () => {
+      const rect = thumbDownButtonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setThumbDownMenuPos({
+        top: rect.top - 6,
+        left: rect.right + 10,
+      });
+    };
+
+    updateMenuPos();
+    window.addEventListener("resize", updateMenuPos);
+    window.addEventListener("scroll", updateMenuPos, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuPos);
+      window.removeEventListener("scroll", updateMenuPos, true);
+    };
+  }, [thumbVote]);
+
+  const reasonCodeByLabel: Record<(typeof thumbDownReasons)[number], string> = {
+    "Réponse erronée ou manquante": "ANSWER_INCORRECT_OR_MISSING",
+    "Faute(s) d'orthographe": "SPELLING_ERRORS",
+    "Problème lié à l'image": "IMAGE_ISSUE",
+    "Question sans intérêt": "UNINTERESTING_QUESTION",
+    Autre: "OTHER",
+  };
+
+  const submitQuestionReport = async (reasonLabel: (typeof thumbDownReasons)[number]) => {
+    const reason = reasonCodeByLabel[reasonLabel];
+    if (!question?.id || !reason) return;
+    try {
+      await fetch(`${API_BASE}/questions/${question.id}/reports`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+    } catch {
+      // no-op: l'UI reste réactive même si le signalement échoue
+    }
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col items-center">
       {/* TIMER */}
-      <div className="w-[700px] max-w-full">
-        <div className="relative flex justify-center">
-          <OverwatchTimerBadge
-            seconds={isReveal ? 0 : remainingSeconds}
-            progress={isReveal ? 0 : timerProgress}
-          />
+      {showTimer ? (
+        <div className="w-[700px] max-w-full">
+          <div className="relative flex justify-center">
+            <OverwatchTimerBadge
+              seconds={isReveal ? 0 : remainingSeconds}
+              progress={isReveal ? 0 : timerProgress}
+            />
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {/* PANNEAU SUPÉRIEUR */}
-      <div className="relative mt-14 w-[430px] max-w-full aspect-[2.24/1]">
+      <div className={`relative ${showTimer ? "mt-14" : "mt-6"} w-[430px] max-w-full aspect-[2.24/1]`}>
         {/* NOM DU THÈME */}
         {question.theme && (
           <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-center">
@@ -312,21 +389,83 @@ export default function DailyQuestionPanel(props: Props) {
         )}
 
         {/* BOUTONS THUMB UP / DOWN */}
-        <div className="absolute top-3 -right-12 flex flex-col gap-2 z-20">
-          <button className="group p-2 transition">
+        <div className="absolute top-3 -right-12 z-20 flex flex-col gap-2">
+          <button
+            type="button"
+            aria-pressed={thumbVote === "up"}
+            onClick={() => {
+              setThumbVote((prev) => (prev === "up" ? null : "up"));
+              setThumbDownReason(null);
+            }}
+            className="group p-2 transition"
+          >
             <ThumbsUp
               size={18}
-              className="stroke-white/50 fill-none group-hover:stroke-white group-hover:fill-white transition"
+              className={[
+                "transition",
+                thumbVote === "up"
+                  ? "stroke-white fill-white"
+                  : "stroke-white/50 fill-none group-hover:stroke-white group-hover:fill-white",
+              ].join(" ")}
             />
           </button>
 
-          <button className="group p-2 transition">
+          <button
+            ref={thumbDownButtonRef}
+            type="button"
+            aria-pressed={thumbVote === "down"}
+            onClick={() => {
+              setThumbVote((prev) => {
+                const next = prev === "down" ? null : "down";
+                if (next !== "down") setThumbDownReason(null);
+                return next;
+              });
+            }}
+            className="group p-2 transition"
+          >
             <ThumbsDown
               size={18}
-              className="stroke-white/50 fill-none group-hover:stroke-white group-hover:fill-white transition"
+              className={[
+                "transition",
+                thumbVote === "down"
+                  ? "stroke-white fill-white"
+                  : "stroke-white/50 fill-none group-hover:stroke-white group-hover:fill-white",
+              ].join(" ")}
             />
           </button>
         </div>
+
+        {thumbVote === "down" && thumbDownMenuPos ? (
+          <div
+            className="fixed z-[2147483647] min-w-[230px] rounded-[10px] border border-white/20 bg-[#141827]/95 p-2 shadow-[0_10px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm"
+            style={{ top: `${thumbDownMenuPos.top}px`, left: `${thumbDownMenuPos.left}px` }}
+          >
+            <ul className="flex flex-col gap-1">
+              {thumbDownReasons.map((reason) => {
+                const isSelected = thumbDownReason === reason;
+                return (
+                  <li key={reason}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setThumbDownReason(reason);
+                        void submitQuestionReport(reason);
+                      }}
+                      className={[
+                        "w-full rounded-[6px] px-2.5 py-2 text-left text-[12px] transition",
+                        isSelected
+                          ? "bg-white/20 text-white"
+                          : "text-white/80 hover:bg-white/10 hover:text-white",
+                      ].join(" ")}
+                    >
+                      {reason}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
 
         <div
           className="pointer-events-none absolute inset-0 translate-y-2 rounded-[14px]"
@@ -340,6 +479,9 @@ export default function DailyQuestionPanel(props: Props) {
           </div>
         </div>
       </div>
+
+      {showAnswerSection ? (
+        <>
 
       {/* ✅ MODE QCM : uniquement les cellules (moins longues + texte centré) */}
       {isQcmMode ? (
@@ -480,8 +622,10 @@ export default function DailyQuestionPanel(props: Props) {
           {reserveFeedbackSpace ? <div className="mt-2" /> : null}
         </div>
       )}
+        </>
+      ) : null}
 
-      {questionProgress.length > 0 && (
+      {showProgress && questionProgress.length > 0 && (
         <div className="mt-4 flex flex-wrap justify-center gap-1.5">
           {questionProgress.map((state, i) => {
             const color =
