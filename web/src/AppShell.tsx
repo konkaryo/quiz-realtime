@@ -36,55 +36,55 @@ type MenuItem = {
 };
 
 function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
+  const location = useLocation();
+  const [isHovered, setIsHovered] = useState(false);
+  const isActive =
+    location.pathname === to ||
+    (location.pathname.startsWith(`${to}/`) && to !== "/");
+  const isHighlighted = isHovered || isActive;
   return (
     <Link
       to={to}
       style={{
         display: "block",
-        borderRadius: 6,
-        padding: 8,
+        width: "100%",
+        borderRadius: 0,
+        padding: "9px 12px 9px 16px",
         border: "none",
         background: "transparent",
         color: "inherit",
         textDecoration: "none",
         position: "relative",
-        overflow: "hidden", // ✅ l’overlay respecte l’arrondi
-        transition: "transform .15s ease",
+        overflow: "visible",
       }}
-      onMouseEnter={(e) => {
-        const titleEl = e.currentTarget.querySelector<HTMLElement>(
-          "[data-menu-title]"
-        );
-        if (titleEl) titleEl.style.color = "#ffffff";
-
-        const overlay = e.currentTarget.querySelector<HTMLElement>(
-          "[data-hover-overlay]"
-        );
-        if (overlay) overlay.style.opacity = "0.10"; // ✅ layer +10% plus clair
-      }}
-      onMouseLeave={(e) => {
-        const titleEl = e.currentTarget.querySelector<HTMLElement>(
-          "[data-menu-title]"
-        );
-        if (titleEl) titleEl.style.color = "#e2e8f0";
-
-        const overlay = e.currentTarget.querySelector<HTMLElement>(
-          "[data-hover-overlay]"
-        );
-        if (overlay) overlay.style.opacity = "0";
-      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* ✅ overlay hover (layer) */}
       <span
-        data-hover-overlay
         aria-hidden
         style={{
           position: "absolute",
-          inset: 0,
-          background: "#ffffff",
-          opacity: 0,
-          transition: "opacity .15s ease",
+          left: -12,
+          right: -12,
+          top: 0,
+          bottom: 0,
+          background: isHighlighted ? "rgba(255,255,255,0.14)" : "transparent",
+          transition: "background-color .15s ease",
           pointerEvents: "none",
+        }}
+      />
+
+      <span
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: -12,
+          top: 0,
+          bottom: 0,
+          width: 2,
+          background: "#7c3aed",
+          opacity: isHighlighted ? 1 : 0,
+          transition: "opacity .15s ease",
         }}
       />
 
@@ -93,10 +93,9 @@ function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
           display: "flex",
           gap: 8,
           alignItems: "center",
-          position: "relative", // ✅ au-dessus de l’overlay
+          position: "relative",
         }}
       >
-        {/* ✅ icône: pas de carré de fond, juste l'image / icône */}
         <div
           style={{
             width: 28,
@@ -117,13 +116,13 @@ function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
               fontWeight: 700,
               lineHeight: 1.1,
               fontSize: 12,
-              color: "#e2e8f0",
+              color: isHighlighted ? "#ffffff" : "#e2e8f0",
               transition: "color .15s ease",
             }}
           >
             {title}
           </div>
-          <div style={{ opacity: 0.7, fontSize: 10 }}>{desc}</div>
+          <div style={{ opacity: isHighlighted ? 0.9 : 0.7, fontSize: 10 }}>{desc}</div>
         </div>
       </div>
     </Link>
@@ -789,7 +788,7 @@ export default function AppShell() {
                 />
 
                 <div
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                  style={{ display: "flex", flexDirection: "column", gap: 0 }}
                 >
                   {soloItems.map((it) => (
                     <MenuCard key={it.to} {...it} />
@@ -846,7 +845,7 @@ export default function AppShell() {
                 />
 
                 <div
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                  style={{ display: "flex", flexDirection: "column", gap: 0 }}
                 >
                   {multiItems.map((it) => (
                     <MenuCard key={it.to} {...it} />
@@ -905,7 +904,7 @@ export default function AppShell() {
                 />
 
                 <div
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                  style={{ display: "flex", flexDirection: "column", gap: 0 }}
                 >
                   {privateItems.map((it) => (
                     <div

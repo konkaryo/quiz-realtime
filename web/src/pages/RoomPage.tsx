@@ -7,9 +7,8 @@ import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
 import Background from "../components/Background";
 import trophy from "../assets/trophy.png";
-import playerIcon from "../assets/player.png";
 import starUrl from "../assets/star.png";
-import crown from "../assets/crown.png";
+import emptyQuestionImg from "../assets/empty_img.jpg";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
   OverwatchTimerBadge,
@@ -150,10 +149,10 @@ function PlayerCell({
         style={{
           // ✅ Gradient normal + variante self
           background: isSelf
+            ? "linear-gradient(to bottom, rgba(162, 143, 255, 0.35), rgba(162,143,255,0.27))"
+            : "linear-gradient(to bottom, rgba(187,190,213,0.08), rgba(187,190,213,0.05))",
             //? "linear-gradient(to bottom, rgba(162, 143, 255, 0.28), rgba(162,143,255,0.2))"
-            //: "linear-gradient(to bottom, rgba(187,190,213,0.07), rgba(187,190,213,0.04))",
-            ? "linear-gradient(to bottom, rgba(162, 143, 255, 0.28), rgba(162,143,255,0.2))"
-            : "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.15))",
+            //: "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.15))",
 
         }}
       >
@@ -1823,54 +1822,8 @@ return (
   className="hidden lg:block fixed left-0 bottom-12 z-20 overflow-x-hidden"
   style={{ top: fixedTop, width: leftW }}
 >
-  <div className="h-full overflow-x-hidden bg-transparent pb-3 pr-3 pt-3 pl-6">
-    {/* ✅ Panel style "Classement" */}
-    <div
-      className="h-full rounded-[6px] overflow-hidden bg-[#1B1D2D] border border-white/10"
-    >
-      {/* ✅ Header avec ombre sous la barre */}
-      <div
-        className="h-[48px] bg-[#222538] flex items-center justify-center relative z-10"
-        style={{ boxShadow: "0 4px 8px rgba(0,0,0,.25)" }}
-      >
-        {/* léger fondu vers le bas pour renforcer le relief */}
-        <div className="pointer-events-none absolute left-0 right-0 bottom-[-14px] h-[14px] bg-gradient-to-b from-black/25 to-transparent" />
-
-        <div className="flex items-center gap-2">
-          {/* 👑 Crown icon */}
-          <img
-            src={crown}
-            alt=""
-            className="h-5 w-5 object-contain opacity-90"
-            draggable={false}
-          />
-
-          {/* Titre + nombre de joueurs */}
-          <div className="flex items-center gap-2">
-            <div className="text-[16px] font-semibold text-white/90">
-              Classement
-            </div>
-
-            <div className="flex items-center gap-1 text-[13px] font-semibold text-white/90">
-              (
-              <span className="tabular-nums">
-                {Math.max(leaderboard.length, 1)}
-              </span>
-
-              <img
-                src={playerIcon}
-                alt=""
-                className="h-3 w-3 object-contain opacity-80"
-                draggable={false}
-              />
-              )
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Contenu */}
-      <div className="h-[calc(100%-48px)] px-4 pt-6 pb-3 flex flex-col min-h-0 overflow-x-hidden">
+  <div className="h-full overflow-x-hidden bg-transparent pb-6 pr-3 pt-6 pl-6">
+    <div className="h-full px-4 pt-4 pb-5 flex flex-col min-h-0 overflow-x-hidden">
         {leaderboard.length === 0 ? (
           <div className="text-white/45 text-sm">—</div>
         ) : (
@@ -1901,14 +1854,13 @@ return (
 
             {/* ✅ self row en bas (si scroll) */}
             {hasScrollableLeaderboard && selfRow ? (
-              <div className="mt-3 pt-3 border-t border-white/10 overflow-x-hidden">
+              <div className="mt-4 pt-4 border-t border-white/10 overflow-x-hidden">
                 {renderLeaderboardLine(selfRow, selfIndex + 1, true)}
               </div>
             ) : null}
           </>
         )}
       </div>
-    </div>
   </div>
 </aside>
 
@@ -2086,19 +2038,16 @@ return (
                     style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
                   >
                     <div className="relative aspect-video w-full">
-                      {(phase === "final" ? selectedFinalQuestionPanel?.img : normalizedQuestion?.img) ? (
-                        <img
-                          src={(phase === "final" ? selectedFinalQuestionPanel?.img : normalizedQuestion?.img) ?? ""}
-                          alt="Illustration de la question"
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                          draggable={false}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center px-4 text-center text-[12px] text-white/45">
-                          L&apos;image de la question apparaîtra ici.
-                        </div>
-                      )}
+                      <img
+                        src={(phase === "final" ? selectedFinalQuestionPanel?.img : normalizedQuestion?.img) || emptyQuestionImg}
+                        alt="Illustration de la question"
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        draggable={false}
+                        onError={(event) => {
+                          event.currentTarget.src = emptyQuestionImg;
+                        }}
+                      />
                     </div>
                   </div>
                   <div 
@@ -2147,10 +2096,10 @@ return (
                                 title={`Voir ${trackerLabel}`}
                               >
                                 {isLeaderboardTile ? (
-                                  <span aria-hidden className="grid h-full w-full grid-cols-3 gap-[1px] rounded-[4px] overflow-hidden">
-                                    {Array.from({ length: 9 }, (_, checkerIdx) => {
-                                      const row = Math.floor(checkerIdx / 3);
-                                      const col = checkerIdx % 3;
+                                  <span aria-hidden className="grid h-full w-full grid-cols-5 gap-[1px] rounded-[4px] overflow-hidden">
+                                    {Array.from({ length: 25 }, (_, checkerIdx) => {
+                                      const row = Math.floor(checkerIdx / 5);
+                                      const col = checkerIdx % 5;
                                       const isDark = (row + col) % 2 === 0;
                                       return (
                                         <span
@@ -2189,12 +2138,8 @@ return (
           {/* MOBILE */}
           <div className="lg:hidden px-5 md:px-8 pb-10" style={{ marginTop: TOP_BAR_H }}>
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-white/10 bg-transparent p-4 overflow-x-hidden">
-                <SectionTitle right={`${Math.max(leaderboard.length, 1)} joueurs`}>
-                  Classement
-                </SectionTitle>
-
-                <div className="mt-3 max-h-[360px] overflow-y-auto overflow-x-hidden pr-2 lb-scroll">
+              <div className="p-0 overflow-x-hidden">
+                <div className="max-h-[360px] overflow-y-auto overflow-x-hidden pr-2 lb-scroll">
                   {(leaderboard ?? []).map((r, i) => (
                     <div
                       key={r.id}
