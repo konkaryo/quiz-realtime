@@ -15,6 +15,7 @@ import QuestionPanel, {
   QuestionProgress as QuestionPanelProgress,
 } from "../components/QuestionPanel";
 import { getLevelFromExperience } from "../utils/experience";
+import { Settings } from "lucide-react";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -1689,6 +1690,16 @@ useEffect(() => {
   // ✅ Nom du salon affiché en gros à droite
   const roomDisplayName = roomMeta?.name?.trim() || "-";
 
+  const roomImageSrc = useMemo(() => {
+    if (!roomMeta?.image) return emptyQuestionImg;
+    if (roomMeta.image.startsWith("http") || roomMeta.image.startsWith("/")) {
+      return roomMeta.image;
+    }
+    // Même logique que Home: slug d'image -> /img/interface/{slug}.avif
+    return `${API_BASE}/img/interface/${roomMeta.image}.avif`;
+  }, [roomMeta?.image]);
+
+
   const roomInfoItems: RoomInfoItem[] = [
     { label: "Public", value: visibilityLabel },
     { label: "Joueurs", value: Math.max(leaderboard.length, 1) },
@@ -1819,11 +1830,48 @@ return (
           <div className="relative grid grid-cols-1 lg:block">
 {/* LEFT */}
 <aside
-  className="hidden lg:block fixed left-0 bottom-12 z-20 overflow-x-hidden"
+  className="hidden lg:block fixed left-0 bottom-12 z-30 overflow-x-hidden"
   style={{ top: fixedTop, width: leftW }}
 >
-  <div className="h-full overflow-x-hidden bg-transparent pb-6 pr-3 pt-6 pl-6">
-    <div className="h-full px-4 pt-4 pb-5 flex flex-col min-h-0 overflow-x-hidden">
+  <div className="h-full overflow-x-hidden bg-transparent pb-6 pr-3 pt-3 pl-3">
+    <div className="h-full px-4 pb-5 flex flex-col min-h-0 overflow-x-hidden">
+        <div className="relative mb-6 overflow-visible rounded-[6px] border border-white/10 bg-white/[0.03]">
+
+            <button
+              type="button"
+              aria-label="Paramètres du salon"
+              title="Paramètres du salon"
+              className="absolute right-[0%] top-2 z-50 inline-flex h-7 w-7 translate-x-[120%] items-center justify-center text-white/70 transition hover:text-white"
+            >
+              <Settings className="h-5 w-5" strokeWidth={2.2} />
+            </button>
+
+          <div className="relative aspect-[5/2] w-full overflow-hidden border-b border-white/10 bg-[#1A1B27]">
+
+            <img
+              src={roomImageSrc}
+              alt={`Image du salon ${roomDisplayName}`}
+              className="h-full w-full object-cover"
+              draggable={false}
+              loading="lazy"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <div
+                className="truncate text-[15px] font-semibold text-white"
+                title={roomDisplayName}
+              >
+                {roomDisplayName}
+              </div>
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-white/80">
+                <span>{visibilityLabel}</span>
+                <span aria-hidden>•</span>
+                <span>{Math.max(leaderboard.length, 1)} joueur(s)</span>
+              </div>
+            </div>
+          </div>
+        </div>
         {leaderboard.length === 0 ? (
           <div className="text-white/45 text-sm">—</div>
         ) : (

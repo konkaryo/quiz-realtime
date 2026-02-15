@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import playerIcon from "../assets/player.png";
+import swordsIcon from "../assets/swords.png";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -15,13 +16,13 @@ type RoomListItem = {
 
 type RoomDetail = { id: string; code?: string | null };
 
-function difficultyStars(difficulty?: number) {
-  if (typeof difficulty !== "number") return "☆☆☆☆☆";
-  if (difficulty <= 20) return "★☆☆☆☆";
-  if (difficulty <= 40) return "★★☆☆☆";
-  if (difficulty <= 60) return "★★★☆☆";
-  if (difficulty <= 80) return "★★★★☆";
-  return "★★★★★";
+function difficultyStarCount(difficulty?: number) {
+  if (typeof difficulty !== "number") return 0;
+  if (difficulty <= 20) return 1;
+  if (difficulty <= 40) return 2;
+  if (difficulty <= 60) return 3;
+  if (difficulty <= 80) return 4;
+  return 5;
 }
 
 export default function Home() {
@@ -98,7 +99,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-full overflow-hidden text-slate-50">
-      <div aria-hidden className="fixed inset-0 bg-[#0A0B12]" />
+      <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
 
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-12 sm:px-8 lg:px-10">
         <header className="text-center">
@@ -119,25 +120,22 @@ export default function Home() {
             {rooms.map((room) => {
               const imageUrl = room.image ? `${API_BASE}/img/interface/${room.image}.avif` : "";
               const label = room.name?.trim() || "Salon public";
-              const stars = difficultyStars(room.difficulty);
+              const stars = difficultyStarCount(room.difficulty);
               const players =
                 typeof room.playerCount === "number" ? room.playerCount : null;
 
               return (
                 <div
                   key={room.id}
-                  className="group flex w-full max-w-[240px] flex-col items-center gap-3 transition-transform duration-200 hover:z-10 hover:scale-[1.05]"
+                  className="group flex w-full max-w-[240px] flex-col items-center transition-transform duration-200 hover:z-10 hover:scale-[1.05]"
                 >
-                  <div className="text-xl font-semibold tracking-wide text-amber-400">
-                    {stars}
-                  </div>
                   <button
                     type="button"
                     onClick={() => openRoom(room.id)}
                     aria-label={`Ouvrir ${label}`}
                     className="relative w-full overflow-hidden rounded-[6px] border-2 border-white/20 bg-white/5 shadow-[0_18px_40px_rgba(0,0,0,.45)] transition group-hover:border-white"
                   >
-                    <div className="relative aspect-[5/7] w-full overflow-hidden">
+                    <div className="relative aspect-[5/6] w-full overflow-hidden">
                       {imageUrl ? (
                         <img
                           src={imageUrl}
@@ -148,22 +146,43 @@ export default function Home() {
                       ) : (
                         <div className="h-full w-full bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900" />
                       )}
+
+                      <div className="absolute inset-0 flex flex-col p-4 text-white">
+                        <div className="text-left text-3xl font-brand leading-none drop-shadow-[0_3px_6px_rgba(0,0,0,.65)]">
+                          {label}
+                        </div>
+
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                          <img
+                            src={swordsIcon}
+                            alt=""
+                            className="h-28 w-28 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,.5)]"
+                            draggable={false}
+                          />
+                        </div>
+
+                        {stars > 0 && (
+                          <div className="absolute right-4 top-1/2 flex -translate-y-1/2 flex-col items-center justify-center leading-none">
+                            {Array.from({ length: stars }, (_, index) => (
+                              <span key={`${room.id}-star-${index}`} className="text-[18px] text-white">
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="mt-auto flex items-center justify-center gap-2 text-[20px] font-semibold leading-none drop-shadow-[0_3px_6px_rgba(0,0,0,.65)]">
+                          <span>{players ?? "—"}</span>
+                          <img
+                            src={playerIcon}
+                            alt=""
+                            className="h-5 w-5 object-contain"
+                            draggable={false}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </button>
-                  <div className="w-full text-center">
-                    <div className="flex min-h-[42px] items-center justify-center rounded-[6px] border-2 border-white/25 px-3 py-2 text-center text-m font-brand uppercase tracking-[0.12em] text-white transition group-hover:bg-white group-hover:text-slate-900">
-                        <span className="text-center leading-none">{label}</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-center gap-2 text-sm text-white">
-                      <span>{players ?? "—"}</span>
-                      <img
-                        src={playerIcon}
-                        alt=""
-                        className="h-4 w-4 object-contain"
-                        draggable={false}
-                      />
-                    </div>
-                  </div>
                 </div>
               );
             })}
