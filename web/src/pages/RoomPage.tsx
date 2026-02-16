@@ -1830,11 +1830,11 @@ return (
           <div className="relative grid grid-cols-1 lg:block">
 {/* LEFT */}
 <aside
-  className="hidden lg:block fixed left-0 bottom-12 z-30 overflow-x-hidden"
+  className="hidden lg:block fixed left-0 bottom-12 z-30 overflow-visible"
   style={{ top: fixedTop, width: leftW }}
 >
-  <div className="h-full overflow-x-hidden bg-transparent pb-6 pr-3 pt-3 pl-3">
-    <div className="h-full px-4 pb-5 flex flex-col min-h-0 overflow-x-hidden">
+  <div className="h-full overflow-visible bg-transparent pb-6 pr-3 pt-3 pl-3">
+    <div className="h-full px-4 pb-5 flex flex-col min-h-0 overflow-visible">
         <div className="relative mb-6 overflow-visible rounded-[6px] border border-white/10 bg-white/[0.03]">
 
             <button
