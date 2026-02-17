@@ -1,7 +1,6 @@
 // web/src/components/FinalLeaderboard.tsx
 
 import React, { useEffect, useMemo, useRef } from "react";
-import laurier from "../assets/laurier.png";
 import starUrl from "../assets/star.png";
 import { getLevelFromExperience } from "../utils/experience";
 
@@ -30,9 +29,9 @@ export function FinalLeaderboard({
   const podiumSlots = useMemo(
     () =>
       [
-        { h: 80, ring: "ring-slate-300/60", rank: 2 },
-        { h: 110, ring: "ring-amber-300/70", rank: 1 },
-        { h: 70, ring: "ring-orange-300/60", rank: 3 },
+        { h: 62, ring: "ring-slate-300/60", rank: 2 },
+        { h: 82, ring: "ring-amber-300/70", rank: 1 },
+        { h: 54, ring: "ring-orange-300/60", rank: 3 },
       ].map((slot) => ({ ...slot, row: rows[slot.rank - 1] })),
     [rows]
   );
@@ -62,7 +61,7 @@ export function FinalLeaderboard({
     <div className="px-2 pb-2">
       {/* Podium */}
       <div className="px-3 md:px-6 pb-1">
-        <div className="relative overflow-hidden rounded-xl">
+        <div className="relative overflow-hidden">
           <div className="relative grid grid-cols-1 md:grid-cols-3 items-end gap-7 py-3">
             {podiumSlots.map((slot) => {
               const { row, h, ring, rank } = slot;
@@ -73,7 +72,7 @@ export function FinalLeaderboard({
                   {/* Avatar */}
                   <div
                     className={[
-                      "w-14 h-14 md:w-16 md:h-16 rounded-xl overflow-hidden",
+                      "w-12 h-12 md:w-14 md:h-14 rounded-[6px] overflow-hidden",
                       "ring-4",
                       ring,
                       "shadow-[0_10px_40px_rgba(0,0,0,.45)]",
@@ -106,50 +105,40 @@ export function FinalLeaderboard({
                   </div>
 
                   {/* Marche */}
-                  <div
-                    className={[
-                      "relative w-full max-w-[260px] rounded-t-xl",
-                      podiumStepBackgroundClass,
-                      "border-x border-t border-white/10",
-                      "shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_16px_40px_rgba(0,0,0,.55)]",
-                    ].join(" ")}
-                    style={{ height: h }}
-                  >
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                      <div
-                        className={[
-                          "flex items-center",
-                          rank === 1 ? "flex-col gap-0" : "",
-                        ].join(" ")}
-                      >
-                        <span
-                          className={[
-                            "font-extrabold tabular-nums select-none",
-                            rank === 1
-                              ? "text-[40px]"
-                              : rank === 2
-                              ? "text-[36px]"
-                              : "text-[32px]",
-                            "text-[#D6DAE7]",
-                          ].join(" ")}
-                          style={{
-                            textShadow:
-                              "0 1px 0 rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.15)",
-                              opacity: .92,
-                          }}
-                        >
-                          {rank}
-                        </span>
+                  <div className="relative w-full max-w-[260px] flex flex-col justify-end" style={{ height: h + 18 }}>
+                    <div
+                      className="w-full h-[18px]"
+                      style={{ background: "linear-gradient(to top, #1A1D2C 0%, #13141F 100%)" }}
+                    />
 
-                        {rank === 1 ? (
-                          <img
-                            src={laurier}
-                            alt=""
-                            className="w-12 md:w-16 opacity-80 -mt-6"
-                            draggable={false}
-                            loading="lazy"
-                          />
-                        ) : null}
+                    <div className="relative w-full bg-[#212539]" style={{ height: h }}>
+                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        <div
+                          className={[
+                            "flex items-center",
+                            rank === 1 ? "flex-col gap-0" : "",
+                          ].join(" ")}
+                        >
+                          <span
+                            className={[
+                              "font-extrabold tabular-nums select-none",
+                              rank === 1
+                                ? "text-[36px]"
+                                : rank === 2
+                                ? "text-[32px]"
+                                : "text-[28px]",
+                              "text-[#D6DAE7]",
+                            ].join(" ")}
+                            style={{
+                              textShadow:
+                                "0 1px 0 rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.15)",
+                                opacity: .92,
+                            }}
+                          >
+                            {rank}
+                          </span>
+
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -516,7 +516,7 @@ async function finalizeGameAfterReveal(
   const awarded = await awardBitsForGame(prisma, st.gameId, leaderboard);
   const xpAwarded = await awardXpForGame(prisma, st.gameId, leaderboard);
 
-  const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 10000);
+  const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 100000);
   io.to(st.roomId).emit("final_leaderboard", { leaderboard, displayMs: FINAL_LB_MS });
   if (awarded.length) {
     io.to(st.roomId).emit("bits_awarded", {

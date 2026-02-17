@@ -1544,6 +1544,8 @@ useEffect(() => {
   const isPlaying = phase === "playing" && lives > 0;
   const showChoices = !!mcChoices;
   const textLocked = choicesRevealed || showChoices;
+  const isSubmitShortcutVisible = isPlaying && !textLocked;
+  const isChoicesShortcutVisible = isPlaying && !textLocked;
 
   const visibilityLabel =
     roomMeta?.visibility === "PUBLIC"
@@ -2209,6 +2211,20 @@ return (
                       </div>
                     </div>
                   </div>
+                  {isSubmitShortcutVisible || isChoicesShortcutVisible ? (
+                    <div className="px-1 text-[11px] text-white/65">
+                      {isSubmitShortcutVisible ? (
+                        <div>
+                          <span className="font-semibold text-white/80">Entrée</span> : Valider la réponse
+                        </div>
+                      ) : null}
+                      {isChoicesShortcutVisible ? (
+                        <div className={isSubmitShortcutVisible ? "mt-1" : ""}>
+                          <span className="font-semibold text-white/80">Tab</span> : Afficher les propositions de réponse
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </aside>
