@@ -1783,7 +1783,7 @@ const badgeSymbol =
   status === "correct"
     ? { ch: "▲", cls: "text-emerald-400" }
     : status === "correct-mc"
-    ? { ch: "▲", cls: "text-amber-400" }
+    ? { ch: "■", cls: "text-amber-400" }
     : status === "wrong"
     ? { ch: "▼", cls: "text-red-500" }
     : { ch: "-", cls: "text-white/50" };
@@ -2043,7 +2043,7 @@ return (
                                     <span className="tabular-nums font-semibold">
                                       {selectedFinalQuestion.stats.correctQcm}
                                     </span>
-                                    <span className="leading-none text-[16px] text-amber-400">▲</span>
+                                    <span className="leading-none text-[16px] text-amber-400">■</span>
                                   </div>
 
                                   <div className="inline-flex items-center gap-1.5" aria-label="Mauvaises réponses">
