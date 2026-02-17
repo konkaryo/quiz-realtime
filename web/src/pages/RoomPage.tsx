@@ -15,7 +15,7 @@ import QuestionPanel, {
   QuestionProgress as QuestionPanelProgress,
 } from "../components/QuestionPanel";
 import { getLevelFromExperience } from "../utils/experience";
-import { Settings } from "lucide-react";
+import { Eye, EyeOff, Settings, X } from "lucide-react";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -64,6 +64,12 @@ type FinalQuestionSnapshot = {
   theme?: string | null;
   correctLabel?: string | null;
 };
+
+function maskRoomCode(code: string | null | undefined) {
+  const normalized = (code ?? "").trim();
+  if (!normalized) return "—";
+  return "•".repeat(Math.max(normalized.length, 6));
+}
 
 /* Récapitulatif final (affiché à gauche uniquement en phase 'final') */
 type RecapItem = {
@@ -278,6 +284,8 @@ export default function RoomPage() {
   const finalXpTravelTimeoutRef = useRef<number | null>(null);
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
+  const [isRoomSettingsOpen, setIsRoomSettingsOpen] = useState(false);
+  const [isRoomCodeVisible, setIsRoomCodeVisible] = useState(false);
 
   /* ---- recap des questions reçu en fin de partie ---- */
   const [finalRecap, setFinalRecap] = useState<RecapItem[] | null>(null);
@@ -1708,6 +1716,28 @@ useEffect(() => {
     { label: "Code", value: roomMeta?.code ?? "—" },
   ];
 
+  useEffect(() => {
+    if (!isRoomSettingsOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsRoomSettingsOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isRoomSettingsOpen]);
+
+  const closeRoomSettings = () => {
+    setIsRoomSettingsOpen(false);
+    setIsRoomCodeVisible(false);
+  };
+
+  const openRoomSettings = () => {
+    setIsRoomSettingsOpen(true);
+  };
+
   const rankLabel = useMemo(() => {
     if (selfIndex < 0) return null;
     const rank = selfIndex + 1;
@@ -1841,6 +1871,7 @@ return (
               type="button"
               aria-label="Paramètres du salon"
               title="Paramètres du salon"
+              onClick={openRoomSettings}
               className="absolute right-[0%] top-2 z-50 inline-flex h-7 w-7 translate-x-[120%] items-center justify-center text-white/70 transition hover:text-white"
             >
               <Settings className="h-5 w-5" strokeWidth={2.2} />
@@ -2316,6 +2347,109 @@ return (
           {/* (Le reste du fichier continue : FinalQuestionRecapClean, etc.) */}
         </div>
       </div>
+
+      {isRoomSettingsOpen ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Paramètres du salon"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/65 backdrop-blur-sm"
+            aria-label="Fermer les paramètres du salon"
+            onClick={closeRoomSettings}
+          />
+
+          <div className="relative z-10 w-full max-w-[640px] overflow-hidden rounded-xl border border-white/15 bg-[#191B29]/95 shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
+            <button
+              type="button"
+              className="absolute right-4 top-3 inline-flex h-7 w-7 items-center justify-center rounded-md bg-[#E23A4A] text-white transition hover:bg-[#F04656]"
+              onClick={closeRoomSettings}
+              aria-label="Fermer"
+              title="Fermer"
+            >
+              <X className="h-[13px] w-[13px]" strokeWidth={2.8} />
+            </button>
+
+            <div className="border-b border-white/10 px-5 py-4">
+              <div>
+                <h2 className="text-[20px] font-semibold text-white">Paramètres du salon</h2>
+                <p className="mt-1 text-[12px] uppercase tracking-[0.16em] text-white/50">
+                  Informations et accès
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 p-5 sm:grid-cols-2">
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Nom</div>
+                <div className="mt-1 text-[12px] font-semibold tabular-nums text-white overflow-hidden text-ellipsis whitespace-nowrap" title={roomDisplayName}>
+                  {roomDisplayName}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Visibilité</div>
+                <div className="mt-1 text-[12px] font-semibold tabular-nums text-white overflow-hidden text-ellipsis whitespace-nowrap" title={String(visibilityLabel)}>
+                  {visibilityLabel}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Joueurs</div>
+                <div className="mt-1 text-[12px] font-semibold tabular-nums text-white overflow-hidden text-ellipsis whitespace-nowrap" title={String(Math.max(leaderboard.length, 1))}>
+                  {Math.max(leaderboard.length, 1)}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Difficulté</div>
+                <div className="mt-1 text-[12px] font-semibold tabular-nums text-white overflow-hidden text-ellipsis whitespace-nowrap" title={String(difficultyLabel)}>
+                  {difficultyLabel}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">ID du salon</div>
+                <div className="mt-1 text-[12px] font-semibold tabular-nums text-white overflow-hidden text-ellipsis whitespace-nowrap" title={roomMeta?.id ?? roomId ?? "—"}>
+                  {roomMeta?.id ?? roomId ?? "—"}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
+                  Code d'accès
+                </div>
+
+                <div className="mt-1 flex items-center justify-between gap-3">
+                  <div
+                    className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[12px] font-semibold tabular-nums text-white"
+                    title={isRoomCodeVisible ? roomMeta?.code ?? "—" : "Code masqué"}
+                  >
+                    {isRoomCodeVisible ? roomMeta?.code ?? "—" : maskRoomCode(roomMeta?.code)}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-white/70 transition hover:bg-white/[0.08] hover:text-white"
+                    onClick={() => setIsRoomCodeVisible((prev) => !prev)}
+                    aria-label={isRoomCodeVisible ? "Masquer le code" : "Afficher le code"}
+                    title={isRoomCodeVisible ? "Masquer le code" : "Afficher le code"}
+                  >
+                    {isRoomCodeVisible ? (
+                      <EyeOff className="h-4 w-4" strokeWidth={2.2} />
+                    ) : (
+                      <Eye className="h-4 w-4" strokeWidth={2.2} />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

@@ -309,6 +309,7 @@ export default function DailyQuestionPanel(props: Props) {
   const [thumbDownReason, setThumbDownReason] = useState<(typeof thumbDownReasons)[number] | null>(null);
   const [thumbDownMenuPos, setThumbDownMenuPos] = useState<{ top: number; left: number } | null>(null);
   const thumbDownButtonRef = useRef<HTMLButtonElement | null>(null);
+  const thumbDownMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setThumbVote(null);
@@ -337,6 +338,30 @@ export default function DailyQuestionPanel(props: Props) {
     return () => {
       window.removeEventListener("resize", updateMenuPos);
       window.removeEventListener("scroll", updateMenuPos, true);
+    };
+  }, [thumbVote]);
+
+  useEffect(() => {
+    if (thumbVote !== "down") return;
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+
+      if (thumbDownButtonRef.current?.contains(target)) return;
+      if (thumbDownMenuRef.current?.contains(target)) return;
+
+      setThumbVote(null);
+      setThumbDownReason(null);
+      setThumbDownMenuPos(null);
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown, { passive: true });
+
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
     };
   }, [thumbVote]);
 
@@ -437,7 +462,8 @@ export default function DailyQuestionPanel(props: Props) {
 
         {thumbVote === "down" && thumbDownMenuPos ? (
           <div
-            className="fixed z-[2147483647] min-w-[230px] rounded-[10px] border border-white/20 bg-[#141827]/95 p-2 shadow-[0_10px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm"
+            ref={thumbDownMenuRef}
+            className="fixed z-[2147483647] min-w-[230px] rounded-[10px] border border-black/10 bg-white p-2 shadow-[0_10px_24px_rgba(0,0,0,0.2)]"
             style={{ top: `${thumbDownMenuPos.top}px`, left: `${thumbDownMenuPos.left}px` }}
           >
             <ul className="flex flex-col gap-1">
@@ -454,8 +480,8 @@ export default function DailyQuestionPanel(props: Props) {
                       className={[
                         "w-full rounded-[6px] px-2.5 py-2 text-left text-[12px] transition",
                         isSelected
-                          ? "bg-white/20 text-white"
-                          : "text-white/80 hover:bg-white/10 hover:text-white",
+                          ? "bg-[#F1F3F8] text-[#111827]"
+                          : "text-[#374151] hover:bg-[#F8FAFC] hover:text-[#111827]",
                       ].join(" ")}
                     >
                       {reason}
