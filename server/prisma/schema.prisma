@@ -24,6 +24,13 @@ enum AnswerMode {
   mc
 }
 
+enum NotificationType {
+  INVITATION
+  MESSAGE
+  REWARD
+  INFO
+}
+
 enum Theme {
   ARTS
   AUDIOVISUEL
@@ -96,6 +103,19 @@ model Player {
   playerGames PlayerGame[]
   dailyScores DailyChallengeScore[]
   reports     QuestionReport[]
+  notifications Notification[]
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  playerId  String
+  player    Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  issuedAt  DateTime         @default(now())
+  type      NotificationType
+  message   String
+  read      Boolean          @default(false)
+
+  @@index([playerId, read, issuedAt])
 }
 
 model Bot {

@@ -22,6 +22,14 @@ type CurrentUser = {
   guest?: boolean;
 };
 
+type NotificationItem = {
+  id: string;
+  issuedAt: string;
+  type: "INVITATION" | "MESSAGE" | "REWARD" | "INFO";
+  message: string;
+  read: boolean;
+};
+
 const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
 
 const API_BASE =
@@ -256,6 +264,10 @@ export default function AppShell() {
   );
   const [userOpen, setUserOpen] = useState(false);
   const userRef = useRef<HTMLDivElement | null>(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   // ✅ hover icône "Créer un salon privé"
   const [isAddHover, setIsAddHover] = useState(false);
@@ -324,19 +336,71 @@ export default function AppShell() {
     }
   }, []);
 
+  const refreshUnreadCount = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/notifications/unread-count`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        setUnreadCount(0);
+        return;
+      }
+      const data = (await res.json()) as { count?: number };
+      setUnreadCount(Number(data?.count ?? 0));
+    } catch {
+      setUnreadCount(0);
+    }
+  }, []);
+
+  const loadUnreadNotifications = React.useCallback(async () => {
+    setNotificationsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/notifications/unread`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        setNotifications([]);
+        return;
+      }
+      const data = (await res.json()) as { notifications?: NotificationItem[] };
+      setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+    } catch {
+      setNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, []);
+
+  const markAllNotificationsRead = React.useCallback(async () => {
+    try {
+      await fetch(`${API_BASE}/notifications/mark-all-read`, {
+        method: "POST",
+        credentials: "include",
+      });
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch {}
+  }, []);
+
+
   useEffect(() => {
     void refreshUser();
   }, [refreshUser]);
 
   useEffect(() => {
+    void refreshUnreadCount();
+  }, [refreshUnreadCount]);
+
+  useEffect(() => {
     const handler = () => {
       void refreshUser();
+      void refreshUnreadCount();
     };
     window.addEventListener(AUTH_UPDATED_EVENT, handler);
     return () => {
       window.removeEventListener(AUTH_UPDATED_EVENT, handler);
     };
-  }, [refreshUser]);
+  }, [refreshUser, refreshUnreadCount]);
 
 
   useEffect(() => {
@@ -581,6 +645,11 @@ export default function AppShell() {
   }, []);
 
   useEffect(() => {
+    if (!notificationsOpen) return;
+    void loadUnreadNotifications();
+  }, [notificationsOpen, loadUnreadNotifications]);
+
+  useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!userRef.current) return;
       if (!userRef.current.contains(e.target as Node)) setUserOpen(false);
@@ -599,6 +668,9 @@ export default function AppShell() {
     setUser(null);
     setDisplayBits(0);
     setDisplayExperience(0);
+    setUnreadCount(0);
+    setNotifications([]);
+    setNotificationsOpen(false);
     nav("/login", { replace: true });
   }
 
@@ -1094,6 +1166,7 @@ export default function AppShell() {
                 type="button"
                 title="Notifications"
                 aria-label="Notifications"
+                onClick={() => setNotificationsOpen((prev) => !prev)}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -1104,8 +1177,24 @@ export default function AppShell() {
                   border: "none",
                   background: "transparent",
                   cursor: "pointer",
+                  position: "relative",
                 }}
               >
+                {unreadCount > 0 && (
+                  <span
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      top: 3,
+                      right: 3,
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: "#ef4444",
+                      boxShadow: "0 0 0 1px rgba(15,23,42,.9)",
+                    }}
+                  />
+                )}
                 <img
                   src={bellUrl}
                   alt="Notifications"
@@ -1243,6 +1332,96 @@ export default function AppShell() {
       >
         <Outlet />
       </main>
+      {notificationsOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Fermer les notifications"
+            onClick={() => setNotificationsOpen(false)}
+            style={{
+              position: "fixed",
+              left: 0,
+              right: 0,
+              top: HEADER_H,
+              bottom: 0,
+              border: "none",
+              background: "rgba(2,6,23,.45)",
+              backdropFilter: "blur(3px)",
+              WebkitBackdropFilter: "blur(3px)",
+              zIndex: 90,
+              cursor: "pointer",
+            }}
+          />
+          <aside
+            style={{
+              position: "fixed",
+              top: HEADER_H,
+              right: 0,
+              bottom: 0,
+              width: "min(360px, 92vw)",
+              background: "linear-gradient(180deg,#070d22,#0b1738)",
+              borderLeft: "1px solid rgba(255,255,255,.12)",
+              zIndex: 100,
+              color: "#e2e8f0",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div style={{ padding: "16px 14px", borderBottom: "1px solid rgba(255,255,255,.1)", fontWeight: 800, letterSpacing: ".05em", fontSize: 12 }}>
+              NOTIFICATIONS
+            </div>
+            <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 8, overflowY: "auto", flex: 1 }}>
+              {notificationsLoading ? (
+                <div style={{ opacity: 0.8, fontSize: 13 }}>Chargement...</div>
+              ) : notifications.length === 0 ? (
+                <div style={{ opacity: 0.8, fontSize: 13 }}>Aucune notification non lue.</div>
+              ) : (
+                notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      alignItems: "flex-start",
+                      background: "rgba(15,23,42,.65)",
+                      border: "1px solid rgba(255,255,255,.12)",
+                      borderRadius: 8,
+                      padding: "10px 10px",
+                    }}
+                  >
+                    <span style={{ color: "#22d3ee", marginTop: 1 }}>●</span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 11, opacity: 0.75, marginBottom: 3 }}>{notif.type}</div>
+                      <div style={{ fontSize: 13, lineHeight: 1.35 }}>{notif.message}</div>
+                      <div style={{ fontSize: 11, opacity: 0.65, marginTop: 4 }}>{new Date(notif.issuedAt).toLocaleString("fr-FR")}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div style={{ padding: 10, borderTop: "1px solid rgba(255,255,255,.1)" }}>
+              <button
+                type="button"
+                onClick={() => void markAllNotificationsRead()}
+                disabled={notifications.length === 0}
+                style={{
+                  width: "100%",
+                  height: 34,
+                  borderRadius: 6,
+                  border: "1px solid rgba(255,255,255,.5)",
+                  background: "#ffffff",
+                  color: "#0f172a",
+                  fontWeight: 700,
+                  cursor: notifications.length === 0 ? "not-allowed" : "pointer",
+                  opacity: notifications.length === 0 ? 0.6 : 1,
+                }}
+              >
+                TOUT MARQUER COMME LU
+              </button>
+            </div>
+          </aside>
+        </>
+      )}
       {joinLoadingPending && <JoinLoadingScreen offsetTop={HEADER_H} />}
     </div>
   );
