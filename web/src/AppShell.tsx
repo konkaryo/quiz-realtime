@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoUrl from "@/assets/synapz.png";
+import bellUrl from "@/assets/bell.png";
 import bitIconUrl from "@/assets/bit.png";
 import starUrl from "@/assets/star.png";
 import keyIconUrl from "@/assets/key_icon.png";
@@ -1088,6 +1089,31 @@ export default function AppShell() {
                   style={{ display: "block" }}
                 />
               </div>
+
+              <button
+                type="button"
+                title="Notifications"
+                aria-label="Notifications"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 30,
+                  height: 30,
+                  padding: 0,
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                }}
+              >
+                <img
+                  src={bellUrl}
+                  alt="Notifications"
+                  width={20}
+                  height={20}
+                  style={{ display: "block" }}
+                />
+              </button>
 
               {!loading && (
                 <button

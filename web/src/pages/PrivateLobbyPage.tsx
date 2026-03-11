@@ -54,7 +54,6 @@ const THEME_OPTIONS = [
   { key: "ARTS",          label: "Arts" },
   { key: "CROYANCES",     label: "Croyances" },
   { key: "DIVERS",        label: "Divers" },
-  { key: "GASTRONOMIE",   label: "Gastronomie" },
   { key: "GEOGRAPHIE",    label: "Géographie" },
   { key: "HISTOIRE",      label: "Histoire" },
   { key: "LITTERATURE",   label: "Littérature" },
@@ -64,6 +63,7 @@ const THEME_OPTIONS = [
   { key: "SCIENCE",       label: "Science" },
   { key: "SOCIETE",       label: "Société" },
   { key: "SPORT",         label: "Sport" },
+  { key: "TRADITIONS",    label: "Traditions" },
 ] as const;
 
 function clamp01(n: number) {

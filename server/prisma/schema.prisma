@@ -29,7 +29,6 @@ enum Theme {
   AUDIOVISUEL
   CROYANCES
   DIVERS
-  GASTRONOMIE
   GEOGRAPHIE
   HISTOIRE
   LITTERATURE
@@ -39,6 +38,7 @@ enum Theme {
   SCIENCE
   SOCIETE
   SPORT
+  TRADITIONS
 }
 
 enum RoomVisibility {

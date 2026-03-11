@@ -4,7 +4,6 @@ export type ThemeKey =
   | "AUDIOVISUEL"
   | "CROYANCES"
   | "DIVERS"
-  | "GASTRONOMIE"
   | "GEOGRAPHIE"
   | "HISTOIRE"
   | "LITTERATURE"
@@ -14,6 +13,7 @@ export type ThemeKey =
   | "SCIENCE"
   | "SOCIETE"
   | "SPORT"
+  | "TRADITIONS"
 
 
 export type ThemeMeta = { label: string; color: string };
@@ -23,7 +23,6 @@ export const THEME_META: Record<string, ThemeMeta> = {
   ARTS:            { label: "Arts",           color: "#F59E0B" },
   CROYANCES:       { label: "Croyances",      color: "#818CF8" },
   DIVERS:          { label: "Divers",         color: "#A3A3A3" },
-  GASTRONOMIE:     { label: "Gastronomie",    color: "#F97316" },
   GEOGRAPHIE:      { label: "Géographie",     color: "#22D3EE" },
   HISTOIRE:        { label: "Histoire",       color: "#FAFAFA" },
   LITTERATURE:     { label: "Littérature",    color: "#D946EF" },
@@ -33,6 +32,7 @@ export const THEME_META: Record<string, ThemeMeta> = {
   SCIENCE:         { label: "Science",        color: "#EF4444" },
   SOCIETE:         { label: "Société",        color: "#3B82F6" },
   SPORT:           { label: "Sport",          color: "#84CC16" },
+  TRADITIONS:      { label: "Traditinons",    color: "#F97316" },
 };
 
 export function getThemeMeta(theme?: string | null): ThemeMeta {

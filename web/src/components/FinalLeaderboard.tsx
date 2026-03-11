@@ -95,6 +95,14 @@ export function FinalLeaderboard({
               const { row, h, ring, rank } = slot;
               const isSelf = row ? isSelfRow(row) : false;
               const shouldShowAvatarFrame = !!row || rank === 1;
+              const podiumFrameGradientByRank: Record<number, string> = {
+                1: "bg-[linear-gradient(to_bottom,#A28130_0%,#FDE38F_50%,#A28130_100%)]",
+                2: "bg-[linear-gradient(to_bottom,#93989B_0%,#ECECEC_50%,#93989B_100%)]",
+                3: "bg-[linear-gradient(to_bottom,#644014_0%,#BC812E_50%,#644014_100%)]",
+              };
+              const avatarFrameClass = podiumFrameGradientByRank[rank]
+                ? ["p-[4px]", podiumFrameGradientByRank[rank]].join(" ")
+                : ["ring-4", ring].join(" ");
 
               return (
                 <div key={rank} className="flex flex-col items-center">
@@ -102,24 +110,25 @@ export function FinalLeaderboard({
                   {shouldShowAvatarFrame ? (
                     <div
                       className={[
-                        "w-12 h-12 md:w-14 md:h-14 rounded-[6px] overflow-hidden",
-                        "ring-4",
-                        ring,
+                        "w-14 h-14 md:w-16 md:h-16 rounded-[6px]",
+                        avatarFrameClass,
                         "shadow-[0_10px_40px_rgba(0,0,0,.45)]",
                       ].join(" ")}
                       aria-label={row ? `Avatar de ${row.name}` : "Aucun joueur"}
                     >
-                      {row ? (
-                        <img
-                          src={row.img ?? "/img/profiles/0.avif"}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          draggable={false}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-white/10" />
-                      )}
+                      <div className="w-full h-full rounded-[2px] overflow-hidden">
+                        {row ? (
+                          <img
+                            src={row.img ?? "/img/profiles/0.avif"}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            draggable={false}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-white/10" />
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="w-12 h-12 md:w-14 md:h-14" aria-hidden="true" />

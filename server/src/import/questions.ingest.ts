@@ -37,7 +37,6 @@ const THEME_BY_NORM: Record<string, Theme> = {
   "Audiovisuel":            Theme.AUDIOVISUEL,
   "Croyances":              Theme.CROYANCES,
   "Divers":                 Theme.DIVERS,
-  "Gastronomie":            Theme.GASTRONOMIE,
   "Géographie":             Theme.GEOGRAPHIE,
   "Histoire":               Theme.HISTOIRE,
   "Littérature":            Theme.LITTERATURE,
@@ -47,6 +46,7 @@ const THEME_BY_NORM: Record<string, Theme> = {
   "Science":                Theme.SCIENCE,
   "Société":                Theme.SOCIETE,
   "Sport":                  Theme.SPORT,
+  "Traditions":             Theme.TRADITIONS
 };
 
 function toEnumTheme(key?: string | null): Theme | null {

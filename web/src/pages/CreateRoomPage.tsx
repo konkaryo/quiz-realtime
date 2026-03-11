@@ -33,7 +33,6 @@ const THEME_OPTIONS = [
   { key: "ARTS", label: "Arts" },
   { key: "CROYANCES", label: "Croyances" },
   { key: "DIVERS", label: "Divers" },
-  { key: "GASTRONOMIE", label: "Gastronomie" },
   { key: "GEOGRAPHIE", label: "Géographie" },
   { key: "HISTOIRE", label: "Histoire" },
   { key: "LITTERATURE", label: "Littérature" },
@@ -43,6 +42,7 @@ const THEME_OPTIONS = [
   { key: "SCIENCE", label: "Science" },
   { key: "SOCIETE", label: "Société" },
   { key: "SPORT", label: "Sport" },
+  { key: "TRADITIONS", label: "Traditions" },
 ] as const;
 
 type ThemeKey = (typeof THEME_OPTIONS)[number]["key"];
@@ -336,7 +336,7 @@ export default function CreateRoomPage() {
 
             <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr),360px]">
               {/* COLONNE GAUCHE : paramètres */}
-              <section className="rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+              <section className="rounded-[6px] border border-[#2A2D3C] bg-[#212539] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
                 <div className="mb-5">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
                     Paramètres
@@ -344,10 +344,10 @@ export default function CreateRoomPage() {
                 </div>
 
                 {/* Difficulté */}
-                <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
+                <div className="rounded-[6px] border border-[#2A2D3C] bg-[#171A29] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-sm font-semibold text-slate-100">Difficulté</div>
-                    <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
+                    <div className="rounded-[2px] bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
                       {difficulty}%
                     </div>
                   </div>
@@ -364,7 +364,7 @@ export default function CreateRoomPage() {
                     style={
                       {
                         ["--track" as any]: "rgba(148,163,184,0.18)",
-                        ["--fill" as any]: "#2D7CFF",
+                        ["--fill" as any]: "#D30E72",
                         ["--p" as any]: difficultyP,
                       } as React.CSSProperties
                     }
@@ -378,7 +378,7 @@ export default function CreateRoomPage() {
                 </div>
 
                 {/* Questions */}
-                <div className="mt-4 rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
+                <div className="mt-4 rounded-[6px] border border-[#2A2D3C] bg-[#171A29] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-sm font-semibold text-slate-100">Questions</div>
                     <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
@@ -412,7 +412,7 @@ export default function CreateRoomPage() {
                 </div>
 
                 {/* Durée */}
-                <div className="mt-4 rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
+                <div className="mt-4 rounded-[6px] border border-[#2A2D3C] bg-[#171A29] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-sm font-semibold text-slate-100">Durée / question</div>
                     <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
@@ -492,11 +492,10 @@ export default function CreateRoomPage() {
                           type="button"
                           onClick={() => toggleTheme(key)}
                           aria-pressed={active}
-                          title={active ? "Sélectionné (inclus)" : "Désélectionné (banni)"}
                           className={[
-                            "flex items-center justify-between gap-3 rounded-[6px] border px-3 py-2 text-left text-[13px] font-semibold transition",
+                            "flex items-center justify-between gap-3 rounded-[4px] border px-3 py-2 text-left text-[13px] font-semibold transition",
                             active
-                              ? "border-[#2D7CFF]/60 bg-[#27314E] text-slate-50 hover:bg-[#284783]"
+                              ? "border-[#6F5BD4]/60 bg-[#272E4F] text-slate-50 hover:bg-[#35417B]"
                               : "border-[#2A2D3C] bg-[#181A28] text-slate-300 hover:text-white",
                           ].join(" ")}
                         >
@@ -504,7 +503,7 @@ export default function CreateRoomPage() {
                           <span
                             className={[
                               "flex h-5 w-5 items-center justify-center rounded-[6px] text-[12px] leading-none",
-                              active ? "bg-[#2D7CFF] text-white" : "bg-[#141625] text-slate-500",
+                              active ? "bg-[#6F5BD4] text-white" : "bg-[#141625] text-slate-500",
                             ].join(" ")}
                             aria-hidden
                           >
@@ -518,7 +517,7 @@ export default function CreateRoomPage() {
               </section>
 
               {/* COLONNE DROITE : code */}
-              <aside className="self-start rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+              <aside className="self-start rounded-[6px] border border-[#2A2D3C] bg-[#212539] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
                 <div className="flex flex-col">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
                     Code du salon
@@ -573,7 +572,7 @@ export default function CreateRoomPage() {
                     disabled={loading || !code}
                     className={[
                       "mt-8 inline-flex items-center justify-center rounded-[6px] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] transition",
-                      "border border-transparent bg-[#2D7CFF] text-slate-50 hover:bg-[#1F65DB]",
+                      "border border-transparent bg-[#6F5BD4] text-slate-50 hover:bg-[#6F5BD4]",
                       loading || !code ? "cursor-not-allowed opacity-40 hover:bg-[#2D7CFF]" : "",
                     ].join(" ")}
                   >

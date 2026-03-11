@@ -13,7 +13,6 @@ const THEME_BY_HEADER: Record<string, Theme> = {
   "audiovisuel":          "AUDIOVISUEL",
   "croyances":            "CROYANCES",
   "divers":               "DIVERS",
-  "gastronomie":          "GASTRONOMIE",
   "geographie":           "GEOGRAPHIE",
   "histoire":             "HISTOIRE",
   "litterature":          "LITTERATURE",
@@ -23,6 +22,7 @@ const THEME_BY_HEADER: Record<string, Theme> = {
   "science":              "SCIENCE",
   "societe":              "SOCIETE",
   "sport":                "SPORT",
+  "traditions":           "TRADITIONS"
 };
 
 /* ----------------------------- CSV -> objets ----------------------------- */
