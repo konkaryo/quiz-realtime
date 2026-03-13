@@ -1,6 +1,6 @@
 // src/routes/auth.ts
 import type { FastifyPluginAsync } from "fastify";
-import type { PrismaClient } from "@prisma/client";
+import { EmailTokenType, type PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import path from "path";
 import { promises as fs } from "fs";
@@ -17,6 +17,8 @@ import {
 } from "../auth";
 import { toProfileUrl } from "../domain/media/media.service";
 import { CFG } from "../config";
+import { sendResetPasswordEmail, sendVerificationEmail } from "../infra/email";
+import emailTokenService from "../domain/auth/email-token.service";
 
 type Opts = { prisma: PrismaClient };
 
@@ -80,9 +82,17 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           passwordHash,
           displayName,
           player: { create: { name: displayName } },
+          emailVerifiedAt: null,
         },
         include: { player: true },
       });
+
+      const verificationToken = await emailTokenService.createEmailToken(
+        prisma,
+        user.id,
+        EmailTokenType.EMAIL_VERIFICATION
+      );
+      await sendVerificationEmail(email, verificationToken);
 
       const { token, session } = await createSession(prisma, user.id);
       setAuthCookie(reply, token);
@@ -95,9 +105,90 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           guest: user.guest,
           playerId: user.player?.id ?? null,
           img: toProfileUrl(user.player?.img ?? null),
+          emailVerified: Boolean(user.emailVerifiedAt),
         },
         session: { expiresAt: session.expiresAt },
       });
+    });
+
+    // GET /auth/verify-email?token=...
+    app.get("/verify-email", async (req, reply) => {
+      const token = String((req.query as { token?: string } | undefined)?.token ?? "").trim();
+      if (!token) return reply.code(400).send({ error: "invalid-token" });
+
+      const emailToken = await emailTokenService.findValidEmailToken(prisma, token, EmailTokenType.EMAIL_VERIFICATION);
+      if (!emailToken) return reply.code(400).send({ error: "invalid-token" });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: emailToken.userId },
+          data: { emailVerifiedAt: new Date() },
+        });
+        await emailTokenService.markEmailTokenUsed(tx, emailToken.id);
+      });
+
+      return reply.send({ ok: true, message: "email-verified" });
+    });
+
+    // POST /auth/forgot-password
+    app.post("/forgot-password", async (req, reply) => {
+      const Body = z.object({ email: z.string().email() });
+      const parsed = Body.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        return reply.send({
+          ok: true,
+          message: "If an account exists for this email, a reset link has been sent.",
+        });
+      }
+
+      const email = normEmail(parsed.data.email);
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true },
+      });
+
+      if (user?.email) {
+        const resetToken = await emailTokenService.createEmailToken(
+          prisma,
+          user.id,
+          EmailTokenType.PASSWORD_RESET
+        );
+        await sendResetPasswordEmail(user.email, resetToken);
+      }
+
+      return reply.send({
+        ok: true,
+        message: "If an account exists for this email, a reset link has been sent.",
+      });
+    });
+
+    // POST /auth/reset-password
+    app.post("/reset-password", async (req, reply) => {
+      const Body = z.object({
+        token: z.string().min(1),
+        newPassword: z.string().min(8),
+      });
+      const parsed = Body.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({ error: "invalid_payload" });
+      }
+
+      const { token, newPassword } = parsed.data;
+      const emailToken = await emailTokenService.findValidEmailToken(prisma, token, EmailTokenType.PASSWORD_RESET);
+      if (!emailToken) return reply.code(400).send({ error: "invalid-token" });
+
+      const passwordHash = await hashPassword(newPassword);
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: emailToken.userId },
+          data: { passwordHash },
+        });
+        await emailTokenService.markEmailTokenUsed(tx, emailToken.id);
+        await emailTokenService.invalidateActiveEmailTokens(tx, emailToken.userId, EmailTokenType.PASSWORD_RESET);
+      });
+
+      return reply.send({ ok: true, message: "password-reset-success" });
     });
 
     // POST /auth/login
