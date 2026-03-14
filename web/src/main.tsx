@@ -21,6 +21,7 @@ import PrivateLobbyPage from "./pages/PrivateLobbyPage";
 import DailyChallengePage from "./pages/DailyChallengePage";
 import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
+import HistoryPage from "./pages/HistoryPage";
 import "./index.css";
 
 // pages publiques
@@ -167,6 +168,7 @@ const router = createBrowserRouter([
       { path: "/multi/race/play", element: <RacePage /> },
       { path: "/me/profile", element: <ProfilePage /> },
       { path: "/players/:playerId/profile", element: <ProfilePage /> },
+      { path: "/me/history", element: <HistoryPage /> },
       { path: "/rooms/new", element: <CreateRoomPage /> },
       { path: "/rooms/:roomId/lobby", element: <PrivateLobbyPage /> },
       { path: "/private/join", element: <JoinPrivateRoomPage /> },

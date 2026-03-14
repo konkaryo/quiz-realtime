@@ -30,6 +30,12 @@ type NotificationItem = {
   read: boolean;
 };
 
+type PlayerSearchItem = {
+  id: string;
+  name: string;
+  img?: string | null;
+};
+
 const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
 
 const API_BASE =
@@ -268,6 +274,10 @@ export default function AppShell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [playerSearch, setPlayerSearch] = useState("");
+  const [playerSearchResults, setPlayerSearchResults] = useState<PlayerSearchItem[]>([]);
+  const [playerSearchOpen, setPlayerSearchOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
   // ✅ hover icône "Créer un salon privé"
   const [isAddHover, setIsAddHover] = useState(false);
@@ -651,12 +661,54 @@ export default function AppShell() {
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
-      if (!userRef.current) return;
-      if (!userRef.current.contains(e.target as Node)) setUserOpen(false);
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setUserOpen(false);
+      }
+
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setPlayerSearchOpen(false);
+      }
     }
     document.addEventListener("click", onDocClick);
     return () => document.removeEventListener("click", onDocClick);
   }, []);
+
+  useEffect(() => {
+    const query = playerSearch.trim();
+    if (query.length < 1) {
+      setPlayerSearchResults([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/players/search?q=${encodeURIComponent(query)}&limit=6`,
+          {
+            credentials: "include",
+            signal: controller.signal,
+          }
+        );
+        if (!res.ok) {
+          setPlayerSearchResults([]);
+          return;
+        }
+
+        const data = (await res.json()) as { players?: PlayerSearchItem[] };
+        setPlayerSearchResults(Array.isArray(data.players) ? data.players : []);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setPlayerSearchResults([]);
+        }
+      }
+    }, 180);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [playerSearch]);
 
   async function logout() {
     try {
@@ -790,7 +842,7 @@ export default function AppShell() {
         }}
       >
         {/* Left: logo → renvoie à la home */}
-        <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <img
             src={logoUrl}
             alt="Synapz"
@@ -812,6 +864,7 @@ export default function AppShell() {
             marginLeft: 16,
             position: "relative",
             height: "100%",
+            flexShrink: 0,
           }}
         >
           {/* SOLO */}
@@ -998,11 +1051,124 @@ export default function AppShell() {
           </div>
         </nav>
 
+        <div
+          ref={searchContainerRef}
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "min(420px, calc(100vw - 640px))",
+            minWidth: 260,
+            zIndex: 65,
+          }}
+        >
+          <div style={{ width: "100%", position: "relative" }}>
+            <input
+              type="search"
+              value={playerSearch}
+              onChange={(e) => {
+                setPlayerSearch(e.target.value);
+                setPlayerSearchOpen(true);
+              }}
+              onFocus={() => setPlayerSearchOpen(true)}
+              placeholder="Rechercher un joueur..."
+              style={{
+                width: "100%",
+                height: 32,
+                borderRadius: 7,
+                border: "1px solid rgba(255,255,255,.2)",
+                background: "rgba(14,18,30,.95)",
+                color: "#e2e8f0",
+                padding: "0 14px",
+                fontSize: 13,
+                outline: "none",
+              }}
+            />
+
+            {playerSearchOpen && playerSearch.trim().length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  marginTop: 18,
+                  background: "#13141F",
+                  border: "1px solid rgba(255,255,255,.12)",
+                  borderRadius: 8,
+                  boxShadow: "0 20px 40px rgba(0,0,0,.45)",
+                  overflow: "hidden",
+                  zIndex: 80,
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    top: -8,
+                    height: 8,
+                    background: "transparent",
+                  }}
+                />
+                {playerSearchResults.length === 0 ? (
+                  <div
+                    style={{
+                      padding: "10px 12px",
+                      fontSize: 12,
+                      color: "#94a3b8",
+                    }}
+                  >
+                    Aucun joueur trouvé.
+                  </div>
+                ) : (
+                  playerSearchResults.map((player, index) => (
+                    <Link
+                      key={player.id}
+                      to={`/players/${player.id}/profile`}
+                      onClick={() => {
+                        setPlayerSearchOpen(false);
+                        setPlayerSearch("");
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "10px 12px",
+                        color: "#e2e8f0",
+                        textDecoration: "none",
+                        borderBottom:
+                          index < playerSearchResults.length - 1
+                            ? "1px solid rgba(255,255,255,.06)"
+                            : "none",
+                      }}
+                    >
+                      <img
+                        src={player.img ?? "/img/profiles/0.avif"}
+                        alt={player.name}
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                        }}
+                      />
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>{player.name}</span>
+                    </Link>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Right: user */}
         <div
           ref={userRef}
           style={{
             marginLeft: "auto",
+            flexShrink: 0,
             display: "flex",
             alignItems: "center",
             gap: 20,

@@ -123,6 +123,28 @@ model Player {
   dailyScores DailyChallengeScore[]
   reports     QuestionReport[]
   notifications Notification[]
+  gameHistory   PlayerGameHistory[]
+}
+
+model PlayerGameHistory {
+  id               String   @id @default(cuid())
+  playerId         String
+  player           Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  gameId           String
+  playerGameId     String   @unique
+  playedAt         DateTime
+  finalRank        Int
+  totalPlayers     Int
+  finalScore       Int
+  gameDifficulty   Int
+  questionResults  Json
+  xpGained         Int      @default(0)
+  bitsGained       Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([playerId, playedAt])
+  @@unique([playerId, gameId])
 }
 
 model Notification {
