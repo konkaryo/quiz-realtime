@@ -1,6 +1,6 @@
 // src/routes/auth.ts
 import type { FastifyPluginAsync } from "fastify";
-import { EmailTokenType, type PrismaClient } from "@prisma/client";
+import { EmailTokenType, NotificationType, type PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import path from "path";
 import { promises as fs } from "fs";
@@ -8,12 +8,12 @@ import crypto from "crypto";
 import {
   hashPassword,
   verifyPassword,
-  createSession,
-  setAuthCookie,
   clearAuthCookie,
   currentUser,
   maybeRefreshSession,
   revokeSession,
+  createSession,
+  setAuthCookie,
 } from "../auth";
 import { toProfileUrl } from "../domain/media/media.service";
 import { CFG } from "../config";
@@ -87,6 +87,16 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
         include: { player: true },
       });
 
+      if (user.player?.id) {
+        await prisma.notification.create({
+          data: {
+            playerId: user.player.id,
+            type: NotificationType.INFO,
+            message: "Bienvenue sur Synapz ! 🎉",
+          },
+        });
+      }
+
       const verificationToken = await emailTokenService.createEmailToken(
         prisma,
         user.id,
@@ -94,20 +104,9 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       );
       await sendVerificationEmail(email, verificationToken);
 
-      const { token, session } = await createSession(prisma, user.id);
-      setAuthCookie(reply, token);
-
       return reply.code(201).send({
-        user: {
-          id: user.id,
-          email: user.email,
-          displayName: user.displayName,
-          guest: user.guest,
-          playerId: user.player?.id ?? null,
-          img: toProfileUrl(user.player?.img ?? null),
-          emailVerified: Boolean(user.emailVerifiedAt),
-        },
-        session: { expiresAt: session.expiresAt },
+        ok: true,
+        message: "verification-email-sent",
       });
     });
 
@@ -116,18 +115,39 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       const token = String((req.query as { token?: string } | undefined)?.token ?? "").trim();
       if (!token) return reply.code(400).send({ error: "invalid-token" });
 
-      const emailToken = await emailTokenService.findValidEmailToken(prisma, token, EmailTokenType.EMAIL_VERIFICATION);
+      const emailToken = await emailTokenService.findEmailToken(prisma, token, EmailTokenType.EMAIL_VERIFICATION);
       if (!emailToken) return reply.code(400).send({ error: "invalid-token" });
 
-      await prisma.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id: emailToken.userId },
-          data: { emailVerifiedAt: new Date() },
-        });
-        await emailTokenService.markEmailTokenUsed(tx, emailToken.id);
-      });
+      const now = new Date();
+      const isUnused = !emailToken.usedAt;
+      const isExpired = emailToken.expiresAt <= now;
 
-      return reply.send({ ok: true, message: "email-verified" });
+      if (isUnused && isExpired) {
+        return reply.code(400).send({ error: "invalid-token" });
+      }
+
+      if (!isUnused && !emailToken.user.emailVerifiedAt) {
+        return reply.code(400).send({ error: "invalid-token" });
+      }
+
+      if (isUnused) {
+        await prisma.$transaction(async (tx) => {
+          await tx.user.update({
+            where: { id: emailToken.userId },
+            data: { emailVerifiedAt: now },
+          });
+          await emailTokenService.markEmailTokenUsed(tx, emailToken.id);
+        });
+      }
+
+      const { token: sessionToken, session } = await createSession(prisma, emailToken.userId);
+      setAuthCookie(reply, sessionToken);
+
+      return reply.send({
+        ok: true,
+        message: "email-verified",
+        session: { expiresAt: session.expiresAt },
+      });
     });
 
     // POST /auth/forgot-password
@@ -208,6 +228,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       if (!user.passwordHash) return reply.code(401).send({ error: "invalid-credentials" });
       const ok = await verifyPassword(user.passwordHash, password);
       if (!ok) return reply.code(401).send({ error: "invalid-credentials" });
+      if (!user.emailVerifiedAt) return reply.code(403).send({ error: "email-not-verified" });
 
       const { token, session } = await createSession(prisma, user.id);
       setAuthCookie(reply, token);

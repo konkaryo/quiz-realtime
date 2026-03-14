@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE } from "../auth/client";
+import { useAuth } from "../auth/AuthContext";
+import { notifyAuthUpdated } from "../auth/events";
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const token = useMemo(() => searchParams.get("token")?.trim() ?? "", [searchParams]);
+  const nav = useNavigate();
+  const { refresh } = useAuth();
 
   const [state, setState] = useState<"loading" | "success" | "error">("loading");
 
@@ -22,7 +26,19 @@ export default function VerifyEmailPage() {
           method: "GET",
           credentials: "include",
         });
-        if (!cancelled) setState(res.ok ? "success" : "error");
+        if (!res.ok) {
+          if (!cancelled) setState("error");
+          return;
+        }
+
+        await refresh();
+        notifyAuthUpdated();
+        if (!cancelled) {
+          setState("success");
+          setTimeout(() => {
+            nav("/", { replace: true });
+          }, 1200);
+        }
       } catch {
         if (!cancelled) setState("error");
       }
@@ -33,14 +49,14 @@ export default function VerifyEmailPage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, refresh, nav]);
 
   const message =
     state === "loading"
       ? "Vérification en cours..."
       : state === "success"
-      ? "Votre email est maintenant vérifié."
-      : "Le lien de vérification est invalide, expiré ou déjà utilisé.";
+      ? "Votre email est confirmé. Connexion en cours..."
+      : "Le lien de vérification est invalide ou expiré.";
 
   const color = state === "success" ? "#86efac" : state === "error" ? "#f87171" : "#f8fafc";
 

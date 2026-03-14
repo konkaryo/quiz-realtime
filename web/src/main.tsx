@@ -31,6 +31,7 @@ const ForgotPasswordPage = React.lazy(
 );
 const ResetPasswordPage = React.lazy(() => import("./pages/ResetPasswordPage"));
 const VerifyEmailPage = React.lazy(() => import("./pages/VerifyEmailPage"));
+const RegisterConfirmationPage = React.lazy(() => import("./pages/RegisterConfirmationPage"));
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
@@ -143,6 +144,18 @@ const router = createBrowserRouter([
             }
           >
             <VerifyEmailPage />
+          </React.Suspense>
+        ),
+      },
+      {
+        path: "/register/confirmation",
+        element: (
+          <React.Suspense
+            fallback={
+              <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>
+            }
+          >
+            <RegisterConfirmationPage />
           </React.Suspense>
         ),
       },

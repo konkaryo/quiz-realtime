@@ -1,31 +1,23 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { register } from "../auth/client";
-import { useAuth } from "../auth/AuthContext";
-import { notifyAuthUpdated } from "../auth/events";
 import logoUrl from "@/assets/synapz.png";
 
 export default function RegisterPage() {
   const nav = useNavigate();
-  const location = useLocation() as any;
-  const { state } = location;
-  const { refresh } = useAuth();
 
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const redirectTo = state?.from?.pathname || "/";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
     try {
       await register(displayName, email, password);
-      await refresh();
-      notifyAuthUpdated();
-      nav(redirectTo, { replace: true });
+      nav(`/register/confirmation?email=${encodeURIComponent(email.trim())}`, { replace: true });
     } catch (e: any) {
       setErr(e?.message || "Erreur");
     }

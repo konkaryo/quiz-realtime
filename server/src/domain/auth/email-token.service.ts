@@ -73,6 +73,26 @@ export async function findValidEmailToken(
   });
 }
 
+export async function findEmailToken(
+  prisma: DbClient,
+  rawToken: string,
+  type: EmailTokenType
+) {
+  const tokenHash = hashEmailToken(rawToken);
+
+  return prisma.emailToken.findFirst({
+    where: {
+      tokenHash,
+      type,
+    },
+    include: {
+      user: {
+        select: { id: true, emailVerifiedAt: true },
+      },
+    },
+  });
+}
+
 export async function markEmailTokenUsed(prisma: DbClient, id: string) {
   return prisma.emailToken.update({
     where: { id },
@@ -102,6 +122,7 @@ export default {
   hashEmailToken,
   createEmailToken,
   findValidEmailToken,
+  findEmailToken,
   markEmailTokenUsed,
   invalidateActiveEmailTokens,
 };
