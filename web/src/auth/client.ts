@@ -1,6 +1,32 @@
 // centralise les appels auth et l’URL API
 export const API_BASE = import.meta.env.VITE_API_BASE ?? window.location.origin;
 
+async function extractErrorMessage(res: Response, fallback: string) {
+  try {
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const data = await res.json();
+      const message =
+        (typeof data?.message === "string" && data.message) ||
+        (typeof data?.error === "string" && data.error) ||
+        (typeof data?.code === "string" && data.code) ||
+        "";
+      if (message) {
+        return `${fallback} (${message})`;
+      }
+    } else {
+      const text = (await res.text()).trim();
+      if (text) {
+        return `${fallback} (${text})`;
+      }
+    }
+  } catch {
+    // ignore parsing errors and fallback to generic message below
+  }
+
+  return `${fallback} (HTTP ${res.status})`;
+}
+
 export async function fetchMe() {
   const res = await fetch(`${API_BASE}/auth/me`, {
     method: "GET",
@@ -17,7 +43,7 @@ export async function login(email: string, password: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) throw new Error("Login failed");
+  if (!res.ok) throw new Error(await extractErrorMessage(res, "Login failed"));
   return res.json();
 }
 
@@ -28,7 +54,7 @@ export async function register(displayName: string, email: string, password: str
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ displayName, email, password }),
   });
-  if (!res.ok) throw new Error("Register failed");
+  if (!res.ok) throw new Error(await extractErrorMessage(res, "Register failed"));
   return res.json();
 }
 
