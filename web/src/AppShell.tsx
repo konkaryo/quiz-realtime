@@ -6,7 +6,7 @@ import bellUrl from "@/assets/bell.png";
 import bitIconUrl from "@/assets/bit.png";
 import starUrl from "@/assets/star.png";
 import keyIconUrl from "@/assets/key_icon.png";
-import addIconUrl from "@/assets/add_icon.png";
+import lockIconUrl from "@/assets/lock.png";
 import addActiveIconUrl from "@/assets/add_active_icon.png";
 import calendarIconUrl from "@/assets/calendar_icon.png";
 import multiplayerIconUrl from "@/assets/multiplayer_icon.png";
@@ -776,12 +776,12 @@ export default function AppShell() {
       desc: "Créez un salon et invitez vos amis.",
       icon: (
         <img
-          src={isAddHover ? addActiveIconUrl : addIconUrl}
+          src={isAddHover ? addActiveIconUrl : lockIconUrl}
           alt=""
           aria-hidden
           style={{
-            width: 28,
-            height: 28,
+            width: 24,
+            height: 24,
             display: "block",
             objectFit: "contain",
           }}
