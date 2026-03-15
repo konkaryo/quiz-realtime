@@ -57,52 +57,26 @@ function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
     location.pathname === to ||
     (location.pathname.startsWith(`${to}/`) && to !== "/");
   const isHighlighted = isHovered || isActive;
+  const hoverBg = "rgba(255,255,255,.1)";
   return (
     <Link
       to={to}
       style={{
         display: "block",
         width: "100%",
-        borderRadius: 0,
-        padding: "9px 12px 9px 16px",
+        borderRadius: 6,
+        padding: "9px 12px",
         border: "none",
-        background: "transparent",
+        background: isHighlighted ? hoverBg : "transparent",
         color: "inherit",
         textDecoration: "none",
         position: "relative",
         overflow: "visible",
+        transition: "background-color .15s ease",
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <span
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: -12,
-          right: -12,
-          top: 0,
-          bottom: 0,
-          background: isHighlighted ? "rgba(255,255,255,0.14)" : "transparent",
-          transition: "background-color .15s ease",
-          pointerEvents: "none",
-        }}
-      />
-
-      <span
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: -12,
-          top: 0,
-          bottom: 0,
-          width: 2,
-          background: "#7c3aed",
-          opacity: isHighlighted ? 1 : 0,
-          transition: "opacity .15s ease",
-        }}
-      />
-
       <div
         style={{
           display: "flex",
