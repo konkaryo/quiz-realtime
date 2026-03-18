@@ -1,0 +1,8 @@
+{
+  "name": "quiz-realtime",
+  "private": true,
+  "workspaces": [
+    "server",
+    "web"
+  ]
+}
