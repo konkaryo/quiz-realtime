@@ -1,8 +1,4 @@
--- Create room id generator function ensuring mixed digits and letters (excluding i, l, o)
-CREATE OR REPLACE FUNCTION random_room_id()
-RETURNS text AS $$
-DECLARE
-  alpha TEXT[] := ARRAY['a','b','c','d','e','f','g','h','j','k','m','n','p','q','r','s','t','u','v','w','x','y','z'];
+  alpha TEXT[] := ARRAY['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'];
   digits TEXT[] := ARRAY['0','1','2','3','4','5','6','7','8','9'];
   result TEXT := '';
   pick TEXT;
@@ -27,6 +23,3 @@ BEGIN
   RETURN result;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
-
--- Apply as default for the Room id
-ALTER TABLE "public"."Room" ALTER COLUMN "id" SET DEFAULT random_room_id();
