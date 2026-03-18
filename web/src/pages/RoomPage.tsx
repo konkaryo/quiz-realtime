@@ -2021,6 +2021,7 @@ return (
                                 showTimer={false}
                                 showAnswerSection={false}
                                 showProgress={false}
+                                animateQuestionText={false}
                               />
 
                               {selectedFinalQuestion?.correctLabel ? (
@@ -2090,6 +2091,7 @@ return (
                             correctChoiceId={correctId}
                             onSelectChoice={(choice) => answerByChoice(choice.id)}
                             questionProgress={questionProgress}
+                            animateQuestionText
                           />
                         </div>
                       ) : phase === "countdown" ? null : (

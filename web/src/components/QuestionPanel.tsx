@@ -1,5 +1,5 @@
 // web/src/components/QuestionPanel.tsx
-import { RefObject, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { RefObject, KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 
 export type Choice = { id: string; label: string };
@@ -200,6 +200,7 @@ type Props = {
   showTimer?: boolean;
   showAnswerSection?: boolean;
   showProgress?: boolean;
+  animateQuestionText?: boolean;
 };
 
 export default function DailyQuestionPanel(props: Props) {
@@ -207,7 +208,7 @@ export default function DailyQuestionPanel(props: Props) {
     question,
     lives,
     totalLives,
-    playerScore = 0, // (gardé pour compat, mais plus affiché ici)
+    playerScore: _playerScore = 0, // (gardé pour compat, mais plus affiché ici)
     remainingSeconds,
     timerProgress,
     isReveal,
@@ -237,7 +238,94 @@ export default function DailyQuestionPanel(props: Props) {
     showTimer = true,
     showAnswerSection = true,
     showProgress = true,
+    animateQuestionText = false,
   } = props;
+
+  const [visibleQuestionLength, setVisibleQuestionLength] = useState(() =>
+    animateQuestionText ? 0 : question.text.length
+  );
+
+  useEffect(() => {
+    if (!animateQuestionText) {
+      setVisibleQuestionLength(question.text.length);
+      return;
+    }
+
+    setVisibleQuestionLength(0);
+    if (!question.text) return;
+
+    const stepMs = 35;
+    const intervalId = window.setInterval(() => {
+      setVisibleQuestionLength((current) => {
+        if (current >= question.text.length) {
+          window.clearInterval(intervalId);
+          return question.text.length;
+        }
+        return Math.min(question.text.length, current + 1);
+      });
+    }, stepMs);
+
+    return () => window.clearInterval(intervalId);
+  }, [animateQuestionText, question.id, question.text]);
+
+  const questionTextMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const [revealedCharacterRects, setRevealedCharacterRects] = useState<
+    { char: string; left: number; top: number }[]
+  >([]);
+
+  useLayoutEffect(() => {
+    if (!animateQuestionText) {
+      setRevealedCharacterRects([]);
+      return;
+    }
+
+    const measureCharacterRects = () => {
+      const textContainer = questionTextMeasureRef.current;
+      const textNode = textContainer?.firstChild;
+      if (!textContainer || !(textNode instanceof Text)) {
+        setRevealedCharacterRects([]);
+        return;
+      }
+
+      const containerRect = textContainer.getBoundingClientRect();
+      const nextRects: { char: string; left: number; top: number }[] = [];
+      const range = document.createRange();
+
+      for (let index = 0; index < question.text.length; index += 1) {
+        range.setStart(textNode, index);
+        range.setEnd(textNode, index + 1);
+
+        const rect = range.getBoundingClientRect();
+        nextRects.push({
+          char: question.text[index],
+          left: rect.left - containerRect.left,
+          top: rect.top - containerRect.top,
+        });
+      }
+
+      range.detach();
+      setRevealedCharacterRects(nextRects);
+    };
+
+    measureCharacterRects();
+
+    const textContainer = questionTextMeasureRef.current;
+    if (!textContainer || typeof ResizeObserver === "undefined") return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      measureCharacterRects();
+    });
+
+    resizeObserver.observe(textContainer);
+    window.addEventListener("resize", measureCharacterRects);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measureCharacterRects);
+    };
+  }, [animateQuestionText, question.id, question.text]);
+
+
 
   const showCorrectLabelCell =
     !!feedbackCorrectLabel &&
@@ -499,8 +587,33 @@ export default function DailyQuestionPanel(props: Props) {
         />
         <div className={topPanelClass} style={topPanelStyle}>
           <div className="flex h-full items-center justify-center">
-            <p className="mx-auto max-h-[8.4em] max-w-[86%] overflow-hidden text-center text-[13px] font-semibold leading-snug text-slate-50 md:text-[16px]">
-              {question.text}
+            <p className="relative mx-auto max-h-[8.4em] max-w-[86%] overflow-hidden text-center text-[13px] font-semibold leading-snug text-slate-50 md:text-[16px]">
+              {animateQuestionText ? (
+                <>
+                  <span
+                    ref={questionTextMeasureRef}
+                    aria-hidden="true"
+                    className="block whitespace-pre-wrap text-transparent select-none"
+                  >
+                    {question.text}
+                  </span>
+                  <span aria-hidden="true" className="pointer-events-none absolute inset-0 block whitespace-pre-wrap">
+                    {revealedCharacterRects.slice(0, visibleQuestionLength).map((characterRect, index) => (
+                      <span
+                        key={`${question.id}-${index}`}
+                        className="absolute left-0 top-0 whitespace-pre"
+                        style={{
+                          transform: `translate(${characterRect.left}px, ${characterRect.top}px)`,
+                        }}
+                      >
+                        {characterRect.char}
+                      </span>
+                    ))}
+                  </span>
+                </>
+              ) : (
+                <span>{question.text}</span>
+              )}
             </p>
           </div>
         </div>

@@ -1047,6 +1047,10 @@ export default function AppShell() {
               }}
               onFocus={() => setPlayerSearchOpen(true)}
               placeholder="Rechercher un joueur..."
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
               style={{
                 width: "100%",
                 height: 32,
