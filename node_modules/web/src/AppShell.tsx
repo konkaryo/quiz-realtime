@@ -1039,6 +1039,7 @@ export default function AppShell() {
         >
           <div style={{ width: "100%", position: "relative" }}>
             <input
+              data-player-search-input="true"
               type="search"
               value={playerSearch}
               onChange={(e) => {

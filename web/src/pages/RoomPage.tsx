@@ -1,5 +1,6 @@
 // web/src/pages/RoomPage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePersistentGameInputFocus } from "../hooks/usePersistentGameInputFocus";
 import type React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
@@ -1383,6 +1384,8 @@ useEffect(() => {
   useEffect(() => {
     if (phase === "playing") inputRef.current?.focus();
   }, [phase, question]);
+
+  usePersistentGameInputFocus({ enabled: phase === "playing", inputRef });
 
   useEffect(() => {
     answerModeRef.current = answerMode;
