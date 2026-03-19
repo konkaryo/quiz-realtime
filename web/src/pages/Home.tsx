@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import playerIcon from "../assets/player.png";
-import swordsIcon from "../assets/swords.png";
+import cardsIcon from "../assets/cards.png";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -154,7 +154,7 @@ export default function Home() {
 
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                           <img
-                            src={swordsIcon}
+                            src={cardsIcon}
                             alt=""
                             className="h-28 w-28 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,.5)]"
                             draggable={false}

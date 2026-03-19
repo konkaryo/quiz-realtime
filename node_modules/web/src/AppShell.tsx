@@ -7,7 +7,6 @@ import bitIconUrl from "@/assets/bit.png";
 import starUrl from "@/assets/star.png";
 import keyIconUrl from "@/assets/key_icon.png";
 import lockIconUrl from "@/assets/lock.png";
-import addActiveIconUrl from "@/assets/add_active_icon.png";
 import calendarIconUrl from "@/assets/calendar_icon.png";
 import multiplayerIconUrl from "@/assets/multiplayer_icon.png";
 import { getLevelProgress } from "@/utils/experience";
@@ -293,9 +292,6 @@ export default function AppShell() {
   const [playerSearchOpen, setPlayerSearchOpen] = useState(false);
   const [invitePendingId, setInvitePendingId] = useState<string | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
-
-  // ✅ hover icône "Créer un salon privé"
-  const [isAddHover, setIsAddHover] = useState(false);
 
   // ✅ ref du header pour éviter fermeture quand on se déplace vers le dropdown
   const headerRef = useRef<HTMLElement | null>(null);
@@ -916,7 +912,7 @@ export default function AppShell() {
       desc: "Créez un salon et invitez vos amis.",
       icon: (
         <img
-          src={isAddHover ? addActiveIconUrl : lockIconUrl}
+          src={lockIconUrl}
           alt=""
           aria-hidden
           style={{
@@ -1173,17 +1169,7 @@ export default function AppShell() {
                   style={{ display: "flex", flexDirection: "column", gap: 0 }}
                 >
                   {privateItems.map((it) => (
-                    <div
-                      key={it.to}
-                      onMouseEnter={() => {
-                        if (it.to === "/rooms/new") setIsAddHover(true);
-                      }}
-                      onMouseLeave={() => {
-                        if (it.to === "/rooms/new") setIsAddHover(false);
-                      }}
-                    >
-                      <MenuCard {...it} />
-                    </div>
+                    <MenuCard key={it.to} {...it} />
                   ))}
                 </div>
               </div>

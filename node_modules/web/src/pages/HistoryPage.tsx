@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import swordsUrl from "@/assets/swords.png";
+import cardsUrl from "@/assets/cards.png";
 import bitUrl from "@/assets/bit.png";
 
 type HistoryQuestionResult = {
@@ -192,7 +192,7 @@ export default function HistoryPage() {
 
                     <div className="mt-3 flex items-center gap-3">
                       <img
-                        src={swordsUrl}
+                        src={cardsUrl}
                         alt="Partie"
                         className="h-16 w-16 shrink-0 object-contain"
                       />
