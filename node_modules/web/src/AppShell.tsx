@@ -13,6 +13,8 @@ import multiplayerIconUrl from "@/assets/multiplayer_icon.png";
 import { getLevelProgress } from "@/utils/experience";
 import JoinLoadingScreen from "@/components/JoinLoadingScreen";
 import { AUTH_UPDATED_EVENT } from "@/auth/events";
+import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 
 type CurrentUser = {
   displayName?: string;
@@ -20,6 +22,7 @@ type CurrentUser = {
   bits?: number;
   experience?: number;
   guest?: boolean;
+  playerId?: string | null;
 };
 
 type NotificationItem = {
@@ -30,11 +33,47 @@ type NotificationItem = {
   read: boolean;
 };
 
+type NotificationView = NotificationItem & {
+  displayMessage: string;
+  joinHref?: string;
+  inviterName?: string;
+};
+
 type PlayerSearchItem = {
   id: string;
   name: string;
   img?: string | null;
 };
+
+const INVITATION_PREFIX = "__invite__";
+const INVITATION_TTL_MS = 5 * 60 * 1000;
+
+function parseNotification(notification: NotificationItem): NotificationView {
+  if (notification.type !== "INVITATION" || !notification.message.startsWith(`${INVITATION_PREFIX}:`)) {
+    return { ...notification, displayMessage: notification.message };
+  }
+
+  const [_, destination, roomId, inviterNameEncoded] = notification.message.split(":");
+  const inviterName = decodeURIComponent(inviterNameEncoded || "");
+  const joinHref = destination === "room" ? `/room/${roomId}` : `/rooms/${roomId}/lobby`;
+
+  return {
+    ...notification,
+    inviterName,
+    joinHref,
+    displayMessage: inviterName
+      ? `${inviterName} vous invite à rejoindre sa partie.`
+      : "Invitation à rejoindre une partie.",
+  };
+}
+
+function formatRemainingDuration(issuedAt: string) {
+  const diffMs = new Date(issuedAt).getTime() + INVITATION_TTL_MS - Date.now();
+  if (diffMs <= 0) return "Expirée";
+  const totalMinutes = Math.ceil(diffMs / 60000);
+  if (totalMinutes <= 1) return "Expire dans moins d’une minute";
+  return `Expire dans ${totalMinutes} min`;
+}
 
 const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
 
@@ -245,12 +284,14 @@ export default function AppShell() {
   const [userOpen, setUserOpen] = useState(false);
   const userRef = useRef<HTMLDivElement | null>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifications, setNotifications] = useState<NotificationView[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const seenInvitationNotificationIdsRef = useRef<Set<string>>(new Set());
   const [playerSearch, setPlayerSearch] = useState("");
   const [playerSearchResults, setPlayerSearchResults] = useState<PlayerSearchItem[]>([]);
   const [playerSearchOpen, setPlayerSearchOpen] = useState(false);
+  const [invitePendingId, setInvitePendingId] = useState<string | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
   // ✅ hover icône "Créer un salon privé"
@@ -264,6 +305,17 @@ export default function AppShell() {
   const xpBurstRafRef = useRef<number | null>(null);
   const xpBurstActiveRef = useRef(false);
   const xpPendingUserExperienceRef = useRef<number | null>(null);
+
+  const currentInviteContext = React.useMemo(() => {
+    const roomMatch = location.pathname.match(/^\/room\/([^/]+)/);
+    if (roomMatch) return { roomId: roomMatch[1], destination: "room" as const };
+
+    const lobbyMatch = location.pathname.match(/^\/rooms\/([^/]+)\/lobby$/);
+    if (lobbyMatch) return { roomId: lobbyMatch[1], destination: "lobby" as const };
+
+    return null;
+  }, [location.pathname]);
+
 
   const navItemStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -347,7 +399,10 @@ export default function AppShell() {
         return;
       }
       const data = (await res.json()) as { notifications?: NotificationItem[] };
-      setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+      const nextNotifications = Array.isArray(data.notifications)
+        ? data.notifications.map(parseNotification)
+        : [];
+      setNotifications(nextNotifications);
     } catch {
       setNotifications([]);
     } finally {
@@ -365,6 +420,98 @@ export default function AppShell() {
       setUnreadCount(0);
     } catch {}
   }, []);
+
+  const sendInvite = React.useCallback(async (targetPlayer: PlayerSearchItem) => {
+    if (!currentInviteContext) {
+      toast({
+        title: "Invitation impossible",
+        description: "Ouvrez un salon ou une partie avant d’inviter un joueur.",
+      });
+      return;
+    }
+
+    setInvitePendingId(targetPlayer.id);
+    try {
+      const res = await fetch(`${API_BASE}/notifications/invite`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetPlayerId: targetPlayer.id,
+          roomId: currentInviteContext.roomId,
+          destination: currentInviteContext.destination,
+        }),
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = typeof payload?.error === "string" ? payload.error : "invite_failed";
+        throw new Error(message);
+      }
+
+      toast({
+        title: "Invitation envoyée",
+        description: `${targetPlayer.name} a reçu une notification valable 5 minutes.`,
+      });
+      void refreshUnreadCount();
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "invite_failed";
+      const description = reason === "only_owner_can_invite"
+        ? "Seul l’hôte du salon peut envoyer des invitations."
+        : reason === "cannot_invite_self"
+          ? "Vous ne pouvez pas vous inviter vous-même."
+          : "Impossible d’envoyer cette invitation pour le moment.";
+      toast({
+        title: "Invitation impossible",
+        description,
+        variant: "destructive",
+      });
+    } finally {
+      setInvitePendingId(null);
+    }
+  }, [currentInviteContext, refreshUnreadCount]);
+
+  const handleNotificationJoin = React.useCallback(async (notification: NotificationView) => {
+    const href = notification.joinHref;
+    if (!href) return;
+
+    try {
+      await fetch(`${API_BASE}/notifications/${notification.id}/read`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {}
+
+    setNotificationsOpen(false);
+    setNotifications((prev) => prev.filter((item) => item.id !== notification.id));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+    sessionStorage.setItem("join-loading", "1");
+    nav(href);
+  }, [nav]);
+
+  const notifyIncomingInvitations = React.useCallback((items: NotificationView[]) => {
+    items.forEach((notification) => {
+      if (notification.type !== "INVITATION" || !notification.joinHref) return;
+      if (seenInvitationNotificationIdsRef.current.has(notification.id)) return;
+
+      seenInvitationNotificationIdsRef.current.add(notification.id);
+
+      toast({
+        title: "Invitation reçue",
+        description: notification.displayMessage,
+        action: (
+          <ToastAction
+            altText="Rejoindre la partie"
+            onClick={() => {
+              void handleNotificationJoin(notification);
+            }}
+          >
+            Rejoindre
+          </ToastAction>
+        ),
+      });
+    });
+  }, [handleNotificationJoin]);
 
 
   useEffect(() => {
@@ -399,6 +546,25 @@ export default function AppShell() {
       window.removeEventListener(PROFILE_AVATAR_UPDATED_EVENT, handler as EventListener);
     };
   }, []);
+
+  useEffect(() => {
+    void loadUnreadNotifications();
+  }, [loadUnreadNotifications]);
+
+  useEffect(() => {
+    notifyIncomingInvitations(notifications);
+  }, [notifications, notifyIncomingInvitations]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refreshUnreadCount();
+      void loadUnreadNotifications();
+    }, 10_000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [loadUnreadNotifications, refreshUnreadCount]);
 
   useEffect(() => {
     displayBitsRef.current = displayBits;
@@ -1102,40 +1268,82 @@ export default function AppShell() {
                     Aucun joueur trouvé.
                   </div>
                 ) : (
-                  playerSearchResults.map((player, index) => (
-                    <Link
-                      key={player.id}
-                      to={`/players/${player.id}/profile`}
-                      onClick={() => {
-                        setPlayerSearchOpen(false);
-                        setPlayerSearch("");
-                      }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "10px 12px",
-                        color: "#e2e8f0",
-                        textDecoration: "none",
-                        borderBottom:
-                          index < playerSearchResults.length - 1
-                            ? "1px solid rgba(255,255,255,.06)"
-                            : "none",
-                      }}
-                    >
-                      <img
-                        src={player.img ?? "/img/profiles/0.avif"}
-                        alt={player.name}
+                  playerSearchResults.map((player, index) => {
+                    const canInvite =
+                      !!currentInviteContext &&
+                      !!user?.playerId &&
+                      user.playerId !== player.id;
+
+                    return (
+                      <div
+                        key={player.id}
                         style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: "50%",
-                          objectFit: "cover",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "10px 12px",
+                          borderBottom:
+                            index < playerSearchResults.length - 1
+                              ? "1px solid rgba(255,255,255,.06)"
+                              : "none",
                         }}
-                      />
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{player.name}</span>
-                    </Link>
-                  ))
+                      >
+                        <Link
+                          to={`/players/${player.id}/profile`}
+                          onClick={() => {
+                            setPlayerSearchOpen(false);
+                            setPlayerSearch("");
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            color: "#e2e8f0",
+                            textDecoration: "none",
+                            minWidth: 0,
+                            flex: 1,
+                          }}
+                        >
+                          <img
+                            src={player.img ?? "/img/profiles/0.avif"}
+                            alt={player.name}
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: "50%",
+                              objectFit: "cover",
+                            }}
+                          />
+                          <span style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{player.name}</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            void sendInvite(player);
+                          }}
+                          disabled={!canInvite || invitePendingId === player.id}
+                          style={{
+                            borderRadius: 999,
+                            border: "1px solid rgba(111,91,212,.55)",
+                            background: canInvite ? "rgba(111,91,212,.18)" : "rgba(255,255,255,.04)",
+                            color: canInvite ? "#e9ddff" : "#64748b",
+                            padding: "6px 10px",
+                            fontSize: 11,
+                            fontWeight: 800,
+                            textTransform: "uppercase",
+                            letterSpacing: ".08em",
+                            cursor: !canInvite || invitePendingId === player.id ? "not-allowed" : "pointer",
+                            opacity: invitePendingId === player.id ? 0.75 : 1,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {invitePendingId === player.id ? "Envoi…" : "Inviter"}
+                        </button>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}
@@ -1520,29 +1728,72 @@ export default function AppShell() {
                 <div style={{ opacity: 0.8, fontSize: 13 }}>Chargement...</div>
               ) : notifications.length === 0 ? (
                 <div style={{ opacity: 0.8, fontSize: 13 }}>Aucune notification non lue.</div>
-              ) : (
-                notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      alignItems: "flex-start",
-                      background: "rgba(15,23,42,.65)",
-                      border: "1px solid rgba(255,255,255,.12)",
-                      borderRadius: 8,
-                      padding: "10px 10px",
-                    }}
-                  >
-                    <span style={{ color: "#22d3ee", marginTop: 1 }}>●</span>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 11, opacity: 0.75, marginBottom: 3 }}>{notif.type}</div>
-                      <div style={{ fontSize: 13, lineHeight: 1.35 }}>{notif.message}</div>
-                      <div style={{ fontSize: 11, opacity: 0.65, marginTop: 4 }}>{new Date(notif.issuedAt).toLocaleString("fr-FR")}</div>
-                    </div>
-                  </div>
-                ))
-              )}
+) : (
+  notifications.map((notif) => {
+    const isInvitation = notif.type === "INVITATION" && !!notif.joinHref;
+    const remainingLabel = isInvitation
+      ? formatRemainingDuration(notif.issuedAt)
+      : null;
+
+    return (
+      <div
+        key={notif.id}
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "flex-start",
+          background: "rgba(15,23,42,.65)",
+          border: "1px solid rgba(255,255,255,.12)",
+          borderRadius: 8,
+          padding: "10px 10px",
+        }}
+      >
+        <span style={{ color: "#22d3ee", marginTop: 1 }}>●</span>
+
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 11, opacity: 0.75, marginBottom: 3 }}>
+            {notif.type}
+          </div>
+
+          <div style={{ fontSize: 13, lineHeight: 1.35 }}>
+            {notif.displayMessage}
+          </div>
+
+          {remainingLabel && (
+            <div style={{ fontSize: 11, opacity: 0.8, marginTop: 4 }}>
+              {remainingLabel}
+            </div>
+          )}
+
+          <div style={{ fontSize: 11, opacity: 0.65, marginTop: 4 }}>
+            {new Date(notif.issuedAt).toLocaleString("fr-FR")}
+          </div>
+
+          {isInvitation && notif.joinHref && (
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={() => void handleNotificationJoin(notif)}
+                style={{
+                  height: 30,
+                  padding: "0 12px",
+                  borderRadius: 6,
+                  border: "1px solid rgba(255,255,255,.18)",
+                  background: "#22d3ee",
+                  color: "#082032",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                Rejoindre
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  })
+)}
             </div>
             <div style={{ padding: 10, borderTop: "1px solid rgba(255,255,255,.1)" }}>
               <button

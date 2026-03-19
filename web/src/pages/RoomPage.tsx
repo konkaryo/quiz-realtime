@@ -2182,18 +2182,16 @@ return (
                                 title={`Voir ${trackerLabel}`}
                               >
                                 {isLeaderboardTile ? (
-                                  <span aria-hidden className="grid h-full w-full grid-cols-5 gap-[1px] rounded-[4px] overflow-hidden">
-                                    {Array.from({ length: 25 }, (_, checkerIdx) => {
-                                      const row = Math.floor(checkerIdx / 5);
-                                      const col = checkerIdx % 5;
-                                      const isDark = (row + col) % 2 === 0;
-                                      return (
-                                        <span
-                                          key={checkerIdx}
-                                          className={isDark ? "bg-white/85" : "bg-black/70"}
-                                        />
-                                      );
-                                    })}
+                                  <span
+                                    aria-hidden
+                                    className="flex h-full w-full flex-col items-center justify-center gap-[3px] rounded-[4px]"
+                                  >
+                                    {Array.from({ length: 3 }, (_, lineIdx) => (
+                                      <span
+                                        key={lineIdx}
+                                        className="h-[2px] w-4 rounded-full bg-white/85"
+                                      />
+                                    ))}
                                   </span>
                                 ) : (
                                   idx

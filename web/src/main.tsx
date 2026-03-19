@@ -23,6 +23,7 @@ import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
 import HistoryPage from "./pages/HistoryPage";
 import "./index.css";
+import { Toaster } from "./components/ui/toaster";
 
 // pages publiques
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
@@ -180,6 +181,9 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <>
+      <RouterProvider router={router} />
+      <Toaster />
+    </>
   </React.StrictMode>
 );

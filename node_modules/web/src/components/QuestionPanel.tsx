@@ -629,17 +629,24 @@ export default function DailyQuestionPanel(props: Props) {
             {choices!.map((choice) => {
               const isSelected = selectedChoice === choice.id;
               const isCorrect = correctChoiceId === choice.id;
+              const showDisabledChoiceState =
+                (!!correctChoiceId || isReveal || !!selectedChoice) && !isCorrect && !isSelected;
+              const choiceDisabled = !!selectedChoice || !!correctChoiceId || isReveal || !isPlaying;
 
               return (
                 <button
                   key={choice.id}
+                  type="button"
                   onClick={() => onSelectChoice(choice)}
+                  disabled={choiceDisabled}
                   className={[
                     "rounded-[10px] border px-4 py-3 text-center text-[12px] font-semibold transition",
                     isCorrect
                       ? "border-emerald-600 bg-emerald-600 text-slate-50"
                       : isSelected
                       ? "border-[#AF2D33] bg-[#AF2D33] text-slate-50"
+                      : showDisabledChoiceState
+                      ? "border-slate-700/40 bg-[#1C1F2E]/45 text-slate-400"
                       : "border-slate-700/70 bg-[#1C1F2E] text-slate-50 hover:bg-[#23263A]",
                   ].join(" ")}
                 >
