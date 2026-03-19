@@ -4,5 +4,12 @@
   "workspaces": [
     "server",
     "web"
-  ]
+  ],
+  "scripts": {
+    "build": "npm run --workspace server build && npm run --workspace web build",
+    "build:web": "npm run --workspace web build",
+    "build:server": "npm run --workspace server build",
+    "dev:web": "npm run --workspace web dev",
+    "dev:server": "npm run --workspace server dev"
+  }
 }

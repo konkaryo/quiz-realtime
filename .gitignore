@@ -1,1 +1,16 @@
-"server/logs/*.log" 
+node_modules/
+server/node_modules/
+web/node_modules/
+
+dist/
+build/
+.next/
+.turbo/
+coverage/
+
+server/logs/
+server/logs/*.log
+
+.env
+server/.env
+web/.env
