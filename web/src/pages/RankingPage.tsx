@@ -25,6 +25,11 @@ type LeaderboardEntry = {
   experience?: number;
 };
 
+type SelfLeaderboardRow = {
+  rank: number;
+  entry: LeaderboardEntry;
+} | null;
+
 const MODE_OPTIONS: Array<{ value: RankingMode; label: string }> = [
   { value: "experience", label: "Expérience" },
   { value: "bits", label: "Bits" },
@@ -95,6 +100,7 @@ function RankDisplay({ rank }: { rank: number }) {
 export default function RankingPage() {
   const [mode, setMode] = useState<RankingMode>("experience");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [selfRow, setSelfRow] = useState<SelfLeaderboardRow>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -115,6 +121,7 @@ export default function RankingPage() {
 
         const data = (await res.json().catch(() => ({}))) as {
           leaderboard?: LeaderboardEntry[];
+          self?: SelfLeaderboardRow;
           error?: string;
         };
 
@@ -123,9 +130,11 @@ export default function RankingPage() {
         }
 
         setEntries(Array.isArray(data.leaderboard) ? data.leaderboard : []);
+        setSelfRow(data.self?.entry ? data.self : null);
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
         setEntries([]);
+        setSelfRow(null);
         setError((err as Error).message || "Impossible de charger le classement.");
       } finally {
         if (!controller.signal.aborted) {
@@ -134,7 +143,7 @@ export default function RankingPage() {
       }
     }
 
-    loadLeaderboard();
+    void loadLeaderboard();
     return () => controller.abort();
   }, [mode]);
 
@@ -166,10 +175,7 @@ export default function RankingPage() {
       const target = event.target as HTMLElement | null;
       const tag = target?.tagName?.toLowerCase();
 
-      const isTypingField =
-        tag === "input" ||
-        tag === "textarea" ||
-        target?.isContentEditable;
+      const isTypingField = tag === "input" || tag === "textarea" || target?.isContentEditable;
 
       if (isTypingField) return;
 
@@ -189,10 +195,7 @@ export default function RankingPage() {
   }, [totalPages]);
 
   return (
-    <div
-      className="relative min-h-full overflow-hidden text-slate-50"
-      spellCheck={false}
-    >
+    <div className="relative min-h-full overflow-hidden text-slate-50" spellCheck={false}>
       <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
 
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col px-4 py-12 sm:px-8 lg:px-10">
@@ -300,6 +303,53 @@ export default function RankingPage() {
               </div>
             </div>
 
+            {selfRow && (
+              <div className="mt-10 overflow-hidden rounded-[4px] border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,.18)]">
+                <div className="grid grid-cols-[92px,minmax(0,1fr),112px] items-center bg-[#2B2E4A]">
+                  <div className="flex h-8 items-center pl-5 text-[15px] font-bold text-white">
+                    {selfRow.rank}
+                  </div>
+
+                  <div className="flex min-w-0 items-center gap-3 px-2 py-2">
+                    {selfRow.entry.img ? (
+                      <img
+                        src={selfRow.entry.img}
+                        alt={selfRow.entry.name}
+                        className="h-8 w-8 rounded-[2px] object-cover"
+                        loading="lazy"
+                        draggable={false}
+                      />
+                    ) : (
+                      <div
+                        className="grid h-8 w-8 place-items-center rounded-[2px] text-[10px] font-bold text-white"
+                        style={{ background: avatarFallback(selfRow.entry.name, selfRow.rank - 1) }}
+                      >
+                        {initialsFromName(selfRow.entry.name)}
+                      </div>
+                    )}
+
+                    <span
+                      className="notranslate block truncate text-[14px] font-bold text-white [text-decoration:none]"
+                      spellCheck={false}
+                      suppressHydrationWarning
+                      translate="no"
+                      lang="zxx"
+                      dir="ltr"
+                    >
+                      {selfRow.entry.name}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 px-5 py-2">
+                    <span className="text-[14px] font-bold text-white">
+                      {formatValue(getEntryValue(selfRow.entry, mode))}
+                    </span>
+                    <ValueBadge mode={mode} />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="mt-10 overflow-hidden" spellCheck={false}>
               <div className="grid grid-cols-[92px,minmax(0,1fr),112px] px-5 pb-3 text-[13px] font-medium text-white">
                 <div>Rang</div>
@@ -376,9 +426,7 @@ export default function RankingPage() {
                       </div>
 
                       <div className="flex items-center justify-end gap-2 px-5 py-2">
-                        <span className="text-[14px] font-bold text-white">
-                          {formatValue(value)}
-                        </span>
+                        <span className="text-[14px] font-bold text-white">{formatValue(value)}</span>
                         <ValueBadge mode={mode} />
                       </div>
                     </div>

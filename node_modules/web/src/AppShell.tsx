@@ -8,7 +8,7 @@ import starUrl from "@/assets/star.png";
 import keyIconUrl from "@/assets/key_icon.png";
 import lockIconUrl from "@/assets/lock.png";
 import calendarIconUrl from "@/assets/calendar_icon.png";
-import multiplayerIconUrl from "@/assets/multiplayer_icon.png";
+import cardsIconUrl from "@/assets/cards.png";
 import rankingIconUrl from "@/assets/ranking.png";
 import { getLevelProgress } from "@/utils/experience";
 import JoinLoadingScreen from "@/components/JoinLoadingScreen";
@@ -89,13 +89,13 @@ type MenuItem = {
   icon?: React.ReactNode;
 };
 
-function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
-  const location = useLocation();
+function MenuCard({
+  to,
+  title,
+  desc,
+  icon = "★",
+}: MenuItem) {
   const [isHovered, setIsHovered] = useState(false);
-  const isActive =
-    location.pathname === to ||
-    (location.pathname.startsWith(`${to}/`) && to !== "/");
-  const isHighlighted = isHovered || isActive;
   const hoverBg = "rgba(255,255,255,.1)";
   return (
     <Link
@@ -106,7 +106,7 @@ function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
         borderRadius: 6,
         padding: "9px 12px",
         border: "none",
-        background: isHighlighted ? hoverBg : "transparent",
+        background: isHovered ? hoverBg : "transparent",
         color: "inherit",
         textDecoration: "none",
         position: "relative",
@@ -144,13 +144,13 @@ function MenuCard({ to, title, desc, icon = "★" }: MenuItem) {
               fontWeight: 700,
               lineHeight: 1.1,
               fontSize: 12,
-              color: isHighlighted ? "#ffffff" : "#e2e8f0",
+              color: isHovered ? "#ffffff" : "#e2e8f0",
               transition: "color .15s ease",
             }}
           >
             {title}
           </div>
-          <div style={{ opacity: isHighlighted ? 0.9 : 0.7, fontSize: 10 }}>{desc}</div>
+          <div style={{ opacity: isHovered ? 0.9 : 0.7, fontSize: 10 }}>{desc}</div>
         </div>
       </div>
     </Link>
@@ -892,12 +892,12 @@ export default function AppShell() {
       desc: "Rejoignez des parties ouvertes.",
       icon: (
         <img
-          src={multiplayerIconUrl}
+          src={cardsIconUrl}
           alt=""
           aria-hidden
           style={{
-            width: 28,
-            height: 28,
+            width: 32,
+            height: 32,
             display: "block",
             objectFit: "contain",
           }}
