@@ -9,6 +9,7 @@ import keyIconUrl from "@/assets/key_icon.png";
 import lockIconUrl from "@/assets/lock.png";
 import calendarIconUrl from "@/assets/calendar_icon.png";
 import multiplayerIconUrl from "@/assets/multiplayer_icon.png";
+import rankingIconUrl from "@/assets/ranking.png";
 import { getLevelProgress } from "@/utils/experience";
 import JoinLoadingScreen from "@/components/JoinLoadingScreen";
 import { AUTH_UPDATED_EVENT } from "@/auth/events";
@@ -892,6 +893,24 @@ export default function AppShell() {
       icon: (
         <img
           src={multiplayerIconUrl}
+          alt=""
+          aria-hidden
+          style={{
+            width: 28,
+            height: 28,
+            display: "block",
+            objectFit: "contain",
+          }}
+        />
+      ),
+    },
+    {
+      to: "/multi/ranking",
+      title: "Classement",
+      desc: "Consultez le top des joueurs.",
+      icon: (
+        <img
+          src={rankingIconUrl}
           alt=""
           aria-hidden
           style={{

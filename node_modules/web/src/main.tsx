@@ -18,6 +18,7 @@ import LobbyRacePage from "./pages/LobbyRacePage";
 import PrivateLobbyPage from "./pages/PrivateLobbyPage";
 
 // ✅ nouvelle page
+import RankingPage from "./pages/RankingPage";
 import DailyChallengePage from "./pages/DailyChallengePage";
 import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -165,6 +166,8 @@ const router = createBrowserRouter([
 
       { path: "/solo/daily", element: <DailyChallengePage /> },
       { path: "/solo/daily/:date", element: <DailyChallengePlayPage /> },
+      { path: "/multi/public", element: <Home /> },
+      { path: "/multi/ranking", element: <RankingPage /> },
       { path: "/multi/race", element: <LobbyRacePage /> },
       { path: "/multi/race/play", element: <RacePage /> },
       { path: "/me/profile", element: <ProfilePage /> },
