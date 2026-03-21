@@ -7,6 +7,7 @@ import { randomUUID } from "crypto";
 
 // Domain services
 import { getOrCreateCurrentGame, clientsInRoom } from "../domain/room/room.service";
+import { emitPublicRoomsUpdated } from "../domain/room/public-room-events";
 import { toProfileUrl } from "../domain/media/media.service";
 import { computeSpeedBonus } from "../domain/player/scoring.service";
 import { isFuzzyMatch, norm } from "../domain/question/textmatch";
@@ -748,6 +749,7 @@ socket.on(
           pendingRoomCleanup.delete(room.id);
         }
         io.to(room.id).emit("lobby_update");
+        emitPublicRoomsUpdated(io);
         socket.emit("joined", { playerGameId: pg.id, name: player.name, roomId: room.id });
 
         const st = gameStates.get(room.id);
@@ -867,6 +869,7 @@ socket.on(
         }
         await startGameForRoom(clients, gameStates, io, prisma, roomId);
         io.to(roomId).emit("game_started", { roomId });
+        emitPublicRoomsUpdated(io);
         socket.emit("info_msg", "Game started");
       } catch (e) {
         console.error("[start_game error]", e);
@@ -1074,6 +1077,7 @@ socket.on(
 
       const { roomId, gameId } = c;
       clients.delete(socket.id);
+      emitPublicRoomsUpdated(io);
 
       const left = clientsInRoom(clients, roomId).length;
       if (left === 0) {
@@ -1094,6 +1098,7 @@ socket.on(
           gameStates.delete(roomId);
 
           io.to(roomId).emit("info_msg", "Tous les joueurs ont quitté. La partie est arrêtée.");
+          emitPublicRoomsUpdated(io);
         }, 3000);
         pendingRoomCleanup.set(roomId, cleanup);
       }

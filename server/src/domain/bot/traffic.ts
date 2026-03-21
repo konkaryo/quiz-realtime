@@ -2,6 +2,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import type { Server } from "socket.io";
+import { emitPublicRoomsUpdated } from "../room/public-room-events";
 import type { Client } from "../../types";
 import { ensureBotsForRoomIfPublic } from "./bot.service";
 
@@ -174,6 +175,7 @@ export async function rebalanceBotsAfterGame(opts: {
   if (removed > 0) {
     current -= removed;
     io.to(room.id).emit("lobby_update");
+    emitPublicRoomsUpdated(io);
   }
 
   const need = roomTarget - current;
@@ -210,7 +212,10 @@ export async function rebalanceBotsAfterGame(opts: {
       }
       if (added >= need) break;
     }
-    if (added > 0) io.to(room.id).emit("lobby_update");
+    if (added > 0) {
+      io.to(room.id).emit("lobby_update");
+      emitPublicRoomsUpdated(io);
+    }
   }
 }
 /* -------------------------------------------------------------------------- */

@@ -1,10 +1,15 @@
 // web/src/pages/Home.tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
 import playerIcon from "../assets/player.png";
 import cardsIcon from "../assets/cards.png";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL ??
+  (typeof window !== "undefined" ? window.location.origin : "");
+const PUBLIC_ROOMS_UPDATED_EVENT = "public_rooms_updated";
 
 type RoomListItem = {
   id: string;
@@ -12,18 +17,11 @@ type RoomListItem = {
   image?: string | null;
   difficulty?: number;
   playerCount?: number;
+  questionCount?: number;
+  progressCount?: number;
 };
 
 type RoomDetail = { id: string; code?: string | null };
-
-function difficultyStarCount(difficulty?: number) {
-  if (typeof difficulty !== "number") return 0;
-  if (difficulty <= 20) return 1;
-  if (difficulty <= 40) return 2;
-  if (difficulty <= 60) return 3;
-  if (difficulty <= 80) return 4;
-  return 5;
-}
 
 export default function Home() {
   const nav = useNavigate();
@@ -44,8 +42,8 @@ export default function Home() {
     return data;
   }
 
-  async function loadRooms() {
-    setLoading(true);
+  const loadRooms = useCallback(async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     setErr(null);
     try {
       const data = await fetchJSON("/rooms");
@@ -60,13 +58,34 @@ export default function Home() {
     } catch (e: any) {
       setErr(e?.message || "Erreur");
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    loadRooms();
-  }, []);
+    void loadRooms(true);
+  }, [loadRooms]);
+
+  useEffect(() => {
+    const socket = io(SOCKET_URL, {
+      path: "/socket.io",
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+    });
+
+    const refreshRooms = () => {
+      void loadRooms(false);
+    };
+
+    socket.on("connect", refreshRooms);
+    socket.on(PUBLIC_ROOMS_UPDATED_EVENT, refreshRooms);
+
+    return () => {
+      socket.off("connect", refreshRooms);
+      socket.off(PUBLIC_ROOMS_UPDATED_EVENT, refreshRooms);
+      socket.close();
+    };
+  }, [loadRooms]);
 
   async function openRoom(roomId: string) {
     try {
@@ -120,9 +139,13 @@ export default function Home() {
             {rooms.map((room) => {
               const imageUrl = room.image ? `${API_BASE}/img/interface/${room.image}.avif` : "";
               const label = room.name?.trim() || "Salon public";
-              const stars = difficultyStarCount(room.difficulty);
               const players =
                 typeof room.playerCount === "number" ? room.playerCount : null;
+              const questionCount = Math.max(0, Number(room.questionCount) || 0);
+              const progressCount = Math.max(
+                0,
+                Math.min(questionCount, Number(room.progressCount) || 0),
+              );
 
               return (
                 <div
@@ -148,7 +171,7 @@ export default function Home() {
                       )}
 
                       <div className="absolute inset-0 flex flex-col p-4 text-white">
-                        <div className="text-left text-3xl font-brand leading-none drop-shadow-[0_3px_6px_rgba(0,0,0,.65)]">
+                        <div className="text-center text-3xl font-brand leading-none drop-shadow-[0_3px_6px_rgba(0,0,0,.65)]">
                           {label}
                         </div>
 
@@ -161,24 +184,35 @@ export default function Home() {
                           />
                         </div>
 
-                        {stars > 0 && (
-                          <div className="absolute right-4 top-1/2 flex -translate-y-1/2 flex-col items-center justify-center leading-none">
-                            {Array.from({ length: stars }, (_, index) => (
-                              <span key={`${room.id}-star-${index}`} className="text-[18px] text-white">
-                                ★
-                              </span>
-                            ))}
+                        <div className="mt-auto flex flex-col items-center justify-end gap-3 pb-3 text-[20px] font-semibold leading-none drop-shadow-[0_3px_6px_rgba(0,0,0,.65)]">
+                          <div className="flex items-center justify-center gap-2">
+                            <span>{players ?? "—"}</span>
+                            <img
+                              src={playerIcon}
+                              alt=""
+                              className="h-5 w-5 object-contain"
+                              draggable={false}
+                            />
                           </div>
-                        )}
-
-                        <div className="mt-auto flex items-center justify-center gap-2 text-[20px] font-semibold leading-none drop-shadow-[0_3px_6px_rgba(0,0,0,.65)]">
-                          <span>{players ?? "—"}</span>
-                          <img
-                            src={playerIcon}
-                            alt=""
-                            className="h-5 w-5 object-contain"
-                            draggable={false}
-                          />
+                          <div
+                            className="flex w-full items-center justify-center gap-[2px] px-3"
+                            aria-label={`Progression de la partie : ${progressCount} sur ${questionCount || 0} question${questionCount === 1 ? "" : "s"}`}
+                          >
+                            {questionCount > 0
+                              ? Array.from({ length: questionCount }, (_, index) => {
+                                  const isCompleted = index < progressCount;
+                                  return (
+                                    <span
+                                      key={`${room.id}-progress-${index}`}
+                                      className={[
+                                        "h-5 flex-1 rounded-[1px] border border-black/15",
+                                        isCompleted ? "bg-white" : "bg-[#7E718D]",
+                                      ].join(" ")}
+                                    />
+                                  );
+                                })
+                              : null}
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -11,6 +11,7 @@ import { rebalanceBotsAfterGame } from "../bot/traffic";
 import { buildPlayerSummary, buildRoomQuestionStats } from "./summary.service";
 import { awardBitsForGame } from "./bits-reward.service";
 import { awardXpForGame } from "./xp-reward.service";
+import { emitPublicRoomsUpdated } from "../room/public-room-events";
 
 type Leaderboard = Awaited<ReturnType<typeof lb_service.buildLeaderboard>>;
 
@@ -316,6 +317,7 @@ export async function startGameForRoom(
       endsAt,
       serverNow: Date.now(),
     });
+    emitPublicRoomsUpdated(io);
     st.timer = setTimeout(() => {
       if (st.roundUid !== countdownUid) return;
       startRound(clients, gameStates, io, prisma, st).catch((err) =>
@@ -356,6 +358,7 @@ export async function stopGameForRoom(
     catch { }
   }
   io.to(roomId).emit("game_stopped");
+  emitPublicRoomsUpdated(io);
 }
 /* ---------------------------------------------------------------------------------------- */
 
@@ -431,6 +434,7 @@ async function startRound(
     serverNow: Date.now()
     // optional: roundUid: myUid
   });
+  emitPublicRoomsUpdated(io);
 
   // Planifier les bots pour CE round uniquement
   try { await scheduleBotAnswers(prisma, io, clients, st, myUid); } catch (e) { console.error(e); }
@@ -469,6 +473,7 @@ async function endRound(
     correctLabel: correct ? correct.label : null,
     leaderboard,
   });
+  emitPublicRoomsUpdated(io);
 
   st.endsAt = undefined;
 
@@ -518,6 +523,7 @@ async function finalizeGameAfterReveal(
 
   const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 100000);
   io.to(st.roomId).emit("final_leaderboard", { leaderboard, displayMs: FINAL_LB_MS });
+  emitPublicRoomsUpdated(io);
   if (awarded.length) {
     io.to(st.roomId).emit("bits_awarded", {
       rewards: awarded.map(({ playerGameId, rank, bits }) => ({ playerGameId, rank, bits })),

@@ -18,6 +18,7 @@ import { playerRoutes } from "./routes/players";
 import { registerSocketHandlers } from "./sockets/handlers";
 import { clientsInRoom, isCodeValid, genCode, genRoomId, getNextArenaRoomName } from "./domain/room/room.service";
 import { getInterfaceImages, resolveRoomImage } from "./domain/room/room-images";
+import { emitPublicRoomsUpdated } from "./domain/room/public-room-events";
 import { raceRoutes } from "./routes/race";
 import { questionRoutes } from "./routes/questions";
 import { notificationRoutes } from "./routes/notifications";
@@ -250,6 +251,7 @@ async function main() {
         createdAt: true,
         difficulty: true,
         image: true,
+        questionCount: true,
         owner: { select: { id: true, displayName: true } },
       },
     });
@@ -260,6 +262,16 @@ async function main() {
     const rooms = rows.map((r) => {
       const normalizedImage = normalizeRoomImage(r.image);
       const resolvedImage = normalizedImage ?? resolveRoomImage(r.id, interfaceImages);
+      const state = gameStates.get(r.id);
+      const totalQuestions =
+        typeof r.questionCount === "number" && Number.isFinite(r.questionCount)
+          ? r.questionCount
+          : Array.isArray(state?.questions)
+            ? state.questions.length
+            : 0;
+      const progressCount = state && !state.finished
+        ? Math.max(0, Math.min(state.index + 1, totalQuestions || state.questions.length))
+        : 0;
       if (resolvedImage && normalizedImage !== resolvedImage) {
         updates.push({ id: r.id, image: resolvedImage });
       }
@@ -267,6 +279,8 @@ async function main() {
         ...r,
         image: resolvedImage,
         playerCount: clientsInRoom(clients, r.id).length,
+        questionCount: totalQuestions,
+        progressCount,
         canClose:
           (!!userId && r.owner?.id === userId) ||
           userRole === "ADMIN",
@@ -326,6 +340,7 @@ async function main() {
 
       io.to(id).emit("room_closed", { roomId: id });
       io.in(id).socketsLeave(id);
+      emitPublicRoomsUpdated(io);
 
       // 3) (Optionnel) basculer les Game liés en "closed"
       await prisma.game.updateMany({

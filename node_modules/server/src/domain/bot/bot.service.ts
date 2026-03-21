@@ -1,6 +1,7 @@
 // server/src/domain/bot/bot.service.ts
 import { PrismaClient } from "@prisma/client";
 import type { Server } from "socket.io";
+import { emitPublicRoomsUpdated } from "../room/public-room-events";
 import type { Client, GameState, StoredAnswer } from "../../types";
 import { CFG } from "../../config";
 import * as lb_service from "../game/leaderboard.service";
@@ -148,6 +149,7 @@ export async function ensureBotsForRoomIfPublic(
   }
 
   io.to(room.id).emit("lobby_update");
+  emitPublicRoomsUpdated(io);
   return attached;
 }
 

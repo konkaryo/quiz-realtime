@@ -259,6 +259,12 @@ export default function AppShell() {
   const isGuest = !user || Boolean(user?.guest);
 
   useEffect(() => {
+   if (!isRoomRoute) {
+      sessionStorage.removeItem("join-loading");
+      setShowJoinLoading(false);
+      return;
+    }
+
     const hasJoinLoading = sessionStorage.getItem("join-loading") === "1";
     if (!hasJoinLoading && !showJoinLoading) return;
     if (hasJoinLoading) {
@@ -273,7 +279,7 @@ export default function AppShell() {
     return () => {
       window.clearTimeout(hideTimer);
     };
-  }, [location.key]);
+  }, [isRoomRoute, location.key, showJoinLoading]);
 
   const animationRef = useRef<number | null>(null);
   const experienceAnimationRef = useRef<number | null>(null);
