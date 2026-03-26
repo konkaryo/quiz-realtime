@@ -117,8 +117,8 @@ export default function CreateRoomPage() {
   const [err, setErr] = useState<string | null>(null);
 
   const [difficulty, setDifficulty] = useState<number>(50);
-  const [questionCount, setQuestionCount] = useState<number>(10); // 1–50
-  const [questionDuration, setQuestionDuration] = useState<number>(20); // 3–60
+  const [questionCount, setQuestionCount] = useState<number>(10);
+  const [questionDuration, setQuestionDuration] = useState<number>(20);
 
   const themeOptionsSorted = useMemo(
     () =>
@@ -139,7 +139,6 @@ export default function CreateRoomPage() {
 
   const [code, setCode] = useState<string>("");
 
-  // ✅ Empêcher le scroll global (sinon 2 scrollbars)
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
@@ -174,6 +173,7 @@ export default function CreateRoomPage() {
   const toggleTheme = (k: ThemeKey) => {
     setSelectedThemes((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]));
   };
+
   const selectAll = () => setSelectedThemes(THEME_OPTIONS.map((t) => t.key));
   const selectNone = () => setSelectedThemes([]);
 
@@ -182,7 +182,7 @@ export default function CreateRoomPage() {
     try {
       await navigator.clipboard.writeText(code);
     } catch {
-      // pas d'affichage de message
+      // silencieux
     }
   }
 
@@ -201,8 +201,10 @@ export default function CreateRoomPage() {
       setErr("Code indisponible. Réessaie.");
       return;
     }
+
     setLoading(true);
     setErr(null);
+
     try {
       const payload = {
         code,
@@ -219,6 +221,7 @@ export default function CreateRoomPage() {
 
       const id = (data as any)?.result?.id as string | undefined;
       const finalCode = (data as any)?.result?.code as string | undefined;
+
       if (!id) throw new Error("Création: id manquant");
 
       if (finalCode && finalCode !== code) setCode(finalCode);
@@ -240,116 +243,116 @@ export default function CreateRoomPage() {
   const qdurP = percent(questionDuration, 3, 60);
 
   return (
-    <div className="relative text-slate-50">
+    <div className="relative text-slate-900">
       <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
 
       <style>{`
-        /* ✅ Scrollbar style appliqué au conteneur scroll (lb-scroll) */
         .lb-scroll {
           scrollbar-width: thin;
-          scrollbar-color: #4A4B56 #1E1F28;
+          scrollbar-color: #6f63b9 rgba(255,255,255,0.08);
         }
-        .lb-scroll::-webkit-scrollbar { width: 12px; }
+
+        .lb-scroll::-webkit-scrollbar { width: 10px; }
+
         .lb-scroll::-webkit-scrollbar-track {
-          background: #1E1F28;
+          background: rgba(255,255,255,0.08);
           border-radius: 999px;
         }
-        .lb-scroll::-webkit-scrollbar-button {
-          background-color: #4A4B56;
-          height: 12px;
-        }
+
         .lb-scroll::-webkit-scrollbar-thumb {
-          background: #4A4B56;
+          background: #6f63b9;
           border-radius: 999px;
-          border: 3px solid rgba(0,0,0,0);
-          background-clip: padding-box;
-        }
-        .lb-scroll::-webkit-scrollbar-thumb:hover {
-          background: #4A4B56;
-          border: 3px solid rgba(0,0,0,0);
+          border: 2px solid rgba(0,0,0,0);
           background-clip: padding-box;
         }
 
-        /* ✅ Sliders: track discret + angles peu arrondis */
-        input[type="range"].syn-range{
-          -webkit-appearance:none;
-          appearance:none;
-          width:100%;
-          background:transparent;
-          outline:none;
-          cursor:pointer;
+        .lb-scroll::-webkit-scrollbar-thumb:hover {
+          background: #7c70cb;
         }
-        input[type="range"].syn-range::-webkit-slider-runnable-track{
-          height:6px;
-          border-radius:2px;
+
+        input[type="range"].syn-range {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          background: transparent;
+          outline: none;
+          cursor: pointer;
+        }
+
+        input[type="range"].syn-range::-webkit-slider-runnable-track {
+          height: 6px;
+          border-radius: 999px;
           background:
-            linear-gradient(var(--fill) 0 0) 0/var(--p) 100% no-repeat,
+            linear-gradient(var(--fill) 0 0) 0 / var(--p) 100% no-repeat,
             var(--track);
         }
-        input[type="range"].syn-range::-webkit-slider-thumb{
-          -webkit-appearance:none;
-          appearance:none;
-          margin-top:-7px;
-          width:18px;
-          height:18px;
-          border-radius:999px;
-          background:#ffffff;
-          border:2px solid rgba(255,255,255,0.12);
-          box-shadow:0 8px 18px rgba(0,0,0,0.45);
+
+        input[type="range"].syn-range::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          margin-top: -6px;
+          width: 18px;
+          height: 18px;
+          border-radius: 999px;
+          background: #ffffff;
+          border: none  ;
+          box-shadow: 0 6px 16px rgba(18, 20, 38, 0.18);
         }
-        input[type="range"].syn-range::-moz-range-track{
-          height:6px;
-          border-radius:2px;
+
+        input[type="range"].syn-range::-moz-range-track {
+          height: 6px;
+          border-radius: 999px;
           background: var(--track);
         }
-        input[type="range"].syn-range::-moz-range-progress{
-          height:6px;
-          border-radius:2px;
+
+        input[type="range"].syn-range::-moz-range-progress {
+          height: 6px;
+          border-radius: 999px;
           background: var(--fill);
         }
-        input[type="range"].syn-range::-moz-range-thumb{
-          width:18px;
-          height:18px;
-          border-radius:999px;
-          background:#ffffff;
-          border:2px solid rgba(255,255,255,0.12);
-          box-shadow:0 8px 18px rgba(0,0,0,0.45);
+
+        input[type="range"].syn-range::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          border-radius: 999px;
+          background: #ffffff;
+          border: 2px solid rgba(111, 91, 212, 0.28);
+          box-shadow: 0 6px 16px rgba(18, 20, 38, 0.18);
         }
       `}</style>
 
-      {/* ✅ Zone scrollable: top = navbar, bottom = 0 => scrollbar touche le bas et ne chevauche pas la navbar */}
       <div
-        className="fixed left-0 right-0 bottom-0 z-10 lb-scroll overflow-y-auto"
+        className="fixed left-0 right-0 bottom-0 z-10 overflow-y-auto lb-scroll"
         style={{ top: `${NAVBAR_HEIGHT_PX}px` }}
       >
-        <div className="mx-auto flex max-w-6xl flex-col px-4 py-10 sm:px-8 lg:px-10">
-          <header className="mb-12 text-center">
-            <h1 className="text-5xl font-brand text-slate-50">CRÉER UN SALON PRIVÉ</h1>
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8">
+          <header className="mb-10 text-center">
+            <h1 className="text-4xl font-brand italic text-white sm:text-5xl">
+              CRÉER UNE PARTIE PRIVÉE
+            </h1>
           </header>
 
-          <div className="origin-top scale-[0.88]">
+          <div className="mx-auto max-w-3xl">
             {err && (
-              <div className="mb-6 rounded-[6px] border border-rose-800/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-200 shadow-[0_18px_40px_rgba(0,0,0,0.25)]">
+              <div className="mb-5 rounded-[10px] border border-rose-300/70 bg-[#f7e9ec] px-4 py-3 text-sm text-rose-700 shadow-[0_12px_24px_rgba(0,0,0,0.12)]">
                 {err}
               </div>
             )}
 
-            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr),360px]">
-              {/* COLONNE GAUCHE : paramètres */}
-              <section className="rounded-[6px] border border-[#2A2D3C] bg-[#212539] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
-                <div className="mb-5">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                    Paramètres
-                  </div>
+            <div className="grid items-start justify-center gap-8 md:grid-cols-[320px,320px]">
+              {/* Panneau gauche */}
+              <section className="rounded-[8px] border border-[#d5d5d8] bg-[#ececed] px-5 py-4 shadow-[0_10px_24px_rgba(0,0,0,0.14)]">
+                <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#171717]">
+                  Paramètres
                 </div>
 
                 {/* Difficulté */}
-                <div className="rounded-[6px] border border-[#2A2D3C] bg-[#171A29] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-slate-100">Difficulté</div>
-                    <div className="rounded-[2px] bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
+                <div className="rounded-[5px] bg-[#d8d8d9] p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-[12px] font-semibold text-[#191919]">Difficulté</span>
+                    <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
                       {difficulty}%
-                    </div>
+                    </span>
                   </div>
 
                   <input
@@ -360,17 +363,17 @@ export default function CreateRoomPage() {
                     step={1}
                     value={difficulty}
                     onChange={(e) => setDifficulty(Number(e.target.value))}
-                    className="syn-range mt-3"
+                    className="syn-range"
                     style={
                       {
-                        ["--track" as any]: "rgba(148,163,184,0.18)",
-                        ["--fill" as any]: "#D30E72",
+                        ["--track" as any]: "#a9a9ac",
+                        ["--fill" as any]: "#6b5ad6",
                         ["--p" as any]: difficultyP,
                       } as React.CSSProperties
                     }
                   />
 
-                  <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  <div className="mt-2 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
                     <span>0</span>
                     <span>50</span>
                     <span>100</span>
@@ -378,12 +381,12 @@ export default function CreateRoomPage() {
                 </div>
 
                 {/* Questions */}
-                <div className="mt-4 rounded-[6px] border border-[#2A2D3C] bg-[#171A29] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-slate-100">Questions</div>
-                    <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
+                <div className="mt-3 rounded-[5px] bg-[#d8d8d9] p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-[12px] font-semibold text-[#191919]">Questions</span>
+                    <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
                       {questionCount}
-                    </div>
+                    </span>
                   </div>
 
                   <input
@@ -394,17 +397,17 @@ export default function CreateRoomPage() {
                     step={1}
                     value={questionCount}
                     onChange={(e) => setQuestionCount(Number(e.target.value))}
-                    className="syn-range mt-3"
+                    className="syn-range"
                     style={
                       {
-                        ["--track" as any]: "rgba(148,163,184,0.18)",
-                        ["--fill" as any]: "#0FACF3",
+                        ["--track" as any]: "#a9a9ac",
+                        ["--fill" as any]: "#6b5ad6",
                         ["--p" as any]: qcountP,
                       } as React.CSSProperties
                     }
                   />
 
-                  <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  <div className="mt-2 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
                     <span>1</span>
                     <span>25</span>
                     <span>50</span>
@@ -412,13 +415,15 @@ export default function CreateRoomPage() {
                 </div>
 
                 {/* Durée */}
-                <div className="mt-4 rounded-[6px] border border-[#2A2D3C] bg-[#171A29] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-slate-100">Durée / question</div>
-                    <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
+                <div className="mt-3 rounded-[5px] bg-[#d8d8d9] p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-[12px] font-semibold text-[#191919]">
+                      Durée / question
+                    </span>
+                    <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
                       {questionDuration}
                       <span className="lowercase">s</span>
-                    </div>
+                    </span>
                   </div>
 
                   <input
@@ -429,18 +434,17 @@ export default function CreateRoomPage() {
                     step={1}
                     value={questionDuration}
                     onChange={(e) => setQuestionDuration(Number(e.target.value))}
-                    className="syn-range mt-3"
+                    className="syn-range"
                     style={
                       {
-                        ["--track" as any]: "rgba(148,163,184,0.18)",
-                        ["--fill" as any]: "#FACC15",
+                        ["--track" as any]: "#a9a9ac",
+                        ["--fill" as any]: "#6b5ad6",
                         ["--p" as any]: qdurP,
                       } as React.CSSProperties
                     }
                   />
 
-                  {/* ✅ "s" collé au chiffre + forcé en minuscule même si parent est en uppercase */}
-                  <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  <div className="mt-2 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
                     <span>
                       3<span className="lowercase">s</span>
                     </span>
@@ -454,38 +458,37 @@ export default function CreateRoomPage() {
                 </div>
 
                 {/* Thèmes */}
-                <div className="mt-6">
-                  <div className="flex items-end justify-between gap-3">
-                    <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                        Thèmes{" "}
-                        <span className="text-slate-300/80">
-                          ({selectedThemes.length}/{THEME_OPTIONS.length})
-                        </span>
-                      </div>
+                <div className="mt-4">
+                  <div className="mb-2 flex items-end justify-between gap-2">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#444]">
+                      Thèmes{" "}
+                      <span className="text-[#6c6c6c]">
+                        ({selectedThemes.length}/{THEME_OPTIONS.length})
+                      </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={selectAll}
-                        className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300 transition hover:text-white"
+                        className="rounded-[4px] bg-[#c8c8cb] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#222] transition hover:bg-[#bebec2]"
                       >
                         Tout
                       </button>
                       <button
                         type="button"
                         onClick={selectNone}
-                        className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-300 transition hover:text-white"
+                        className="rounded-[4px] bg-[#c8c8cb] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#222] transition hover:bg-[#bebec2]"
                       >
                         Aucun
                       </button>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid max-h-[182px] gap-1.5 overflow-y-auto pr-1 sm:grid-cols-2">
                     {themeOptionsSorted.map(({ key, label }) => {
                       const active = selectedThemes.includes(key);
+
                       return (
                         <button
                           key={key}
@@ -493,17 +496,17 @@ export default function CreateRoomPage() {
                           onClick={() => toggleTheme(key)}
                           aria-pressed={active}
                           className={[
-                            "flex items-center justify-between gap-3 rounded-[4px] border px-3 py-2 text-left text-[13px] font-semibold transition",
+                            "flex items-center justify-between gap-2 rounded-[4px] px-2.5 py-2 text-left text-[11px] font-semibold transition",
                             active
-                              ? "border-[#6F5BD4]/60 bg-[#272E4F] text-slate-50 hover:bg-[#35417B]"
-                              : "border-[#2A2D3C] bg-[#181A28] text-slate-300 hover:text-white",
+                              ? "bg-[#7061d8] text-white"
+                              : "bg-[#d7d7da] text-[#222] hover:bg-[#cdcdf1]",
                           ].join(" ")}
                         >
                           <span className="truncate">{label}</span>
                           <span
                             className={[
-                              "flex h-5 w-5 items-center justify-center rounded-[6px] text-[12px] leading-none",
-                              active ? "bg-[#6F5BD4] text-white" : "bg-[#141625] text-slate-500",
+                              "flex h-4 w-4 items-center justify-center rounded-[3px] text-[10px] leading-none",
+                              active ? "bg-white/20 text-white" : "bg-[#bebec2] text-[#555]",
                             ].join(" ")}
                             aria-hidden
                           >
@@ -516,74 +519,59 @@ export default function CreateRoomPage() {
                 </div>
               </section>
 
-              {/* COLONNE DROITE : code */}
-              <aside className="self-start rounded-[6px] border border-[#2A2D3C] bg-[#212539] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
-                <div className="flex flex-col">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                    Code du salon
-                  </div>
+              {/* Panneau droit */}
+              <aside className="rounded-[8px] border border-[#d5d5d8] bg-[#ececed] px-5 py-4 shadow-[0_10px_24px_rgba(0,0,0,0.14)]">
+                <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#171717]">
+                  Code de la partie
+                </div>
 
-                  <div
-                    className={[
-                      "mt-6 flex items-center justify-center rounded-[10px] border border-[#2A2D3C]",
-                      "bg-[#181A28] px-4 py-8",
-                      "font-mono text-4xl font-extrabold tracking-[0.42em] text-slate-50",
-                    ].join(" ")}
-                    aria-label="Code d'accès de la room"
+                <div
+                  className="flex h-[56px] items-center justify-center rounded-[4px] bg-[#d0d0d2] px-3 font-mono text-2xl font-extrabold tracking-[0.26em] text-[#232326]"
+                  aria-label="Code d'accès de la room"
+                >
+                  {code || "----"}
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={refreshCodeFromServer}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-[4px] bg-[#cfcfd2] text-[10px] font-bold uppercase tracking-[0.08em] text-[#232323] transition hover:bg-[#c4c4c9]"
                   >
-                    {code || "----"}
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={refreshCodeFromServer}
-                      className={[
-                        "inline-flex h-12 items-center justify-center gap-2 rounded-[6px]",
-                        "border border-[#2A2D3C] bg-[#181A28]",
-                        "text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-200",
-                        "transition hover:text-white",
-                      ].join(" ")}
-                    >
-                      <RefreshIcon />
-                      Régénérer
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={copyCode}
-                      disabled={!code}
-                      className={[
-                        "inline-flex h-12 items-center justify-center gap-2 rounded-[6px]",
-                        "border border-[#2A2D3C] bg-[#181A28]",
-                        "text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-200",
-                        "transition hover:text-white",
-                        !code ? "cursor-not-allowed opacity-40 hover:text-slate-200" : "",
-                      ].join(" ")}
-                    >
-                      <CopyIcon />
-                      Copier
-                    </button>
-                  </div>
+                    <RefreshIcon className="h-4 w-4" />
+                    Régénérer
+                  </button>
 
                   <button
                     type="button"
-                    onClick={createRoom}
-                    disabled={loading || !code}
+                    onClick={copyCode}
+                    disabled={!code}
                     className={[
-                      "mt-8 inline-flex items-center justify-center rounded-[6px] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] transition",
-                      "border border-transparent bg-[#6F5BD4] text-slate-50 hover:bg-[#6F5BD4]",
-                      loading || !code ? "cursor-not-allowed opacity-40 hover:bg-[#2D7CFF]" : "",
+                      "inline-flex h-9 items-center justify-center gap-2 rounded-[4px] bg-[#cfcfd2] text-[10px] font-bold uppercase tracking-[0.08em] text-[#232323] transition hover:bg-[#c4c4c9]",
+                      !code ? "cursor-not-allowed opacity-45 hover:bg-[#cfcfd2]" : "",
                     ].join(" ")}
                   >
-                    {loading ? "Création…" : "Créer la room"}
+                    <CopyIcon className="h-4 w-4" />
+                    Copier
                   </button>
+                </div>
 
-                  <div className="sr-only">
-                    {bannedThemes.length === 0
-                      ? "Tous les thèmes sont inclus."
-                      : `${bannedThemes.length} thème(s) exclu(s).`}
-                  </div>
+                <button
+                  type="button"
+                  onClick={createRoom}
+                  disabled={loading || !code}
+                  className={[
+                    "mt-4 inline-flex h-10 w-full items-center justify-center rounded-[4px] bg-[#6b5ad6] text-[10px] font-bold uppercase tracking-[0.12em] text-white transition hover:bg-[#5f4fcb]",
+                    loading || !code ? "cursor-not-allowed opacity-45 hover:bg-[#6b5ad6]" : "",
+                  ].join(" ")}
+                >
+                  {loading ? "Création…" : "Créer la room"}
+                </button>
+
+                <div className="sr-only">
+                  {bannedThemes.length === 0
+                    ? "Tous les thèmes sont inclus."
+                    : `${bannedThemes.length} thème(s) exclu(s).`}
                 </div>
               </aside>
             </div>

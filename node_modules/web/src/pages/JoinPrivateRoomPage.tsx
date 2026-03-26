@@ -1,6 +1,7 @@
 // web/src/pages/JoinPrivateRoomPage.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 const NAVBAR_HEIGHT_PX = 52;
@@ -32,7 +33,6 @@ export default function JoinPrivateRoomPage() {
   const nav = useNavigate();
 
   const [code, setCode] = useState("");
-  const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -107,20 +107,22 @@ export default function JoinPrivateRoomPage() {
   function handleChange(value: string) {
     const next = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, MAX_LEN);
     setCode(next);
-    setErr(null);
   }
 
   async function resolveAndGo() {
     const c = normalized.trim();
 
     if (c.length !== MAX_LEN) {
-      setErr(`Le code doit comporter ${MAX_LEN} caractères.`);
+      toast({
+        title: "Code incomplet",
+        description: `Le code doit comporter ${MAX_LEN} caractères.`,
+        variant: "destructive",
+      });
       focusHiddenInput();
       return;
     }
 
     setLoading(true);
-    setErr(null);
 
     try {
       let roomId: string | undefined;
@@ -146,7 +148,13 @@ export default function JoinPrivateRoomPage() {
 
       nav(`/rooms/${roomId}/lobby`);
     } catch (e: any) {
-      setErr(e?.message || "Impossible de rejoindre ce salon.");
+      const message = typeof e?.message === "string" ? e.message : "Impossible de rejoindre ce salon.";
+      toast({
+        title: "Salon introuvable",
+        description: message === "Not found" ? "Code invalide ou introuvable." : message,
+        variant: "destructive",
+      });
+      setCode("");
       focusHiddenInput();
     } finally {
       setLoading(false);
@@ -228,10 +236,7 @@ export default function JoinPrivateRoomPage() {
               value={normalized}
               onChange={(e) => handleChange(e.target.value)}
               onFocus={() => setIsFocused(true)}
-              onBlur={() => {
-                setIsFocused(false);
-                focusHiddenInput();
-              }}
+              onBlur={() => setIsFocused(false)}
               onPaste={(e) => {
                 const pasted = e.clipboardData.getData("text");
                 handleChange(pasted);
@@ -240,9 +245,6 @@ export default function JoinPrivateRoomPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   resolveAndGo();
-                }
-                if (e.key === "Backspace" && normalized.length === 0) {
-                  setErr(null);
                 }
               }}
               inputMode="text"
@@ -271,12 +273,6 @@ export default function JoinPrivateRoomPage() {
           >
             {loading ? "Connexion..." : "Rejoindre"}
           </button>
-
-          {err && (
-            <p className="mt-6 text-sm text-red-300">
-              {err}
-            </p>
-          )}
 
           <div className="sr-only" aria-live="polite">
             {normalized.length === MAX_LEN ? "Code complet." : "Code incomplet."}
