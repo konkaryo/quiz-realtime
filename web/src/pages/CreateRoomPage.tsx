@@ -138,6 +138,7 @@ export default function CreateRoomPage() {
   );
 
   const [code, setCode] = useState<string>("");
+  const [activePanel, setActivePanel] = useState<"settings" | "themes">("settings");
 
   useEffect(() => {
     const html = document.documentElement;
@@ -340,184 +341,223 @@ export default function CreateRoomPage() {
             )}
 
             <div className="grid items-start justify-center gap-8 md:grid-cols-[380px,320px]">
-              {/* Panneau gauche */}
-              <section className="rounded-[8px] border border-[#d5d5d8] bg-[#ececed] px-5 py-4 shadow-[0_10px_24px_rgba(0,0,0,0.14)]">
-                <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#171717]">
-                  Paramètres
+              {/* Onglets + panneau gauche */}
+              <div className="relative">
+                <div
+                  className="mb-4 flex w-full max-w-[380px] gap-3 md:absolute md:-left-[132px] md:top-4 md:mb-0 md:w-[108px] md:max-w-none md:flex-col md:gap-2"
+                  role="tablist"
+                  aria-orientation="vertical"
+                  aria-label="Sections du panneau"
+                >
+                  <button
+                    id="create-room-tab-settings"
+                    type="button"
+                    role="tab"
+                    aria-selected={activePanel === "settings"}
+                    aria-controls="create-room-panel-settings"
+                    onClick={() => setActivePanel("settings")}
+                    className={[
+                      "h-10 flex-1 border-b px-2 text-right text-[28px] leading-none transition-colors md:flex-none",
+                      activePanel === "settings"
+                        ? "border-[#6b5ad6] text-[#6b5ad6]"
+                        : "border-[#8e8d96] text-white hover:text-[#cbc7ef]",
+                    ].join(" ")}
+                  >
+                    <span className="text-sm tracking-[0.02em]">Paramètres</span>
+                  </button>
+                  <button
+                    id="create-room-tab-themes"
+                    type="button"
+                    role="tab"
+                    aria-selected={activePanel === "themes"}
+                    aria-controls="create-room-panel-themes"
+                    onClick={() => setActivePanel("themes")}
+                    className={[
+                      "h-10 flex-1 border-b px-2 text-right text-[28px] leading-none transition-colors md:mt-2 md:flex-none",
+                      activePanel === "themes"
+                        ? "border-[#6b5ad6] text-[#6b5ad6]"
+                        : "border-[#8e8d96] text-white hover:text-[#cbc7ef]",
+                    ].join(" ")}
+                  >
+                    <span className="text-sm tracking-[0.02em]">Thèmes</span>
+                  </button>
                 </div>
 
-                {/* Difficulté */}
-                <div className="rounded-[5px] bg-[#d8d8d9] p-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[12px] font-semibold text-[#191919]">Difficulté</span>
-                    <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
-                      {difficulty}%
-                    </span>
+                <section className="w-full max-w-[380px] rounded-[8px] border border-[#d5d5d8] bg-[#ececed] px-5 py-4 shadow-[0_10px_24px_rgba(0,0,0,0.14)]">
+                  <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#171717]">
+                    {activePanel === "settings"
+                      ? "Paramètres"
+                      : `Thèmes (${selectedThemes.length}/${THEME_OPTIONS.length})`}
                   </div>
-
-                  <input
-                    id="difficulty"
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(Number(e.target.value))}
-                    className="syn-range"
-                    style={
-                      {
-                        ["--track" as any]: "#a9a9ac",
-                        ["--fill" as any]: "#6b5ad6",
-                        ["--p" as any]: difficultyP,
-                      } as React.CSSProperties
-                    }
-                  />
-
-                  <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
-                    <span>0</span>
-                    <span>50</span>
-                    <span>100</span>
-                  </div>
-                </div>
-
-                {/* Questions */}
-                <div className="mt-2 rounded-[5px] bg-[#d8d8d9] p-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[12px] font-semibold text-[#191919]">Questions</span>
-                    <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
-                      {questionCount}
-                    </span>
-                  </div>
-
-                  <input
-                    id="qcount"
-                    type="range"
-                    min={1}
-                    max={50}
-                    step={1}
-                    value={questionCount}
-                    onChange={(e) => setQuestionCount(Number(e.target.value))}
-                    className="syn-range"
-                    style={
-                      {
-                        ["--track" as any]: "#a9a9ac",
-                        ["--fill" as any]: "#6b5ad6",
-                        ["--p" as any]: qcountP,
-                      } as React.CSSProperties
-                    }
-                  />
-
-                  <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
-                    <span>1</span>
-                    <span>25</span>
-                    <span>50</span>
-                  </div>
-                </div>
-
-                {/* Durée */}
-                <div className="mt-2 rounded-[5px] bg-[#d8d8d9] p-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[12px] font-semibold text-[#191919]">
-                      Durée / question
-                    </span>
-                    <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
-                      {questionDuration}
-                      <span className="lowercase">s</span>
-                    </span>
-                  </div>
-
-                  <input
-                    id="qdur"
-                    type="range"
-                    min={3}
-                    max={60}
-                    step={1}
-                    value={questionDuration}
-                    onChange={(e) => setQuestionDuration(Number(e.target.value))}
-                    className="syn-range"
-                    style={
-                      {
-                        ["--track" as any]: "#a9a9ac",
-                        ["--fill" as any]: "#6b5ad6",
-                        ["--p" as any]: qdurP,
-                      } as React.CSSProperties
-                    }
-                  />
-
-                  <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
-                    <span>
-                      3<span className="lowercase">s</span>
-                    </span>
-                    <span>
-                      30<span className="lowercase">s</span>
-                    </span>
-                    <span>
-                      60<span className="lowercase">s</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Thèmes */}
-                <div className="mt-4">
-                  <div className="mb-2 flex items-end justify-between gap-2">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#444]">
-                      Thèmes{" "}
-                      <span className="text-[#6c6c6c]">
-                        ({selectedThemes.length}/{THEME_OPTIONS.length})
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={selectAll}
-                        className="rounded-[4px] bg-[#c8c8cb] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#222] transition hover:bg-[#bebec2]"
-                      >
-                        Tout
-                      </button>
-                      <button
-                        type="button"
-                        onClick={selectNone}
-                        className="rounded-[4px] bg-[#c8c8cb] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#222] transition hover:bg-[#bebec2]"
-                      >
-                        Aucun
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid max-h-[182px] gap-1.5 overflow-y-auto pr-1 sm:grid-cols-2">
-                    {themeOptionsSorted.map(({ key, label }) => {
-                      const active = selectedThemes.includes(key);
-
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => toggleTheme(key)}
-                          aria-pressed={active}
-                          className={[
-                            "flex items-center justify-between gap-2 rounded-[4px] px-2.5 py-2 text-left text-[11px] font-semibold transition",
-                            active
-                              ? "bg-[#7061d8] text-white"
-                              : "bg-[#d7d7da] text-[#222] hover:bg-[#cdcdf1]",
-                          ].join(" ")}
-                        >
-                          <span className="truncate">{label}</span>
-                          <span
-                            className={[
-                              "flex h-4 w-4 items-center justify-center rounded-[3px] text-[10px] leading-none",
-                              active ? "bg-white/20 text-white" : "bg-[#bebec2] text-[#555]",
-                            ].join(" ")}
-                            aria-hidden
-                          >
-                            {active ? "✓" : "—"}
+                  {activePanel === "settings" && (
+                    <div id="create-room-panel-settings" role="tabpanel" aria-labelledby="create-room-tab-settings">
+                      {/* Difficulté */}
+                      <div className="rounded-[5px] bg-[#6F5BD4] p-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[12px] font-semibold text-[#ffffff]">Difficulté</span>
+                          <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
+                            {difficulty}%
                           </span>
+                        </div>
+
+                        <input
+                          id="difficulty"
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={difficulty}
+                          onChange={(e) => setDifficulty(Number(e.target.value))}
+                          className="syn-range"
+                          style={
+                            {
+                              ["--track" as any]: "#a9a9ac",
+                              ["--fill" as any]: "#6b5ad6",
+                              ["--p" as any]: difficultyP,
+                            } as React.CSSProperties
+                          }
+                        />
+
+                        <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
+                          <span>0</span>
+                          <span>50</span>
+                          <span>100</span>
+                        </div>
+                      </div>
+
+                      {/* Questions */}
+                      <div className="mt-2 rounded-[5px] bg-[#d8d8d9] p-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[12px] font-semibold text-[#191919]">Questions</span>
+                          <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
+                            {questionCount}
+                          </span>
+                        </div>
+
+                        <input
+                          id="qcount"
+                          type="range"
+                          min={1}
+                          max={50}
+                          step={1}
+                          value={questionCount}
+                          onChange={(e) => setQuestionCount(Number(e.target.value))}
+                          className="syn-range"
+                          style={
+                            {
+                              ["--track" as any]: "#a9a9ac",
+                              ["--fill" as any]: "#6b5ad6",
+                              ["--p" as any]: qcountP,
+                            } as React.CSSProperties
+                          }
+                        />
+
+                        <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
+                          <span>1</span>
+                          <span>25</span>
+                          <span>50</span>
+                        </div>
+                      </div>
+
+                      {/* Durée */}
+                      <div className="mt-2 rounded-[5px] bg-[#d8d8d9] p-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[12px] font-semibold text-[#191919]">
+                            Durée / question
+                          </span>
+                          <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
+                            {questionDuration}
+                            <span className="lowercase">s</span>
+                          </span>
+                        </div>
+
+                        <input
+                          id="qdur"
+                          type="range"
+                          min={3}
+                          max={60}
+                          step={1}
+                          value={questionDuration}
+                          onChange={(e) => setQuestionDuration(Number(e.target.value))}
+                          className="syn-range"
+                          style={
+                            {
+                              ["--track" as any]: "#a9a9ac",
+                              ["--fill" as any]: "#6b5ad6",
+                              ["--p" as any]: qdurP,
+                            } as React.CSSProperties
+                          }
+                        />
+
+                        <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
+                          <span>
+                            3<span className="lowercase">s</span>
+                          </span>
+                          <span>
+                            30<span className="lowercase">s</span>
+                          </span>
+                          <span>
+                            60<span className="lowercase">s</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activePanel === "themes" && (
+                    <div id="create-room-panel-themes" role="tabpanel" aria-labelledby="create-room-tab-themes">
+                      <div className="mb-3 flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={selectAll}
+                          className="rounded-[4px] bg-[#c8c8cb] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#222] transition hover:bg-[#bebec2]"
+                        >
+                          Tout
                         </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </section>
+                        <button
+                          type="button"
+                          onClick={selectNone}
+                          className="rounded-[4px] bg-[#c8c8cb] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#222] transition hover:bg-[#bebec2]"
+                        >
+                          Aucun
+                        </button>
+                      </div>
+
+                      <div className="grid gap-1.5 pr-1 sm:grid-cols-2">
+                        {themeOptionsSorted.map(({ key, label }) => {
+                          const active = selectedThemes.includes(key);
+
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => toggleTheme(key)}
+                              aria-pressed={active}
+                              className={[
+                                "flex items-center justify-between gap-2 rounded-[4px] px-2.5 py-2 text-left text-[11px] font-semibold transition",
+                                active
+                                  ? "bg-[#7061d8] text-white"
+                                  : "bg-[#d7d7da] text-[#222] hover:bg-[#cdcdf1]",
+                              ].join(" ")}
+                            >
+                              <span className="truncate">{label}</span>
+                              <span
+                                className={[
+                                  "flex h-4 w-4 items-center justify-center rounded-[3px] text-[10px] leading-none",
+                                  active ? "bg-white/20 text-white" : "bg-[#bebec2] text-[#555]",
+                                ].join(" ")}
+                                aria-hidden
+                              >
+                                {active ? "✓" : "—"}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              </div>
 
               {/* Panneau droit */}
               <aside className="rounded-[8px] border border-[#d5d5d8] bg-[#ececed] px-5 py-4 shadow-[0_10px_24px_rgba(0,0,0,0.14)]">
@@ -561,11 +601,11 @@ export default function CreateRoomPage() {
                   onClick={createRoom}
                   disabled={loading || !code}
                   className={[
-                    "mt-4 inline-flex h-10 w-full items-center justify-center rounded-[4px] bg-[#6b5ad6] text-[10px] font-bold uppercase tracking-[0.12em] text-white transition hover:bg-[#5f4fcb]",
+                    "mt-4 inline-flex h-10 w-full items-center justify-center rounded-[4px] bg-[#6b5ad6] text-[10px] font-bold   tracking-[0.12em] text-white transition hover:bg-[#5f4fcb]",
                     loading || !code ? "cursor-not-allowed opacity-45 hover:bg-[#6b5ad6]" : "",
                   ].join(" ")}
                 >
-                  {loading ? "Création…" : "Créer la room"}
+                  {loading ? "Création…" : "Créer la partie"}
                 </button>
 
                 <div className="sr-only">

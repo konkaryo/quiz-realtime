@@ -133,11 +133,9 @@ function Button({
   type?: "button" | "submit";
 }) {
   const base =
-    "inline-flex items-center justify-center rounded-[4px] text-[10px] font-bold uppercase tracking-[0.12em] transition";
-  const secondary =
-    "bg-[#cfcfd2] text-[#232323] hover:bg-[#c4c4c9]";
-  const primary =
-    "bg-[#6b5ad6] text-white hover:bg-[#5f4fcb]";
+    "inline-flex items-center justify-center rounded-[8px] text-[14px] font-semibold transition";
+  const secondary = "bg-[#cfcfd2] text-[#232323] hover:bg-[#c4c4c9]";
+  const primary = "bg-[#6b5ad6] text-white hover:bg-[#5f4fcb]";
 
   return (
     <button
@@ -156,52 +154,66 @@ function Button({
   );
 }
 
-function Card({ children, className }: { children: React.ReactNode; className?: string }) {
+function Tabs({ value, onChange }: { value: RightTab; onChange: (v: RightTab) => void }) {
+  const tabs: Array<{ key: RightTab; label: string }> = [
+    { key: "JOUEURS", label: "Lobby" },
+    { key: "PARAMETRES", label: "Paramètres" },
+  ];
+
+  const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const [indicator, setIndicator] = React.useState({ left: 0, width: 0 });
+
+  React.useEffect(() => {
+    const index = tabs.findIndex((t) => t.key === value);
+    const el = refs.current[index];
+
+    if (el) {
+      setIndicator({
+        left: el.offsetLeft,
+        width: el.offsetWidth,
+      });
+    }
+  }, [value]);
+
   return (
     <div
-      className={[
-        "rounded-[8px] border border-[#d5d5d8] bg-[#ececed] shadow-[0_10px_24px_rgba(0,0,0,0.14)]",
-        className || "",
-      ].join(" ")}
+      role="tablist"
+      aria-label="Navigation du lobby privé"
+      className="relative inline-flex"
     >
-      {children}
-    </div>
-  );
-}
+      <div aria-hidden className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/30" />
 
-function Tabs({ value, onChange }: { value: RightTab; onChange: (v: RightTab) => void }) {
-  const isPlayers = value === "JOUEURS";
+      <div
+        aria-hidden
+        className="absolute bottom-0 h-[3px] rounded-full bg-[#6b5ad6] transition-all duration-200"
+        style={{
+          left: indicator.left,
+          width: indicator.width,
+        }}
+      />
 
-  const tabClass =
-    "flex h-9 items-center justify-center text-[10px] font-bold uppercase tracking-[0.08em] transition";
+      {tabs.map((tab, i) => {
+        const active = value === tab.key;
 
-  return (
-    <div className="grid w-full max-w-[260px] grid-cols-2 rounded-[4px] bg-[#cfcfd2] p-[2px]">
-      <button
-        type="button"
-        role="tab"
-        aria-selected={isPlayers}
-        onClick={() => onChange("JOUEURS")}
-        className={[
-          tabClass,
-          isPlayers ? "rounded-[3px] bg-[#6b5ad6] text-white" : "text-[#232323] hover:bg-[#c4c4c9]",
-        ].join(" ")}
-      >
-        Joueurs
-      </button>
-
-      <button
-        type="button"
-        role="tab"
-        aria-selected={!isPlayers}
-        onClick={() => onChange("PARAMETRES")}
-        className={[
-          tabClass,
-          !isPlayers ? "rounded-[3px] bg-[#6b5ad6] text-white" : "text-[#232323] hover:bg-[#c4c4c9]",
-        ].join(" ")}
-      >
-        Paramètres
-      </button>
+        return (
+          <button
+            key={tab.key}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(tab.key)}
+            className={[
+              "relative z-[1] px-5 py-3 text-[15px] font-semibold sm:text-[16px]",
+active ? "text-[#6b5ad6]" : "text-white/70 hover:text-white"
+            ].join(" ")}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -227,7 +239,6 @@ export default function PrivateLobbyPage() {
   const [loadingStart, setLoadingStart] = useState(false);
 
   const [copied, setCopied] = useState(false);
-  const [inviteCopied, setInviteCopied] = useState(false);
   const [me, setMe] = useState<{ userId?: string | null; playerId?: string | null } | null>(null);
 
   const [rightTab, setRightTab] = useState<RightTab>("JOUEURS");
@@ -372,11 +383,6 @@ export default function PrivateLobbyPage() {
     return `${window.location.origin}/rooms/${rid}/lobby`;
   }, [room?.id, roomId]);
 
-  const inviteMessage = useMemo(() => {
-    const name = ownerData?.name ? ownerData.name : "un ami";
-    return `Rejoins ma partie privée (${name}) 👇\n${link}`;
-  }, [ownerData?.name, link]);
-
   const title = useMemo(() => {
     if (ownerData?.name) return `PARTIE DE ${ownerData.name.toUpperCase()}`;
     if (room?.name) return `PARTIE DE ${room.name.toUpperCase()}`;
@@ -403,14 +409,8 @@ export default function PrivateLobbyPage() {
   const qcountP = percent(questionCount, 1, 50);
   const qdurP = percent(roundSeconds, 3, 60);
 
-  const maxSlots = 8;
-  const playersWithInviteCount = 1 + participantsCount(players, ownerData?.playerId);
-  const baseEmpty = Math.max(0, maxSlots - playersWithInviteCount);
-  const totalCellsToRender = Math.max(
-    8,
-    1 + participantsCount(players, ownerData?.playerId) + baseEmpty,
-  );
-  const emptyCount = totalCellsToRender - (1 + participantsCount(players, ownerData?.playerId));
+  const maxSlots = 12;
+  const displayedParticipants = participantsCount(players, ownerData?.playerId);
 
   const participants = useMemo(() => {
     const list: { id: string; name: string; img?: string | null; role?: "host" | "player" }[] = [];
@@ -449,18 +449,8 @@ export default function PrivateLobbyPage() {
     }
   };
 
-  const handleInvite = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteMessage);
-      setInviteCopied(true);
-      window.setTimeout(() => setInviteCopied(false), 2000);
-    } catch {
-      setInviteCopied(false);
-    }
-  };
-
   return (
-    <div className="relative text-slate-900">
+    <div className="relative text-white">
       <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
 
       <style>{`
@@ -548,79 +538,75 @@ export default function PrivateLobbyPage() {
               <h1 className="text-4xl font-brand italic text-white sm:text-5xl">{title}</h1>
             </header>
 
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-              <Tabs value={rightTab} onChange={setRightTab} />
+            <div className="mx-auto grid w-full max-w-[600px] grid-cols-[1fr_auto] gap-x-8 gap-y-8">
+              <div className="justify-self-start">
+                <Tabs value={rightTab} onChange={setRightTab} />
+              </div>
 
-              <Button
-                variant="primary"
-                disabled={!isOwner}
-                onClick={handleStart}
-                className="h-10 min-w-[140px] px-5"
-              >
-                {loadingStart ? "Lancement…" : "Jouer"}
-              </Button>
-            </div>
+              <div className="justify-self-end">
+                <Button
+                  variant="primary"
+                  disabled={!isOwner}
+                  onClick={handleStart}
+                  className="h-12 min-w-[140px] px-6 text-[14px]"
+                >
+                  {loadingStart ? "Lancement…" : "Jouer"}
+                </Button>
+              </div>
 
-            <Card>
-              <div className="px-5 py-4">
-                {rightTab === "JOUEURS" ? (
-                  <div className="flex min-h-[280px] items-center justify-center">
-                    <div className="grid grid-cols-4 justify-items-center gap-x-10 gap-y-8">
-                      <button
-                        type="button"
-                        onClick={handleInvite}
-                        className="group flex w-[84px] flex-col items-center gap-2"
-                        aria-label="Inviter des joueurs"
-                        title={inviteCopied ? "Invitation copiée" : "Inviter"}
-                      >
-                        <div className="flex h-14 w-14 items-center justify-center rounded-[6px] bg-[#6b5ad6] shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition group-hover:bg-[#5f4fcb]">
-                          <span className="text-lg font-semibold text-white">
-                            {inviteCopied ? "✓" : "+"}
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#444]">
-                          Inviter
-                        </span>
-                      </button>
+              <div className="col-span-2 rounded-[12px] bg-transparent py-2">
+              {rightTab === "JOUEURS" ? (
+                <div className="w-full">
+                  <p className="mb-7 text-center text-[15px] font-semibold text-white">
+                    Joueurs : {displayedParticipants} / {maxSlots}
+                  </p>
 
+                  <div className="w-full">
+                    <div className="mb-2 ml-[80px] flex items-center justify-between">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.03em] text-white">
+                        Joueur
+                      </span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.03em] text-white">
+                        Score
+                      </span>
+                    </div>
+
+                    <div className="space-y-4">
                       {participants.map((p) => (
-                        <div key={p.id} className="flex w-[84px] flex-col items-center gap-2">
-                          <div className="relative">
-                            {p.role === "host" && (
-                              <img
-                                src={hostCrown}
-                                alt="Hôte"
-                                draggable={false}
-                                className="pointer-events-none absolute -top-5 left-1/2 z-20 h-5 w-8 -translate-x-1/2 drop-shadow-[0_4px_10px_rgba(0,0,0,0.22)]"
+                        <div key={p.id} className="grid grid-cols-[64px_1fr] items-center gap-x-4">
+                          <div className="flex justify-center">
+                            <div className="relative h-12 w-12">
+                              {p.role === "host" && (
+                                <img
+                                  src={hostCrown}
+                                  alt="Hôte"
+                                  draggable={false}
+                                  className="pointer-events-none absolute left-1/2 -top-1.5 h-6 w-7 -translate-x-1/2 -translate-y-[72%] object-contain"
+                                />
+                              )}
+                              <Avatar
+                                src={p.img}
+                                alt={p.name}
+                                className="h-12 w-12 rounded-[2px] object-cover"
                               />
-                            )}
-
-                            <Avatar
-                              src={p.img}
-                              alt={p.name}
-                              className="h-14 w-14 rounded-[6px] object-cover shadow-[0_10px_24px_rgba(0,0,0,0.14)]"
-                            />
+                            </div>
                           </div>
 
-                          <p className="w-full truncate text-center text-[11px] font-semibold text-[#232323]">
-                            {p.name}
-                          </p>
-                        </div>
-                      ))}
-
-                      {Array.from({ length: emptyCount }).map((_, idx) => (
-                        <div key={`empty-${idx}`} className="flex w-[84px] flex-col items-center gap-2">
-                          <div
-                            className="h-14 w-14 rounded-[6px] bg-[#d0d0d2] shadow-[0_8px_18px_rgba(0,0,0,0.08)]"
-                            aria-hidden
-                          />
-                          <span className="h-4" aria-hidden />
+                          <div className="grid h-11 grid-cols-[1fr_54px] items-center rounded-[6px] bg-[#e9e9ea] px-5">
+                            <p className="truncate text-[14px] font-semibold text-[#171717]">
+                              {p.name}
+                            </p>
+                            <p className="justify-self-end text-[15px] font-semibold text-[#171717]">
+                              —
+                            </p>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
+                </div>
+              ) : (
+<div className="space-y-4 rounded-[10px] bg-white/8">
                     <div className="rounded-[5px] bg-[#d8d8d9] p-2">
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-[12px] font-semibold text-[#191919]">Difficulté</span>
@@ -745,9 +731,7 @@ export default function PrivateLobbyPage() {
                               key={key}
                               className={[
                                 "flex items-center justify-between gap-2 rounded-[4px] px-2.5 py-2 text-left text-[11px] font-semibold",
-                                active
-                                  ? "bg-[#7061d8] text-white"
-                                  : "bg-[#d7d7da] text-[#222]",
+                                active ? "bg-[#7061d8] text-white" : "bg-[#d7d7da] text-[#222]",
                               ].join(" ")}
                             >
                               <span className="truncate">{label}</span>
@@ -798,10 +782,10 @@ export default function PrivateLobbyPage() {
                         </Button>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </Card>
+                </div>
+              )}
+            </div>
+          </div>
           </div>
         </main>
       </div>
