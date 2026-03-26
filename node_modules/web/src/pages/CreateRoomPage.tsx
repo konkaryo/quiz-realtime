@@ -339,7 +339,7 @@ export default function CreateRoomPage() {
               </div>
             )}
 
-            <div className="grid items-start justify-center gap-8 md:grid-cols-[320px,320px]">
+            <div className="grid items-start justify-center gap-8 md:grid-cols-[380px,320px]">
               {/* Panneau gauche */}
               <section className="rounded-[8px] border border-[#d5d5d8] bg-[#ececed] px-5 py-4 shadow-[0_10px_24px_rgba(0,0,0,0.14)]">
                 <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#171717]">
@@ -347,8 +347,8 @@ export default function CreateRoomPage() {
                 </div>
 
                 {/* Difficulté */}
-                <div className="rounded-[5px] bg-[#d8d8d9] p-3">
-                  <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="rounded-[5px] bg-[#d8d8d9] p-2">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-[12px] font-semibold text-[#191919]">Difficulté</span>
                     <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
                       {difficulty}%
@@ -373,7 +373,7 @@ export default function CreateRoomPage() {
                     }
                   />
 
-                  <div className="mt-2 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
+                  <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
                     <span>0</span>
                     <span>50</span>
                     <span>100</span>
@@ -381,8 +381,8 @@ export default function CreateRoomPage() {
                 </div>
 
                 {/* Questions */}
-                <div className="mt-3 rounded-[5px] bg-[#d8d8d9] p-3">
-                  <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="mt-2 rounded-[5px] bg-[#d8d8d9] p-2">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-[12px] font-semibold text-[#191919]">Questions</span>
                     <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
                       {questionCount}
@@ -407,7 +407,7 @@ export default function CreateRoomPage() {
                     }
                   />
 
-                  <div className="mt-2 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
+                  <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
                     <span>1</span>
                     <span>25</span>
                     <span>50</span>
@@ -415,8 +415,8 @@ export default function CreateRoomPage() {
                 </div>
 
                 {/* Durée */}
-                <div className="mt-3 rounded-[5px] bg-[#d8d8d9] p-3">
-                  <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="mt-2 rounded-[5px] bg-[#d8d8d9] p-2">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-[12px] font-semibold text-[#191919]">
                       Durée / question
                     </span>
@@ -444,7 +444,7 @@ export default function CreateRoomPage() {
                     }
                   />
 
-                  <div className="mt-2 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
+                  <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
                     <span>
                       3<span className="lowercase">s</span>
                     </span>

@@ -3,10 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 
-// ✅ import de la couronne depuis /web/src/assets
 import hostCrown from "@/assets/crown.png";
-// si pas d’alias @, utiliser par ex. :
-// import hostCrown from "../assets/crown.png";
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
@@ -15,7 +12,6 @@ const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL ??
   (typeof window !== "undefined" ? window.location.origin : "");
 
-// Ajuste si ta navbar est plus haute/basse
 const NAVBAR_HEIGHT_PX = 52;
 
 type RoomMeta = {
@@ -48,23 +44,26 @@ type LobbyStatePayload = {
   players?: LobbyPlayer[];
 };
 
-// mêmes clés que l'enum Prisma Theme
 const THEME_OPTIONS = [
-  { key: "AUDIOVISUEL",   label: "Audiovisuel" },
-  { key: "ARTS",          label: "Arts" },
-  { key: "CROYANCES",     label: "Croyances" },
-  { key: "DIVERS",        label: "Divers" },
-  { key: "GEOGRAPHIE",    label: "Géographie" },
-  { key: "HISTOIRE",      label: "Histoire" },
-  { key: "LITTERATURE",   label: "Littérature" },
-  { key: "MUSIQUE",       label: "Musique" },
-  { key: "NATURE",        label: "Nature" },
-  { key: "POP_CULTURE",   label: "Pop culture" },
-  { key: "SCIENCE",       label: "Science" },
-  { key: "SOCIETE",       label: "Société" },
-  { key: "SPORT",         label: "Sport" },
-  { key: "TRADITIONS",    label: "Traditions" },
+  { key: "AUDIOVISUEL", label: "Audiovisuel" },
+  { key: "ARTS", label: "Arts" },
+  { key: "CROYANCES", label: "Croyances" },
+  { key: "DIVERS", label: "Divers" },
+  { key: "GEOGRAPHIE", label: "Géographie" },
+  { key: "HISTOIRE", label: "Histoire" },
+  { key: "LITTERATURE", label: "Littérature" },
+  { key: "MUSIQUE", label: "Musique" },
+  { key: "NATURE", label: "Nature" },
+  { key: "POP_CULTURE", label: "Pop culture" },
+  { key: "SCIENCE", label: "Science" },
+  { key: "SOCIETE", label: "Société" },
+  { key: "SPORT", label: "Sport" },
+  { key: "TRADITIONS", label: "Traditions" },
 ] as const;
+
+type RightTab = "JOUEURS" | "PARAMETRES";
+
+const fallbackAvatar = "/img/profiles/0.avif";
 
 function clamp01(n: number) {
   if (Number.isNaN(n)) return 0;
@@ -77,9 +76,6 @@ function percent(value: number, min: number, max: number) {
   return `${p}%`;
 }
 
-
-const fallbackAvatar = "/img/profiles/0.avif";
-
 async function fetchJSON(path: string, init?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
@@ -89,10 +85,12 @@ async function fetchJSON(path: string, init?: RequestInit) {
   const ct = res.headers.get("content-type") || "";
   const isJson = ct.includes("application/json");
   const data = isJson ? await res.json() : undefined;
+
   if (!res.ok) {
     const msg = (data as any)?.error || (data as any)?.message || `HTTP ${res.status}`;
     throw new Error(msg);
   }
+
   return data;
 }
 
@@ -135,11 +133,11 @@ function Button({
   type?: "button" | "submit";
 }) {
   const base =
-    "inline-flex items-center justify-center rounded-[6px] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] transition";
+    "inline-flex items-center justify-center rounded-[4px] text-[10px] font-bold uppercase tracking-[0.12em] transition";
   const secondary =
-    "border border-[#2A2D3C] bg-[#181A28] text-slate-200 hover:text-white hover:bg-[#1A1D2D]";
+    "bg-[#cfcfd2] text-[#232323] hover:bg-[#c4c4c9]";
   const primary =
-    "border border-transparent bg-[#6F5BD4] text-white hover:brightness-110 disabled:brightness-75";
+    "bg-[#6b5ad6] text-white hover:bg-[#5f4fcb]";
 
   return (
     <button
@@ -149,7 +147,7 @@ function Button({
       className={[
         base,
         variant === "primary" ? primary : secondary,
-        disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
+        disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer",
         className || "",
       ].join(" ")}
     >
@@ -158,78 +156,64 @@ function Button({
   );
 }
 
-type RightTab = "JOUEURS" | "PARAMETRES";
-
-/**
- * Tabs :
- * - séparateur vertical gris
- * - focus ring uniquement clavier + inset (pas de trait violet au centre)
- */
-function Tabs({ value, onChange }: { value: RightTab; onChange: (v: RightTab) => void }) {
-  const isLeft = value === "JOUEURS";
-
-  const tabBtn =
-    "relative z-10 flex h-10 items-center justify-center select-none px-5 text-[10px] font-semibold uppercase tracking-[0.38em] transition " +
-    "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6F5BD4]/35";
-
-  const underline = (
-    <span aria-hidden className="absolute left-4 right-4 bottom-0 z-10 h-[3px] bg-[#6F5BD4]" />
-  );
-
-  return (
-    <div
-      role="tablist"
-      aria-label="Panneau de droite"
-      className="relative w-full max-w-[280px] overflow-hidden rounded-[3px] border border-[#2A2D3C] bg-[#1C1F2E]"
-    >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-0 bottom-0 z-20 w-px bg-[#2A2D3C]"
-      />
-
-      <div className="grid grid-cols-2">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={isLeft}
-          onClick={() => onChange("JOUEURS")}
-          className={[tabBtn, isLeft ? "text-white" : "text-slate-300 hover:text-slate-100"].join(
-            " "
-          )}
-        >
-          Joueurs
-          {isLeft ? underline : null}
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          aria-selected={!isLeft}
-          onClick={() => onChange("PARAMETRES")}
-          className={[
-            tabBtn,
-            !isLeft ? "text-white" : "text-slate-300 hover:text-slate-100",
-          ].join(" ")}
-        >
-          Paramètres
-          {!isLeft ? underline : null}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div
       className={[
-        "rounded-[10px] border border-[#2A2D3C] bg-[#1C1F2E] shadow-[0_30px_80px_rgba(0,0,0,0.45)]",
+        "rounded-[8px] border border-[#d5d5d8] bg-[#ececed] shadow-[0_10px_24px_rgba(0,0,0,0.14)]",
         className || "",
       ].join(" ")}
     >
       {children}
     </div>
   );
+}
+
+function Tabs({ value, onChange }: { value: RightTab; onChange: (v: RightTab) => void }) {
+  const isPlayers = value === "JOUEURS";
+
+  const tabClass =
+    "flex h-9 items-center justify-center text-[10px] font-bold uppercase tracking-[0.08em] transition";
+
+  return (
+    <div className="grid w-full max-w-[260px] grid-cols-2 rounded-[4px] bg-[#cfcfd2] p-[2px]">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={isPlayers}
+        onClick={() => onChange("JOUEURS")}
+        className={[
+          tabClass,
+          isPlayers ? "rounded-[3px] bg-[#6b5ad6] text-white" : "text-[#232323] hover:bg-[#c4c4c9]",
+        ].join(" ")}
+      >
+        Joueurs
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        aria-selected={!isPlayers}
+        onClick={() => onChange("PARAMETRES")}
+        className={[
+          tabClass,
+          !isPlayers ? "rounded-[3px] bg-[#6b5ad6] text-white" : "text-[#232323] hover:bg-[#c4c4c9]",
+        ].join(" ")}
+      >
+        Paramètres
+      </button>
+    </div>
+  );
+}
+
+function participantsCount(list: LobbyPlayer[], ownerPid?: string | null) {
+  let count = 0;
+  if (ownerPid) count += 1;
+  for (const p of list) {
+    if (ownerPid && p.id === ownerPid) continue;
+    count += 1;
+  }
+  return count;
 }
 
 export default function PrivateLobbyPage() {
@@ -256,9 +240,24 @@ export default function PrivateLobbyPage() {
     [],
   );
 
-  // --- Auth user
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+    };
+  }, []);
+
   useEffect(() => {
     let mounted = true;
+
     fetchJSON("/auth/me")
       .then((data) => {
         if (!mounted) return;
@@ -267,50 +266,56 @@ export default function PrivateLobbyPage() {
       .catch(() => {
         if (mounted) setMe(null);
       });
+
     return () => {
       mounted = false;
     };
   }, []);
 
-  // --- Room meta
   useEffect(() => {
     if (!roomId) return;
+
     let mounted = true;
+
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/rooms/${roomId}`, { credentials: "include" });
+
         if (res.status === 410) {
           nav("/");
           return;
         }
         if (!res.ok) throw new Error("room_not_found");
+
         const data = (await res.json()) as { room: RoomMeta };
         if (mounted) setRoom(data.room);
       } catch {
         nav("/");
       }
     })();
+
     return () => {
       mounted = false;
     };
   }, [roomId, nav]);
 
-  // --- Socket
   useEffect(() => {
     const s = io(SOCKET_URL, {
       path: "/socket.io",
       transports: ["websocket", "polling"],
       withCredentials: true,
     });
+
     setSocket(s);
+
     return () => {
       s.close();
     };
   }, []);
 
-  // --- Join game
   useEffect(() => {
     if (!socket || !room) return;
+
     if (room.visibility === "PUBLIC" || !room.code) {
       socket.emit("join_game", { roomId: room.id });
     } else {
@@ -318,7 +323,6 @@ export default function PrivateLobbyPage() {
     }
   }, [socket, room]);
 
-  // --- Lobby state listeners
   useEffect(() => {
     if (!socket) return;
 
@@ -352,6 +356,7 @@ export default function PrivateLobbyPage() {
   const ownerData = useMemo(() => {
     if (!owner) return null;
     const fallback = players.find((player) => player.id === owner.playerId);
+
     return {
       playerId: owner.playerId ?? fallback?.id ?? null,
       name: owner.name ?? fallback?.name ?? "Hôte",
@@ -388,6 +393,7 @@ export default function PrivateLobbyPage() {
     () => new Set((room?.bannedThemes ?? []) as string[]),
     [room?.bannedThemes],
   );
+
   const selectedThemeKeys = useMemo(
     () => THEME_OPTIONS.map((t) => t.key).filter((key) => !bannedThemeKeys.has(key)),
     [bannedThemeKeys],
@@ -397,31 +403,18 @@ export default function PrivateLobbyPage() {
   const qcountP = percent(questionCount, 1, 50);
   const qdurP = percent(roundSeconds, 3, 60);
 
-  // ✅ 1er slot = invite, + joueurs, puis placeholders
   const maxSlots = 8;
   const playersWithInviteCount = 1 + participantsCount(players, ownerData?.playerId);
   const baseEmpty = Math.max(0, maxSlots - playersWithInviteCount);
-
-  // ✅ Tant qu'on n'a pas plus de 8 "cases" à montrer (invite + joueurs + vides),
-  // on force exactement 2 lignes (8 cases) pour éviter la 3e ligne.
   const totalCellsToRender = Math.max(
     8,
-    1 + participantsCount(players, ownerData?.playerId) + baseEmpty
+    1 + participantsCount(players, ownerData?.playerId) + baseEmpty,
   );
   const emptyCount = totalCellsToRender - (1 + participantsCount(players, ownerData?.playerId));
 
-  function participantsCount(list: LobbyPlayer[], ownerPid?: string | null) {
-    let c = 0;
-    if (ownerPid) c += 1;
-    for (const p of list) {
-      if (ownerPid && p.id === ownerPid) continue;
-      c += 1;
-    }
-    return c;
-  }
-
   const participants = useMemo(() => {
     const list: { id: string; name: string; img?: string | null; role?: "host" | "player" }[] = [];
+
     if (ownerData?.playerId) {
       list.push({
         id: ownerData.playerId,
@@ -430,10 +423,12 @@ export default function PrivateLobbyPage() {
         role: "host",
       });
     }
+
     for (const p of players) {
       if (ownerData?.playerId && p.id === ownerData.playerId) continue;
       list.push({ id: p.id, name: p.name, img: p.img ?? null, role: "player" });
     }
+
     return list;
   }, [players, ownerData?.playerId, ownerData?.name, ownerData?.img]);
 
@@ -465,69 +460,94 @@ export default function PrivateLobbyPage() {
   };
 
   return (
-    <div className="min-h-screen text-slate-50">
+    <div className="relative text-slate-900">
       <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
 
       <style>{`
-        input[type="range"].syn-range{
-          -webkit-appearance:none;
-          appearance:none;
-          width:100%;
-          background:transparent;
-          outline:none;
-          cursor:default;
+        .lb-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #6f63b9 rgba(255,255,255,0.08);
         }
-        input[type="range"].syn-range::-webkit-slider-runnable-track{
-          height:6px;
-          border-radius:2px;
+
+        .lb-scroll::-webkit-scrollbar { width: 10px; }
+
+        .lb-scroll::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.08);
+          border-radius: 999px;
+        }
+
+        .lb-scroll::-webkit-scrollbar-thumb {
+          background: #6f63b9;
+          border-radius: 999px;
+          border: 2px solid rgba(0,0,0,0);
+          background-clip: padding-box;
+        }
+
+        .lb-scroll::-webkit-scrollbar-thumb:hover {
+          background: #7c70cb;
+        }
+
+        input[type="range"].syn-range {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          background: transparent;
+          outline: none;
+          cursor: default;
+        }
+
+        input[type="range"].syn-range::-webkit-slider-runnable-track {
+          height: 6px;
+          border-radius: 999px;
           background:
-            linear-gradient(var(--fill) 0 0) 0/var(--p) 100% no-repeat,
+            linear-gradient(var(--fill) 0 0) 0 / var(--p) 100% no-repeat,
             var(--track);
         }
-        input[type="range"].syn-range::-webkit-slider-thumb{
-          -webkit-appearance:none;
-          appearance:none;
-          margin-top:-7px;
-          width:18px;
-          height:18px;
-          border-radius:999px;
-          background:#ffffff;
-          border:2px solid rgba(255,255,255,0.12);
-          box-shadow:0 8px 18px rgba(0,0,0,0.45);
+
+        input[type="range"].syn-range::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          margin-top: -6px;
+          width: 18px;
+          height: 18px;
+          border-radius: 999px;
+          background: #ffffff;
+          border: none;
+          box-shadow: 0 6px 16px rgba(18, 20, 38, 0.18);
         }
-        input[type="range"].syn-range::-moz-range-track{
-          height:6px;
-          border-radius:2px;
+
+        input[type="range"].syn-range::-moz-range-track {
+          height: 6px;
+          border-radius: 999px;
           background: var(--track);
         }
-        input[type="range"].syn-range::-moz-range-progress{
-          height:6px;
-          border-radius:2px;
+
+        input[type="range"].syn-range::-moz-range-progress {
+          height: 6px;
+          border-radius: 999px;
           background: var(--fill);
         }
-        input[type="range"].syn-range::-moz-range-thumb{
-          width:18px;
-          height:18px;
-          border-radius:999px;
-          background:#ffffff;
-          border:2px solid rgba(255,255,255,0.12);
-          box-shadow:0 8px 18px rgba(0,0,0,0.45);
+
+        input[type="range"].syn-range::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          border-radius: 999px;
+          background: #ffffff;
+          border: none;
+          box-shadow: 0 6px 16px rgba(18, 20, 38, 0.18);
         }
       `}</style>
 
-
-      <main
-        className="relative mx-auto w-full max-w-6xl px-6 pb-12"
-        style={{ paddingTop: NAVBAR_HEIGHT_PX, minHeight: "100vh", boxSizing: "border-box" }}
+      <div
+        className="fixed left-0 right-0 bottom-0 z-10 overflow-y-auto lb-scroll"
+        style={{ top: `${NAVBAR_HEIGHT_PX}px` }}
       >
-        {/* ✅ Conteneur de largeur "ancienne" + titre aligné avec le panneau */}
-        <div className="mx-auto w-full max-w-[600px]">
-          <header className="mb-10">
-            <h1 className="text-4xl font-brand italic text-white">{title}</h1>
-          </header>
+        <main className="mx-auto max-w-5xl px-4 py-10 sm:px-8">
+          <div className="mx-auto max-w-3xl">
+            <header className="mb-10 text-center">
+              <h1 className="text-4xl font-brand italic text-white sm:text-5xl">{title}</h1>
+            </header>
 
-          {/* ✅ 1 seul panneau (taille réduite, proche ancienne) */}
-          <div className="w-full max-w-[980px]">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
               <Tabs value={rightTab} onChange={setRightTab} />
 
@@ -535,64 +555,63 @@ export default function PrivateLobbyPage() {
                 variant="primary"
                 disabled={!isOwner}
                 onClick={handleStart}
-                className="h-10 px-6 py-0 text-[12px] tracking-[0.22em]"
+                className="h-10 min-w-[140px] px-5"
               >
                 {loadingStart ? "Lancement…" : "Jouer"}
               </Button>
             </div>
 
             <Card>
-              <div className="p-8">
+              <div className="px-5 py-4">
                 {rightTab === "JOUEURS" ? (
-                  // ✅ centre verticalement le contenu dans une hauteur contrôlée (pas trop grande)
-                  <div className="flex min-h-[220px] items-center justify-center">
-                    <div className="grid grid-cols-4 justify-items-center gap-x-14 gap-y-10">
-                      {/* INVITE : petit + centré verticalement */}
+                  <div className="flex min-h-[280px] items-center justify-center">
+                    <div className="grid grid-cols-4 justify-items-center gap-x-10 gap-y-8">
                       <button
                         type="button"
                         onClick={handleInvite}
-                        className="group flex w-[92px] flex-col items-center gap-2"
+                        className="group flex w-[84px] flex-col items-center gap-2"
                         aria-label="Inviter des joueurs"
-                        title="Inviter"
+                        title={inviteCopied ? "Invitation copiée" : "Inviter"}
                       >
-                        <div className="flex h-14 w-14 items-center justify-center">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-[#6F5BD4] shadow-[0_10px_26px_rgba(0,0,0,0.35)] transition group-hover:brightness-110">
-                            <span className="text-lg font-semibold text-white">+</span>
-                          </div>
+                        <div className="flex h-14 w-14 items-center justify-center rounded-[6px] bg-[#6b5ad6] shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition group-hover:bg-[#5f4fcb]">
+                          <span className="text-lg font-semibold text-white">
+                            {inviteCopied ? "✓" : "+"}
+                          </span>
                         </div>
-                        <span className="h-4" aria-hidden />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#444]">
+                          Inviter
+                        </span>
                       </button>
 
-                      {/* joueurs */}
                       {participants.map((p) => (
-                        <div key={p.id} className="flex w-[92px] flex-col items-center gap-2">
+                        <div key={p.id} className="flex w-[84px] flex-col items-center gap-2">
                           <div className="relative">
                             {p.role === "host" && (
                               <img
                                 src={hostCrown}
                                 alt="Hôte"
                                 draggable={false}
-                                className="pointer-events-none absolute -top-5 left-1/2 z-20 h-5 w-8 -translate-x-1/2 drop-shadow-[0_6px_14px_rgba(0,0,0,0.45)]"
+                                className="pointer-events-none absolute -top-5 left-1/2 z-20 h-5 w-8 -translate-x-1/2 drop-shadow-[0_4px_10px_rgba(0,0,0,0.22)]"
                               />
                             )}
+
                             <Avatar
                               src={p.img}
                               alt={p.name}
-                              className="h-14 w-14 rounded-[6px] object-cover shadow-[0_10px_26px_rgba(0,0,0,0.35)]"
+                              className="h-14 w-14 rounded-[6px] object-cover shadow-[0_10px_24px_rgba(0,0,0,0.14)]"
                             />
                           </div>
 
-                          <p className="w-full truncate text-center text-xs font-semibold text-slate-100">
+                          <p className="w-full truncate text-center text-[11px] font-semibold text-[#232323]">
                             {p.name}
                           </p>
                         </div>
                       ))}
 
-                      {/* placeholders : carrés sans croix */}
                       {Array.from({ length: emptyCount }).map((_, idx) => (
-                        <div key={`empty-${idx}`} className="flex w-[92px] flex-col items-center gap-2">
+                        <div key={`empty-${idx}`} className="flex w-[84px] flex-col items-center gap-2">
                           <div
-                            className="h-14 w-14 rounded-[6px] border border-[#2A2D3C] bg-[#2A2C3E] shadow-[0_10px_26px_rgba(0,0,0,0.18)]"
+                            className="h-14 w-14 rounded-[6px] bg-[#d0d0d2] shadow-[0_8px_18px_rgba(0,0,0,0.08)]"
                             aria-hidden
                           />
                           <span className="h-4" aria-hidden />
@@ -601,159 +620,182 @@ export default function PrivateLobbyPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    <div className="rounded-[8px] border border-[#2A2D3C] bg-[#181A28] p-4">
-                      <p className="text-sm font-semibold text-white">Paramètres</p>
-                      <p className="mt-1 text-xs text-slate-400">
-                        Paramètres définis à la création du salon.
-                      </p>
+                  <div className="space-y-4">
+                    <div className="rounded-[5px] bg-[#d8d8d9] p-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[12px] font-semibold text-[#191919]">Difficulté</span>
+                        <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
+                          {difficulty}%
+                        </span>
+                      </div>
+
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={difficulty}
+                        disabled
+                        className="syn-range"
+                        style={
+                          {
+                            ["--track" as any]: "#a9a9ac",
+                            ["--fill" as any]: "#6b5ad6",
+                            ["--p" as any]: difficultyP,
+                          } as React.CSSProperties
+                        }
+                      />
+
+                      <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
+                        <span>0</span>
+                        <span>50</span>
+                        <span>100</span>
+                      </div>
                     </div>
-                    <div className="space-y-4">
-                      <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="text-sm font-semibold text-slate-100">Difficulté</div>
-                          <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
-                            {difficulty}%
-                          </div>
-                        </div>
 
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={difficulty}
-                          disabled
-                          className="syn-range mt-3"
-                          style={
-                            {
-                              ["--track" as any]: "rgba(148,163,184,0.18)",
-                              ["--fill" as any]: "#2D7CFF",
-                              ["--p" as any]: difficultyP,
-                            } as React.CSSProperties
-                          }
-                        />
+                    <div className="rounded-[5px] bg-[#d8d8d9] p-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[12px] font-semibold text-[#191919]">Questions</span>
+                        <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
+                          {questionCount}
+                        </span>
                       </div>
 
-                      <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="text-sm font-semibold text-slate-100">Questions</div>
-                          <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
-                            {questionCount}
-                          </div>
-                        </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={50}
+                        step={1}
+                        value={questionCount}
+                        disabled
+                        className="syn-range"
+                        style={
+                          {
+                            ["--track" as any]: "#a9a9ac",
+                            ["--fill" as any]: "#6b5ad6",
+                            ["--p" as any]: qcountP,
+                          } as React.CSSProperties
+                        }
+                      />
 
-                        <input
-                          type="range"
-                          min={1}
-                          max={50}
-                          step={1}
-                          value={questionCount}
-                          disabled
-                          className="syn-range mt-3"
-                          style={
-                            {
-                              ["--track" as any]: "rgba(148,163,184,0.18)",
-                              ["--fill" as any]: "#0FACF3",
-                              ["--p" as any]: qcountP,
-                            } as React.CSSProperties
-                          }
-                        />
+                      <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
+                        <span>1</span>
+                        <span>25</span>
+                        <span>50</span>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[5px] bg-[#d8d8d9] p-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[12px] font-semibold text-[#191919]">
+                          Durée / question
+                        </span>
+                        <span className="rounded-[4px] bg-[#c5c5c7] px-2 py-1 text-[11px] font-bold text-[#2c2c2c]">
+                          {roundSeconds}
+                          <span className="lowercase">s</span>
+                        </span>
                       </div>
 
-                      <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="text-sm font-semibold text-slate-100">Durée / question</div>
-                          <div className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
-                            {roundSeconds}
-                            <span className="lowercase">s</span>
-                          </div>
-                        </div>
+                      <input
+                        type="range"
+                        min={3}
+                        max={60}
+                        step={1}
+                        value={roundSeconds}
+                        disabled
+                        className="syn-range"
+                        style={
+                          {
+                            ["--track" as any]: "#a9a9ac",
+                            ["--fill" as any]: "#6b5ad6",
+                            ["--p" as any]: qdurP,
+                          } as React.CSSProperties
+                        }
+                      />
 
-                        <input
-                          type="range"
-                          min={3}
-                          max={60}
-                          step={1}
-                          value={roundSeconds}
-                          disabled
-                          className="syn-range mt-3"
-                          style={
-                            {
-                              ["--track" as any]: "rgba(148,163,184,0.18)",
-                              ["--fill" as any]: "#FACC15",
-                              ["--p" as any]: qdurP,
-                            } as React.CSSProperties
-                          }
-                        />
+                      <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-[0.14em] text-[#666]">
+                        <span>
+                          3<span className="lowercase">s</span>
+                        </span>
+                        <span>
+                          30<span className="lowercase">s</span>
+                        </span>
+                        <span>
+                          60<span className="lowercase">s</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <div className="mb-2 flex items-end justify-between gap-2">
+                        <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#444]">
+                          Thèmes{" "}
+                          <span className="text-[#6c6c6c]">
+                            ({selectedThemeKeys.length}/{THEME_OPTIONS.length})
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-4">
-                        <div className="flex items-end justify-between gap-3">
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                            Thèmes{" "}
-                            <span className="text-slate-300/80">
-                              ({selectedThemeKeys.length}/{THEME_OPTIONS.length})
-                            </span>
-                          </div>
-                        </div>
+                      <div className="grid gap-1.5 sm:grid-cols-2">
+                        {themeOptionsSorted.map(({ key, label }) => {
+                          const active = selectedThemeKeys.includes(key);
 
-                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                          {themeOptionsSorted.map(({ key, label }) => {
-                            const active = selectedThemeKeys.includes(key);
-                            return (
-                              <div
-                                key={key}
+                          return (
+                            <div
+                              key={key}
+                              className={[
+                                "flex items-center justify-between gap-2 rounded-[4px] px-2.5 py-2 text-left text-[11px] font-semibold",
+                                active
+                                  ? "bg-[#7061d8] text-white"
+                                  : "bg-[#d7d7da] text-[#222]",
+                              ].join(" ")}
+                            >
+                              <span className="truncate">{label}</span>
+                              <span
                                 className={[
-                                  "flex items-center justify-between gap-3 rounded-[6px] border px-3 py-2 text-left text-[13px] font-semibold",
-                                  active
-                                    ? "border-[#2D7CFF]/60 bg-[#27314E] text-slate-50"
-                                    : "border-[#2A2D3C] bg-[#181A28] text-slate-400",
+                                  "flex h-4 w-4 items-center justify-center rounded-[3px] text-[10px] leading-none",
+                                  active ? "bg-white/20 text-white" : "bg-[#bebec2] text-[#555]",
                                 ].join(" ")}
+                                aria-hidden
                               >
-                                <span className="truncate">{label}</span>
-                                <span
-                                  className={[
-                                    "flex h-5 w-5 items-center justify-center rounded-[6px] text-[12px] leading-none",
-                                    active ? "bg-[#2D7CFF] text-white" : "bg-[#141625] text-slate-500",
-                                  ].join(" ")}
-                                  aria-hidden
-                                >
-                                  {active ? "✓" : "—"}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
+                                {active ? "✓" : "—"}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    <div className="rounded-[8px] border border-[#2A2D3C] bg-[#181A28] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">
+                    <div className="rounded-[5px] bg-[#d8d8d9] p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#444]">
                         Visibilité
-                      </p>
-                      <p className="mt-2 text-sm text-slate-100">
+                      </div>
+                      <div className="mt-1 text-[12px] font-semibold text-[#232323]">
                         {room?.visibility
                           ? room.visibility === "PRIVATE"
                             ? "Partie privée"
                             : "Partie publique"
                           : "—"}
-                      </p>
+                      </div>
                     </div>
 
-                    <div className="rounded-[8px] border border-[#2A2D3C] bg-[#181A28] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">
+                    <div className="rounded-[5px] bg-[#d8d8d9] p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#444]">
                         Lien
-                      </p>
-                      <p className="mt-2 break-all text-sm text-slate-100">{link}</p>
+                      </div>
+                      <div className="mt-1 break-all text-[12px] font-semibold text-[#232323]">
+                        {link}
+                      </div>
                     </div>
 
-                    <div className="rounded-[8px] border border-[#2A2D3C] bg-[#181A28] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">
+                    <div className="rounded-[5px] bg-[#d8d8d9] p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#444]">
                         Copier le lien
-                      </p>
+                      </div>
                       <div className="mt-3">
-                        <Button onClick={handleCopyLink}>{copied ? "LIEN COPIÉ" : "COPIER"}</Button>
+                        <Button onClick={handleCopyLink} className="h-9 px-4">
+                          {copied ? "Lien copié" : "Copier"}
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -761,8 +803,8 @@ export default function PrivateLobbyPage() {
               </div>
             </Card>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
