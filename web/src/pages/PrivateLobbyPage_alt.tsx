@@ -370,6 +370,7 @@ export default function PrivateLobbyPage() {
       {/* background */}
       <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
 
+
       <style>{`
         .lb-scroll {
           scrollbar-width: thin;

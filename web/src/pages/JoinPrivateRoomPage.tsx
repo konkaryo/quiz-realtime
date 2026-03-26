@@ -3,9 +3,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
-
-// Ajuste si ta navbar est plus haute/basse
 const NAVBAR_HEIGHT_PX = 52;
+const MAX_LEN = 4;
 
 async function fetchJSON(path: string, init?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -13,41 +12,56 @@ async function fetchJSON(path: string, init?: RequestInit) {
     headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
     ...init,
   });
+
   const ct = res.headers.get("content-type") || "";
   const isJson = ct.includes("application/json");
   const data = isJson ? await res.json() : undefined;
+
   if (!res.ok) {
-    const msg = (data as any)?.error || (data as any)?.message || `HTTP ${res.status}`;
+    const msg =
+      (data as any)?.error ||
+      (data as any)?.message ||
+      `HTTP ${res.status}`;
     throw new Error(msg);
   }
+
   return data;
 }
-
-const MAX_LEN = 4;
 
 export default function JoinPrivateRoomPage() {
   const nav = useNavigate();
 
-  const [code, setCode] = useState<string>("");
+  const [code, setCode] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const hiddenInput = useRef<HTMLInputElement | null>(null);
 
   const normalized = useMemo(
     () => code.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, MAX_LEN),
-    [code],
+    [code]
   );
 
   const chars = useMemo(
     () => Array.from({ length: MAX_LEN }).map((_, i) => normalized[i] || ""),
-    [normalized],
+    [normalized]
   );
 
-  // ✅ Empêcher le scroll global (sinon double scrollbar)
+  const activeIndex =
+    normalized.length < MAX_LEN ? normalized.length : MAX_LEN - 1;
+  const showCaret = isFocused && normalized.length < MAX_LEN;
+
+  function focusHiddenInput() {
+    window.requestAnimationFrame(() => {
+      hiddenInput.current?.focus();
+    });
+  }
+
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
+
     const prevHtmlOverflow = html.style.overflow;
     const prevBodyOverflow = body.style.overflow;
 
@@ -60,25 +74,54 @@ export default function JoinPrivateRoomPage() {
     };
   }, []);
 
-  // focus auto
   useEffect(() => {
-    hiddenInput.current?.focus();
+    focusHiddenInput();
   }, []);
 
-  function handleChange(v: string) {
-    const next = v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, MAX_LEN);
+  useEffect(() => {
+    function handleWindowPointerDown(event: PointerEvent) {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      const tag = target.tagName;
+      const isInteractive =
+        tag === "BUTTON" ||
+        tag === "A" ||
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        target.closest("button, a, input, textarea, select");
+
+      if (!isInteractive) {
+        focusHiddenInput();
+      }
+    }
+
+    window.addEventListener("pointerdown", handleWindowPointerDown);
+
+    return () => {
+      window.removeEventListener("pointerdown", handleWindowPointerDown);
+    };
+  }, []);
+
+  function handleChange(value: string) {
+    const next = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, MAX_LEN);
     setCode(next);
     setErr(null);
   }
 
   async function resolveAndGo() {
     const c = normalized.trim();
+
     if (c.length !== MAX_LEN) {
       setErr(`Le code doit comporter ${MAX_LEN} caractères.`);
+      focusHiddenInput();
       return;
     }
+
     setLoading(true);
     setErr(null);
+
     try {
       let roomId: string | undefined;
 
@@ -93,153 +136,153 @@ export default function JoinPrivateRoomPage() {
         const r2 = (await fetchJSON(`/rooms/by-code/${encodeURIComponent(c)}`)) as {
           room?: { id: string };
         };
+
         roomId = r2?.room?.id;
       }
 
-      if (!roomId) throw new Error("Code invalide ou introuvable.");
+      if (!roomId) {
+        throw new Error("Code invalide ou introuvable.");
+      }
+
       nav(`/rooms/${roomId}/lobby`);
     } catch (e: any) {
       setErr(e?.message || "Impossible de rejoindre ce salon.");
+      focusHiddenInput();
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="relative text-slate-50">
-      <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
+    <div className="relative min-h-screen text-white">
+      <div aria-hidden className="fixed inset-0 bg-[#090b1f]" />
 
       <style>{`
-        /* ✅ Scrollbar style appliqué au conteneur scroll (lb-scroll) */
-        .lb-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: #4A4B56 #1E1F28;
+        @keyframes inputCaretBlink {
+          0%, 49% { opacity: 1; }
+          50%, 100% { opacity: 0; }
         }
-        .lb-scroll::-webkit-scrollbar { width: 12px; }
-        .lb-scroll::-webkit-scrollbar-track {
-          background: #1E1F28;
+
+        .join-room-caret {
+          width: 2px;
+          height: 34px;
           border-radius: 999px;
+          background: #111827;
+          animation: inputCaretBlink 1s step-end infinite;
         }
-        .lb-scroll::-webkit-scrollbar-button {
-          background-color: #4A4B56;
-          height: 12px;
-        }
-        .lb-scroll::-webkit-scrollbar-thumb {
-          background: #4A4B56;
-          border-radius: 999px;
-          border: 3px solid rgba(0,0,0,0);
-          background-clip: padding-box;
-        }
-        .lb-scroll::-webkit-scrollbar-thumb:hover {
-          background: #4A4B56;
-          border: 3px solid rgba(0,0,0,0);
-          background-clip: padding-box;
+
+        @media (max-width: 640px) {
+          .join-room-caret {
+            height: 28px;
+          }
         }
       `}</style>
 
-      {/* ✅ Zone scrollable: top = navbar, bottom = 0 */}
-      <div
-        className="fixed left-0 right-0 bottom-0 z-10 lb-scroll overflow-y-auto"
-        style={{ top: `${NAVBAR_HEIGHT_PX}px` }}
+      <main
+        className="relative z-10 flex items-start justify-center px-4"
+        style={{
+          minHeight: `calc(100vh - ${NAVBAR_HEIGHT_PX}px)`,
+          paddingTop: "7.5rem",
+        }}
+        onClick={() => focusHiddenInput()}
       >
-        <div className="mx-auto flex max-w-6xl flex-col px-4 py-10 sm:px-8 lg:px-10">
-          <header className="mb-12 text-center">
-            <h1 className="text-5xl font-brand text-slate-50">REJOINDRE UN SALON PRIVÉ</h1>
+        <div className="w-full max-w-3xl text-center">
+          <header className="mb-14 text-center">
+            <h1 className="text-5xl font-brand text-slate-50">
+              REJOINDRE UN SALON PRIVÉ
+            </h1>
           </header>
 
+          <div
+            onClick={() => focusHiddenInput()}
+            role="group"
+            aria-label="Saisir le code du salon"
+            className="mx-auto mb-16 flex justify-center gap-5 sm:gap-6"
+          >
+            {chars.map((ch, idx) => {
+              const isActive = showCaret && idx === activeIndex;
+
+              return (
+                <div
+                  key={idx}
+                  className={[
+                    "relative flex h-[80px] w-[70px] items-center justify-center",
+                    "rounded-[14px] bg-[#efefef]",
+                    "shadow-[0_8px_24px_rgba(0,0,0,0.18)]",
+                    "sm:h-[88px] sm:w-[76px]",
+                  ].join(" ")}
+                >
+                  {ch ? (
+                    <span className="font-mono text-4xl font-bold text-[#111827]">
+                      {ch}
+                    </span>
+                  ) : isActive ? (
+                    <span className="join-room-caret" />
+                  ) : null}
+                </div>
+              );
+            })}
+
+            <input
+              ref={hiddenInput}
+              value={normalized}
+              onChange={(e) => handleChange(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => {
+                setIsFocused(false);
+                focusHiddenInput();
+              }}
+              onPaste={(e) => {
+                const pasted = e.clipboardData.getData("text");
+                handleChange(pasted);
+                e.preventDefault();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  resolveAndGo();
+                }
+                if (e.key === "Backspace" && normalized.length === 0) {
+                  setErr(null);
+                }
+              }}
+              inputMode="text"
+              autoCapitalize="characters"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={MAX_LEN}
+              className="absolute h-0 w-0 opacity-0 pointer-events-none"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={resolveAndGo}
+            disabled={loading || normalized.length !== MAX_LEN}
+            className={[
+              "mx-auto inline-flex w-full max-w-[235px] items-center justify-center",
+              "rounded-[8px] border-0 bg-[#6F5BD4] px-4 py-3",
+              "text-[15px] font-bold text-white transition",
+              "hover:brightness-110",
+              loading || normalized.length !== MAX_LEN
+                ? "cursor-not-allowed opacity-50 hover:brightness-100"
+                : "cursor-pointer",
+            ].join(" ")}
+          >
+            {loading ? "Connexion..." : "Rejoindre"}
+          </button>
+
           {err && (
-            <div className="mx-auto mb-6 w-full max-w-3xl rounded-[6px] border border-rose-800/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-200 shadow-[0_18px_40px_rgba(0,0,0,0.25)]">
+            <p className="mt-6 text-sm text-red-300">
               {err}
-            </div>
+            </p>
           )}
 
-          <div className="mx-auto w-full max-w-3xl rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
-
-            {/* Zone cliquable qui focus un input caché */}
-            <div
-              onClick={() => hiddenInput.current?.focus()}
-              role="group"
-              aria-label="Saisir le code du salon"
-            >
-              <div className="flex justify-center gap-3 sm:gap-4">
-                {chars.map((ch, idx) => (
-                  <div
-                    key={idx}
-                    className={[
-                      "flex h-16 w-16 items-center justify-center sm:h-20 sm:w-20",
-                      "rounded-[10px] border border-[#2A2D3C] bg-[#141625]",
-                      "font-mono text-3xl sm:text-4xl font-extrabold tracking-[0.22em] text-slate-50",
-                      "shadow-[0_14px_35px_rgba(0,0,0,0.35)]",
-                    ].join(" ")}
-                  >
-                    {ch}
-                  </div>
-                ))}
-
-                {/* input invisible pour la saisie/paste */}
-                <input
-                  ref={hiddenInput}
-                  value={normalized}
-                  onChange={(e) => handleChange(e.target.value)}
-                  onPaste={(e) => {
-                    const t = e.clipboardData.getData("text");
-                    handleChange(t);
-                    e.preventDefault();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") resolveAndGo();
-                    if (e.key === "Backspace" && normalized.length === 0) setErr(null);
-                  }}
-                  inputMode="text"
-                  autoCapitalize="characters"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  maxLength={MAX_LEN}
-                  className="absolute h-0 w-0 opacity-0"
-                />
-              </div>
-            </div>
-
-            <div className="sr-only" aria-live="polite">
-              {normalized.length === MAX_LEN ? "Code complet." : "Code incomplet."}
-            </div>
+          <div className="sr-only" aria-live="polite">
+            {normalized.length === MAX_LEN ? "Code complet." : "Code incomplet."}
           </div>
-
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => handleChange("")}
-              className={[
-                "inline-flex h-12 w-40 items-center justify-center rounded-[6px]",
-                "border border-[#2A2D3C] bg-[#181A28]",
-                "text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200",
-                "transition hover:text-white",
-              ].join(" ")}
-            >
-              Effacer
-            </button>
-
-            <button
-              type="button"
-              onClick={resolveAndGo}
-              disabled={loading || normalized.length !== MAX_LEN}
-              className={[
-                "inline-flex h-12 w-40 items-center justify-center rounded-[6px]",
-                "text-[11px] font-semibold uppercase tracking-[0.22em] transition",
-                "border border-transparent bg-[#2D7CFF] text-slate-50 hover:bg-[#1F65DB]",
-                loading || normalized.length !== MAX_LEN
-                  ? "cursor-not-allowed opacity-40 hover:bg-[#2D7CFF]"
-                  : "",
-              ].join(" ")}
-            >
-              {loading ? "Connexion…" : "Rejoindre"}
-            </button>
-          </div>
-
-          <div className="h-10" />
         </div>
-      </div>
+      </main>
     </div>
   );
 }
