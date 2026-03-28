@@ -19,6 +19,20 @@ const API_BASE =
   import.meta.env.VITE_API_BASE ??
   (typeof window !== "undefined" ? window.location.origin : "");
 
+const formatThemeLabel = (theme: string): string => {
+  switch (theme) {
+    case "GEOGRAPHIE":
+      return "GÉOGRAPHIE";
+    case "LITTERATURE":
+      return "LITTÉRATURE";
+    case "POP_CULTURE":
+      return "POP CULTURE";
+    case "SOCIETE":
+      return "SOCIÉTÉ";
+    default:
+      return theme.replaceAll("_", " ");
+  }
+};
 
 function Lives({ lives, total }: { lives: number; total: number }) {
   const full = Array.from({ length: lives }).map((_, i) => (
@@ -360,10 +374,10 @@ export default function DailyQuestionPanel(props: Props) {
   };
 
   const topPanelClass =
-    "relative z-10 h-full w-full rounded-[14px] border border-slate-700/70 bg-[#202334] px-3 py-1 md:px-5 md:py-2";
+    "relative z-10 h-full w-full rounded-[14px] border border-white/15 bg-[#2E324A] px-3 py-1 md:px-5 md:py-2";
 
   const bottomPanelClass =
-    "relative w-full bg-[#202334] rounded-[9px] p-3 md:p-4";
+    "relative w-full bg-[#2A2E44] rounded-[9px] p-3 md:p-4";
 
   const topPanelStyle = { boxShadow: "none" as const };
 
@@ -494,9 +508,14 @@ export default function DailyQuestionPanel(props: Props) {
       <div className={`relative ${showTimer ? "mt-14" : "mt-6"} w-[430px] max-w-full aspect-[2.24/1]`}>
         {/* NOM DU THÈME */}
         {question.theme && (
-          <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-center">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/70">
-              {question.theme}
+          <div className="absolute -top-4 left-1/2 z-30 -translate-x-1/2 text-center">
+            <div
+              className="inline-flex items-center justify-center rounded-[8px] border-2 border-[#B8BBC2] bg-[#ECEDEF] px-4 py-1.5 text-[13px] font-bold italic uppercase tracking-[0.18em] text-[#121317] shadow-[0_2px_6px_rgba(0,0,0,0.2)]"
+              style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
+            >
+              <span className="relative left-[0.08em]">
+                {formatThemeLabel(question.theme)}
+              </span>
             </div>
           </div>
         )}

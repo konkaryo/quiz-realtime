@@ -157,8 +157,8 @@ function PlayerCell({
         style={{
           // ✅ Gradient normal + variante self
           background: isSelf
-            ? "linear-gradient(to bottom, rgba(162, 143, 255, 0.35), rgba(162,143,255,0.27))"
-            : "linear-gradient(to bottom, rgba(187,190,213,0.08), rgba(187,190,213,0.05))",
+            ? "linear-gradient(to bottom, rgba(68, 74, 112, 1), rgba(162,143,255,0.27))"
+            : "linear-gradient(to bottom, rgba(68, 74, 112, 0.5), rgba(68, 74, 112, 0.35))",
             //? "linear-gradient(to bottom, rgba(162, 143, 255, 0.28), rgba(162,143,255,0.2))"
             //: "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.15))",
 
@@ -1870,7 +1870,7 @@ return (
 >
   <div className="h-full overflow-visible bg-transparent pb-6 pr-3 pt-3 pl-3">
     <div className="h-full px-4 pb-5 flex flex-col min-h-0 overflow-visible">
-        <div className="relative mb-6 overflow-visible rounded-[6px] border border-white/10 bg-white/[0.03]">
+        <div className="relative mb-6 overflow-visible">
 
             <button
               type="button"
@@ -1882,7 +1882,7 @@ return (
               <Settings className="h-5 w-5" strokeWidth={2.2} />
             </button>
 
-          <div className="relative aspect-[5/2] w-full overflow-hidden border-b border-white/10 bg-[#1A1B27]">
+          <div className="relative aspect-[5/2] w-full overflow-hidden border border-white/20">
 
             <img
               src={roomImageSrc}
@@ -2137,7 +2137,7 @@ return (
                     </div>
                   </div>
                   <div 
-                    className="relative rounded-[6px] bg-[#202334] px-6 py-6 before:pointer-events-none"
+                    className="relative rounded-[6px] bg-[#2A2E44] px-6 py-6 before:pointer-events-none"
                     style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
                   >
                     <div>
@@ -2157,15 +2157,13 @@ return (
                                 ? "bg-amber-400 text-white"
                                 : status === "wrong"
                                 ? "bg-[#AF2D33] text-white"
-                                : "bg-white/20 text-white/70";
+                                : "bg-white/30 text-white/70";
 
                             const trackerClasses = [
                               "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold",
                               "transition-all",
                               colorClass,
-                              isCurrent
-                                ? "ring-2 ring-white/70 ring-offset-2 ring-offset-black/20"
-                                : "",
+                              isCurrent ? "ring-2 ring-white/70" : "",
                             ].join(" ");
 
                             const trackerLabel = isLeaderboardTile
@@ -2232,138 +2230,6 @@ return (
               </div>
             </aside>
           </div>
-
-          {/* MOBILE */}
-          <div className="lg:hidden px-5 md:px-8 pb-10" style={{ marginTop: TOP_BAR_H }}>
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-0 overflow-x-hidden">
-                <div className="max-h-[360px] overflow-y-auto overflow-x-hidden pr-2 lb-scroll">
-                  {(leaderboard ?? []).map((r, i) => (
-                    <div
-                      key={r.id}
-                      className={[
-                        "flex items-center justify-between rounded-xl border px-3 py-2 overflow-x-hidden",
-                        (selfId && r.id === selfId) ||
-                        (!!selfName &&
-                          typeof r.name === "string" &&
-                          r.name.toLowerCase() === selfName.toLowerCase())
-                          ? "bg-gradient-to-b from-[#D30E72] to-[#770577] text-white border-transparent"
-                          : "border-white/10 bg-white/[0.02]",
-                      ].join(" ")}
-                    >
-                      <div className="min-w-0 flex items-center gap-2 overflow-hidden">
-                        <span className="w-5 text-right text-white/50 tabular-nums flex-shrink-0">
-                          {i + 1}.
-                        </span>
-                        {r.playerId ? (
-                          <button
-                            type="button"
-                            onClick={() => handlePlayerProfile(r)}
-                            className="truncate text-[13px] font-semibold hover:underline"
-                            title={`Voir le profil de ${r.name}`}
-                            aria-label={`Voir le profil de ${r.name}`}
-                          >
-                            {r.name}
-                          </button>
-                        ) : (
-                          <span className="truncate text-[13px] font-semibold">{r.name}</span>
-                        )}
-                      </div>
-                      <span className="tabular-nums text-[13px] font-semibold text-white/85 flex-shrink-0">
-                        {r.score}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {hasScrollableLeaderboard && selfRow ? (
-                  <div className="mt-4 pt-4 border-t border-white/10 overflow-x-hidden">
-                    <div className="flex items-center justify-between rounded-xl border border-transparent bg-gradient-to-b from-[#D30E72] to-[#770577] px-3 py-2 overflow-x-hidden text-white">
-                      <div className="min-w-0 flex items-center gap-2 overflow-hidden">
-                        <span className="w-6 text-right text-white/90 tabular-nums flex-shrink-0">
-                          {selfIndex + 1}.
-                        </span>
-                        <span className="truncate text-[13px] font-semibold">{selfRow.name}</span>
-                      </div>
-                      <span className="tabular-nums text-[13px] font-semibold text-white/90 flex-shrink-0">
-                        {selfRow.score}
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-transparent p-4 min-w-0 overflow-hidden">
-                <SectionTitle>Salon</SectionTitle>
-
-                <div className="mt-3 mb-5 min-w-0">
-                  <div
-                    className="text-[18px] leading-tight font-semibold text-white/95 overflow-hidden text-ellipsis whitespace-nowrap"
-                    title={roomDisplayName}
-                  >
-                    {roomDisplayName}
-                  </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  {roomInfoItems.map((it) => (
-                    <SmallPill key={it.label} label={it.label} value={it.value} />
-                  ))}
-                </div>
-
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    className="rounded-xl px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-                  >
-                    Inviter
-                  </button>
-                </div>
-
-                <div className="mt-5">
-                  <div className="mt-3 grid grid-cols-6 gap-2">
-                    {questionTrackerItems.length ? (
-                      questionTrackerItems.map((status, idx) => {
-                        const isCurrent =
-                          idx === index && phase !== "final" && phase !== "between";
-
-                        const colorClass =
-                          status === "correct"
-                            ? "bg-emerald-400 text-white"
-                            : status === "correct-mc"
-                            ? "bg-amber-400 text-white"
-                            : status === "wrong"
-                            ? "bg-[#AF2D33] text-white"
-                            : "bg-white/20 text-white/70";
-
-                        return (
-                          <div
-                            key={`mq-${idx + 1}`}
-                            className={[
-                              "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold",
-                              "transition-all",
-                              colorClass,
-                              isCurrent
-                                ? "ring-2 ring-white/70 ring-offset-2 ring-offset-black/20"
-                                : "",
-                            ].join(" ")}
-                            aria-label={`Question ${idx + 1}`}
-                            title={`Question ${idx + 1}`}
-                          >
-                            {idx + 1}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-white/45 text-sm">—</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* (Le reste du fichier continue : FinalQuestionRecapClean, etc.) */}
         </div>
       </div>
 
