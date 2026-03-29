@@ -4,7 +4,6 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoUrl from "@/assets/synapz.png";
 import bellUrl from "@/assets/bell.png";
 import bitIconUrl from "@/assets/bit.png";
-import starUrl from "@/assets/star.png";
 import keyIconUrl from "@/assets/key_icon.png";
 import lockIconUrl from "@/assets/lock.png";
 import calendarIconUrl from "@/assets/calendar_icon.png";
@@ -1407,102 +1406,97 @@ export default function AppShell() {
             </div>
           ) : (
             <>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {/* ✅ CIBLE XP : on met data-xp-target sur le wrapper + sur l'image (fiable) */}
+              <div
+                aria-label={`Niveau ${xpProgress.level}`}
+                data-xp-target="nav-xp"
+                style={{
+                  minWidth: 100,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 3,
+                }}
+              >
                 <div
-                  aria-label={`Niveau ${xpProgress.level}`}
-                  data-xp-target="nav-xp"
                   style={{
-                    width: 30,
-                    height: 30,
-                    position: "relative",
-                    display: "grid",
-                    placeItems: "center",
-                    flexShrink: 0,
-                    filter: "drop-shadow(0 2px 6px rgba(0,0,0,.45))",
+                    display: "flex",
+                    alignItems: "baseline",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    color: "#f8fafc",
+                    textTransform: "uppercase",
+                    fontFamily:
+                      '"Acumin Pro Extra Condensed Bold Italic", "Arial Narrow", sans-serif',
+                    fontStyle: "italic",
                   }}
                 >
-                  <img
-                    src={starUrl}
-                    alt=""
-                    aria-hidden
-                    data-xp-target="nav-xp"
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      width: "100%",
-                      height: "100%",
-                      display: "block",
-                      objectFit: "contain",
-                      userSelect: "none",
-                      pointerEvents: "none",
-                    }}
-                  />
                   <span
                     style={{
-                      position: "relative",
-                      zIndex: 1,
-                      fontWeight: 700,
-                      fontSize: 11,
+                      fontWeight: 800,
+                      fontSize: 16,
+                      letterSpacing: 0.8,
                       lineHeight: 1,
-                      color: "#ffffff",
-                      textShadow: "0 1px 0 rgba(0,0,0,.55)",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    {xpProgress.level}
+                    Niveau {xpProgress.level}
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 12,
+                      letterSpacing: 0.4,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {xpProgress.needed > 0
+                      ? `${xpProgress.gained} / ${xpProgress.needed} XP`
+                      : "MAX XP"}
                   </span>
                 </div>
                 <div
+                  aria-label={`Progression ${xpProgress.gained} sur ${
+                    xpProgress.needed || xpProgress.gained
+                  } xp`}
                   style={{
-                    minWidth: 100,
-                    padding: "3px 5px",
-                    borderRadius: 10,
-                    background:
-                      "linear-gradient(180deg,rgba(15,23,42,.9),rgba(8,10,20,.9))",
-                    border: "1px solid rgba(255,255,255,.12)",
-                    boxShadow: "inset 0 0 0 1px rgba(0,0,0,.35)",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(7, 1fr)",
+                    gap: 4,
+                    width: "100%",
                   }}
                 >
-                  <div
-                    aria-label={`Progression ${xpProgress.gained} sur ${
-                      xpProgress.needed || xpProgress.gained
-                    } xp`}
-                    style={{
-                      position: "relative",
-                      height: 14,
-                      borderRadius: 8,
-                      background: "linear-gradient(180deg,#0b1224,#0a0f1f)",
-                      overflow: "hidden",
-                      border: "1px solid rgba(255,255,255,.08)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: `${xpProgress.progress * 100}%`,
-                        background: "linear-gradient(90deg,#38bdf8,#22d3ee)",
-                        boxShadow: "inset 0 0 6px rgba(255,255,255,.25)",
-                        transition: "width 120ms linear",
-                      }}
-                    />
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "grid",
-                        placeItems: "center",
-                        fontSize: 10,
-                        fontWeight: 800,
-                        color: "#e2e8f0",
-                        textShadow: "0 1px 2px rgba(0,0,0,.7)",
-                      }}
-                    >
-                      {xpProgress.needed > 0
-                        ? `${xpProgress.gained}/${xpProgress.needed}`
-                        : "MAX"}
-                    </div>
-                  </div>
+                  {Array.from({ length: 7 }).map((_, segmentIndex) => {
+                    const segmentStart = segmentIndex / 7;
+                    const segmentFill = Math.max(
+                      0,
+                      Math.min(1, (xpProgress.progress - segmentStart) * 7)
+                    );
+
+                    return (
+                      <div
+                        key={segmentIndex}
+                        style={{
+                          position: "relative",
+                          height: 4,
+                          overflow: "hidden",
+                          background: "rgba(86,83,110,.75)",
+                          borderRadius: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            width: `${segmentFill * 100}%`,
+                            background: "#eacb4d",
+                            boxShadow:
+                              "0 0 10px rgba(234,203,77,.5), inset 0 0 0 1px rgba(255,246,169,.25)",
+                            transition: "width 120ms linear",
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
