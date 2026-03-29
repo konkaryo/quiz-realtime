@@ -1,8 +1,10 @@
 // web/src/components/FinalLeaderboard.tsx
 
-import React, { useEffect, useMemo, useRef } from "react";
-import starUrl from "../assets/star.png";
-import { getLevelFromExperience } from "../utils/experience";
+import React, { useEffect, useMemo, useState } from "react";
+import bitUrl from "../assets/bit.png";
+import giftUrl from "../assets/gift.png";
+import medalUrl from "../assets/medal.png";
+import { getLevelProgress } from "../utils/experience";
 
 type Row = {
   id: string;
@@ -12,18 +14,11 @@ type Row = {
   bits?: number;
   xp?: number;
   experience?: number;
-  stats?: {
-    correct?: number;
-    correctQcm?: number;
-    wrong?: number;
-  } | null;
-  statsCorrect?: number;
-  statsCorrectQcm?: number;
-  statsWrong?: number;
-  correct?: number;
-  correctQcm?: number;
-  wrong?: number;
 };
+
+const XP_SEGMENTS = 10;
+const SEGMENT_ANIMATION_MS = 450;
+const SEGMENT_STAGGER_MS = 325;
 
 export function FinalLeaderboard({
   rows,
@@ -34,9 +29,10 @@ export function FinalLeaderboard({
   selfId?: string | null;
   selfName?: string | null;
 }) {
-  const listRows = rows;
+  const isSelfRow = (r: Row) =>
+    (!!selfId && r.id === selfId) ||
+    (!!selfName && r.name?.toLowerCase() === selfName.toLowerCase());
 
-  // 2 | 1 | 3
   const podiumSlots = useMemo(
     () =>
       [
@@ -47,43 +43,92 @@ export function FinalLeaderboard({
     [rows]
   );
 
-  const isSelfRow = (r: Row) =>
-    (!!selfId && r.id === selfId) ||
-    (!!selfName && r.name?.toLowerCase() === selfName.toLowerCase());
+  const selfIndex = useMemo(() => rows.findIndex(isSelfRow), [rows, selfId, selfName]);
+  const selfRow = selfIndex >= 0 ? rows[selfIndex] : null;
 
-  const getRowStats = (row: Row) => {
-    const correct = row.stats?.correct ?? row.statsCorrect ?? row.correct ?? 0;
-    const correctQcm =
-      row.stats?.correctQcm ?? row.statsCorrectQcm ?? row.correctQcm ?? 0;
-    const wrong = row.stats?.wrong ?? row.statsWrong ?? row.wrong ?? 0;
+  const selfPosition = selfIndex >= 0 ? selfIndex + 1 : null;
+  const selfScore = Math.max(0, selfRow?.score ?? 0);
+  const selfBits = Math.max(0, selfRow?.bits ?? 0);
+  const xpGained = Math.max(0, selfRow?.xp ?? 0);
+  const baseExperience = Math.max(0, selfRow?.experience ?? 0);
+  const nextExperience = baseExperience + xpGained;
 
-    return {
-      correct: Number.isFinite(correct) ? Math.max(0, correct) : 0,
-      correctQcm: Number.isFinite(correctQcm) ? Math.max(0, correctQcm) : 0,
-      wrong: Number.isFinite(wrong) ? Math.max(0, wrong) : 0,
-    };
-  };
+  const currentLevelProgress = getLevelProgress(baseExperience);
+  const nextLevelProgress = getLevelProgress(nextExperience);
 
-  const podiumStepBackgroundClass = "bg-[#1C1F2E]";
-  const activeRowBackground =
-    "linear-gradient(to bottom, rgba(162, 143, 255, 0.35), rgba(162,143,255,0.27))";
+  const currentLevel = currentLevelProgress.level;
+  const nextLevel = nextLevelProgress.level;
+  const leveledUp = nextLevel > currentLevel;
+  const xpTargetProgress = nextLevelProgress.progress;
 
-  const activeItemRef = useRef<HTMLLIElement | null>(null);
-  const activeListIndex = listRows.findIndex(isSelfRow);
+  const [animatedSegmentFills, setAnimatedSegmentFills] = useState<number[]>(
+    () => Array.from({ length: XP_SEGMENTS }, () => 0)
+  );
+  const [disableSegmentTransition, setDisableSegmentTransition] = useState(false);
+  const [displayLevelLeft, setDisplayLevelLeft] = useState(currentLevel);
+  const [displayLevelRight, setDisplayLevelRight] = useState(currentLevel + 1);
+  const [displayXpLabel, setDisplayXpLabel] = useState(`+ ${xpGained} XP`);
+
+  const targetSegmentFills = useMemo(
+    () =>
+      Array.from({ length: XP_SEGMENTS }, (_, segmentIndex) => {
+        const start = segmentIndex / XP_SEGMENTS;
+        const end = (segmentIndex + 1) / XP_SEGMENTS;
+        return Math.max(0, Math.min(1, (xpTargetProgress - start) / (end - start)));
+      }),
+    [xpTargetProgress]
+  );
 
   useEffect(() => {
-    const item = activeItemRef.current;
-    if (!item) return;
-    const id = requestAnimationFrame(() => {
-      item.scrollIntoView({ block: "center", inline: "nearest" });
-    });
-    return () => cancelAnimationFrame(id);
-  }, [activeListIndex, listRows.length]);
+    let phaseOneRaf: number | null = null;
+    let phaseTwoRaf: number | null = null;
+    let phaseTwoRafStep2: number | null = null;
+    let phaseTwoTimeout: number | null = null;
 
-  // IMPORTANT: header + rows MUST be in the SAME scroll container
-  // otherwise scrollbar width shifts the content and breaks perfect alignment.
-  const columns = "52px minmax(0,1.55fr) minmax(118px,0.85fr) 100px 64px 56px";
-  const cellLeft = "text-left justify-self-start";
+    setDisplayLevelLeft(currentLevel);
+    setDisplayLevelRight(currentLevel + 1);
+    setDisplayXpLabel(`+ ${xpGained} XP`);
+    setDisableSegmentTransition(false);
+    setAnimatedSegmentFills(Array.from({ length: XP_SEGMENTS }, () => 0));
+    if (!leveledUp) {
+      phaseOneRaf = requestAnimationFrame(() => {
+        setAnimatedSegmentFills(targetSegmentFills);
+      });
+    } else {
+      const fullSegments = Array.from({ length: XP_SEGMENTS }, () => 1);
+      phaseOneRaf = requestAnimationFrame(() => {
+        setAnimatedSegmentFills(fullSegments);
+      });
+
+      const phaseOneDuration =
+        (XP_SEGMENTS - 1) * SEGMENT_STAGGER_MS + SEGMENT_ANIMATION_MS;
+
+      phaseTwoTimeout = window.setTimeout(() => {
+        setDisplayXpLabel("Niveau supérieur");
+        setDisplayLevelLeft(nextLevel);
+        setDisplayLevelRight(nextLevel + 1);
+        setDisableSegmentTransition(true);
+        setAnimatedSegmentFills(Array.from({ length: XP_SEGMENTS }, () => 0));
+
+        phaseTwoRaf = requestAnimationFrame(() => {
+          setDisableSegmentTransition(false);
+          phaseTwoRafStep2 = requestAnimationFrame(() => {
+            setAnimatedSegmentFills(targetSegmentFills);
+          });
+        });
+      }, phaseOneDuration);
+    }
+
+    return () => {
+      if (phaseOneRaf !== null) cancelAnimationFrame(phaseOneRaf);
+      if (phaseTwoRaf !== null) cancelAnimationFrame(phaseTwoRaf);
+      if (phaseTwoRafStep2 !== null) cancelAnimationFrame(phaseTwoRafStep2);
+      if (phaseTwoTimeout !== null) window.clearTimeout(phaseTwoTimeout);
+    };
+  }, [currentLevel, leveledUp, nextLevel, targetSegmentFills, xpGained]);
+
+  const defaultProfile = "/img/profiles/0.avif";
+  const profileSrc = selfRow?.img ?? defaultProfile;
 
   return (
     <div className="px-2 pb-2">
@@ -106,7 +151,6 @@ export function FinalLeaderboard({
 
               return (
                 <div key={rank} className="flex flex-col items-center">
-                  {/* Avatar */}
                   {shouldShowAvatarFrame ? (
                     <div
                       className={[
@@ -119,7 +163,7 @@ export function FinalLeaderboard({
                       <div className="w-full h-full rounded-[2px] overflow-hidden">
                         {row ? (
                           <img
-                            src={row.img ?? "/img/profiles/0.avif"}
+                            src={row.img ?? defaultProfile}
                             alt=""
                             className="w-full h-full object-cover"
                             draggable={false}
@@ -134,7 +178,6 @@ export function FinalLeaderboard({
                     <div className="w-12 h-12 md:w-14 md:h-14" aria-hidden="true" />
                   )}
 
-                  {/* Nom */}
                   <div className="mt-1.5 mb-2 text-center max-w-[160px] md:max-w-[180px] px-1">
                     <div
                       className={[
@@ -146,7 +189,6 @@ export function FinalLeaderboard({
                     </div>
                   </div>
 
-                  {/* Marche */}
                   <div
                     className="relative w-full max-w-[260px] flex flex-col justify-end"
                     style={{ height: h + 18 }}
@@ -179,131 +221,134 @@ export function FinalLeaderboard({
         </div>
       </div>
 
-      {/* Liste */}
-      {listRows.length > 0 && (
-        <div className="px-3 md:px-6 mt-4">
-          {/* Scroll container UNIQUE (header sticky + rows) => alignement parfait malgré la scrollbar */}
-          <div className="lb-scroll max-h-[28vh] md:max-h-[32vh] overflow-y-auto pr-2">
-            {/* Header sticky */}
-            <div
-              className={[
-                "sticky top-0 z-10",
-                "grid items-center px-3 py-1",
-                "font-mono text-[10px] font-semibold uppercase tracking-[0.05em] text-white/60",
-                "bg-[#111322]/90 backdrop-blur",
-                "border-b border-white/5",
-              ].join(" ")}
-              style={{ gridTemplateColumns: columns }}
-            >
-              <span className={cellLeft}>#</span>
-              <span className={cellLeft}>Joueur</span>
-              <span className={cellLeft}>Statistiques</span>
-              <span className={cellLeft}>Expérience</span>
-              <span className={cellLeft}>Bits</span>
-              <span className={cellLeft}>Score</span>
+      {/* Carte résultat joueur (remplace le tableau) */}
+      <div className="px-3 md:px-6 mt-10">
+        <div className="mx-auto max-w-[740px]">
+          <div className="w-3/4 mx-auto">
+            <div className="mb-2 flex items-end justify-between text-white">
+              <span
+                className="text-[32px] leading-[0.9]"
+                style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
+              >
+                {displayLevelLeft}
+              </span>
+              <span
+                className="text-[20px] leading-none text-white/90"
+                style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
+              >
+                {displayXpLabel}
+              </span>
+              <span
+                className="text-[32px] leading-[0.9]"
+                style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
+              >
+                {displayLevelRight}
+              </span>
             </div>
 
-            <ol className="space-y-1 pb-1 pt-1">
-              {listRows.map((r, idx) => {
-                const rank = idx + 1;
-                const isSelf = isSelfRow(r);
-
-                const bgClass = isSelf
-                  ? "text-white"
-                  : `${podiumStepBackgroundClass} text-white`;
-
-                const stats = getRowStats(r);
+            <div className="grid grid-cols-10 gap-1.5">
+              {Array.from({ length: XP_SEGMENTS }).map((_, segmentIndex) => {
+                const fill = animatedSegmentFills[segmentIndex] ?? 0;
+                const hasFill = fill > 0;
 
                 return (
-                  <li
-                    key={r.id}
-                    ref={isSelf ? activeItemRef : undefined}
-                    className={["grid items-center px-3 py-1.5 overflow-hidden", bgClass].join(" ")}
-                    style={{
-                      minHeight: 38,
-                      gridTemplateColumns: columns,
-                      background: isSelf ? activeRowBackground : "#202334",
-                    }}
+                  <div
+                    key={segmentIndex}
+                    className="relative h-4"
                   >
-                    <span className={[cellLeft, "tabular-nums text-[11px] opacity-80"].join(" ")}>
-                      #{rank}
-                    </span>
-
-                    <div className={[cellLeft, "flex items-center gap-2 min-w-0"].join(" ")}>
-                      <img
-                        src={r.img ?? "/img/profiles/0.avif"}
-                        alt=""
-                        className="w-5 h-5 rounded-[5px] object-cover flex-shrink-0"
-                        draggable={false}
-                        loading="lazy"
+                    <div
+                      className="pointer-events-none absolute inset-y-0 left-0 rounded-[2px] transition-[width] ease-out"
+                      style={{
+                        width: `${fill * 100}%`,
+                        transitionDuration: disableSegmentTransition ? "0ms" : `${SEGMENT_ANIMATION_MS}ms`,
+                      transitionDelay: disableSegmentTransition
+                        ? "0ms"
+                        : hasFill
+                          ? `${segmentIndex * SEGMENT_STAGGER_MS}ms`
+                          : "0ms",
+                        boxShadow: hasFill
+                          ? "0 0 4px rgba(248, 213, 72, 0.66), 0 0 8px rgba(248, 213, 72, 0.32)"
+                          : "none",
+                    }}
+                  />
+                    <div className="relative h-full overflow-hidden rounded-[2px] bg-[#454254]">
+                      <div
+                        className="absolute inset-y-0 left-0 bg-[#F8D548] transition-[width] ease-out"
+                        style={{
+                          width: `${fill * 100}%`,
+                          transitionDuration: disableSegmentTransition ? "0ms" : `${SEGMENT_ANIMATION_MS}ms`,
+                          transitionDelay: disableSegmentTransition
+                            ? "0ms"
+                            : hasFill
+                              ? `${segmentIndex * SEGMENT_STAGGER_MS}ms`
+                              : "0ms",
+                        }}
                       />
-                      <div className="min-w-0">
-                        <div className="truncate font-semibold text-[12px] leading-[14px]">
-                          {r.name}
-                        </div>
-                        <div className="text-[10px] leading-[12px] opacity-70">
-                          Niveau {getLevelFromExperience((r.experience ?? 0) + (r.xp ?? 0))}
-                        </div>
-                      </div>
                     </div>
-
-                    <div className={[cellLeft, "flex items-center justify-start gap-3 text-[11px] tabular-nums"].join(" ")}>
-                      <span className="inline-flex items-center gap-1.5">
-                        <span>{stats.correct}</span>
-                        <span className="text-emerald-400 text-[10px]">▲</span>
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <span>{stats.correctQcm}</span>
-                        <span className="text-amber-400 text-[10px]">■</span>
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <span>{stats.wrong}</span>
-                        <span className="text-red-400 text-[10px]">▼</span>
-                      </span>
-                    </div>
-
-                    <div className={[cellLeft, "flex items-center justify-start gap-2"].join(" ")}>
-                      <span className="tabular-nums text-[11px] font-semibold text-white">
-                        +{r.xp ?? 0}
-                      </span>
-
-                      <span
-                        className="relative w-5 h-5 shrink-0"
-                        aria-hidden="true"
-                        data-xp-source={isSelf ? "final-leaderboard-self" : undefined}
-                      >
-                        <img
-                          src={starUrl}
-                          alt=""
-                          aria-hidden
-                          className="absolute inset-0 w-full h-full object-contain"
-                          draggable={false}
-                        />
-                        <span className="absolute inset-0 flex items-center justify-center">
-                          <span
-                            className="relative z-[1] text-[8px] font-bold text-white leading-none"
-                            style={{ textShadow: "0 1px 0 rgba(0,0,0,.55)", transform: "translateX(0.5px)" }}
-                          >
-                            XP
-                          </span>
-                        </span>
-                      </span>
-                    </div>
-
-                    <span className={[cellLeft, "tabular-nums text-[11px] text-emerald-200/90"].join(" ")}>
-                      +{r.bits ?? 0}b
-                    </span>
-
-                    <span className={[cellLeft, "tabular-nums text-[12px] font-semibold"].join(" ")}>
-                      {r.score}
-                    </span>
-                  </li>
+                  </div>
                 );
               })}
-            </ol>
+            </div>
+          </div>
+
+          <div className="mt-12 w-[90%] mx-auto grid grid-cols-3 items-start gap-4 text-white">
+            <div className="flex items-center gap-3 justify-self-start">
+              <img src={medalUrl} alt="Médaille" className="h-12 w-12 object-contain" draggable={false} />
+              <div className="leading-tight">
+                <div
+                  className="text-[26px] leading-[0.85]"
+                  style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
+                >
+                  #{selfPosition ?? "--"}
+                </div>
+                <div
+                  className="mt-1 text-[19px] leading-[0.9] text-white/90"
+                  style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
+                >
+                  {selfScore} points
+                </div>
+              </div>
+            </div>
+
+            <div className="flex w-fit items-center justify-center gap-3 justify-self-center">
+              <img
+                src={profileSrc}
+                alt="Avatar joueur"
+                className="h-14 w-14 rounded-[2px] object-cover"
+                draggable={false}
+                loading="lazy"
+              />
+              <div className="leading-tight">
+                <div
+                  className="max-w-[220px] truncate text-[26px] leading-[0.85]"
+                  style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
+                >
+                  {selfRow?.name ?? "Joueur"}
+                </div>
+                <div
+                  className="mt-1 text-[17px] leading-[0.9] text-white/90"
+                  style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
+                >
+                  Classement indisponible
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 justify-self-end">
+              <img src={giftUrl} alt="Récompenses" className="h-12 w-12 object-contain" draggable={false} />
+              <div className="mt-2 flex items-center gap-1">
+                <div
+                  className="text-[26px] leading-none"
+                  style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
+                >
+                  + {selfBits}
+                </div>
+                <img src={bitUrl} alt="Bits" className="h-8 w-8 object-contain" draggable={false} />
+              </div>
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
