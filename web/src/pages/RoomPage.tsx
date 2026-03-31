@@ -154,12 +154,9 @@ function PlayerCell({
           "text-white",
         ].join(" ")}
         style={{
-          // ✅ Gradient normal + variante self
           background: isSelf
-            ? "linear-gradient(to bottom, rgba(68, 74, 112, 1), rgba(162,143,255,0.27))"
+            ? "linear-gradient(to bottom, rgba(189, 23, 114, 1), rgba(152,18,91,1))"
             : "linear-gradient(to bottom, rgba(68, 74, 112, 0.5), rgba(68, 74, 112, 0.35))",
-            //? "linear-gradient(to bottom, rgba(162, 143, 255, 0.28), rgba(162,143,255,0.2))"
-            //: "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.15))",
 
         }}
       >
@@ -190,7 +187,7 @@ function PlayerCell({
               <div className={nameClasses}>{row.name}</div>
             )}
 
-            <div className="text-[11px] text-white/75">
+              <div className="text-[11px] text-white/75">
               Niveau {getLevelFromExperience(row.experience ?? 0)}
             </div>
           </div>
@@ -1185,6 +1182,17 @@ export default function RoomPage() {
       slotLabel: null,
     };
   }, [selectedFinalQuestion]);
+  const selectedFinalStatsLayout = useMemo(() => {
+    const stats = selectedFinalQuestion?.stats;
+    if (!stats) return null;
+    const total = Math.max(1, stats.correct + stats.correctQcm + stats.wrong);
+    return {
+      stats,
+      correctWidth: `${(100 * stats.correct) / total}%`,
+      qcmWidth: `${(100 * stats.correctQcm) / total}%`,
+      wrongWidth: `${(100 * stats.wrong) / total}%`,
+    };
+  }, [selectedFinalQuestion]);
 
   // ✅ Nom du salon affiché en gros à droite
   const roomDisplayName = roomMeta?.name?.trim() || "-";
@@ -1255,48 +1263,55 @@ export default function RoomPage() {
 
   // ✅ rendu unique d'une ligne leaderboard (cellule + badge)
   const renderLeaderboardLine = (r: LeaderRow, rank: number, isSelf: boolean) => {
-    const status = answeredByPg[r.id];
+    const status = phase === "final" || phase === "countdown" || gameCountdown !== null ? null : answeredByPg[r.id];
 
-    const badgeClass = "";
+    const badgeTitle =
+      status === "correct"
+        ? "Bonne réponse"
+        : status === "correct-mc"
+        ? "Bonne réponse (QCM)"
+        : status === "wrong"
+        ? "Mauvaise réponse"
+        : "Pas encore répondu";
 
-const badgeTitle =
-  status === "correct"
-    ? "Bonne réponse"
-    : status === "correct-mc"
-    ? "Bonne réponse (QCM)"
-    : status === "wrong"
-    ? "Mauvaise réponse"
-    : "Pas encore répondu";
-
-const badgeSymbol =
-  status === "correct"
-    ? { ch: "▲", cls: "text-emerald-400" }
-    : status === "correct-mc"
-    ? { ch: "■", cls: "text-amber-400" }
-    : status === "wrong"
-    ? { ch: "▼", cls: "text-red-500" }
-    : { ch: "-", cls: "text-white/50" };
+    const badgeVisual =
+      status === "correct"
+        ? {
+            ch: "✓",
+            cls: "bg-emerald-600 text-white",
+          }
+        : status === "correct-mc"
+        ? {
+            ch: "~",
+            cls: "bg-amber-400 text-white",
+          }
+        : status === "wrong"
+        ? {
+            ch: "✕",
+            cls: "bg-[#AF2D33] text-white",
+          }
+        : {
+            ch: "",
+            cls: "bg-[#3B3E4D] text-transparent",
+          };
 
 return (
   <div className="flex items-center gap-2">
-    {/* Rang */}
-    <span className="w-8 flex-shrink-0 tabular-nums text-[14px] text-right opacity-80">
-      #{rank}
+    <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] bg-white pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-black [text-rendering:geometricPrecision]">
+      {rank}
     </span>
 
     <div className="flex-1 min-w-0">
       <PlayerCell row={r} rank={rank} isSelf={isSelf} onNameClick={handlePlayerProfile} />
     </div>
 
-    {/* ✅ Badge: taille FIXE dans tous les cas */}
+    {/* ✅ Badge: carré neutre/vert/jaune/rouge */}
     <span
-      className="flex-shrink-0 inline-flex items-center justify-center w-5 h-5"
+      className={`flex-shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-[5px] text-[12px] font-extrabold leading-none ${badgeVisual.cls}`}
       title={badgeTitle}
       aria-label={badgeTitle}
     >
-      <span className={`leading-none text-[14px] ${badgeSymbol.cls}`}>
-        {badgeSymbol.ch}
-      </span>
+      {badgeVisual.ch}
     </span>
   </div>
 );
@@ -1403,7 +1418,7 @@ return (
                 "lb-scroll",
                 "m-0 space-y-2",
                 "overflow-y-auto overflow-x-hidden",
-                "pr-3",
+                hasScrollableLeaderboard ? "pr-3" : "pr-0",
                 "flex-1 min-h-0",
               ].join(" ")}
             >
@@ -1513,34 +1528,81 @@ return (
                                 animateQuestionText={false}
                               />
 
-                              {selectedFinalQuestion?.correctLabel ? (
+                              {selectedFinalQuestion ? (
                                 <div className="mt-10 inline-flex items-center rounded-[6px] border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-slate-50">
-                                  {selectedFinalQuestion.correctLabel}
+                                  {selectedFinalQuestion.correctLabel ?? "—"}
                                 </div>
                               ) : null}
 
 
-                              {selectedFinalQuestion?.stats ? (
-                                <div className="mt-8 flex items-center justify-center gap-6 text-[13px] text-white/85">
-                                  <div className="inline-flex items-center gap-1.5" aria-label="Bonnes réponses">
-                                    <span className="tabular-nums font-semibold">
-                                      {selectedFinalQuestion.stats.correct}
-                                    </span>
-                                    <span className="leading-none text-[16px] text-emerald-400">▲</span>
+                              {selectedFinalStatsLayout ? (
+                                <div className="mx-auto mt-10 w-[700px] max-w-full space-y-4">
+                                  <div className="flex items-center gap-2">
+                                    {selectedFinalStatsLayout.stats.correct > 0 ? (
+                                      <div
+                                        className="h-[10px] min-w-[14px] rounded-[3px] bg-emerald-600"
+                                        style={{ width: selectedFinalStatsLayout.correctWidth }}
+                                      />
+                                    ) : null}
+                                    {selectedFinalStatsLayout.stats.correctQcm > 0 ? (
+                                      <div
+                                        className="h-[10px] min-w-[14px] rounded-[3px] bg-amber-400"
+                                        style={{ width: selectedFinalStatsLayout.qcmWidth }}
+                                      />
+                                    ) : null}
+                                    {selectedFinalStatsLayout.stats.wrong > 0 ? (
+                                      <div
+                                        className="h-[10px] min-w-[14px] rounded-[3px] bg-[#AF2D33]"
+                                        style={{ width: selectedFinalStatsLayout.wrongWidth }}
+                                      />
+                                    ) : null}
                                   </div>
 
-                                  <div className="inline-flex items-center gap-1.5" aria-label="Réponses QCM">
-                                    <span className="tabular-nums font-semibold">
-                                      {selectedFinalQuestion.stats.correctQcm}
-                                    </span>
-                                    <span className="leading-none text-[16px] text-amber-400">■</span>
-                                  </div>
+                                  <div className="flex items-center gap-2 text-white">
+                                    {selectedFinalStatsLayout.stats.correct > 0 ? (
+                                      <div
+                                        className="inline-flex items-center justify-center gap-3"
+                                        style={{ width: selectedFinalStatsLayout.correctWidth }}
+                                        aria-label="Bonnes réponses"
+                                      >
+                                        <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
+                                          {selectedFinalStatsLayout.stats.correct}
+                                        </span>
+                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-emerald-600 text-[12px] font-semibold leading-none text-white">
+                                          ✓
+                                        </span>
+                                      </div>
+                                    ) : null}
 
-                                  <div className="inline-flex items-center gap-1.5" aria-label="Mauvaises réponses">
-                                    <span className="tabular-nums font-semibold">
-                                      {selectedFinalQuestion.stats.wrong}
-                                    </span>
-                                    <span className="leading-none text-[16px] text-red-500">▼</span>
+                                    {selectedFinalStatsLayout.stats.correctQcm > 0 ? (
+                                      <div
+                                        className="inline-flex items-center justify-center gap-3"
+                                        style={{ width: selectedFinalStatsLayout.qcmWidth }}
+                                        aria-label="Réponses QCM"
+                                      >
+                                        <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
+                                          {selectedFinalStatsLayout.stats.correctQcm}
+                                        </span>
+                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-amber-400 text-[12px] font-semibold leading-none text-white">
+                                          ~
+                                        </span>
+                                      </div>
+                                    ) : null}
+
+                                    {selectedFinalStatsLayout.stats.wrong > 0 ? (
+                                      <div
+                                        className="inline-flex items-center justify-center gap-3"
+                                        style={{ width: selectedFinalStatsLayout.wrongWidth }}
+                                        aria-label="Mauvaises réponses"
+                                      >
+                                        <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
+                                          {selectedFinalStatsLayout.stats.wrong}
+                                        </span>
+                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#AF2D33] text-[12px] font-semibold leading-none text-white">
+                                          ✕
+                                        </span>
+                                      </div>
+                                    ) : null}
                                   </div>
                                 </div>
                               ) : null}
@@ -1607,7 +1669,6 @@ return (
                 <div className="flex flex-col gap-4 overflow-visible">
                   <div
                     className="overflow-hidden rounded-[6px] border border-white/10 bg-[#121421]"
-                    style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
                   >
                     <div className="relative aspect-video w-full">
                       <img
@@ -1624,7 +1685,6 @@ return (
                   </div>
                   <div 
                     className="relative rounded-[6px] bg-[#2A2E44] px-6 py-6 before:pointer-events-none"
-                    style={{ boxShadow: "4px 8px 8px rgba(0,0,0,0.78)" }}
                   >
                     <div>
                       <div className="grid grid-cols-6 gap-2">
@@ -1638,7 +1698,7 @@ return (
 
                             const colorClass =
                               status === "correct"
-                                ? "bg-emerald-400 text-white"
+                                ? "bg-emerald-600 text-white"
                                 : status === "correct-mc"
                                 ? "bg-amber-400 text-white"
                                 : status === "wrong"
@@ -1699,15 +1759,33 @@ return (
                     </div>
                   </div>
                   {isSubmitShortcutVisible || isChoicesShortcutVisible ? (
-                    <div className="px-1 text-[11px] text-white/65">
+                    <div className="space-y-2 px-1">
                       {isSubmitShortcutVisible ? (
-                        <div>
-                          <span className="font-semibold text-white/80">Entrée</span> : Valider la réponse
+                        <div className="flex items-center gap-4">
+                          <span className="relative inline-flex h-8 min-w-[78px] items-center justify-center">
+                            <span
+                              aria-hidden
+                              className="absolute inset-0 translate-y-[2px] rounded-[4px] bg-[#161B2E]"
+                            />
+                            <span className="relative inline-flex h-full w-full items-center justify-center rounded-[4px] bg-[#2A2E44] pb-[2px] text-[11px] font-semibold uppercase italic tracking-[0.02em] text-white shadow-[inset_0_-3px_0_#7A6CF2]">
+                              ENTRÉE
+                            </span>
+                          </span>
+                          <span className="text-[12px] font-medium text-white">Valider la réponse</span>
                         </div>
                       ) : null}
                       {isChoicesShortcutVisible ? (
-                        <div className={isSubmitShortcutVisible ? "mt-1" : ""}>
-                          <span className="font-semibold text-white/80">Tab</span> : Afficher les propositions de réponse
+                        <div className="flex items-center gap-4">
+                          <span className="relative inline-flex h-8 min-w-[78px] items-center justify-center">
+                            <span
+                              aria-hidden
+                              className="absolute inset-0 translate-y-[2px] rounded-[4px] bg-[#161B2E]"
+                            />
+                            <span className="relative inline-flex h-full w-full items-center justify-center rounded-[4px] bg-[#2A2E44] pb-[2px] text-[11px] font-semibold uppercase italic tracking-[0.02em] text-white shadow-[inset_0_-3px_0_#7A6CF2]">
+                              TAB
+                            </span>
+                          </span>
+                          <span className="text-[12px] font-medium text-white">Afficher les propositions</span>
                         </div>
                       ) : null}
                     </div>
@@ -1951,16 +2029,33 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
     const total = Math.max(0, stats.correct + stats.correctQcm + stats.wrong);
     if (!total) return null;
 
-    const wCorrect = (100 * stats.correct) / total;
-    const wQcm = (100 * stats.correctQcm) / total;
-    const wWrong = (100 * stats.wrong) / total;
-
     return (
-      <div className="mt-2">
-        <div className="h-[8px] rounded-full overflow-hidden border border-white/10 bg-white/5 flex">
-          <div className="h-full bg-emerald-400" style={{ width: `${wCorrect}%` }} />
-          <div className="h-full bg-amber-400" style={{ width: `${wQcm}%` }} />
-          <div className="h-full ? bg-[#AF2D33]" style={{ width: `${wWrong}%` }} />
+      <div className="mt-2 space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          <div className={`h-[10px] rounded-[3px] ${stats.correct > 0 ? "bg-emerald-600" : "bg-emerald-900/35"}`} />
+          <div className={`h-[10px] rounded-[3px] ${stats.correctQcm > 0 ? "bg-amber-400" : "bg-amber-900/35"}`} />
+          <div className={`h-[10px] rounded-[3px] ${stats.wrong > 0 ? "bg-[#AF2D33]" : "bg-[#AF2D33]/35"}`} />
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-white">
+          <div className="flex items-center justify-center gap-2">
+            <span className="tabular-nums text-[18px] font-brand italic leading-none">{stats.correct}</span>
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-emerald-600 text-[12px] font-semibold leading-none text-white">
+              ✓
+            </span>
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <span className="tabular-nums text-[18px] font-brand italic leading-none">{stats.correctQcm}</span>
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-amber-400 text-[12px] font-semibold leading-none text-white">
+              ~
+            </span>
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <span className="tabular-nums text-[18px] font-brand italic leading-none">{stats.wrong}</span>
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#AF2D33] text-[12px] font-semibold leading-none text-white">
+              ✕
+            </span>
+          </div>
         </div>
       </div>
     );

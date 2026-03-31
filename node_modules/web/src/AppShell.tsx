@@ -971,6 +971,7 @@ export default function AppShell() {
   const avatarUrl = user?.img || "/img/profiles/0.avif";
   const xpValue = displayExperience;
   const xpProgress = getLevelProgress(xpValue);
+  const xpProgressPercent = Math.max(0, Math.min(100, Math.floor(xpProgress.progress * 100)));
 
   // ↓ hauteur réduite
   const HEADER_H = 52;
@@ -1368,7 +1369,7 @@ export default function AppShell() {
             flexShrink: 0,
             display: "flex",
             alignItems: "center",
-            gap: 20,
+            gap: 28,
             position: "relative",
             height: "100%",
           }}
@@ -1443,33 +1444,29 @@ export default function AppShell() {
                   <span
                     style={{
                       fontWeight: 700,
-                      fontSize: 12,
+                      fontSize: 14,
                       letterSpacing: 0.4,
                       lineHeight: 1,
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {xpProgress.needed > 0
-                      ? `${xpProgress.gained} / ${xpProgress.needed} XP`
-                      : "MAX XP"}
+                    {xpProgressPercent}%
                   </span>
                 </div>
                 <div
-                  aria-label={`Progression ${xpProgress.gained} sur ${
-                    xpProgress.needed || xpProgress.gained
-                  } xp`}
+                  aria-label={`Progression ${xpProgressPercent}%`}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(7, 1fr)",
-                    gap: 4,
+                    gridTemplateColumns: "repeat(10, 1fr)",
+                    gap: 2,
                     width: "100%",
                   }}
                 >
-                  {Array.from({ length: 7 }).map((_, segmentIndex) => {
-                    const segmentStart = segmentIndex / 7;
+                  {Array.from({ length: 10 }).map((_, segmentIndex) => {
+                    const segmentStart = segmentIndex / 10;
                     const segmentFill = Math.max(
                       0,
-                      Math.min(1, (xpProgress.progress - segmentStart) * 7)
+                      Math.min(1, (xpProgress.progress - segmentStart) * 10)
                     );
 
                     return (

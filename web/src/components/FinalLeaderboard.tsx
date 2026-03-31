@@ -254,7 +254,7 @@ export function FinalLeaderboard({
                 return (
                   <div
                     key={segmentIndex}
-                    className="relative h-4"
+                    className="relative h-2"
                   >
                     <div
                       className="pointer-events-none absolute inset-y-0 left-0 rounded-[2px] transition-[width] ease-out"
@@ -291,18 +291,18 @@ export function FinalLeaderboard({
             </div>
           </div>
 
-          <div className="mt-12 w-[90%] mx-auto grid grid-cols-3 items-start gap-4 text-white">
-            <div className="flex items-center gap-3 justify-self-start">
-              <img src={medalUrl} alt="Médaille" className="h-12 w-12 object-contain" draggable={false} />
+          <div className="mt-10 w-[90%] mx-auto grid grid-cols-3 items-start gap-3 text-white">
+            <div className="flex items-center gap-2.5 justify-self-start">
+              <img src={medalUrl} alt="Médaille" className="h-10 w-10 object-contain" draggable={false} />
               <div className="leading-tight">
                 <div
-                  className="text-[26px] leading-[0.85]"
+                  className="text-[22px] leading-[0.85]"
                   style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
                 >
                   #{selfPosition ?? "--"}
                 </div>
                 <div
-                  className="mt-1 text-[19px] leading-[0.9] text-white/90"
+                  className="mt-1 text-[16px] leading-[0.9] text-white/90"
                   style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
                 >
                   {selfScore} points
@@ -310,40 +310,40 @@ export function FinalLeaderboard({
               </div>
             </div>
 
-            <div className="flex w-fit items-center justify-center gap-3 justify-self-center">
+            <div className="flex w-fit items-center justify-center gap-2.5 justify-self-center">
               <img
                 src={profileSrc}
                 alt="Avatar joueur"
-                className="h-14 w-14 rounded-[2px] object-cover"
+                className="h-12 w-12 rounded-[2px] object-cover"
                 draggable={false}
                 loading="lazy"
               />
               <div className="leading-tight">
                 <div
-                  className="max-w-[220px] truncate text-[26px] leading-[0.85]"
+                  className="max-w-[220px] truncate text-[22px] leading-[0.85]"
                   style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
                 >
                   {selfRow?.name ?? "Joueur"}
                 </div>
                 <div
-                  className="mt-1 text-[17px] leading-[0.9] text-white/90"
+                  className="mt-1 text-[15px] leading-[0.9] text-white/90"
                   style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
                 >
-                  Classement indisponible
+                  NC
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 justify-self-end">
-              <img src={giftUrl} alt="Récompenses" className="h-12 w-12 object-contain" draggable={false} />
-              <div className="mt-2 flex items-center gap-1">
+            <div className="flex items-center gap-2.5 justify-self-end">
+              <img src={giftUrl} alt="Récompenses" className="h-10 w-10 object-contain" draggable={false} />
+              <div className="mt-1.5 flex items-center gap-1">
                 <div
-                  className="text-[26px] leading-none"
+                  className="text-[22px] leading-none"
                   style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", sans-serif' }}
                 >
                   + {selfBits}
                 </div>
-                <img src={bitUrl} alt="Bits" className="h-8 w-8 object-contain" draggable={false} />
+                <img src={bitUrl} alt="Bits" className="h-7 w-7 object-contain" draggable={false} />
               </div>
             </div>
           </div>

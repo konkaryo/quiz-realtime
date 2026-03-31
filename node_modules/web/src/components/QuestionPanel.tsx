@@ -665,8 +665,8 @@ export default function DailyQuestionPanel(props: Props) {
                       : isSelected
                       ? "border-[#AF2D33] bg-[#AF2D33] text-slate-50"
                       : showDisabledChoiceState
-                      ? "border-slate-700/40 bg-[#1C1F2E]/45 text-slate-400"
-                      : "border-slate-700/70 bg-[#1C1F2E] text-slate-50 hover:bg-[#23263A]",
+                      ? "border-slate-600/50 bg-[#2E324A]/55 text-slate-400"
+                      : "border-slate-600/80 bg-[#2E324A] text-slate-50 hover:bg-[#363B56] active:bg-[#3D4260]",
                   ].join(" ")}
                 >
                   {choice.label}
