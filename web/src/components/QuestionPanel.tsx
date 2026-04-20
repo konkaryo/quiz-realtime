@@ -1,6 +1,7 @@
 // web/src/components/QuestionPanel.tsx
 import { RefObject, KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import thumbActiveIcon from "../assets/thumb_active.png";
+import thumbInactiveIcon from "../assets/thumb_inactive.png";
 
 export type Choice = { id: string; label: string };
 
@@ -374,7 +375,7 @@ export default function DailyQuestionPanel(props: Props) {
   };
 
   const topPanelClass =
-    "relative z-10 h-full w-full rounded-[14px] border border-white/15 bg-[#2E324A] px-3 py-1 md:px-5 md:py-2";
+    "relative z-10 h-full w-full rounded-[14px] border border-white/15 bg-[#2E324A] px-2 py-1 md:px-4 md:py-2";
 
   const bottomPanelClass =
     "relative w-full bg-[#2A2E44] rounded-[9px] p-3 md:p-4";
@@ -408,6 +409,7 @@ export default function DailyQuestionPanel(props: Props) {
     "Autre",
   ] as const;
   const [thumbVote, setThumbVote] = useState<"up" | "down" | null>(null);
+  const [sparkThumb, setSparkThumb] = useState<"up" | "down" | null>(null);
   const [thumbDownReason, setThumbDownReason] = useState<(typeof thumbDownReasons)[number] | null>(null);
   const [thumbDownMenuPos, setThumbDownMenuPos] = useState<{ top: number; left: number } | null>(null);
   const thumbDownButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -416,7 +418,16 @@ export default function DailyQuestionPanel(props: Props) {
   useEffect(() => {
     setThumbVote(null);
     setThumbDownReason(null);
+    setSparkThumb(null);
   }, [question.id]);
+
+  useEffect(() => {
+    if (!sparkThumb) return;
+    const timeoutId = window.setTimeout(() => {
+      setSparkThumb(null);
+    }, 450);
+    return () => window.clearTimeout(timeoutId);
+  }, [sparkThumb]);
 
   useEffect(() => {
     if (thumbVote !== "down") {
@@ -526,19 +537,26 @@ export default function DailyQuestionPanel(props: Props) {
             type="button"
             aria-pressed={thumbVote === "up"}
             onClick={() => {
-              setThumbVote((prev) => (prev === "up" ? null : "up"));
+              setThumbVote((prev) => {
+                const next = prev === "up" ? null : "up";
+                setSparkThumb(next === "up" ? "up" : null);
+                return next;
+              });
               setThumbDownReason(null);
             }}
-            className="group p-2 transition"
+            className="group relative p-2 transition"
           >
-            <ThumbsUp
-              size={18}
-              className={[
-                "transition",
-                thumbVote === "up"
-                  ? "stroke-white fill-white"
-                  : "stroke-white/50 fill-none group-hover:stroke-white group-hover:fill-white",
-              ].join(" ")}
+            {sparkThumb === "up" ? (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 m-auto h-6 w-6 animate-ping rounded-full bg-white/45"
+              />
+            ) : null}
+            <img
+              src={thumbVote === "up" ? thumbActiveIcon : thumbInactiveIcon}
+              alt=""
+              aria-hidden
+              className="h-[24px] w-[24px] object-contain"
             />
           </button>
 
@@ -549,20 +567,24 @@ export default function DailyQuestionPanel(props: Props) {
             onClick={() => {
               setThumbVote((prev) => {
                 const next = prev === "down" ? null : "down";
+                setSparkThumb(next === "down" ? "down" : null);
                 if (next !== "down") setThumbDownReason(null);
                 return next;
               });
             }}
-            className="group p-2 transition"
+            className="group relative p-2 transition"
           >
-            <ThumbsDown
-              size={18}
-              className={[
-                "transition",
-                thumbVote === "down"
-                  ? "stroke-white fill-white"
-                  : "stroke-white/50 fill-none group-hover:stroke-white group-hover:fill-white",
-              ].join(" ")}
+            {sparkThumb === "down" ? (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 m-auto h-6 w-6 animate-ping rounded-full bg-white/45"
+              />
+            ) : null}
+            <img
+              src={thumbVote === "down" ? thumbActiveIcon : thumbInactiveIcon}
+              alt=""
+              aria-hidden
+              className="h-[24px] w-[24px] rotate-180 object-contain"
             />
           </button>
         </div>

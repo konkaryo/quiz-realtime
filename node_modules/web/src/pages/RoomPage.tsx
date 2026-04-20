@@ -1759,33 +1759,33 @@ return (
                     </div>
                   </div>
                   {isSubmitShortcutVisible || isChoicesShortcutVisible ? (
-                    <div className="space-y-2 px-1">
+                    <div className="space-y-1.5 px-0.5">
                       {isSubmitShortcutVisible ? (
-                        <div className="flex items-center gap-4">
-                          <span className="relative inline-flex h-8 min-w-[78px] items-center justify-center">
+                        <div className="flex items-center gap-3">
+                          <span className="relative inline-flex h-7 min-w-[66px] items-center justify-center">
                             <span
                               aria-hidden
                               className="absolute inset-0 translate-y-[2px] rounded-[4px] bg-[#161B2E]"
                             />
-                            <span className="relative inline-flex h-full w-full items-center justify-center rounded-[4px] bg-[#2A2E44] pb-[2px] text-[11px] font-semibold uppercase italic tracking-[0.02em] text-white shadow-[inset_0_-3px_0_#7A6CF2]">
+                            <span className="relative inline-flex h-full w-full items-center justify-center rounded-[4px] bg-[#2A2E44] pb-[1px] text-[10px] font-semibold uppercase italic tracking-[0.02em] text-white shadow-[inset_0_-2px_0_#7A6CF2]">
                               ENTRÉE
                             </span>
                           </span>
-                          <span className="text-[12px] font-medium text-white">Valider la réponse</span>
+                          <span className="text-[11px] font-medium text-white">Valider la réponse</span>
                         </div>
                       ) : null}
                       {isChoicesShortcutVisible ? (
-                        <div className="flex items-center gap-4">
-                          <span className="relative inline-flex h-8 min-w-[78px] items-center justify-center">
+                        <div className="flex items-center gap-3">
+                          <span className="relative inline-flex h-7 min-w-[66px] items-center justify-center">
                             <span
                               aria-hidden
                               className="absolute inset-0 translate-y-[2px] rounded-[4px] bg-[#161B2E]"
                             />
-                            <span className="relative inline-flex h-full w-full items-center justify-center rounded-[4px] bg-[#2A2E44] pb-[2px] text-[11px] font-semibold uppercase italic tracking-[0.02em] text-white shadow-[inset_0_-3px_0_#7A6CF2]">
+                            <span className="relative inline-flex h-full w-full items-center justify-center rounded-[4px] bg-[#2A2E44] pb-[1px] text-[10px] font-semibold uppercase italic tracking-[0.02em] text-white shadow-[inset_0_-2px_0_#7A6CF2]">
                               TAB
                             </span>
                           </span>
-                          <span className="text-[12px] font-medium text-white">Afficher les propositions</span>
+                          <span className="text-[11px] font-medium text-white">Afficher les propositions</span>
                         </div>
                       ) : null}
                     </div>

@@ -1408,92 +1408,45 @@ export default function AppShell() {
           ) : (
             <>
               <div
-                aria-label={`Niveau ${xpProgress.level}`}
+                aria-label={`Niveau ${xpProgress.level} - progression ${xpProgressPercent}%`}
                 data-xp-target="nav-xp"
                 style={{
-                  minWidth: 100,
                   display: "flex",
-                  flexDirection: "column",
-                  gap: 3,
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    color: "#f8fafc",
-                    textTransform: "uppercase",
-                    fontFamily:
-                      '"Acumin Pro Extra Condensed Bold Italic", "Arial Narrow", sans-serif',
-                    fontStyle: "italic",
+                    width: 32,
+                    height: 32,
+                    padding: 2,
+                    borderRadius: 6,
+                    background: `conic-gradient(#eacb4d ${xpProgressPercent}%, rgba(86,83,110,.85) ${xpProgressPercent}% 100%)`,
                   }}
                 >
-                  <span
+                  <div
                     style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: 4,
+                      background: "rgba(17,24,39,.96)",
+                      color: "#f8fafc",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textTransform: "uppercase",
+                      fontFamily:
+                        '"Acumin Pro Extra Condensed Bold Italic", "Arial Narrow", sans-serif',
+                      fontStyle: "italic",
                       fontWeight: 800,
-                      fontSize: 16,
-                      letterSpacing: 0.8,
+                      fontSize: 20,
+                      letterSpacing: 0.5,
                       lineHeight: 1,
-                      whiteSpace: "nowrap",
                     }}
                   >
-                    Niveau {xpProgress.level}
-                  </span>
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 14,
-                      letterSpacing: 0.4,
-                      lineHeight: 1,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {xpProgressPercent}%
-                  </span>
-                </div>
-                <div
-                  aria-label={`Progression ${xpProgressPercent}%`}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(10, 1fr)",
-                    gap: 2,
-                    width: "100%",
-                  }}
-                >
-                  {Array.from({ length: 10 }).map((_, segmentIndex) => {
-                    const segmentStart = segmentIndex / 10;
-                    const segmentFill = Math.max(
-                      0,
-                      Math.min(1, (xpProgress.progress - segmentStart) * 10)
-                    );
-
-                    return (
-                      <div
-                        key={segmentIndex}
-                        style={{
-                          position: "relative",
-                          height: 4,
-                          overflow: "hidden",
-                          background: "rgba(86,83,110,.75)",
-                          borderRadius: 0,
-                        }}
-                      >
-                        <div
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            width: `${segmentFill * 100}%`,
-                            background: "#eacb4d",
-                            boxShadow:
-                              "0 0 10px rgba(234,203,77,.5), inset 0 0 0 1px rgba(255,246,169,.25)",
-                            transition: "width 120ms linear",
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
+                    {xpProgress.level}
+                  </div>
                 </div>
               </div>
 
