@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { getLevelProgress } from "../utils/experience";
 
-import { BadgeCheck, Clock, Edit3, Trophy, Users } from "lucide-react";
+import { Edit3 } from "lucide-react";
 
 import {
   BarChart,
@@ -13,7 +13,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  LabelList,
 } from "recharts";
 
 type CurrentUser = {
@@ -262,43 +261,6 @@ const SmartTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-/* ---------------------- AUTRES DONNÉES --------------------------- */
-
-const achievements = [
-  {
-    title: "Marathon cérébral",
-    desc: "30 questions résolues d'affilée",
-    icon: <Trophy className="h-5 w-5" />,
-    progress: 30,
-    goal: 30,
-    highlight: true,
-  },
-  {
-    title: "Réflexes de lynx",
-    desc: "Temps moyen < 4s sur 20 questions",
-    icon: <Clock className="h-5 w-5" />,
-    progress: 14,
-    goal: 20,
-  },
-  {
-    title: "Maître des thèmes",
-    desc: "80% de réussite sur 5 catégories",
-    progress: 4,
-    goal: 5,
-  },
-];
-
-const friends = [
-  { name: "Nora", status: "En ligne", avatar: fallbackAvatar },
-  { name: "Liam", status: "En partie", avatar: fallbackAvatar },
-  { name: "Sacha", status: "Hors ligne", avatar: fallbackAvatar },
-];
-
-const history = [
-  { title: "Duel - Sciences", result: "+24 pts", trend: "up", detail: "Victoire 7 / 10" },
-  { title: "Défi du jour", result: "+18 pts", trend: "up", detail: "3e place" },
-  { title: "Quiz thématique - Cinéma", result: "-6 pts", trend: "down", detail: "Défaite 5 / 10" },
-];
 
 /* ---------------------- UI HELPERS --------------------------- */
 
@@ -311,13 +273,13 @@ type SectionCardProps = {
 
 function SectionCard({ title, children, right, className }: SectionCardProps) {
   const base =
-    "rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.45)] sm:p-5 backdrop-blur-xl";
+    "rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-3.5 shadow-[0_18px_40px_rgba(0,0,0,0.45)] sm:p-4 backdrop-blur-xl";
   const finalClassName = className ? `${base} ${className}` : base;
 
   return (
     <section className={finalClassName}>
       <header className="mb-3 flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+        <h3 className="text-lg font-extrabold uppercase tracking-wide text-white">
           {title}
         </h3>
         {right}
@@ -470,44 +432,20 @@ export default function ProfilePage() {
     };
   }, [isSelfProfile, playerId]);
 
-  const sortedCategoryData = useMemo<Row[]>(() => {
+  const categoryBarData = useMemo(() => {
     return (Object.keys(CATEGORY_CONFIG) as CategoryKey[])
       .map((key) => {
         const meta = CATEGORY_CONFIG[key];
         const accuracy = clampAccuracy(categoryAccuracy[key] ?? 0);
-        return { key, label: meta.label, color: meta.color, accuracy, full: 100 };
-      })
-      .sort((a, b) => b.accuracy - a.accuracy)
-      .map((item, idx) => ({
-        ...(item as any),
-        rank: idx + 1,
-        labelWithRank: `#${idx + 1}. ${item.label}`,
-      }));
+        return { key, label: meta.label, trigram: key.slice(0, 3), accuracy };
+      });
   }, [categoryAccuracy]);
-
-  const { leftData, rightData, maxRows } = useMemo(() => {
-    const mid = Math.ceil(sortedCategoryData.length / 2);
-    const left = sortedCategoryData.slice(0, mid);
-    const right = sortedCategoryData.slice(mid);
-
-    const targetRows = left.length;
-
-    return {
-      leftData: padRows(left, targetRows, "L"),
-      rightData: padRows(right, targetRows, "R"),
-      maxRows: targetRows,
-    };
-  }, [sortedCategoryData]);
 
   const displayName = user?.displayName ?? "Utilisateur";
   const avatarUrl = appliedAvatarUrl ?? user?.img ?? fallbackAvatar;
   const experienceValue = user?.experience ?? 0;
   const xpProgress = getLevelProgress(experienceValue);
   const canEditAvatar = isSelfProfile;
-
-  const barRowPx = 40;
-  const minChartH = 320;
-  const unifiedChartH = Math.max(minChartH, maxRows * barRowPx);
 
   const handleAvatarFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -573,49 +511,33 @@ export default function ProfilePage() {
     setIsAvatarEditorOpen(false);
   };
 
-  const ChartBlock = ({ data, height }: { data: Row[]; height: number }) => (
-    <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-1 sm:p-2">
-      <div style={{ height }} className="w-full">
+  const ChartBlock = () => (
+    <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-2.5 sm:p-3.5">
+      <div style={{ height: 288 }} className="w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={data}
-            layout="vertical"
-            margin={{ top: 2, right: 48, left: 0, bottom: 6 }}
-            barCategoryGap={4}
+            data={categoryBarData}
+            margin={{ top: 12, right: 8, left: 0, bottom: 20 }}
+            barCategoryGap={12}
           >
             <XAxis
-              type="number"
-              domain={[0, 100]}
-              ticks={[0, 20, 40, 60, 80, 100]}
-              tick={{ fill: "#94A3B8", fontSize: 12 }}
+              dataKey="trigram"
+              tick={{ fill: "#E5E7EB", fontSize: 12, fontWeight: 700 }}
               axisLine={{ stroke: "rgba(148,163,184,0.25)" }}
               tickLine={false}
             />
 
             <YAxis
-              type="category"
-              dataKey="labelWithRank"
-              width={170}
-              tickLine={false}
+              type="number"
+              domain={[0, 100]}
+              ticks={[0, 20, 40, 60, 80, 100]}
+              tick={{ fill: "#94A3B8", fontSize: 11 }}
               axisLine={false}
-              tick={<RankTick />}
-              interval={0}
-              tickMargin={4}
+              tickLine={false}
             />
 
-            <Tooltip
-              cursor={<SmartCursor />}
-              content={<SmartTooltip />}
-            />
-
-            <Bar
-              dataKey="full"
-              isAnimationActive={false}
-              barSize={20}
-              shape={SegmentedBarShape as any}
-            >
-              <LabelList dataKey="accuracy" content={<PercentLabel />} />
-            </Bar>
+            <Tooltip content={<SmartTooltip />} />
+            <Bar dataKey="accuracy" fill="#C2187A" radius={[3, 3, 0, 0]} maxBarSize={24} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -626,19 +548,18 @@ export default function ProfilePage() {
     <div className="relative min-h-screen text-slate-50">
       <div className="absolute inset-0 bg-[#060A19]" aria-hidden />
 
-      <div className="relative z-10 mx-auto max-w-4xl px-3 py-10 sm:px-5 lg:px-6">
+      <div className="relative z-10 mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
         {/* ===================== ENTÊTE ===================== */}
         <div className="mb-8">
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-8">
             {/* AVATAR */}
             <div
               style={{
                 width: 128,
                 height: 128,
                 borderRadius: 6,
-                padding: 3,
-                background: "linear-gradient(135deg, #fb7185, #a855f7, #3b82f6)",
-                boxShadow: "0 0 20px rgba(248,113,113,0.45)",
+                border: "1px solid #2A2D3C",
+                backgroundColor: "#0F172A",
               }}
             >
               <button
@@ -703,51 +624,42 @@ export default function ProfilePage() {
         <div className="mb-8">
           <SectionCard title="Statistiques">
             <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-3 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-2.5 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-slate-400">
                       Taux de bonnes réponses
                     </p>
-                    <p className="mt-2 text-[22px] font-semibold text-white">89%</p>
+                    <p className="mt-1.5 text-[20px] font-semibold text-white">89%</p>
                   </div>
-                  <span className="rounded-full bg-emerald-500/15 p-2 text-emerald-200 ring-1 ring-emerald-400/40">
-                    <BadgeCheck className="h-4 w-4" />
-                  </span>
                 </div>
               </div>
 
-              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-3 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-2.5 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-slate-400">
                       Temps de réponse moyen
                     </p>
-                    <p className="mt-2 text-[22px] font-semibold text-white">
+                    <p className="mt-1.5 text-[20px] font-semibold text-white">
                       {avgTextResponseMs !== null
                         ? `${(avgTextResponseMs / 1000).toFixed(1)}s`
                         : "--"}
                     </p>
                   </div>
-                  <span className="rounded-full bg-amber-500/15 p-2 text-amber-200 ring-1 ring-amber-400/40">
-                    <Clock className="h-4 w-4" />
-                  </span>
                 </div>
               </div>
 
-              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-3 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-2.5 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-slate-400">
                       Questions répondues
                     </p>
-                    <p className="mt-2 text-[22px] font-semibold text-white">
+                    <p className="mt-1.5 text-[20px] font-semibold text-white">
                       {totalQuestions.toLocaleString("fr-FR")}
                     </p>
                   </div>
-                  <span className="rounded-full bg-sky-500/15 p-2 text-sky-200 ring-1 ring-sky-400/40">
-                    <Users className="h-4 w-4" />
-                  </span>
                 </div>
               </div>
             </div>
@@ -756,126 +668,10 @@ export default function ProfilePage() {
           {/* Graph en 2 colonnes */}
           <SectionCard className="mt-4" title="Taux de réussite par catégorie">
 
-            <div className="grid gap-2 lg:grid-cols-2">
-              <ChartBlock data={leftData} height={unifiedChartH} />
-              <ChartBlock data={rightData} height={unifiedChartH} />
-            </div>
+            <ChartBlock />
           </SectionCard>
         </div>
 
-        {/* ===================== GRILLE : GAUCHE / DROITE ===================== */}
-        <div className="grid gap-5 lg:grid-cols-[230px,minmax(0,1fr)]">
-          {/* COLONNE GAUCHE */}
-          <aside className="flex flex-col gap-3">
-            <div className="overflow-hidden rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
-              <div className="relative h-28 w-full rounded-[6px] bg-gradient-to-br from-rose-500/40 via-purple-500/30 to-blue-500/25" />
-            </div>
-
-            <SectionCard title="Liste d'amis">
-              <div className="flex flex-col gap-3">
-                {friends.map((f) => (
-                  <div
-                    key={f.name}
-                    className="flex items-center gap-3 rounded-[6px] border border-[#2A2D3C] bg-[#181A28] px-3 py-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
-                  >
-                    <img
-                      src={f.avatar}
-                      alt={`Avatar ${f.name}`}
-                      className="h-9 w-9 rounded-[6px] object-cover"
-                    />
-                    <div className="flex-1">
-                      <p className="text-xs font-semibold text-slate-100">{f.name}</p>
-                      <p className="text-[11px] text-slate-400">{f.status}</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="inline-flex items-center rounded-full bg-rose-200/10 px-2.5 py-1 text-[11px] font-semibold text-rose-100 ring-1 ring-rose-200/40 transition hover:-translate-y-0.5 hover:bg-rose-200/15"
-                    >
-                      Inviter
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          </aside>
-
-          {/* COLONNE DROITE */}
-          <div className="flex flex-col gap-4">
-            <SectionCard
-              title="Succès"
-              right={<button className="text-[11px] font-semibold">Tout voir</button>}
-            >
-              <div className="grid gap-3 md:grid-cols-3">
-                {achievements.map((a) => {
-                  const ratio = Math.min(a.progress / a.goal, 1);
-                  return (
-                    <div
-                      key={a.title}
-                      className={`flex flex-col gap-2 rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.35)] ${
-                        a.highlight ? "ring-1 ring-rose-200/40" : ""
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-xs text-slate-200">
-                        <span className="flex items-center gap-2 font-semibold text-white">
-                          <span className="grid h-8 w-8 place-items-center rounded-xl bg-rose-200/10 text-rose-100 ring-1 ring-rose-200/40">
-                            {a.icon}
-                          </span>
-                          {a.title}
-                        </span>
-                        <span className="text-[11px] text-slate-400">
-                          {a.progress} / {a.goal}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-400">{a.desc}</p>
-                      <div className="h-1.5 rounded-full bg-slate-800">
-                        <div
-                          className={`h-full rounded-full ${
-                            a.highlight
-                              ? "bg-gradient-to-r from-rose-300 to-amber-200"
-                              : "bg-rose-200/70"
-                          }`}
-                          style={{ width: `${ratio * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Historique des parties">
-              <div className="grid gap-3 md:grid-cols-3">
-                {history.map((e) => (
-                  <div
-                    key={e.title}
-                    className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-3 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                          {e.title}
-                        </p>
-                        <p className="text-sm font-semibold text-white">{e.detail}</p>
-                      </div>
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                          e.trend === "up"
-                            ? "bg-emerald-500/15 text-emerald-100 ring-1 ring-emerald-400/50"
-                            : "bg-rose-500/15 text-rose-100 ring-1 ring-rose-400/50"
-                        }`}
-                      >
-                        {e.result}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-[11px] text-slate-400">
-                      Mise à jour automatique côté serveur dès qu'une partie est terminée.
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          </div>
-        </div>
       </div>
       {isAvatarEditorOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
-// Ajuste si ta navbar est plus haute/basse
 const NAVBAR_HEIGHT_PX = 52;
 
 async function fetchJSON(path: string, init?: RequestInit) {
@@ -13,6 +12,7 @@ async function fetchJSON(path: string, init?: RequestInit) {
     headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
     ...init,
   });
+
   const ct = res.headers.get("content-type") || "";
   const isJson = ct.includes("application/json");
   const data = isJson ? await res.json() : undefined;
@@ -24,10 +24,10 @@ async function fetchJSON(path: string, init?: RequestInit) {
     err.data = data;
     throw err;
   }
+
   return data;
 }
 
-// mêmes clés que l'enum Prisma Theme
 const THEME_OPTIONS = [
   { key: "AUDIOVISUEL", label: "Audiovisuel" },
   { key: "ARTS", label: "Arts" },
@@ -50,73 +50,26 @@ type PanelKey = "settings" | "themes";
 
 function RefreshIcon(props: { className?: string }) {
   return (
-    <svg
-      className={props.className}
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-    >
-      <path
-        d="M20 12a8 8 0 1 1-2.35-5.65"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M20 4v6h-6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg className={props.className} width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M20 12a8 8 0 1 1-2.35-5.65" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function CopyIcon(props: { className?: string }) {
   return (
-    <svg
-      className={props.className}
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-    >
+    <svg className={props.className} width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
       <rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
-      <rect
-        x="3"
-        y="3"
-        width="12"
-        height="12"
-        rx="2"
-        stroke="currentColor"
-        opacity="0.55"
-        strokeWidth="1.2"
-      />
+      <rect x="3" y="3" width="12" height="12" rx="2" stroke="currentColor" opacity="0.55" strokeWidth="1.2" />
     </svg>
   );
 }
 
 function CheckIcon(props: { className?: string }) {
   return (
-    <svg
-      className={props.className}
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-    >
-      <path
-        d="M5 12.5l4.2 4.2L19 7"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg className={props.className} width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -132,15 +85,15 @@ function percent(value: number, min: number, max: number) {
   return `${p}%`;
 }
 
-type VerticalStepTabItem = {
+type StepTabsItem = {
   key: PanelKey;
   label: string;
   tabId: string;
   panelId: string;
 };
 
-function VerticalStepTabs(props: {
-  items: VerticalStepTabItem[];
+function StepTabs(props: {
+  items: StepTabsItem[];
   activeKey: PanelKey;
   onChange: (key: PanelKey) => void;
 }) {
@@ -148,52 +101,51 @@ function VerticalStepTabs(props: {
 
   return (
     <div
-      className="hidden md:block"
+      className="mb-8 flex justify-center"
       role="tablist"
-      aria-orientation="vertical"
+      aria-orientation="horizontal"
       aria-label="Sections du panneau"
     >
-      <div className="grid grid-cols-[92px_20px] items-start gap-x-3">
+      <div className="grid w-full max-w-[500px] grid-cols-2 gap-4">
         {items.map((item, index) => {
           const active = item.key === activeKey;
-          const isLast = index === items.length - 1;
 
           return (
-            <React.Fragment key={item.key}>
-              <button
-                id={item.tabId}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                aria-controls={item.panelId}
-                onClick={() => onChange(item.key)}
+            <button
+              key={item.key}
+              id={item.tabId}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              aria-controls={item.panelId}
+              onClick={() => onChange(item.key)}
+              className={[
+                "group relative flex h-[58px] items-center justify-center gap-3 overflow-hidden rounded-[16px] border px-5 text-[15px] font-extrabold transition-all duration-200",
+                active
+                  ? "border-[#9b5cff]/80 bg-gradient-to-r from-[#6a5cff] to-[#bd22d4] text-white shadow-[0_0_34px_rgba(124,92,255,0.42)]"
+                  : "border-[#3d456f] bg-[#0b1024]/55 text-[#d7dcf5] hover:border-[#6d64bd] hover:bg-[#121833]",
+              ].join(" ")}
+            >
+              <span
                 className={[
-                  "row-start-auto h-9 w-[92px] self-center rounded-[8px] px-2.5 text-center text-[13px] transition-colors",
-                  active ? "bg-[#6a5ee0] text-white" : "text-[#b8bfd7] hover:text-[#dde4ff]",
+                  "grid h-8 w-8 place-items-center rounded-full border text-sm font-black transition",
+                  active
+                    ? "border-white/25 bg-white/25 text-white"
+                    : "border-[#687199] bg-transparent text-[#d7dcf5] group-hover:border-[#8c82e8]",
                 ].join(" ")}
               >
-                {item.label}
-              </button>
+                {index + 1}
+              </span>
 
-              <div className="flex items-center justify-center self-center">
+              <span>{item.label}</span>
+
+              {!active && (
                 <span
                   aria-hidden
-                  className={[
-                    "block h-[16px] w-[16px] rounded-full transition-colors",
-                    active ? "bg-[#6f63df]" : "bg-[#aeb3c7]",
-                  ].join(" ")}
+                  className="absolute bottom-0 left-1/2 h-[2px] w-16 -translate-x-1/2 rounded-full bg-gradient-to-r from-transparent via-[#bd22d4] to-transparent opacity-70"
                 />
-              </div>
-
-              {!isLast && (
-                <>
-                  <div aria-hidden className="h-[10px]" />
-                  <div className="flex justify-center">
-                    <span aria-hidden className="block h-[30px] w-px bg-white/35" />
-                  </div>
-                </>
               )}
-            </React.Fragment>
+            </button>
           );
         })}
       </div>
@@ -234,7 +186,7 @@ export default function CreateRoomPage() {
   const [code, setCode] = useState<string>("");
   const [activePanel, setActivePanel] = useState<PanelKey>("settings");
 
-  const panelTabs: VerticalStepTabItem[] = useMemo(
+  const panelTabs: StepTabsItem[] = useMemo(
     () => [
       {
         key: "settings",
@@ -462,227 +414,169 @@ export default function CreateRoomPage() {
         style={{ top: `${NAVBAR_HEIGHT_PX}px` }}
       >
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8">
-          <header className="mb-10 text-center">
+          <header className="mb-8 text-center">
             <h1 className="text-4xl font-brand italic text-[#f5f7ff] drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)] sm:text-5xl">
               CRÉER UNE PARTIE PRIVÉE
             </h1>
           </header>
 
-          <div className="mx-auto max-w-3xl">
+          <div className="mx-auto max-w-4xl">
             {err && (
               <div className="mb-5 rounded-[10px] border border-rose-300/50 bg-[#3f1f35]/80 px-4 py-3 text-sm text-rose-100 shadow-[0_12px_24px_rgba(0,0,0,0.25)]">
                 {err}
               </div>
             )}
 
-            <div className="grid items-start justify-center gap-8 md:grid-cols-[auto,320px]">
-              {/* Colonne gauche : rail + panneau */}
-              <div className="flex items-start gap-4">
-                <div className="shrink-0">
-                  <VerticalStepTabs
-                    items={panelTabs}
-                    activeKey={activePanel}
-                    onChange={setActivePanel}
-                  />
+            <StepTabs items={panelTabs} activeKey={activePanel} onChange={setActivePanel} />
+
+            <div className="grid items-start justify-center gap-8 md:grid-cols-[420px,340px]">
+              <section className="w-full rounded-[8px] border border-[#3e446e] bg-[#2f3558] px-5 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
+                <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#eff1fb]">
+                  {activePanel === "settings"
+                    ? "Paramètres"
+                    : `Thèmes (${selectedThemes.length}/${THEME_OPTIONS.length})`}
                 </div>
 
-                <div className="w-full md:w-[380px] md:min-w-[380px] md:max-w-[380px]">
-                  <div className="mb-4 flex w-full gap-3 md:hidden">
-                    <button
-                      id="create-room-tab-settings-mobile"
-                      type="button"
-                      onClick={() => setActivePanel("settings")}
-                      className={[
-                        "h-10 flex-1 rounded-[10px] border border-transparent px-3 text-center text-sm transition-colors",
-                        activePanel === "settings"
-                          ? "bg-[#6a5ee0] text-white shadow-[0_8px_20px_rgba(76,63,177,0.42)]"
-                          : "text-[#b8bfd7] hover:text-[#dde4ff]",
-                      ].join(" ")}
-                    >
-                      Paramètres
-                    </button>
+                {activePanel === "settings" && (
+                  <div id="create-room-panel-settings" role="tabpanel" aria-labelledby="create-room-tab-settings">
+                    <div className="rounded-[5px] bg-[#474E77] p-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[12px] font-semibold text-white">Difficulté</span>
+                        <span className="rounded-[4px] bg-[#D23C79] px-2 py-1 text-[11px] font-bold text-white">
+                          {difficulty}%
+                        </span>
+                      </div>
 
-                    <button
-                      id="create-room-tab-themes-mobile"
-                      type="button"
-                      onClick={() => setActivePanel("themes")}
-                      className={[
-                        "h-10 flex-1 rounded-[10px] border border-transparent px-3 text-center text-sm transition-colors",
-                        activePanel === "themes"
-                          ? "bg-[#6a5ee0] text-white shadow-[0_8px_20px_rgba(76,63,177,0.42)]"
-                          : "text-[#b8bfd7] hover:text-[#dde4ff]",
-                      ].join(" ")}
-                    >
-                      Thèmes
-                    </button>
-                  </div>
-
-                  <section className="w-full rounded-[8px] border border-[#3e446e] bg-[#2f3558] px-5 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
-                    <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#eff1fb]">
-                      {activePanel === "settings"
-                        ? "Paramètres"
-                        : `Thèmes (${selectedThemes.length}/${THEME_OPTIONS.length})`}
+                      <input
+                        id="difficulty"
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={difficulty}
+                        onChange={(e) => setDifficulty(Number(e.target.value))}
+                        className="syn-range"
+                        style={
+                          {
+                            ["--track" as any]: "#a9a9ac",
+                            ["--fill" as any]: "#D23C79",
+                            ["--p" as any]: difficultyP,
+                          } as React.CSSProperties
+                        }
+                      />
                     </div>
 
-                    {activePanel === "settings" && (
-                      <div
-                        id="create-room-panel-settings"
-                        role="tabpanel"
-                        aria-labelledby="create-room-tab-settings"
-                      >
-                        <div className="rounded-[5px] bg-[#ccd2ea] p-2">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-[12px] font-semibold text-[#191919]">
-                              Difficulté
-                            </span>
-<span className="rounded-[4px] bg-[#BA1670] px-2 py-1 text-[11px] font-bold text-white">
-                              {difficulty}%
-                            </span>
-                          </div>
-
-                          <input
-                            id="difficulty"
-                            type="range"
-                            min={0}
-                            max={100}
-                            step={1}
-                            value={difficulty}
-                            onChange={(e) => setDifficulty(Number(e.target.value))}
-                            className="syn-range"
-                            style={
-                              {
-                                ["--track" as any]: "#a9a9ac",
-["--fill" as any]: "#BA1670",
-                                ["--p" as any]: difficultyP,
-                              } as React.CSSProperties
-                            }
-                          />
-                        </div>
-
-                        <div className="mt-3 rounded-[5px] bg-[#ccd2ea] p-2">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-[12px] font-semibold text-[#191919]">
-                              Questions
-                            </span>
-<span className="rounded-[4px] bg-[#BA1670] px-2 py-1 text-[11px] font-bold text-white">
-                              {questionCount}
-                            </span>
-                          </div>
-
-                          <input
-                            id="qcount"
-                            type="range"
-                            min={1}
-                            max={50}
-                            step={1}
-                            value={questionCount}
-                            onChange={(e) => setQuestionCount(Number(e.target.value))}
-                            className="syn-range"
-                            style={
-                              {
-                                ["--track" as any]: "#a9a9ac",
-["--fill" as any]: "#BA1670",
-                                ["--p" as any]: qcountP,
-                              } as React.CSSProperties
-                            }
-                          />
-                        </div>
-
-                        <div className="mt-3 rounded-[5px] bg-[#ccd2ea] p-2">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-[12px] font-semibold text-[#191919]">
-                              Durée / question
-                            </span>
-<span className="rounded-[4px] bg-[#CE187C] px-2 py-1 text-[11px] font-bold text-white">
-                              {questionDuration}
-                              <span className="lowercase">s</span>
-                            </span>
-                          </div>
-
-                          <input
-                            id="qdur"
-                            type="range"
-                            min={3}
-                            max={60}
-                            step={1}
-                            value={questionDuration}
-                            onChange={(e) => setQuestionDuration(Number(e.target.value))}
-                            className="syn-range"
-                            style={
-                              {
-                                ["--track" as any]: "#a9a9ac",
-["--fill" as any]: "#BA1670",
-                                ["--p" as any]: qdurP,
-                              } as React.CSSProperties
-                            }
-                          />
-                        </div>
+                    <div className="mt-3 rounded-[5px] bg-[#474E77] p-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[12px] font-semibold text-white">Questions</span>
+                        <span className="rounded-[4px] bg-[#D23C79] px-2 py-1 text-[11px] font-bold text-white">
+                          {questionCount}
+                        </span>
                       </div>
-                    )}
 
-                    {activePanel === "themes" && (
-                      <div
-                        id="create-room-panel-themes"
-                        role="tabpanel"
-                        aria-labelledby="create-room-tab-themes"
-                      >
-                        <div className="mb-3 flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={selectAll}
-                            className="rounded-[4px] bg-[#d5d9ef] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#222] transition hover:bg-[#c8cde8]"
-                          >
-                            Tout
-                          </button>
-                          <button
-                            type="button"
-                            onClick={selectNone}
-                            className="rounded-[4px] bg-[#d5d9ef] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#222] transition hover:bg-[#c8cde8]"
-                          >
-                            Aucun
-                          </button>
-                        </div>
+                      <input
+                        id="qcount"
+                        type="range"
+                        min={1}
+                        max={50}
+                        step={1}
+                        value={questionCount}
+                        onChange={(e) => setQuestionCount(Number(e.target.value))}
+                        className="syn-range"
+                        style={
+                          {
+                            ["--track" as any]: "#a9a9ac",
+                            ["--fill" as any]: "#D23C79",
+                            ["--p" as any]: qcountP,
+                          } as React.CSSProperties
+                        }
+                      />
+                    </div>
 
-                        <div className="grid gap-1.5 pr-1 sm:grid-cols-2">
-                          {themeOptionsSorted.map(({ key, label }) => {
-                            const active = selectedThemes.includes(key);
-
-                            return (
-                              <button
-                                key={key}
-                                type="button"
-                                onClick={() => toggleTheme(key)}
-                                aria-pressed={active}
-                                className={[
-                                  "flex items-center justify-between gap-2 rounded-[4px] px-2.5 py-2 text-left text-[11px] font-semibold transition",
-                                  active
-                                    ? "bg-[#059669] text-white"
-                                    : "bg-[#d7dcef] text-[#222] hover:bg-[#cdd4ee]",
-                                ].join(" ")}
-                              >
-                                <span className="truncate">{label}</span>
-                                <span
-                                  className={[
-                                    "flex h-4 w-4 items-center justify-center rounded-[3px] text-[10px] leading-none",
-                                    active
-                                      ? "bg-white/25 text-white"
-                                      : "bg-[#bcc4e4] text-[#555]",
-                                  ].join(" ")}
-                                  aria-hidden
-                                >
-                                  {active ? "✓" : "—"}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                    <div className="mt-3 rounded-[5px] bg-[#474E77] p-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[12px] font-semibold text-white">Durée / question</span>
+                        <span className="rounded-[4px] bg-[#D23C79] px-2 py-1 text-[11px] font-bold text-white">
+                          {questionDuration}
+                          <span className="lowercase">s</span>
+                        </span>
                       </div>
-                    )}
-                  </section>
-                </div>
-              </div>
 
-              {/* Panneau droit */}
+                      <input
+                        id="qdur"
+                        type="range"
+                        min={3}
+                        max={60}
+                        step={1}
+                        value={questionDuration}
+                        onChange={(e) => setQuestionDuration(Number(e.target.value))}
+                        className="syn-range"
+                        style={
+                          {
+                            ["--track" as any]: "#a9a9ac",
+                            ["--fill" as any]: "#D23C79",
+                            ["--p" as any]: qdurP,
+                          } as React.CSSProperties
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activePanel === "themes" && (
+                  <div id="create-room-panel-themes" role="tabpanel" aria-labelledby="create-room-tab-themes">
+                    <div className="mb-3 flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={selectAll}
+                        className="rounded-[4px] bg-[#d5d9ef] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#222] transition hover:bg-[#c8cde8]"
+                      >
+                        Tout
+                      </button>
+                      <button
+                        type="button"
+                        onClick={selectNone}
+                        className="rounded-[4px] bg-[#d5d9ef] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#222] transition hover:bg-[#c8cde8]"
+                      >
+                        Aucun
+                      </button>
+                    </div>
+
+                    <div className="grid gap-1.5 pr-1 sm:grid-cols-2">
+                      {themeOptionsSorted.map(({ key, label }) => {
+                        const active = selectedThemes.includes(key);
+
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => toggleTheme(key)}
+                            aria-pressed={active}
+                            className={[
+                              "flex items-center justify-between gap-2 rounded-[4px] px-2.5 py-2 text-left text-[11px] font-semibold transition",
+                              active
+                                ? "bg-[#059669] text-white"
+                                : "bg-[#d7dcef] text-[#222] hover:bg-[#cdd4ee]",
+                            ].join(" ")}
+                          >
+                            <span className="truncate">{label}</span>
+                            <span
+                              className={[
+                                "flex h-4 w-4 items-center justify-center rounded-[3px] text-[10px] leading-none",
+                                active ? "bg-white/25 text-white" : "bg-[#bcc4e4] text-[#555]",
+                              ].join(" ")}
+                              aria-hidden
+                            >
+                              {active ? "✓" : "—"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </section>
+
               <aside className="rounded-[8px] border border-[#3e446e] bg-[#2f3558] px-5 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
                 <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#eff1fb]">
                   Code de la partie
@@ -712,9 +606,7 @@ export default function CreateRoomPage() {
                     aria-live="polite"
                     className={[
                       "inline-flex h-9 items-center justify-center gap-2 rounded-[4px] text-[10px] font-bold uppercase tracking-[0.08em] transition",
-                      copied
-                        ? "bg-[#10B981] text-white"
-                        : "bg-[#d5d9ef] text-[#252a49] hover:bg-[#c7cee9]",
+                      copied ? "bg-[#10B981] text-white" : "bg-[#d5d9ef] text-[#252a49] hover:bg-[#c7cee9]",
                       !code ? "cursor-not-allowed opacity-45" : "",
                     ].join(" ")}
                   >
@@ -727,10 +619,10 @@ export default function CreateRoomPage() {
                   type="button"
                   onClick={createRoom}
                   disabled={loading || !code}
-className={[
-  "mt-4 inline-flex h-10 w-full items-center justify-center rounded-[4px] bg-[#6f63df] px-4 text-[15px] font-bold text-white transition hover:bg-[#5e52d2]",
-  loading || !code ? "cursor-not-allowed opacity-45 hover:bg-[#6f63df]" : "",
-].join(" ")}
+                  className={[
+                    "mt-4 inline-flex h-10 w-full items-center justify-center rounded-[4px] bg-[#6f63df] px-4 text-[15px] font-bold text-white transition hover:bg-[#5e52d2]",
+                    loading || !code ? "cursor-not-allowed opacity-45 hover:bg-[#6f63df]" : "",
+                  ].join(" ")}
                 >
                   {loading ? "Création…" : "Créer la partie"}
                 </button>
