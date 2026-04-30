@@ -163,7 +163,7 @@ export default function JoinPrivateRoomPage() {
 
   return (
     <div className="relative min-h-screen text-white">
-      <div aria-hidden className="fixed inset-0 bg-[#090b1f]" />
+      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
 
       <style>{`
         @keyframes inputCaretBlink {

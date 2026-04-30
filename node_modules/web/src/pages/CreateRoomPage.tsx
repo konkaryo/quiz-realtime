@@ -380,7 +380,7 @@ export default function CreateRoomPage() {
 
   return (
     <div className="relative text-slate-100">
-      <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
+      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
 
       <style>{`
         .lb-scroll {

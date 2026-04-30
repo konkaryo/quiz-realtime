@@ -61,3 +61,25 @@ export async function register(displayName: string, email: string, password: str
 export async function logout() {
   await fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" });
 }
+
+export async function updateAccount(email: string, playerName: string) {
+  const res = await fetch(`${API_BASE}/auth/me/account`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, playerName }),
+  });
+  if (!res.ok) throw new Error(await extractErrorMessage(res, "Update account failed"));
+  return res.json();
+}
+
+export async function updatePassword(currentPassword: string, newPassword: string) {
+  const res = await fetch(`${API_BASE}/auth/me/password`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!res.ok) throw new Error(await extractErrorMessage(res, "Update password failed"));
+  return res.json();
+}

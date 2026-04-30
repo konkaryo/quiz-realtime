@@ -624,7 +624,7 @@ export default function ProfilePage() {
 
   return (
     <div className="relative min-h-screen text-slate-50">
-      <div className="absolute inset-0 bg-[#13141F]" aria-hidden />
+      <div className="absolute inset-0 bg-[#060A19]" aria-hidden />
 
       <div className="relative z-10 mx-auto max-w-4xl px-3 py-10 sm:px-5 lg:px-6">
         {/* ===================== ENTÊTE ===================== */}

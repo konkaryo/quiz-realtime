@@ -118,7 +118,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-full overflow-hidden text-slate-50">
-      <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
+      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
 
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-12 sm:px-8 lg:px-10">
         <header className="text-center">

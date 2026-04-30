@@ -23,8 +23,27 @@ import DailyChallengePage from "./pages/DailyChallengePage";
 import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
 import HistoryPage from "./pages/HistoryPage";
+import AccountPage from "./pages/AccountPage";
 import "./index.css";
 import { Toaster } from "./components/ui/toaster";
+
+function FullscreenLoader() {
+  return (
+    <div
+      style={{
+        minHeight: "calc(100dvh - 52px)",
+        background: "#13141F",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        color: "rgba(248,250,252,.7)",
+      }}
+    >
+      Chargement…
+    </div>
+  );
+}
 
 // pages publiques
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
@@ -74,7 +93,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (status === "pending") {
-    return <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>;
+    return <FullscreenLoader />;
   }
 
   return <>{children}</>;
@@ -93,11 +112,7 @@ const router = createBrowserRouter([
       {
         path: "/login",
         element: (
-          <React.Suspense
-            fallback={
-              <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>
-            }
-          >
+          <React.Suspense fallback={<FullscreenLoader />}>
             <LoginPage />
           </React.Suspense>
         ),
@@ -105,11 +120,7 @@ const router = createBrowserRouter([
       {
         path: "/register",
         element: (
-          <React.Suspense
-            fallback={
-              <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>
-            }
-          >
+          <React.Suspense fallback={<FullscreenLoader />}>
             <RegisterPage />
           </React.Suspense>
         ),
@@ -117,11 +128,7 @@ const router = createBrowserRouter([
       {
         path: "/forgot-password",
         element: (
-          <React.Suspense
-            fallback={
-              <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>
-            }
-          >
+          <React.Suspense fallback={<FullscreenLoader />}>
             <ForgotPasswordPage />
           </React.Suspense>
         ),
@@ -129,11 +136,7 @@ const router = createBrowserRouter([
       {
         path: "/reset-password",
         element: (
-          <React.Suspense
-            fallback={
-              <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>
-            }
-          >
+          <React.Suspense fallback={<FullscreenLoader />}>
             <ResetPasswordPage />
           </React.Suspense>
         ),
@@ -141,11 +144,7 @@ const router = createBrowserRouter([
       {
         path: "/verify-email",
         element: (
-          <React.Suspense
-            fallback={
-              <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>
-            }
-          >
+          <React.Suspense fallback={<FullscreenLoader />}>
             <VerifyEmailPage />
           </React.Suspense>
         ),
@@ -153,11 +152,7 @@ const router = createBrowserRouter([
       {
         path: "/register/confirmation",
         element: (
-          <React.Suspense
-            fallback={
-              <div style={{ padding: 24, opacity: 0.7 }}>Chargement…</div>
-            }
-          >
+          <React.Suspense fallback={<FullscreenLoader />}>
             <RegisterConfirmationPage />
           </React.Suspense>
         ),
@@ -173,6 +168,7 @@ const router = createBrowserRouter([
       { path: "/me/profile", element: <ProfilePage /> },
       { path: "/players/:playerId/profile", element: <ProfilePage /> },
       { path: "/me/history", element: <HistoryPage /> },
+      { path: "/me/account", element: <AccountPage /> },
       { path: "/rooms/new", element: <CreateRoomPage /> },
       { path: "/rooms/:roomId/lobby", element: <PrivateLobbyPage /> },
       { path: "/private/join", element: <JoinPrivateRoomPage /> },

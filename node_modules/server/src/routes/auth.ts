@@ -364,6 +364,97 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       });
     });
 
+    // PATCH /auth/me/account
+    app.patch("/me/account", async (req, reply) => {
+      const { user, session } = await currentUser(prisma, req);
+      if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
+      if (user.guest) return reply.code(403).send({ error: "guest-account" });
+
+      const Body = z.object({
+        email: z.string().email(),
+        playerName: z.string().trim().min(1).max(64),
+      });
+      const parsed = Body.safeParse(req.body ?? {});
+      if (!parsed.success) return reply.code(400).send({ error: "invalid_payload" });
+
+      const email = normEmail(parsed.data.email);
+      const playerName = cleanName(parsed.data.playerName);
+
+      const existing = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+      if (existing && existing.id !== user.id) {
+        return reply.code(409).send({ error: "email-taken" });
+      }
+
+      const updated = await prisma.$transaction(async (tx) => {
+        const updatedUser = await tx.user.update({
+          where: { id: user.id },
+          data: {
+            email,
+            displayName: playerName,
+          },
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            guest: true,
+          },
+        });
+
+        const updatedPlayer = await tx.player.update({
+          where: { userId: user.id },
+          data: { name: playerName },
+          select: { id: true, name: true, img: true, bits: true, experience: true },
+        });
+
+        return { updatedUser, updatedPlayer };
+      });
+
+      return reply.send({
+        ok: true,
+        user: {
+          id: updated.updatedUser.id,
+          email: updated.updatedUser.email,
+          displayName: updated.updatedUser.displayName,
+          guest: updated.updatedUser.guest,
+          playerId: updated.updatedPlayer.id,
+          playerName: updated.updatedPlayer.name,
+          img: toProfileUrl(updated.updatedPlayer.img ?? null),
+          bits: updated.updatedPlayer.bits ?? 0,
+          experience: updated.updatedPlayer.experience ?? 0,
+        },
+      });
+    });
+
+    // POST /auth/me/password
+    app.post("/me/password", async (req, reply) => {
+      const { user, session } = await currentUser(prisma, req);
+      if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
+      if (user.guest) return reply.code(403).send({ error: "guest-account" });
+
+      const Body = z.object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(8),
+      });
+      const parsed = Body.safeParse(req.body ?? {});
+      if (!parsed.success) return reply.code(400).send({ error: "invalid_payload" });
+
+      if (!user.passwordHash) return reply.code(400).send({ error: "missing-password" });
+
+      const passwordOk = await verifyPassword(user.passwordHash, parsed.data.currentPassword);
+      if (!passwordOk) return reply.code(401).send({ error: "invalid-current-password" });
+
+      const passwordHash = await hashPassword(parsed.data.newPassword);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash },
+      });
+
+      return reply.send({ ok: true });
+    });
+
 
     // GET /auth/me/stats
     app.get("/me/stats", async (req, reply) => {

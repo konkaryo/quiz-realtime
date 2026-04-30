@@ -1056,7 +1056,7 @@ export default function AppShell() {
                   width: 320,
                   padding: 12,
                   borderRadius: 8,
-                  background: "#13141F",
+                  background: "#161926",
                   border: "1px solid rgba(255,255,255,.12)",
                   boxShadow: "0 20px 60px rgba(0,0,0,.35)",
                   zIndex: 70,
@@ -1113,7 +1113,7 @@ export default function AppShell() {
                   width: 320,
                   padding: 12,
                   borderRadius: 8,
-                  background: "#13141F",
+                  background: "#161926",
                   border: "1px solid rgba(255,255,255,.12)",
                   boxShadow: "0 20px 60px rgba(0,0,0,.35)",
                   zIndex: 70,
@@ -1172,7 +1172,7 @@ export default function AppShell() {
                   width: 320,
                   padding: 12,
                   borderRadius: 8,
-                  background: "#13141F",
+                  background: "#161926",
                   border: "1px solid rgba(255,255,255,.12)",
                   boxShadow: "0 20px 60px rgba(0,0,0,.35)",
                   zIndex: 70,
@@ -1250,7 +1250,7 @@ export default function AppShell() {
                   left: 0,
                   right: 0,
                   marginTop: 18,
-                  background: "#13141F",
+                  background: "#161926",
                   border: "1px solid rgba(255,255,255,.12)",
                   borderRadius: 8,
                   boxShadow: "0 20px 40px rgba(0,0,0,.45)",
@@ -1443,9 +1443,12 @@ export default function AppShell() {
                       fontSize: 20,
                       letterSpacing: 0.5,
                       lineHeight: 1,
+                      
                     }}
                   >
-                    {xpProgress.level}
+                    <span style={{ display: "inline-block", transform: "translateY(1px)" }}>
+                      {xpProgress.level}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1594,7 +1597,7 @@ export default function AppShell() {
                     minWidth: 220,
                     maxWidth: 360,
                     borderRadius: 8,
-                    background: "#13141F",
+                    background: "#161926",
                     border: "1px solid rgba(255,255,255,.12)",
                     boxShadow: "0 20px 60px rgba(0,0,0,.35)",
                     padding: 12,
@@ -1615,9 +1618,8 @@ export default function AppShell() {
                   <UserMenuItem to="/me/profile" label="Profil" />
                   <UserMenuItem to="/me/history" label="Historique" />
                   <UserMenuItem to="/me/achievements" label="Succès" divider />
-                  <UserMenuItem to="/settings" label="Paramètres" />
-                  <UserMenuItem to="/help" label="Assistance" />
-                  <UserMenuItem to="/account" label="Compte" divider />
+                  <UserMenuItem to="/me/account" label="Compte" />
+                  <UserMenuItem to="/help" label="Assistance" divider />
                   <UserMenuItem label="Se déconnecter" danger onClick={logout} />
                 </div>
               )}

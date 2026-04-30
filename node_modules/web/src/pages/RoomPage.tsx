@@ -1320,7 +1320,7 @@ return (
   return (
     <>
       {/* ✅ fond uni demandé */}
-      <div aria-hidden className="fixed inset-0 bg-[#13141F]" />
+      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
 
       {/* ✅ Scrollbar style global */}
       <style>{`
