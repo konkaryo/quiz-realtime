@@ -360,7 +360,7 @@ export default function RoomPage() {
   useEffect(() => {
     if (gameCountdown === null) return;
     const id = setTimeout(() => {
-      setGameCountdown((prev) => (prev && prev > 1 ? prev - 1 : null));
+      setGameCountdown((prev) => (prev !== null ? (prev > 0 ? prev - 1 : null) : null));
     }, 1000);
     return () => clearTimeout(id);
   }, [gameCountdown]);
@@ -1469,6 +1469,7 @@ return (
                             <OverwatchTimerBadge
                               seconds={gameCountdown}
                               progress={gameCountdownProgress}
+                              showTrafficLight
                             />
                           </div>
                         </div>
