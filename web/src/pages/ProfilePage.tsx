@@ -214,24 +214,6 @@ const RankTick = (props: any) => {
   );
 };
 
-/**
- * ✅ Cursor conditionnel : placeholder => aucun surlignage
- */
-const SmartCursor = (props: any) => {
-  const p = props?.payload?.[0]?.payload;
-  if (p?.isPlaceholder) return null;
-
-  const { x, y, width, height } = props;
-  return (
-    <rect
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      fill="rgba(255,255,255,0.04)"
-    />
-  );
-};
 
 /**
  * ✅ Tooltip conditionnelle : placeholder => rien
@@ -241,7 +223,7 @@ const SmartTooltip = ({ active, payload, label }: any) => {
   const p = payload?.[0]?.payload;
   if (p?.isPlaceholder) return null;
 
-  const cleanLabel = String(label ?? "").replace(/^#\d+\.\s*/, "");
+  const fullCategoryLabel = String(p?.label ?? label ?? "").replace(/^#\d+\.\s*/, "");
   const a = clampAccuracy(Number(p?.accuracy ?? 0));
 
   return (
@@ -255,7 +237,7 @@ const SmartTooltip = ({ active, payload, label }: any) => {
         fontSize: 12,
       }}
     >
-      <div style={{ fontWeight: 700, marginBottom: 6 }}>{cleanLabel}</div>
+      <div style={{ fontWeight: 700, marginBottom: 6 }}>{fullCategoryLabel}</div>
       <div style={{ color: "#E5E7EB" }}>{Math.round(a)}% — Taux de réussite</div>
     </div>
   );
@@ -536,8 +518,14 @@ export default function ProfilePage() {
               tickLine={false}
             />
 
-            <Tooltip content={<SmartTooltip />} />
-            <Bar dataKey="accuracy" fill="#C2187A" radius={[3, 3, 0, 0]} maxBarSize={24} />
+            <Tooltip content={<SmartTooltip />} cursor={false} />
+            <Bar
+              dataKey="accuracy"
+              fill="#C2187A"
+              radius={[3, 3, 0, 0]}
+              maxBarSize={24}
+              activeBar={{ stroke: "#FFFFFF", strokeWidth: 2 }}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
