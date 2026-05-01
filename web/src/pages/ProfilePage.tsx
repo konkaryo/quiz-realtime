@@ -273,13 +273,13 @@ type SectionCardProps = {
 
 function SectionCard({ title, children, right, className }: SectionCardProps) {
   const base =
-    "rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-3.5 shadow-[0_18px_40px_rgba(0,0,0,0.45)] sm:p-4 backdrop-blur-xl";
+    "rounded-[6px] border border-[#2A2D3C] bg-[#2F3558] p-3.5 shadow-[0_18px_40px_rgba(0,0,0,0.45)] sm:p-4 backdrop-blur-xl";
   const finalClassName = className ? `${base} ${className}` : base;
 
   return (
     <section className={finalClassName}>
       <header className="mb-3 flex items-center justify-between">
-        <h3 className="text-lg font-extrabold uppercase tracking-wide text-white">
+        <h3 className="text-[12px] font-extrabold uppercase tracking-wide text-white">
           {title}
         </h3>
         {right}
@@ -512,7 +512,7 @@ export default function ProfilePage() {
   };
 
   const ChartBlock = () => (
-    <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-2.5 sm:p-3.5">
+    <div className="rounded-[6px] border border-[#2A2D3C] bg-[#191C2D] p-2.5 sm:p-3.5">
       <div style={{ height: 288 }} className="w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -624,7 +624,7 @@ export default function ProfilePage() {
         <div className="mb-8">
           <SectionCard title="Statistiques">
             <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-2.5 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#191C2D] p-2.5 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-slate-400">
@@ -635,7 +635,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-2.5 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#191C2D] p-2.5 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-slate-400">
@@ -650,7 +650,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#181A28] p-2.5 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+              <div className="rounded-[6px] border border-[#2A2D3C] bg-[#191C2D] p-2.5 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-slate-400">

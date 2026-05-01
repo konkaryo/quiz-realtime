@@ -101,7 +101,7 @@ function StepTabs(props: {
 
   return (
     <div
-      className="mb-8 flex justify-center"
+      className="mb-10 flex justify-center"
       role="tablist"
       aria-orientation="horizontal"
       aria-label="Sections du panneau"
@@ -120,18 +120,18 @@ function StepTabs(props: {
               aria-controls={item.panelId}
               onClick={() => onChange(item.key)}
               className={[
-                "group relative flex h-[58px] items-center justify-center gap-3 overflow-hidden rounded-[16px] border px-5 text-[15px] font-extrabold transition-all duration-200",
+                "group relative flex h-[50px] items-center justify-center gap-2 overflow-hidden rounded-[8px] border px-4 text-[14px] font-extrabold transition-all duration-200",
                 active
                   ? "border-[#9b5cff]/80 bg-gradient-to-r from-[#6a5cff] to-[#bd22d4] text-white shadow-[0_0_34px_rgba(124,92,255,0.42)]"
-                  : "border-[#3d456f] bg-[#0b1024]/55 text-[#d7dcf5] hover:border-[#6d64bd] hover:bg-[#121833]",
+                  : "border-[#3d456f] bg-[#0b1024]/55 text-[#d7dcf5] hover:border-[#58709c] hover:bg-[#121833]",
               ].join(" ")}
             >
               <span
                 className={[
-                  "grid h-8 w-8 place-items-center rounded-full border text-sm font-black transition",
+                  "grid h-7 w-7 place-items-center rounded-full border text-sm font-black transition",
                   active
                     ? "border-white/25 bg-white/25 text-white"
-                    : "border-[#687199] bg-transparent text-[#d7dcf5] group-hover:border-[#8c82e8]",
+                    : "border-[#687199] bg-transparent text-[#d7dcf5] group-hover:border-[#8ba2cf]",
                 ].join(" ")}
               >
                 {index + 1}
@@ -139,12 +139,6 @@ function StepTabs(props: {
 
               <span>{item.label}</span>
 
-              {!active && (
-                <span
-                  aria-hidden
-                  className="absolute bottom-0 left-1/2 h-[2px] w-16 -translate-x-1/2 rounded-full bg-gradient-to-r from-transparent via-[#bd22d4] to-transparent opacity-70"
-                />
-              )}
             </button>
           );
         })}
@@ -413,7 +407,7 @@ export default function CreateRoomPage() {
         className="fixed left-0 right-0 bottom-0 z-10 overflow-y-auto lb-scroll"
         style={{ top: `${NAVBAR_HEIGHT_PX}px` }}
       >
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8">
+        <div className="mx-auto max-w-5xl px-4 py-14 sm:px-8">
           <header className="mb-8 text-center">
             <h1 className="text-4xl font-brand italic text-[#f5f7ff] drop-shadow-[0_6px_20px_rgba(0,0,0,0.35)] sm:text-5xl">
               CRÉER UNE PARTIE PRIVÉE
