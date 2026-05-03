@@ -146,6 +146,8 @@ export default function Home() {
                 0,
                 Math.min(questionCount, Number(room.progressCount) || 0),
               );
+              const difficulty = Number(room.difficulty) || 0;
+              const difficultyLabel = difficulty <= 1 ? "FACILE" : difficulty === 2 ? "MOYEN" : "DIFFICILE";
 
               return (
                 <div
@@ -156,9 +158,9 @@ export default function Home() {
                     type="button"
                     onClick={() => openRoom(room.id)}
                     aria-label={`Ouvrir ${label}`}
-                    className="relative w-full overflow-hidden rounded-[6px] border-2 border-white/20 bg-white/5 shadow-[0_18px_40px_rgba(0,0,0,.45)] transition group-hover:border-white"
+                    className="relative w-full bg-transparent transition"
                   >
-                    <div className="relative aspect-[5/6] w-full overflow-hidden">
+                    <div className="relative aspect-[5/7] w-full overflow-hidden border-0 bg-[#0b1332] shadow-[0_20px_42px_rgba(0,0,0,.55)] ring-0 transition duration-200 group-hover:ring-4 group-hover:ring-white/90">
                       {imageUrl ? (
                         <img
                           src={imageUrl}
@@ -170,12 +172,28 @@ export default function Home() {
                         <div className="h-full w-full bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900" />
                       )}
 
-                      <div className="absolute inset-0 flex flex-col p-4 text-white">
-                        <div className="text-center text-3xl font-brand leading-none drop-shadow-[0_3px_6px_rgba(0,0,0,.65)]">
-                          {label}
+                      <div className="absolute inset-0 flex flex-col px-3 py-4 text-white">
+                        <div
+                          className="mx-auto flex w-[72%] items-center justify-center gap-[3px]"
+                          aria-label={`Progression de la partie : ${progressCount} sur ${questionCount || 0} question${questionCount === 1 ? "" : "s"}`}
+                        >
+                          {questionCount > 0
+                            ? Array.from({ length: questionCount }, (_, index) => {
+                                const isCompleted = index < progressCount;
+                                return (
+                                  <span
+                                    key={`${room.id}-progress-${index}`}
+                                    className={[
+                                      "h-4 flex-1 border border-black/25",
+                                      isCompleted ? "bg-white" : "bg-[#84a3d4]/60",
+                                    ].join(" ")}
+                                  />
+                                );
+                              })
+                            : null}
                         </div>
 
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <div className="pointer-events-none mt-16 flex items-center justify-center">
                           <img
                             src={cardsIcon}
                             alt=""
@@ -184,37 +202,18 @@ export default function Home() {
                           />
                         </div>
 
-                        <div className="mt-auto flex flex-col items-center justify-end gap-3 pb-3 text-[20px] font-semibold leading-none drop-shadow-[0_3px_6px_rgba(0,0,0,.65)]">
-                          <div className="flex items-center justify-center gap-2">
-                            <span>{players ?? "—"}</span>
-                            <img
-                              src={playerIcon}
-                              alt=""
-                              className="h-5 w-5 object-contain"
-                              draggable={false}
-                            />
-                          </div>
-                          <div
-                            className="flex w-full items-center justify-center gap-[2px] px-3"
-                            aria-label={`Progression de la partie : ${progressCount} sur ${questionCount || 0} question${questionCount === 1 ? "" : "s"}`}
-                          >
-                            {questionCount > 0
-                              ? Array.from({ length: questionCount }, (_, index) => {
-                                  const isCompleted = index < progressCount;
-                                  return (
-                                    <span
-                                      key={`${room.id}-progress-${index}`}
-                                      className={[
-                                        "h-5 flex-1 rounded-[1px] border border-black/15",
-                                        isCompleted ? "bg-white" : "bg-[#7E718D]",
-                                      ].join(" ")}
-                                    />
-                                  );
-                                })
-                              : null}
-                          </div>
+                        <div className="mt-auto flex justify-end gap-2 pb-1">
+                          <span className="bg-[#7a2ec4] px-5 py-1 text-xl font-brand tracking-wide">{difficultyLabel}</span>
+                          <span className="bg-[#7a2ec4] px-3 py-1 text-xl font-brand">{String(room.id).slice(0, 1).toUpperCase()}</span>
                         </div>
                       </div>
+                    </div>
+                    <div className="mt-3 border border-white/90 bg-[#11142a] px-4 py-3 text-center text-3xl font-brand italic uppercase leading-none text-white transition-colors duration-200 group-hover:bg-white group-hover:text-black">
+                      {label}
+                    </div>
+                    <div className="mt-4 flex items-center justify-center gap-3 text-4xl font-brand italic leading-none text-white drop-shadow-[0_3px_6px_rgba(0,0,0,.65)]">
+                      <span>{players ?? "—"}</span>
+                      <img src={playerIcon} alt="" className="h-7 w-7 object-contain" draggable={false} />
                     </div>
                   </button>
                 </div>
