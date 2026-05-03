@@ -307,7 +307,7 @@ export async function startGameForRoom(
     io.sockets.sockets.get(sid)?.join(gameRoom);
   }
 
-  const countdownSeconds = Math.max(0, Number(process.env.GAME_COUNTDOWN_SECONDS || 3));
+  const countdownSeconds = Math.max(0, Number(process.env.GAME_COUNTDOWN_SECONDS || 5));
   if (countdownSeconds > 0) {
     const countdownUid = `${st.gameId}:pregame:${Date.now()}`;
     st.roundUid = countdownUid;

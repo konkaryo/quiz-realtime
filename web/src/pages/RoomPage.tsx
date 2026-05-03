@@ -446,17 +446,15 @@ export default function RoomPage() {
           typeof p.serverNow === "number" ? p.serverNow - Date.now() : skew;
         if (typeof p.serverNow === "number") setSkew(nextSkew);
 
-        const seconds =
+        const countdownDurationSeconds =
           typeof p.endsAt === "number"
-            ? Math.max(
-                1,
-                Math.ceil((p.endsAt - (Date.now() + nextSkew)) / 1000)
-              )
-            : Math.max(1, Math.floor(p.seconds ?? 3));
+            ? Math.max(1, Math.ceil((p.endsAt - (Date.now() + nextSkew)) / 1000))
+            : Math.max(1, Math.floor(p.seconds ?? 5));
+        const countdownStartVisual = Math.max(0, countdownDurationSeconds - 1);
 
         setPhase("countdown");
-        setGameCountdown(seconds);
-        setGameCountdownTotal(seconds);
+        setGameCountdown(countdownStartVisual);
+        setGameCountdownTotal(countdownDurationSeconds);
         setQuestion(null);
         setMcChoices(null);
         setSelected(null);
