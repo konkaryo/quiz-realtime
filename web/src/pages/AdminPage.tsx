@@ -640,6 +640,7 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [draggedEntryId, setDraggedEntryId] = useState<string | null>(null);
   const [orderSaving, setOrderSaving] = useState(false);
+  const [openedQuestionActionsId, setOpenedQuestionActionsId] = useState<string | null>(null);
   const [questionSearch, setQuestionSearch] = useState("");
   const [questionSearchResults, setQuestionSearchResults] = useState<AdminQuestion[]>([]);
   const [questionSearchLoading, setQuestionSearchLoading] = useState(false);
@@ -928,6 +929,31 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
     }
   }
 
+  async function removeQuestionFromChallenge(entryId: string) {
+    if (!selectedDate) return;
+
+    setOrderSaving(true);
+    setDetailError(null);
+    setOpenedQuestionActionsId(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/daily/${selectedDate}/questions/${entryId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Impossible de supprimer cette question du défi.");
+      }
+
+      const payload = (await res.json()) as { challenge?: AdminDailyChallengeDetail | null };
+      setSelectedChallenge(payload.challenge ?? null);
+    } catch (removeError) {
+      setDetailError(removeError instanceof Error ? removeError.message : "Impossible de supprimer cette question du défi.");
+    } finally {
+      setOrderSaving(false);
+    }
+  }
 
   function shiftMonth(delta: number) {
     const next = new Date(Date.UTC(viewYear, viewMonthIndex + delta, 1));
@@ -1156,10 +1182,36 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
                         })}
                       </span>
 
-                      <div className="flex w-2 flex-col items-center justify-center gap-[3px] text-white/75">
-                        <span className="h-[3px] w-[3px] rounded-full bg-current" />
-                        <span className="h-[3px] w-[3px] rounded-full bg-current" />
-                        <span className="h-[3px] w-[3px] rounded-full bg-current" />
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setOpenedQuestionActionsId((current) => current === question.entryId ? null : question.entryId);
+                          }}
+                          className="flex w-2 flex-col items-center justify-center gap-[3px] text-white/75 transition hover:text-white"
+                          aria-label="Actions de la question"
+                          title="Actions"
+                        >
+                          <span className="h-[3px] w-[3px] rounded-full bg-current" />
+                          <span className="h-[3px] w-[3px] rounded-full bg-current" />
+                          <span className="h-[3px] w-[3px] rounded-full bg-current" />
+                        </button>
+
+                        {openedQuestionActionsId === question.entryId ? (
+                          <div className="absolute right-0 top-5 z-10 min-w-[180px] rounded-lg border border-white/15 bg-[#0f172a] p-1 shadow-[0_10px_24px_rgba(0,0,0,.45)]">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void removeQuestionFromChallenge(question.entryId);
+                              }}
+                              className="w-full rounded-md px-3 py-2 text-left text-xs font-bold text-red-200 transition hover:bg-red-500/15 hover:text-red-100"
+                            >
+                              Supprimer du défi
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>

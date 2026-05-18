@@ -449,4 +449,58 @@ export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       const updatedChallenge = await getChallengeByDate(prisma, date);
       return { challenge: updatedChallenge };
     });
+    app.delete("/daily/:date/questions/:entryId", { preHandler: requireAdmin(prisma) }, async (req, reply) => {
+      const { date = "", entryId = "" } = (req.params as { date?: string; entryId?: string }) ?? {};
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !entryId) {
+        return reply.code(400).send({ error: "invalid_params" });
+      }
+
+      const [year, month, day] = date.split("-").map((value) => Number(value));
+      const start = new Date(Date.UTC(year, month - 1, day));
+      const end = new Date(Date.UTC(year, month - 1, day + 1));
+
+      const challenge = await prisma.dailyChallenge.findFirst({
+        where: { date: { gte: start, lt: end } },
+        select: {
+          id: true,
+          entries: {
+            orderBy: { position: "asc" },
+            select: { id: true },
+          },
+        },
+      });
+
+      if (!challenge) {
+        return reply.code(404).send({ error: "not_found" });
+      }
+
+      const targetExists = challenge.entries.some((entry) => entry.id === entryId);
+      if (!targetExists) {
+        return reply.code(404).send({ error: "entry_not_found" });
+      }
+
+      const remainingEntryIds = challenge.entries
+        .filter((entry) => entry.id !== entryId)
+        .map((entry) => entry.id);
+
+      await prisma.$transaction(async (tx) => {
+        await tx.dailyChallengeQuestion.delete({
+          where: { id: entryId },
+        });
+
+        await Promise.all(
+          remainingEntryIds.map((id, index) =>
+            tx.dailyChallengeQuestion.update({
+              where: { id },
+              data: { position: index + 1 },
+            }),
+          ),
+        );
+      });
+
+      const updatedChallenge = await getChallengeByDate(prisma, date);
+      return { challenge: updatedChallenge };
+    });
+
+
   };
