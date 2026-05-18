@@ -330,6 +330,11 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [themeFilter, setThemeFilter] = useState("all");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
+  const [imageFilter, setImageFilter] = useState<"all" | "with" | "without">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(10);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -369,6 +374,47 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
     };
   }, []);
 
+  const themeOptions = useMemo(() => {
+    return Array.from(
+      new Set(questions.map((question) => question.theme?.trim()).filter((theme): theme is string => Boolean(theme)))
+    ).sort((a, b) => a.localeCompare(b, "fr"));
+  }, [questions]);
+
+  const difficultyOptions = useMemo(() => {
+    return Array.from(
+      new Set(questions.map((question) => question.difficulty?.trim()).filter((difficulty): difficulty is string => Boolean(difficulty)))
+    ).sort((a, b) => Number(a) - Number(b));
+  }, [questions]);
+
+  const filteredQuestions = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase("fr");
+
+    return questions.filter((question) => {
+      if (themeFilter !== "all" && (question.theme ?? "") !== themeFilter) return false;
+      if (difficultyFilter !== "all" && (question.difficulty ?? "") !== difficultyFilter) return false;
+      if (imageFilter === "with" && !question.img) return false;
+      if (imageFilter === "without" && question.img) return false;
+
+      if (!query) return true;
+
+      const correctChoices = question.choices
+        .filter((choice) => choice.isCorrect)
+        .map((choice) => choice.label);
+      const acceptedAnswers = question.acceptedAnswers.map((answer) => answer.text);
+      const searchableBlob = [question.id, question.text, ...correctChoices, ...acceptedAnswers]
+        .join(" ")
+        .toLocaleLowerCase("fr");
+
+      return searchableBlob.includes(query);
+    });
+  }, [difficultyFilter, imageFilter, questions, searchQuery, themeFilter]);
+
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [themeFilter, difficultyFilter, imageFilter, searchQuery]);
+
+  const visibleQuestions = filteredQuestions.slice(0, visibleCount);
+
   if (loading) {
     return (
       <div className="mt-5 rounded-[12px] border border-white/10 bg-[#0f172a]/60 p-6 text-sm text-white/65">
@@ -395,8 +441,64 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
 
   return (
     <div className="mt-5 overflow-hidden rounded-[12px] border border-white/10 bg-[#0f172a]/60">
+      <div className="border-b border-white/10 px-4 py-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <label className="flex min-w-0 flex-col gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white/55">
+            Recherche
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="ID, intitulé, réponse…"
+              className="h-10 rounded-lg border border-white/10 bg-[#0b1325] px-3 text-sm font-semibold text-white outline-none transition placeholder:text-white/35 focus:border-[#eacb4d]/70"
+            />
+          </label>
+
+          <label className="flex min-w-0 flex-col gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white/55">
+            Thème
+            <select
+              value={themeFilter}
+              onChange={(event) => setThemeFilter(event.target.value)}
+              className="h-10 rounded-lg border border-white/10 bg-[#0b1325] px-3 text-sm font-semibold text-white outline-none transition focus:border-[#eacb4d]/70"
+            >
+              <option value="all">Tous les thèmes</option>
+              {themeOptions.map((theme) => (
+                <option key={theme} value={theme}>{theme}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex min-w-0 flex-col gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white/55">
+            Difficulté
+            <select
+              value={difficultyFilter}
+              onChange={(event) => setDifficultyFilter(event.target.value)}
+              className="h-10 rounded-lg border border-white/10 bg-[#0b1325] px-3 text-sm font-semibold text-white outline-none transition focus:border-[#eacb4d]/70"
+            >
+              <option value="all">Toutes</option>
+              {difficultyOptions.map((difficulty) => (
+                <option key={difficulty} value={difficulty}>{difficulty}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex min-w-0 flex-col gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white/55">
+            Image
+            <select
+              value={imageFilter}
+              onChange={(event) => setImageFilter(event.target.value as "all" | "with" | "without")}
+              className="h-10 rounded-lg border border-white/10 bg-[#0b1325] px-3 text-sm font-semibold text-white outline-none transition focus:border-[#eacb4d]/70"
+            >
+              <option value="all">Oui + Non</option>
+              <option value="with">Oui</option>
+              <option value="without">Non</option>
+            </select>
+          </label>
+        </div>
+      </div>
       <div className="border-b border-white/10 px-4 py-3 text-sm font-bold text-white/80">
-        {questions.length} question{questions.length > 1 ? "s" : ""}
+        {filteredQuestions.length} question{filteredQuestions.length > 1 ? "s" : ""}
+        {filteredQuestions.length !== questions.length ? ` sur ${questions.length}` : ""}
       </div>
 
       <div className="overflow-x-auto">
@@ -412,7 +514,7 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
-            {questions.map((question) => {
+            {visibleQuestions.map((question) => {
               const correctChoices = question.choices
                 .filter((choice) => choice.isCorrect)
                 .map((choice) => choice.label);
@@ -466,6 +568,23 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
           </tbody>
         </table>
       </div>
+      {filteredQuestions.length === 0 ? (
+        <div className="border-t border-white/10 px-4 py-4 text-sm text-white/65">
+          Aucune question ne correspond aux filtres.
+        </div>
+      ) : null}
+
+      {filteredQuestions.length > visibleQuestions.length ? (
+        <div className="border-t border-white/10 px-4 py-4">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((current) => current + 10)}
+            className="rounded-lg border border-[#eacb4d]/40 bg-[#eacb4d]/15 px-3 py-2 text-xs font-black text-[#f7df7b] transition hover:bg-[#eacb4d]/20"
+          >
+            Afficher davantage ({filteredQuestions.length - visibleQuestions.length} restant{filteredQuestions.length - visibleQuestions.length > 1 ? "s" : ""})
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -646,6 +765,23 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
   const [questionSearchLoading, setQuestionSearchLoading] = useState(false);
   const [insertLoading, setInsertLoading] = useState(false);
   const [insertError, setInsertError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!openedQuestionActionsId) return;
+
+    function handleOutsideClick(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest("[data-question-actions]")) return;
+      setOpenedQuestionActionsId(null);
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [openedQuestionActionsId]);
+
 
   const challengesByDate = useMemo(() => {
     return new Map(challenges.map((challenge) => [challenge.date, challenge]));
@@ -1182,14 +1318,14 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
                         })}
                       </span>
 
-                      <div className="relative">
+                      <div className="relative" data-question-actions>
                         <button
                           type="button"
                           onClick={(event) => {
                             event.stopPropagation();
                             setOpenedQuestionActionsId((current) => current === question.entryId ? null : question.entryId);
                           }}
-                          className="flex w-2 flex-col items-center justify-center gap-[3px] text-white/75 transition hover:text-white"
+                          className="flex h-8 w-8 flex-col items-center justify-center gap-[3px] rounded-md text-white/75 transition hover:bg-white/10 hover:text-white"
                           aria-label="Actions de la question"
                           title="Actions"
                         >
@@ -1251,6 +1387,67 @@ function ToolContent({ selectedTool }: { selectedTool: AdminTool }) {
 }
 
 
+
+function AdminToolIcon({ id }: { id: AdminToolId }) {
+  if (id === "users") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5">
+        <path
+          d="M16 11a4 4 0 1 0-3.2-6.4M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8 2c-1.6 0-3 .5-4 1.4M8 13c-3.3 0-6 1.8-6 4v1.2c0 .4.3.8.8.8h10.4c.4 0 .8-.3.8-.8V17c0-2.2-2.7-4-6-4Zm8 1c3.3 0 6 1.8 6 4v.2c0 .4-.3.8-.8.8H17"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.8"
+        />
+      </svg>
+    );
+  }
+
+  if (id === "questions") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5">
+        <path
+          d="M12 17h.01M9.2 9.2A3 3 0 0 1 12 7c1.7 0 3 1.1 3 2.7 0 2.6-3 2.4-3 5.1M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.8"
+        />
+      </svg>
+    );
+  }
+
+  if (id === "games") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5">
+        <path
+          d="M8.2 13h.01M10.8 15.6h.01M15.2 14h.01M17.8 12h.01M8 9h8M7.5 19h9c2.3 0 4-1.9 3.6-4.2l-.8-4.8A4 4 0 0 0 15.4 7H8.6a4 4 0 0 0-3.9 3l-.8 4.8C3.5 17.1 5.2 19 7.5 19Z"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.8"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5">
+      <path
+        d="M7 3v3M17 3v3M4.5 9.5h15M6.5 5h11A2.5 2.5 0 0 1 20 7.5v10A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-10A2.5 2.5 0 0 1 6.5 5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
 export default function AdminPage() {
   const [selectedToolId, setSelectedToolId] = useState<AdminToolId>(adminTools[0].id);
   const selectedTool = useMemo(
@@ -1262,11 +1459,8 @@ export default function AdminPage() {
       <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1180px] flex-col gap-6 px-4 py-8 sm:px-5 lg:flex-row">
-        <aside className="w-full shrink-0 rounded-[14px] border border-white/10 bg-[#111827]/90 p-4 shadow-[0_12px_28px_rgba(0,0,0,.3)] lg:fixed lg:left-[max(1.25rem,calc((100vw-1180px)/2+1.25rem))] lg:top-[84px] lg:z-20 lg:max-h-[calc(100dvh-104px)] lg:w-[280px] lg:overflow-y-auto">
-          <p className="mb-3 text-xs font-black uppercase tracking-[0.24em] text-[#eacb4d]">
-            Outils admin
-          </p>
-          <nav aria-label="Outils d’administration" className="flex flex-col gap-2">
+        <aside className="w-full shrink-0 overflow-hidden border border-white/10 bg-[#111827]/90 shadow-[0_12px_28px_rgba(0,0,0,.3)] lg:fixed lg:left-0 lg:top-0 lg:z-20 lg:h-dvh lg:w-[280px] lg:overflow-y-auto lg:rounded-none lg:border-y-0 lg:border-l-0 lg:bg-[#101a2d]/95 lg:shadow-[18px_0_40px_rgba(0,0,0,.18)]">
+          <nav aria-label="Outils d’administration" className="flex flex-col py-5">
             {adminTools.map((tool) => {
               const isSelected = selectedTool.id === tool.id;
 
@@ -1276,13 +1470,23 @@ export default function AdminPage() {
                   type="button"
                   aria-current={isSelected ? "page" : undefined}
                   onClick={() => setSelectedToolId(tool.id)}
-                  className={`rounded-[10px] border px-4 py-3 text-left text-sm font-bold transition ${
+                  className={`group relative flex min-h-[66px] items-center gap-5 px-6 text-left text-sm font-semibold transition ${
                     isSelected
-                      ? "border-[#eacb4d]/70 bg-[#eacb4d]/15 text-white shadow-[inset_0_1px_0_rgba(255,255,255,.08)]"
-                      : "border-white/10 bg-white/[0.04] text-white/72 hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                      ? "bg-[#eacb4d]/10 text-[#f7df7b]"
+                      : "text-white/72 hover:bg-white/[0.045] hover:text-white"
                   }`}
                 >
-                  {tool.label}
+                  {isSelected ? (
+                    <span className="absolute left-0 top-0 h-full w-[4px] bg-[#eacb4d]" />
+                  ) : null}
+
+                  <span className={`shrink-0 transition ${
+                    isSelected ? "text-[#f7df7b]" : "text-white/75 group-hover:text-white"
+                  }`}>
+                    <AdminToolIcon id={tool.id} />
+                  </span>
+
+                  <span>{tool.label}</span>
                 </button>
               );
             })}
