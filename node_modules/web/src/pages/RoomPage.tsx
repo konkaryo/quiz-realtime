@@ -1201,7 +1201,16 @@ export default function RoomPage() {
       return roomMeta.image;
     }
     // Même logique que Home: slug d'image -> /img/interface/{slug}.avif
-    return `${API_BASE}/img/interface/${roomMeta.image}.avif`;
+    const imageRef = roomMeta.image.trim();
+    if (!imageRef) return emptyQuestionImg;
+
+    const dotIndex = imageRef.lastIndexOf(".");
+    const imageBis =
+      dotIndex > 0
+        ? `${imageRef.slice(0, dotIndex)}_bis${imageRef.slice(dotIndex)}`
+        : `${imageRef}_bis.avif`;
+
+    return `${API_BASE}/img/interface/${imageBis}`;
   }, [roomMeta?.image]);
 
 

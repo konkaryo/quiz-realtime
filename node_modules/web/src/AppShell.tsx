@@ -21,6 +21,7 @@ type CurrentUser = {
   bits?: number;
   experience?: number;
   guest?: boolean;
+  role?: "USER" | "ADMIN" | string;
   playerId?: string | null;
 };
 
@@ -256,6 +257,7 @@ export default function AppShell() {
     (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
   const shouldHideRoomContent = joinLoadingPending && isRoomRoute;
   const isGuest = !user || Boolean(user?.guest);
+  const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
    if (!isRoomRoute) {
@@ -1618,6 +1620,7 @@ export default function AppShell() {
                   <UserMenuItem to="/me/profile" label="Profil" />
                   <UserMenuItem to="/me/history" label="Historique" />
                   <UserMenuItem to="/me/achievements" label="Succès" divider />
+                  {isAdmin && <UserMenuItem to="/admin" label="Administration" />}
                   <UserMenuItem to="/me/account" label="Compte" />
                   <UserMenuItem to="/help" label="Assistance" divider />
                   <UserMenuItem label="Se déconnecter" danger onClick={logout} />

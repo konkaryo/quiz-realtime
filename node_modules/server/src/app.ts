@@ -22,6 +22,7 @@ import { emitPublicRoomsUpdated } from "./domain/room/public-room-events";
 import { raceRoutes } from "./routes/race";
 import { questionRoutes } from "./routes/questions";
 import { notificationRoutes } from "./routes/notifications";
+import { adminRoutes } from "./routes/admin";
 import { Theme, RoomVisibility } from "@prisma/client";
 
 /* ---------------- runtime maps ---------------- */
@@ -56,6 +57,7 @@ async function main() {
   await app.register(raceRoutes({ prisma }), { prefix: "/race" });
   await app.register(questionRoutes({ prisma }), { prefix: "/questions" });
   await app.register(notificationRoutes({ prisma }), { prefix: "/notifications" });
+  await app.register(adminRoutes({ prisma }), { prefix: "/admin" });
 
   app.get("/health", async () => ({ ok: true }));
 

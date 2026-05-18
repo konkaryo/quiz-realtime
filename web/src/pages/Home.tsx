@@ -160,7 +160,7 @@ export default function Home() {
                     aria-label={`Ouvrir ${label}`}
                     className="relative w-full bg-transparent transition"
                   >
-                    <div className="relative aspect-[5/7] w-full overflow-hidden border-0 bg-[#0b1332] shadow-[0_20px_42px_rgba(0,0,0,.55)] ring-0 transition duration-200 group-hover:ring-4 group-hover:ring-white/90">
+                    <div className="relative aspect-[5/7] w-full overflow-hidden border-0 bg-[#0b1332] ring-0 transition duration-200 group-hover:ring-4 group-hover:ring-white/90">
                       {imageUrl ? (
                         <img
                           src={imageUrl}
@@ -185,7 +185,7 @@ export default function Home() {
                                     key={`${room.id}-progress-${index}`}
                                     className={[
                                       "h-4 flex-1 border border-black/25",
-                                      isCompleted ? "bg-white" : "bg-[#84a3d4]/60",
+                                      isCompleted ? "bg-white" : "bg-white/35",
                                     ].join(" ")}
                                   />
                                 );
@@ -202,18 +202,18 @@ export default function Home() {
                           />
                         </div>
 
-                        <div className="mt-auto flex justify-end gap-2 pb-1">
-                          <span className="bg-[#7a2ec4] px-5 py-1 text-xl font-brand tracking-wide">{difficultyLabel}</span>
-                          <span className="bg-[#7a2ec4] px-3 py-1 text-xl font-brand">{String(room.id).slice(0, 1).toUpperCase()}</span>
+                        <div className="absolute bottom-3 right-3 flex justify-end gap-2">
+                          <span className="bg-[#7a2ec4] px-4 py-[3px] text-lg font-brand tracking-wide">{difficultyLabel}</span>
+                          <span className="bg-[#7a2ec4] px-[10px] py-[3px] text-lg font-brand">{String(room.id).slice(0, 1).toUpperCase()}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 border border-white/90 bg-[#11142a] px-4 py-3 text-center text-3xl font-brand italic uppercase leading-none text-white transition-colors duration-200 group-hover:bg-white group-hover:text-black">
-                      {label}
+                    <div className="mt-3 border border-white/90 bg-transparent px-4 py-2 text-center text-[1.7rem] font-brand italic uppercase leading-none text-white transition-colors duration-200 group-hover:bg-white group-hover:text-black">
+                      <span className="inline-block translate-y-[1px]">{label}</span>
                     </div>
-                    <div className="mt-4 flex items-center justify-center gap-3 text-4xl font-brand italic leading-none text-white drop-shadow-[0_3px_6px_rgba(0,0,0,.65)]">
+                    <div className="mt-3 flex items-center justify-center gap-[6px] text-2xl font-brand italic leading-none text-white">
                       <span>{players ?? "—"}</span>
-                      <img src={playerIcon} alt="" className="h-7 w-7 object-contain" draggable={false} />
+                      <img src={playerIcon} alt="" className="h-5 w-5 object-contain" draggable={false} />
                     </div>
                   </button>
                 </div>

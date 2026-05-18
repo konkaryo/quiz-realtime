@@ -5,6 +5,7 @@ import { toImgUrl } from "../media/media.service";
 type ChallengeSummaryRow = {
   date: Date;
   entries: {
+    id: string;
     slotLabel: string | null;
     position: number;
     question: {
@@ -19,6 +20,7 @@ type ChallengeDetailRow = {
   id: string;
   date: Date;
   entries: {
+    id: string;
     slotLabel: string | null;
     position: number;
     question: {
@@ -42,6 +44,7 @@ export type DailyChallengeSummary = {
 };
 
 export type DailyChallengeQuestionDto = {
+  entryId: string;
   id: string;
   text: string;
   theme: string | null;
@@ -177,6 +180,7 @@ export async function getChallengeByDate(prisma: PrismaClient, dateIso: string):
       const q = entry.question!;
       const correct = q.choices.find((choice) => choice.isCorrect);
       return {
+        entryId: entry.id,
         id: q.id,
         text: q.text,
         theme: q.theme ?? null,

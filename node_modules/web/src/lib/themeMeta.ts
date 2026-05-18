@@ -32,7 +32,7 @@ export const THEME_META: Record<string, ThemeMeta> = {
   SCIENCE:         { label: "Science",        color: "#EF4444" },
   SOCIETE:         { label: "Société",        color: "#3B82F6" },
   SPORT:           { label: "Sport",          color: "#84CC16" },
-  TRADITIONS:      { label: "Traditinons",    color: "#F97316" },
+  TRADITIONS:      { label: "Traditions",     color: "#F97316" },
 };
 
 export function getThemeMeta(theme?: string | null): ThemeMeta {

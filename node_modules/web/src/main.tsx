@@ -5,7 +5,6 @@ import {
   createBrowserRouter,
   RouterProvider,
   Navigate,
-  useLocation,
 } from "react-router-dom";
 
 import AppShell from "./AppShell";
@@ -24,6 +23,7 @@ import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
 import HistoryPage from "./pages/HistoryPage";
 import AccountPage from "./pages/AccountPage";
+import AdminPage from "./pages/AdminPage";
 import "./index.css";
 import { Toaster } from "./components/ui/toaster";
 
@@ -75,7 +75,6 @@ async function fetchMe() {
 // ----- Auth Guard ------------------------------------------------------------
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"pending" | "authed" | "guest">("pending");
-  const location = useLocation();
 
   useEffect(() => {
     let mounted = true;
@@ -94,6 +93,32 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (status === "pending") {
     return <FullscreenLoader />;
+  }
+
+  return <>{children}</>;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const [status, setStatus] = useState<"pending" | "admin" | "denied">("pending");
+
+  useEffect(() => {
+    let mounted = true;
+    fetchMe().then(({ user }) => {
+      if (!mounted) return;
+      setStatus(user?.role === "ADMIN" ? "admin" : "denied");
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (status === "pending") {
+    return <FullscreenLoader />;
+  }
+
+  if (status === "denied") {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -169,6 +194,14 @@ const router = createBrowserRouter([
       { path: "/players/:playerId/profile", element: <ProfilePage /> },
       { path: "/me/history", element: <HistoryPage /> },
       { path: "/me/account", element: <AccountPage /> },
+      {
+        path: "/admin",
+        element: (
+          <RequireAdmin>
+            <AdminPage />
+          </RequireAdmin>
+        ),
+      },
       { path: "/rooms/new", element: <CreateRoomPage /> },
       { path: "/rooms/:roomId/lobby", element: <PrivateLobbyPage /> },
       { path: "/private/join", element: <JoinPrivateRoomPage /> },

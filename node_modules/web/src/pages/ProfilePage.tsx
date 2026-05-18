@@ -52,7 +52,7 @@ const CATEGORY_CONFIG = {
   SCIENCE:         { label: "Science",        color: "#EF4444" },
   SOCIETE:         { label: "Société",        color: "#3B82F6" },
   SPORT:           { label: "Sport",          color: "#84CC16" },
-  TRADITIONS:      { label: "Traditinons",    color: "#F97316" },
+  TRADITIONS:      { label: "Traditions",     color: "#F97316" },
 } as const;
 
 type CategoryKey = keyof typeof CATEGORY_CONFIG;
@@ -225,6 +225,7 @@ const SmartTooltip = ({ active, payload, label }: any) => {
 
   const fullCategoryLabel = String(p?.label ?? label ?? "").replace(/^#\d+\.\s*/, "");
   const a = clampAccuracy(Number(p?.accuracy ?? 0));
+  const b = clampAccuracy(100 - a);
 
   return (
     <div
@@ -238,7 +239,8 @@ const SmartTooltip = ({ active, payload, label }: any) => {
       }}
     >
       <div style={{ fontWeight: 700, marginBottom: 6 }}>{fullCategoryLabel}</div>
-      <div style={{ color: "#E5E7EB" }}>{Math.round(a)}% — Taux de réussite</div>
+      <div style={{ color: "#E5E7EB" }}>{Math.round(a)}% — Bonnes réponses</div>
+      <div style={{ color: "#FCA5A5" }}>{Math.round(b)}% — Mauvaises réponses</div>
     </div>
   );
 };
@@ -419,7 +421,8 @@ export default function ProfilePage() {
       .map((key) => {
         const meta = CATEGORY_CONFIG[key];
         const accuracy = clampAccuracy(categoryAccuracy[key] ?? 0);
-        return { key, label: meta.label, trigram: key.slice(0, 3), accuracy };
+        const incorrect = clampAccuracy(100 - accuracy);
+        return { key, label: meta.label, trigram: key.slice(0, 3), accuracy, incorrect };
       });
   }, [categoryAccuracy]);
 
@@ -501,6 +504,7 @@ export default function ProfilePage() {
             data={categoryBarData}
             margin={{ top: 12, right: 8, left: 0, bottom: 20 }}
             barCategoryGap={12}
+            barSize={28}
           >
             <XAxis
               dataKey="trigram"
@@ -521,9 +525,16 @@ export default function ProfilePage() {
             <Tooltip content={<SmartTooltip />} cursor={false} />
             <Bar
               dataKey="accuracy"
-              fill="#C2187A"
-              radius={[3, 3, 0, 0]}
-              maxBarSize={24}
+              stackId="result"
+              fill="#22C55E"
+              radius={0}
+              activeBar={{ stroke: "#FFFFFF", strokeWidth: 2 }}
+            />
+            <Bar
+              dataKey="incorrect"
+              stackId="result"
+              fill="#EF4444"
+              radius={0}
               activeBar={{ stroke: "#FFFFFF", strokeWidth: 2 }}
             />
           </BarChart>
@@ -664,22 +675,10 @@ export default function ProfilePage() {
       {isAvatarEditorOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
           <div className="w-full max-w-md rounded-[6px] border border-slate-800/80 bg-slate-950 p-5 text-slate-100 shadow-[0_25px_60px_rgba(15,23,42,0.6)]">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-white">
-                  Mettre à jour la photo de profil
-                </h2>
-                <p className="mt-1 text-[11px] text-slate-400">
-                  Importez une image carrée ou recadrez-la pour un rendu optimal.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleAvatarEditorClose}
-                className="rounded-full border border-slate-700 px-2.5 py-1 text-[11px] font-semibold text-slate-200 transition hover:border-rose-200/60 hover:text-rose-100"
-              >
-                Fermer
-              </button>
+            <div>
+              <h2 className="text-base font-semibold text-white">
+                Mettre à jour la photo de profil
+              </h2>
             </div>
 
             <div className="mt-4 flex flex-col gap-4">
@@ -692,7 +691,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="flex flex-1 flex-col gap-2">
-                  <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:border-rose-200/60 hover:text-rose-100">
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:border-white/70 hover:text-white">
                     Choisir une image
                     <input
                       type="file"
@@ -712,7 +711,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={handleAvatarEditorClose}
-                className="rounded-full border border-slate-700 px-3 py-1.5 text-[11px] font-semibold text-slate-200 transition hover:border-slate-500 hover:text-white"
+                className="rounded-[6px] border border-slate-700 px-3 py-1.5 text-[11px] font-semibold text-slate-200 transition hover:border-slate-500 hover:text-white"
               >
                 Annuler
               </button>
@@ -720,7 +719,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={handleAvatarSave}
                 disabled={!pendingAvatarUrl}
-                className="rounded-full bg-rose-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow-[0_10px_20px_rgba(244,63,94,0.3)] transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:bg-slate-700/70 disabled:text-slate-400"
+                className="rounded-[6px] bg-[#6F5BD4] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#7d6ae0] disabled:cursor-not-allowed disabled:bg-slate-700/70 disabled:text-slate-400"
               >
                 Enregistrer
               </button>
