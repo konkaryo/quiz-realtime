@@ -247,7 +247,7 @@ function UsersPanel({ emptyState }: { emptyState: string }) {
 
   if (loading) {
     return (
-      <div className="mt-5 rounded-[12px] border border-white/10 bg-[#0f172a]/60 p-6 text-sm text-white/65">
+      <div className="rounded-[12px] border border-white/10 bg-[#1E2030] p-6 text-sm text-white/65">
         Chargement des utilisateurs…
       </div>
     );
@@ -255,7 +255,7 @@ function UsersPanel({ emptyState }: { emptyState: string }) {
 
   if (error) {
     return (
-      <div className="mt-5 rounded-[12px] border border-red-400/30 bg-red-500/10 p-6 text-sm text-red-100">
+      <div className="rounded-[12px] border border-red-400/30 bg-red-500/10 p-6 text-sm text-red-100">
         {error}
       </div>
     );
@@ -263,14 +263,14 @@ function UsersPanel({ emptyState }: { emptyState: string }) {
 
   if (users.length === 0) {
     return (
-      <div className="mt-5 rounded-[12px] border border-dashed border-white/15 bg-[#0f172a]/60 p-6 text-sm leading-6 text-white/65">
+      <div className="rounded-[12px] border border-white/10 bg-[#1E2030] p-6 text-sm text-white/65">
         {emptyState}
       </div>
     );
   }
 
   return (
-    <div className="mt-5 overflow-hidden rounded-[12px] border border-white/10 bg-[#0f172a]/60">
+    <div className="overflow-hidden rounded-[12px] border border-white/10 bg-[#1E2030]">
       <div className="border-b border-white/10 px-4 py-3 text-sm font-bold text-white/80">
         {users.length} utilisateur{users.length > 1 ? "s" : ""}
       </div>
@@ -417,7 +417,7 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
 
   if (loading) {
     return (
-      <div className="mt-5 rounded-[12px] border border-white/10 bg-[#0f172a]/60 p-6 text-sm text-white/65">
+      <div className="rounded-[12px] border border-white/10 bg-[#1E2030] p-6 text-sm text-white/65">
         Chargement des questions…
       </div>
     );
@@ -425,7 +425,7 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
 
   if (error) {
     return (
-      <div className="mt-5 rounded-[12px] border border-red-400/30 bg-red-500/10 p-6 text-sm text-red-100">
+      <div className="rounded-[12px] border border-red-400/30 bg-red-500/10 p-6 text-sm text-red-100">
         {error}
       </div>
     );
@@ -433,14 +433,14 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
 
   if (questions.length === 0) {
     return (
-      <div className="mt-5 rounded-[12px] border border-dashed border-white/15 bg-[#0f172a]/60 p-6 text-sm leading-6 text-white/65">
+      <div className="rounded-[12px] border border-dashed border-white/15 bg-[#1E2030] p-6 text-sm leading-6 text-white/65">
         {emptyState}
       </div>
     );
   }
 
   return (
-    <div className="mt-5 overflow-hidden rounded-[12px] border border-white/10 bg-[#0f172a]/60">
+    <div className="overflow-hidden rounded-[12px] border border-white/10 bg-[#1E2030]">
       <div className="border-b border-white/10 px-4 py-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <label className="flex min-w-0 flex-col gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white/55">
@@ -634,7 +634,7 @@ function GamesPanel({ emptyState }: { emptyState: string }) {
 
   if (loading) {
     return (
-      <div className="mt-5 rounded-[12px] border border-white/10 bg-[#0f172a]/60 p-6 text-sm text-white/65">
+      <div className="rounded-[12px] border border-white/10 bg-[#1E2030] p-6 text-sm text-white/65">
         Chargement des parties…
       </div>
     );
@@ -642,7 +642,7 @@ function GamesPanel({ emptyState }: { emptyState: string }) {
 
   if (error) {
     return (
-      <div className="mt-5 rounded-[12px] border border-red-400/30 bg-red-500/10 p-6 text-sm text-red-100">
+      <div className="rounded-[12px] border border-red-400/30 bg-red-500/10 p-6 text-sm text-red-100">
         {error}
       </div>
     );
@@ -650,14 +650,14 @@ function GamesPanel({ emptyState }: { emptyState: string }) {
 
   if (games.length === 0) {
     return (
-      <div className="mt-5 rounded-[12px] border border-dashed border-white/15 bg-[#0f172a]/60 p-6 text-sm leading-6 text-white/65">
+      <div className="rounded-[12px] border border-dashed border-white/15 bg-[#1E2030] p-6 text-sm leading-6 text-white/65">
         {emptyState}
       </div>
     );
   }
 
   return (
-    <div className="mt-5 overflow-hidden rounded-[12px] border border-white/10 bg-[#0f172a]/60">
+    <div className="overflow-hidden rounded-[12px] border border-white/10 bg-[#1E2030]">
       <div className="border-b border-white/10 px-4 py-3 text-sm font-bold text-white/80">
         {games.length} partie{games.length > 1 ? "s" : ""}
       </div>
@@ -1100,8 +1100,8 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
   const calendarCells = buildCalendarCells(viewYear, viewMonthIndex);
 
   return (
-    <div className="mt-5 flex flex-col gap-5">
-      <section className="w-full max-w-[420px] rounded-[12px] border border-white/10 bg-[#0f172a]/60 p-4">
+    <div className="flex flex-col gap-5">
+      <section className="w-full max-w-[420px] rounded-[12px] border border-white/10 bg-[#1E2030] p-4">
         <div className="mb-4 flex items-center justify-between gap-3">
           <button
             type="button"
@@ -1173,7 +1173,7 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
         ) : null}
       </section>
 
-      <section className="w-full rounded-[12px] border border-white/10 bg-[#0f172a]/60 p-4">
+      <section className="w-full rounded-[12px] border border-white/10 bg-[#1E2030] p-4">
 
         {detailLoading ? (
           <div className="rounded-[12px] border border-white/10 bg-white/[0.03] p-6 text-sm text-white/65">
@@ -1380,7 +1380,7 @@ function ToolContent({ selectedTool }: { selectedTool: AdminTool }) {
   }
 
   return (
-    <div className="mt-5 rounded-[12px] border border-dashed border-white/15 bg-[#0f172a]/60 p-6 text-sm leading-6 text-white/65">
+    <div className="rounded-[12px] border border-dashed border-white/15 bg-[#1E2030] p-6 text-sm leading-6 text-white/65">
       {selectedTool.emptyState}
     </div>
   );
@@ -1459,7 +1459,7 @@ export default function AdminPage() {
       <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1180px] flex-col gap-6 px-4 py-8 sm:px-5 lg:flex-row">
-        <aside className="w-full shrink-0 overflow-hidden border border-white/10 bg-[#111827]/90 shadow-[0_12px_28px_rgba(0,0,0,.3)] lg:fixed lg:left-0 lg:top-0 lg:z-20 lg:h-dvh lg:w-[280px] lg:overflow-y-auto lg:rounded-none lg:border-y-0 lg:border-l-0 lg:bg-[#101a2d]/95 lg:shadow-[18px_0_40px_rgba(0,0,0,.18)]">
+        <aside className="w-full shrink-0 overflow-hidden border border-white/10 bg-[#0c1020]/95 shadow-[0_12px_28px_rgba(0,0,0,.3)] lg:fixed lg:left-0 lg:top-[52px] lg:z-20 lg:h-[calc(100dvh-52px)] lg:w-[280px] lg:overflow-y-auto lg:rounded-none lg:border-y-0 lg:border-l-0 lg:bg-[#0b1020]/95 lg:shadow-[18px_0_40px_rgba(0,0,0,.18)]">
           <nav aria-label="Outils d’administration" className="flex flex-col py-5">
             {adminTools.map((tool) => {
               const isSelected = selectedTool.id === tool.id;
@@ -1495,35 +1495,15 @@ export default function AdminPage() {
 
         <main className="min-w-0 flex-1 lg:ml-[304px]">
           <header className="mb-7">
-            <p className="mb-2 text-xs font-black uppercase tracking-[0.28em] text-[#eacb4d]">
-              Accès administrateur
-            </p>
             <h1 className="text-[34px] font-brand italic leading-none text-white sm:text-[46px]">
-              Administration
+              {selectedTool.title}
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">
-              Sélectionnez un outil dans le menu de gauche pour administrer Synapz.
-            </p>
           </header>
 
-          <section className="rounded-[14px] border border-white/10 bg-[#1E2030] p-5 shadow-[0_12px_28px_rgba(0,0,0,.3)] sm:p-6">
-            <div className="flex flex-col gap-3 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-white sm:text-3xl">
-                  {selectedTool.title}
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">
-                  {selectedTool.description}
-                </p>
-              </div>
-
-              <span className="inline-flex w-fit rounded-full border border-[#eacb4d]/40 bg-[#eacb4d]/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-[#f7df7b]">
-                Admin
-              </span>
-            </div>
+          <div className="flex flex-col gap-5">
 
             <ToolContent selectedTool={selectedTool} />
-          </section>
+          </div>
         </main>
       </div>
     </div>

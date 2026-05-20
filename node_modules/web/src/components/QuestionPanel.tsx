@@ -224,6 +224,7 @@ type Props = {
   onChangeText: (val: string) => void;
   onSubmitText: () => void;
   onShowChoices: () => void;
+  qcmUsesLeft?: number;
 
   feedback: string | null;
   feedbackResponseMs: number | null;
@@ -246,6 +247,7 @@ type Props = {
   showAnswerSection?: boolean;
   showProgress?: boolean;
   animateQuestionText?: boolean;
+  correctLabelPlacement?: "above" | "below";
 };
 
 export default function DailyQuestionPanel(props: Props) {
@@ -264,6 +266,7 @@ export default function DailyQuestionPanel(props: Props) {
     onChangeText,
     onSubmitText,
     onShowChoices,
+    qcmUsesLeft,
     // ✅ on ne les affiche plus, mais on garde les props pour compat
     feedback,
     feedbackResponseMs,
@@ -284,6 +287,7 @@ export default function DailyQuestionPanel(props: Props) {
     showAnswerSection = true,
     showProgress = true,
     animateQuestionText = false,
+    correctLabelPlacement = "below",
   } = props;
 
   const [visibleQuestionLength, setVisibleQuestionLength] = useState(() =>
@@ -380,6 +384,8 @@ export default function DailyQuestionPanel(props: Props) {
         !choicesRevealed));
 
   const textInputDisabled = !isPlaying || textLocked;
+  const qcmUsesLeftSafe = typeof qcmUsesLeft === "number" ? Math.max(0, qcmUsesLeft) : null;
+  const isQcmUnavailable = qcmUsesLeftSafe !== null && qcmUsesLeftSafe <= 0;
 
   const textPlaceholder = textLocked
     ? "Choisissez une réponse..."
@@ -431,6 +437,44 @@ export default function DailyQuestionPanel(props: Props) {
 
   const showLeft = showCorrectMeta && !!pointsText;
   const showRight = showCorrectMeta && !!timeText;
+
+  const renderCorrectLabelMeta = () => {
+    if (!showCorrectLabelCell) return null;
+    return (
+      <div className="flex justify-center">
+        <div className="inline-flex max-w-full items-center gap-3">
+          {showLeft ? (
+            <span className="text-[12px] font-semibold tabular-nums text-white/70">
+              {pointsText}
+            </span>
+          ) : null}
+
+          {showLeft ? (
+            <span className="text-white/35" aria-hidden>
+              |
+            </span>
+          ) : null}
+
+          <div className="inline-flex items-center rounded-[6px] border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-slate-50">
+            {feedbackCorrectLabel}
+          </div>
+
+          {showRight ? (
+            <span className="text-white/35" aria-hidden>
+              |
+            </span>
+          ) : null}
+
+          {showRight ? (
+            <span className="text-[13px] font-semibold tabular-nums text-white/70">
+              {timeText}
+            </span>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
   const thumbDownReasons = [
     "Réponse erronée ou manquante",
     "Faute(s) d'orthographe",
@@ -729,7 +773,12 @@ export default function DailyQuestionPanel(props: Props) {
         </div>
       ) : (
         /* MODE TEXTE : panneau inférieur original (boutons intégrés) */
-        <div className="mt-20 w-[580px] max-w-full">
+        <div className="relative mt-20 w-[580px] max-w-full">
+          {correctLabelPlacement === "above" ? (
+            <div className="pointer-events-none absolute -top-12 left-1/2 z-20 w-full -translate-x-1/2">
+              {renderCorrectLabelMeta()}
+            </div>
+          ) : null}
           {/* ✅ Coeurs AU-DESSUS du panneau, horizontaux, alignés à gauche */}
           <div className="mx-auto w-full mb-3 -mt-1 pl-2 flex items-center justify-between gap-3">
             <Lives lives={lives} total={totalLives} />
@@ -777,8 +826,9 @@ export default function DailyQuestionPanel(props: Props) {
 
                   <button
                     onClick={onShowChoices}
-                    disabled={textInputDisabled}
+                    disabled={textInputDisabled || isQcmUnavailable}
                     className="
+                      relative
                       rounded-[6px]
                       border border-slate-600/60
                       bg-[#1A1D28]
@@ -790,50 +840,24 @@ export default function DailyQuestionPanel(props: Props) {
                       hover:border-slate-500
                       hover:bg-[#23263A]
                       transition
-                      disabled:opacity-60
+                      disabled:opacity-45
+                      disabled:saturate-0
+                      disabled:cursor-not-allowed
                     "
                   >
                     Propositions
+                    {qcmUsesLeftSafe !== null ? (
+                      <span className="absolute -right-2 -top-2 inline-grid size-5 shrink-0 place-items-center rounded-full border border-slate-900/80 bg-violet-500 text-[10px] font-bold leading-none text-white shadow-[0_4px_10px_rgba(0,0,0,0.45)]">
+                        <span className="translate-x-[0.5px] [font-variant-numeric:tabular-nums]">{qcmUsesLeftSafe}</span>
+                      </span>
+                    ) : null}
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ✅ points | bonne réponse | temps */}
-          {showCorrectLabelCell && (
-            <div className="mt-4 flex justify-center">
-              <div className="inline-flex max-w-full items-center gap-3">
-                {showLeft ? (
-                  <span className="text-[12px] font-semibold tabular-nums text-white/70">
-                    {pointsText}
-                  </span>
-                ) : null}
-
-                {showLeft ? (
-                  <span className="text-white/35" aria-hidden>
-                    |
-                  </span>
-                ) : null}
-
-                <div className="inline-flex items-center rounded-[6px] border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-slate-50">
-                  {feedbackCorrectLabel}
-                </div>
-
-                {showRight ? (
-                  <span className="text-white/35" aria-hidden>
-                    |
-                  </span>
-                ) : null}
-
-                {showRight ? (
-                  <span className="text-[13px] font-semibold tabular-nums text-white/70">
-                    {timeText}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          )}
+          {correctLabelPlacement === "below" ? renderCorrectLabelMeta() : null}
 
           {/* ✅ Ligne de feedback du dessous supprimée (devenue inutile) */}
           {reserveFeedbackSpace ? <div className="mt-2" /> : null}
@@ -843,7 +867,7 @@ export default function DailyQuestionPanel(props: Props) {
       ) : null}
 
       {showProgress && questionProgress.length > 0 && (
-        <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+        <div className="mt-8 flex flex-wrap justify-center gap-1.5">
           {questionProgress.map((state, i) => {
             const color =
               state === "correct"
@@ -855,7 +879,7 @@ export default function DailyQuestionPanel(props: Props) {
             return (
               <div
                 key={i}
-                className={`flex h-[27px] w-[27px] items-center justify-center rounded-md text-[11px] font-semibold text-slate-50 ${color}`}
+                className={`flex h-[30px] w-[30px] items-center justify-center rounded-md text-[11px] font-semibold text-slate-50 ${color}`}
               >
                 {i + 1}
               </div>

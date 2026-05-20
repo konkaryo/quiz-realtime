@@ -10,7 +10,6 @@ import QuestionPanel, {
   QuestionLite,
   QuestionProgress,
 } from "../components/QuestionPanel";
-import Background from "../components/Background";
 
 const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL ??
@@ -18,6 +17,7 @@ const SOCKET_URL =
 const QUESTION_DURATION_MS = Number(import.meta.env.VITE_DAILY_ROUND_MS ?? 20000);
 const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
 const STORAGE_KEY = "dailyChallenge:results:v1";
+const DAILY_MAX_MC_USES = 3;
 
 const MONTH_NAMES = [
   "janvier",
@@ -200,6 +200,7 @@ export default function DailyChallengePlayPage() {
   const [feedbackPoints, setFeedbackPoints] = useState<number | null>(null);
   const [answerMode, setAnswerMode] = useState<"text" | "choice" | null>(null);
   const [choicesRevealed, setChoicesRevealed] = useState(false);
+  const [mcUses, setMcUses] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [results, setResults] = useState<Result[]>([]);
@@ -278,6 +279,7 @@ export default function DailyChallengePlayPage() {
       // initialisation de la barre de progression à la première question
       if (p.index === 0) {
         setQuestionProgress(Array(p.total).fill("pending"));
+        setMcUses(0);
       }
 
       setQuestion(p.question);
@@ -432,8 +434,22 @@ export default function DailyChallengePlayPage() {
   const showMultipleChoice = () => {
     if (!socket || phaseRef.current !== "playing" || lives <= 0 || !!feedback?.includes("Bravo"))
       return;
+    if (mcUses >= DAILY_MAX_MC_USES) {
+      setFeedback("Mode QCM indisponible : limite de 3 utilisations atteinte.");
+      return;
+    }
     setChoicesRevealed(true);
-    socket.emit("daily_request_choices");
+    socket.emit("daily_request_choices", (res: { ok: boolean; reason?: string; mcUses?: number }) => {
+      if (res?.ok) {
+        if (typeof res.mcUses === "number") setMcUses(res.mcUses);
+        return;
+      }
+      setChoicesRevealed(false);
+      if (res?.reason === "mc-limit") {
+        setMcUses(DAILY_MAX_MC_USES);
+        setFeedback("Mode QCM indisponible : limite de 3 utilisations atteinte.");
+      }
+    });
   };
 
   // Sauvegarde du score + états des questions à la fin du défi
@@ -449,10 +465,6 @@ export default function DailyChallengePlayPage() {
 
   const correctCount = useMemo(() => results.filter((r) => r.correct).length, [results]);
 
-  const dateLabel = challengeMeta
-    ? formatDateLabel(challengeMeta.date)
-    : formatDateLabel(dateParam);
-
   const showResponseTime = feedbackWasCorrect === true && feedbackResponseMs !== null;
   const showCorrectLabelCell =
     !!feedbackCorrectLabel &&
@@ -460,46 +472,15 @@ export default function DailyChallengePlayPage() {
       (answerMode === null && feedback === "Temps écoulé !" && !choicesRevealed));
 
   const themeMeta = getThemeMeta(question?.theme ?? null);
+  
 
   // RENDER -------------------------------------------------------------------
 
   return (
     <div className="relative text-slate-50">
-      <Background />
+      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
 
-      {/* CONTENU : wrapper sans min-h-screen, comme Home/DailyChallengePage */}
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10">
-        {/* top bar type landing samouraï */}
-        <header className="mb-10 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-600 to-rose-400 shadow-[0_0_12px_rgba(248,113,113,0.7)]">
-              <span className="text-lg font-black tracking-tight">刀</span>
-            </div>
-            <div className="leading-tight">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-300">
-                Défi du jour
-              </div>
-              <div className="text-sm font-semibold text-slate-100">{dateLabel}</div>
-            </div>
-          </div>
-
-          {/* score au centre */}
-          <div className="flex flex-col items-center justify-center text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">
-            <span className="text-[10px] text-slate-400">Score</span>
-            <span className="mt-1 text-sm tabular-nums text-rose-300">{points} pts</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate("/solo/daily", { state: { selectedDate: dateParam } })}
-              className="inline-flex items-center gap-2 rounded-[12px] border border-slate-800/80 bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.95),rgba(15,23,42,0.99)),radial-gradient(circle_at_bottom,_rgba(127,29,29,0.9),#020617)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-100 transition hover:border-rose-400 hover:text-white"
-            >
-              <span className="text-xs">←</span>
-              <span>Retour</span>
-            </button>
-          </div>
-        </header>
 
         {status === "loading" && (
           <p className="mt-6 text-sm text-slate-200/80">Chargement du défi…</p>
@@ -540,6 +521,8 @@ export default function DailyChallengePlayPage() {
     correctChoiceId={correctChoiceId}
     onSelectChoice={onSelectChoice}
     questionProgress={questionProgress}
+    qcmUsesLeft={Math.max(0, DAILY_MAX_MC_USES - mcUses)}
+    correctLabelPlacement="above"
   />
 )}
 

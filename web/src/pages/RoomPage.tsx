@@ -155,7 +155,7 @@ function PlayerCell({
         ].join(" ")}
         style={{
           background: isSelf
-            ? "linear-gradient(to bottom, rgba(189, 23, 114, 1), rgba(152,18,91,1))"
+            ? "linear-gradient(to right, #7C4DFF, #B85CFF, #F04F9D)"
             : "linear-gradient(to bottom, rgba(68, 74, 112, 0.5), rgba(68, 74, 112, 0.35))",
 
         }}
@@ -307,6 +307,9 @@ export default function RoomPage() {
   const [nowTick, setNowTick] = useState(Date.now());
   const [gameCountdown, setGameCountdown] = useState<number | null>(null);
   const [gameCountdownTotal, setGameCountdownTotal] = useState<number | null>(null);
+  const [gameCountdownEndsAt, setGameCountdownEndsAt] = useState<number | null>(null);
+  const [gameCountdownDuration, setGameCountdownDuration] = useState<number | null>(null);
+
 
   const remaining = useMemo(
     () => (endsAt ? Math.max(0, Math.ceil((endsAt - nowServer()) / 1000)) : null),
@@ -335,11 +338,17 @@ export default function RoomPage() {
     return Math.min(1, Math.max(0, progress));
   }, [finalEndsAt, finalDuration, nowTick, skew]);
 
+  const gameCountdownRemainingSeconds = useMemo(() => {
+    if (!gameCountdownEndsAt) return gameCountdown;
+    return Math.max(0, Math.ceil((gameCountdownEndsAt - nowServer()) / 1000));
+  }, [gameCountdownEndsAt, gameCountdown, nowTick, skew]);
+
   const gameCountdownProgress = useMemo(() => {
-    if (!gameCountdown || !gameCountdownTotal || gameCountdownTotal <= 0) return 0;
-    const progress = gameCountdown / gameCountdownTotal;
+    if (!gameCountdownEndsAt || !gameCountdownDuration || gameCountdownDuration <= 0) return 0;
+    const remainingMs = Math.max(0, gameCountdownEndsAt - nowServer());
+    const progress = remainingMs / gameCountdownDuration;
     return Math.min(1, Math.max(0, progress));
-  }, [gameCountdown, gameCountdownTotal]);
+  }, [gameCountdownEndsAt, gameCountdownDuration, nowTick, skew]);
 
   const applyAvatarOverrides = (rows: LeaderRow[]) => {
     const overrides = avatarOverridesRef.current;
@@ -358,12 +367,28 @@ export default function RoomPage() {
   }, [endsAt, finalEndsAt]);
 
   useEffect(() => {
+    if (!gameCountdownEndsAt) return;
+
+    let frame = 0;
+    const tick = () => {
+      setNowTick(Date.now());
+      if (gameCountdownEndsAt - nowServer() > 0) {
+        frame = requestAnimationFrame(tick);
+      }
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [gameCountdownEndsAt, skew]);
+
+  useEffect(() => {
     if (gameCountdown === null) return;
     const id = setTimeout(() => {
       setGameCountdown((prev) => (prev !== null ? (prev > 0 ? prev - 1 : null) : null));
     }, 1000);
     return () => clearTimeout(id);
   }, [gameCountdown]);
+
 
   useEffect(() => {
     if (mcChoices) setChoicesRevealed(true);
@@ -450,11 +475,16 @@ export default function RoomPage() {
           typeof p.endsAt === "number"
             ? Math.max(1, Math.ceil((p.endsAt - (Date.now() + nextSkew)) / 1000))
             : Math.max(1, Math.floor(p.seconds ?? 5));
-        const countdownStartVisual = Math.max(0, countdownDurationSeconds - 1);
+        const countdownEndsAt =
+          typeof p.endsAt === "number"
+            ? p.endsAt
+            : Date.now() + nextSkew + countdownDurationSeconds * 1000;
 
         setPhase("countdown");
-        setGameCountdown(countdownStartVisual);
+        setGameCountdown(countdownDurationSeconds);
         setGameCountdownTotal(countdownDurationSeconds);
+        setGameCountdownEndsAt(countdownEndsAt);
+        setGameCountdownDuration(countdownDurationSeconds * 1000);
         setQuestion(null);
         setMcChoices(null);
         setSelected(null);
@@ -489,6 +519,8 @@ export default function RoomPage() {
 
         setGameCountdown(null);
         setGameCountdownTotal(null);
+        setGameCountdownEndsAt(null);
+        setGameCountdownDuration(null);
         setPhase("playing");
         setIndex(p.index);
         setTotal(p.total);
@@ -817,6 +849,8 @@ export default function RoomPage() {
       setPending(false);
       setGameCountdown(null);
       setGameCountdownTotal(null);
+      setGameCountdownEndsAt(null);
+      setGameCountdownDuration(null);
     });
 
     (async () => {
@@ -1466,18 +1500,58 @@ return (
               }}
             >
               <main className="relative overflow-hidden bg-transparent">
+                <style>{`
+                  @keyframes countdownVerticalBarPulse {
+                    0%, 100% { opacity: 0.82; }
+                    50% { opacity: 1; }
+                  }
+
+                  @keyframes countdownDotPulse {
+                    0%, 20% { opacity: 0.18; transform: translateY(0); }
+                    35%, 65% { opacity: 1; transform: translateY(-1px); }
+                    80%, 100% { opacity: 0.18; transform: translateY(0); }
+                  }
+
+                  .countdown-dot {
+                    display: inline-block;
+                    animation: countdownDotPulse 1.05s ease-in-out infinite;
+                  }
+                `}</style>
 
                 <div className="relative px-5 md:px-10 py-4" style={{ minHeight: "100%" }}>
                   <div className="flex items-start justify-center">
                     <div className="w-[700px] max-w-full">
                       {gameCountdown !== null ? (
-                        <div className="flex min-h-[360px] items-center justify-center">
-                          <div className="origin-center scale-[2.35] md:scale-[2.6]">
-                            <OverwatchTimerBadge
-                              seconds={gameCountdown}
-                              progress={gameCountdownProgress}
-                              showTrafficLight
-                            />
+                        <div className="flex min-h-[520px] items-center justify-center px-4">
+                          <div className="relative w-full max-w-[480px] overflow-hidden rounded-[8px] bg-[#111729] px-10 py-8 shadow-[0_22px_90px_rgba(0,0,0,0.44)]">
+                            <div className="flex flex-col items-center text-center">
+                              <h1 className="text-[22px] font-semibold leading-tight tracking-[-0.02em] text-white">
+                                La partie va bientôt commencer
+                                <span className="inline-block w-[1.6em] text-left" aria-hidden="true">
+                                  {["", ".", "..", "..."][Math.floor(nowTick / 500) % 4]}
+                                </span>
+                              </h1>
+
+                              <div className="mt-7 w-full max-w-[420px]">
+<div className="relative h-[16px] w-full rounded-[4px] bg-white/10 p-[3px] shadow-[inset_0_1px_8px_rgba(0,0,0,0.42)]">
+                                  <div
+                                    className="relative h-full rounded-[2px] bg-gradient-to-r from-[#7C4DFF] via-[#B85CFF] to-[#F04F9D] shadow-[0_0_16px_rgba(155,108,255,0.42)] transition-none"
+                                    style={{ width: `${Math.max(0, gameCountdownProgress * 100)}%` }}
+                                  >
+                                    {gameCountdownProgress > 0.015 ? (
+                                      <span
+                                        aria-hidden
+                                        className="pointer-events-none absolute right-0 top-1/2 h-7 w-[3px] -translate-y-1/2 translate-x-1/2 rounded-full animate-[countdownVerticalBarPulse_0.9s_ease-in-out_infinite]"
+                                        style={{
+                                          background:
+                                            "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,245,180,0.95) 20%, rgba(255,255,255,1) 50%, rgba(255,245,180,0.95) 80%, rgba(255,255,255,0) 100%)",
+                                        }}
+                                      />
+                                    ) : null}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ) : null}

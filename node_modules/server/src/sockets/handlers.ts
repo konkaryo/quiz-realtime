@@ -214,6 +214,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     attempts: number;
     answered: boolean;
     mcMode: boolean;
+    mcUses: number;
     endsAt: number | null;
     roundStartMs: number | null;
     timer: NodeJS.Timeout | null;
@@ -234,6 +235,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
   const dailySessions = new Map<string, DailySession>();
   const DAILY_ROUND_MS = Number(process.env.DAILY_ROUND_MS || 20000);
+  const DAILY_MAX_MC_USES = 3;
 
   const stopDailyTimer = (socketId: string) => {
     const sess = dailySessions.get(socketId);
@@ -490,6 +492,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           attempts: 0,
           answered: false,
           mcMode: false,
+          mcUses: 0,
           endsAt: null,
           roundStartMs: null,
           timer: null,
@@ -504,14 +507,19 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       }
     });
 
-    socket.on("daily_request_choices", () => {
+    socket.on("daily_request_choices", (ack?: (res: { ok: boolean; reason?: string; mcUses?: number; mcUsesLeft?: number }) => void) => {
       const sess = dailySessions.get(socket.id);
-      if (!sess || sess.answered) return;
+      if (!sess || sess.answered) return ack?.({ ok: false, reason: "no-session" });
       const q = sess.questions[sess.index];
-      if (!q) return;
+      if (!q) return ack?.({ ok: false, reason: "no-question" });
+      if (sess.mcUses >= DAILY_MAX_MC_USES) {
+        return ack?.({ ok: false, reason: "mc-limit", mcUses: sess.mcUses, mcUsesLeft: 0 });
+      }
       sess.mcMode = true;
+      sess.mcUses += 1;
       const choices = [...q.choices].map(({ id, label }) => ({ id, label })).sort(() => Math.random() - 0.5);
       socket.emit("daily_multiple_choice", { choices });
+      ack?.({ ok: true, mcUses: sess.mcUses, mcUsesLeft: Math.max(0, DAILY_MAX_MC_USES - sess.mcUses) });
     });
 
 socket.on(
