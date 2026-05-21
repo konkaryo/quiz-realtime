@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getThemeMeta } from "../lib/themeMeta";
 import tabKey from "@/assets/tab-key.svg";
 import enterKey from "@/assets/enter-key.svg";
+import emptyQuestionImg from "../assets/empty_img.jpg";
 import { io, Socket } from "socket.io-client";
 import QuestionPanel, {
   Choice,
@@ -18,6 +19,10 @@ const QUESTION_DURATION_MS = Number(import.meta.env.VITE_DAILY_ROUND_MS ?? 20000
 const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
 const STORAGE_KEY = "dailyChallenge:results:v1";
 const DAILY_MAX_MC_USES = 3;
+const RIGHT_IMAGE_WIDTH = 300;
+const TOP_BAR_H = 12;
+const NAVBAR_TOP = 52;
+const FIXED_TOP = NAVBAR_TOP + TOP_BAR_H;
 
 const MONTH_NAMES = [
   "janvier",
@@ -472,6 +477,19 @@ export default function DailyChallengePlayPage() {
       (answerMode === null && feedback === "Temps écoulé !" && !choicesRevealed));
 
   const themeMeta = getThemeMeta(question?.theme ?? null);
+  const normalizedQuestion = useMemo(() => {
+    if (!question) return null;
+    const img = question.img
+      ? question.img.startsWith("http") || question.img.startsWith("/")
+        ? question.img
+        : "/" + question.img.replace(/^\.?\//, "")
+      : null;
+
+    return {
+      ...question,
+      img,
+    };
+  }, [question]);
   
 
   // RENDER -------------------------------------------------------------------
@@ -491,9 +509,35 @@ export default function DailyChallengePlayPage() {
           </p>
         )}
 
-{status === "ready" && question && (
+        {status === "ready" && (
+          <aside
+            className="hidden lg:block fixed bottom-0 right-0 z-20"
+            style={{ top: FIXED_TOP, width: RIGHT_IMAGE_WIDTH }}
+          >
+            <div className="h-full overflow-visible bg-transparent pb-3 pl-3 pr-6 pt-3">
+              <div className="flex flex-col gap-4 overflow-visible">
+                <div className="overflow-hidden rounded-[6px] border border-white/10 bg-[#121421]">
+                  <div className="relative aspect-video w-full">
+                    <img
+                      src={normalizedQuestion?.img || emptyQuestionImg}
+                      alt="Illustration de la question"
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      draggable={false}
+                      onError={(event) => {
+                        event.currentTarget.src = emptyQuestionImg;
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        )}
+
+{status === "ready" && normalizedQuestion && (
   <QuestionPanel
-    question={question}
+    question={normalizedQuestion}
     index={index}
     totalQuestions={totalQuestions}
     lives={lives}

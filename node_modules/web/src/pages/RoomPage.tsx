@@ -1058,12 +1058,9 @@ export default function RoomPage() {
     [mcChoices]
   );
 
-  const questionProgress: QuestionPanelProgress[] = [];
   const isPlaying = phase === "playing" && lives > 0;
   const showChoices = !!mcChoices;
   const textLocked = choicesRevealed || showChoices;
-  const isSubmitShortcutVisible = isPlaying && !textLocked;
-  const isChoicesShortcutVisible = isPlaying && !textLocked;
 
   const visibilityLabel =
     roomMeta?.visibility === "PUBLIC"
@@ -1089,6 +1086,13 @@ export default function RoomPage() {
     () =>
       Array.from({ length: total }, (_, idx) => questionStatuses[idx] ?? "pending"),
     [questionStatuses, total]
+  );
+  const questionProgress: QuestionPanelProgress[] = useMemo(
+    () =>
+      questionTrackerItems.map((status) =>
+        status === "wrong" ? "wrong" : status === "pending" ? "pending" : "correct"
+      ),
+    [questionTrackerItems]
   );
 
   const finalQuestions = useMemo(() => {
@@ -1225,6 +1229,7 @@ export default function RoomPage() {
       wrongWidth: `${(100 * stats.wrong) / total}%`,
     };
   }, [selectedFinalQuestion]);
+
 
   // ✅ Nom du salon affiché en gros à droite
   const roomDisplayName = roomMeta?.name?.trim() || "-";
@@ -1724,6 +1729,7 @@ return (
                             correctChoiceId={correctId}
                             onSelectChoice={(choice) => answerByChoice(choice.id)}
                             questionProgress={questionProgress}
+                            correctLabelPlacement="above"
                             animateQuestionText
                           />
                         </div>
@@ -1749,29 +1755,26 @@ return (
             >
               <div className="h-full overflow-visible bg-transparent pb-3 pl-3 pr-6 pt-3">
                 <div className="flex flex-col gap-4 overflow-visible">
-                  <div
-                    className="overflow-hidden rounded-[6px] border border-white/10 bg-[#121421]"
-                  >
-                    <div className="relative aspect-video w-full">
-                      <img
-                        src={(phase === "final" ? selectedFinalQuestionPanel?.img : normalizedQuestion?.img) || emptyQuestionImg}
-                        alt="Illustration de la question"
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        draggable={false}
-                        onError={(event) => {
-                          event.currentTarget.src = emptyQuestionImg;
-                        }}
-                      />
-                    </div>
+                  <div className="relative aspect-video w-full">
+                    <img
+                      src={(phase === "final" ? selectedFinalQuestionPanel?.img : normalizedQuestion?.img) || emptyQuestionImg}
+                      alt="Illustration de la question"
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      draggable={false}
+                      onError={(event) => {
+                        event.currentTarget.src = emptyQuestionImg;
+                      }}
+                    />
                   </div>
-                  <div 
-                    className="relative rounded-[6px] bg-[#2A2E44] px-6 py-6 before:pointer-events-none"
-                  >
-                    <div>
-                      <div className="grid grid-cols-6 gap-2">
-                        {finalTrackerItems.length ? (
-                          finalTrackerItems.map((status, idx) => {
+                  {phase === "final" ? (
+                    <div 
+                      className="relative rounded-[6px] bg-[#2A2E44] px-6 py-6 before:pointer-events-none"
+                    >
+                      <div>
+                        <div className="grid grid-cols-6 gap-2">
+                          {finalTrackerItems.length ? (
+                            finalTrackerItems.map((status, idx) => {
                             const isFinal = phase === "final";
                             const isLeaderboardTile = isFinal && idx === 0;
                             const isCurrent = isFinal
@@ -1833,43 +1836,12 @@ return (
                                 {idx + 1}
                               </div>
                             );
-                          })
-                        ) : (
-                          <div className="text-white/45 text-sm">—</div>
-                        )}
+                            })
+                          ) : (
+                            <div className="text-white/45 text-sm">—</div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  {isSubmitShortcutVisible || isChoicesShortcutVisible ? (
-                    <div className="space-y-1.5 px-0.5">
-                      {isSubmitShortcutVisible ? (
-                        <div className="flex items-center gap-3">
-                          <span className="relative inline-flex h-7 min-w-[66px] items-center justify-center">
-                            <span
-                              aria-hidden
-                              className="absolute inset-0 translate-y-[2px] rounded-[4px] bg-[#161B2E]"
-                            />
-                            <span className="relative inline-flex h-full w-full items-center justify-center rounded-[4px] bg-[#2A2E44] pb-[1px] text-[10px] font-semibold uppercase italic tracking-[0.02em] text-white shadow-[inset_0_-2px_0_#7A6CF2]">
-                              ENTRÉE
-                            </span>
-                          </span>
-                          <span className="text-[11px] font-medium text-white">Valider la réponse</span>
-                        </div>
-                      ) : null}
-                      {isChoicesShortcutVisible ? (
-                        <div className="flex items-center gap-3">
-                          <span className="relative inline-flex h-7 min-w-[66px] items-center justify-center">
-                            <span
-                              aria-hidden
-                              className="absolute inset-0 translate-y-[2px] rounded-[4px] bg-[#161B2E]"
-                            />
-                            <span className="relative inline-flex h-full w-full items-center justify-center rounded-[4px] bg-[#2A2E44] pb-[1px] text-[10px] font-semibold uppercase italic tracking-[0.02em] text-white shadow-[inset_0_-2px_0_#7A6CF2]">
-                              TAB
-                            </span>
-                          </span>
-                          <span className="text-[11px] font-medium text-white">Afficher les propositions</span>
-                        </div>
-                      ) : null}
                     </div>
                   ) : null}
                 </div>

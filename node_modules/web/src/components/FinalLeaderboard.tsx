@@ -135,7 +135,7 @@ export function FinalLeaderboard({
       {/* Podium */}
       <div className="px-3 md:px-6 pb-1">
         <div className="relative overflow-hidden">
-          <div className="relative grid grid-cols-1 md:grid-cols-3 items-end gap-7 py-3">
+          <div className="relative grid grid-cols-1 md:grid-cols-3 items-end gap-0 py-3">
             {podiumSlots.map((slot) => {
               const { row, h, ring, rank } = slot;
               const isSelf = row ? isSelfRow(row) : false;
@@ -191,11 +191,30 @@ export function FinalLeaderboard({
 
                   <div
                     className="relative w-full max-w-[260px] flex flex-col justify-end"
-                    style={{ height: h + 18 }}
+                    style={{ height: h + 32 }}
                   >
                     <div
-                      className="w-full h-[18px]"
-                      style={{ background: "linear-gradient(to top, #1A1D2C 0%, #13141F 100%)" }}
+                      className="relative h-[32px] w-full"
+                      style={{
+                        ...(rank === 1
+                          ? {
+                              clipPath:
+                                "polygon(0% 100%, 100% 100%, 87.5% 0%, 12.5% 0%)",
+                            }
+                          : rank === 2
+                          ? {
+                              clipPath:
+                                "polygon(0% 100%, 100% 100%, 125% 0%, 50% 0%)",
+                            }
+                          : {
+                              clipPath:
+                                "polygon(0% 100%, 100% 100%, 62.5% 0%, -12.5% 0%)",
+                            }),
+                        background:
+                          "linear-gradient(to bottom, rgba(255,255,255,0.12), rgba(19,20,31,0.95))",
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.12)",
+                      }}
                     />
                     <div className="relative w-full bg-[#212539]" style={{ height: h }}>
                       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
