@@ -8,6 +8,7 @@ import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
 import Background from "../components/Background";
 import trophy from "../assets/trophy.png";
+import laurierGold from "../assets/laurel_left_gold.png";
 import emptyQuestionImg from "../assets/empty_img.jpg";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
@@ -1498,7 +1499,7 @@ return (
 
             {/* CENTER */}
             <div
-              className="lg:ml-[320px] lg:mr-[300px] lg:overflow-y-auto lb-scroll"
+              className="lg:ml-[360px] lg:mr-[300px] lg:overflow-y-auto lb-scroll"
               style={{
                 height: `calc(100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px)`,
                 marginTop: TOP_BAR_H,
@@ -1525,7 +1526,13 @@ return (
 
                 <div className="relative px-5 md:px-10 py-4" style={{ minHeight: "100%" }}>
                   <div className="flex items-start justify-center">
-                    <div className="w-[700px] max-w-full">
+                    <div
+                      className={
+                        phase === "final"
+                          ? "w-full max-w-[1240px]"
+                          : "w-[700px] max-w-full"
+                      }
+                    >
                       {gameCountdown !== null ? (
                         <div className="flex min-h-[520px] items-center justify-center px-4">
                           <div className="relative w-full max-w-[480px] overflow-hidden rounded-[8px] bg-[#111729] px-10 py-8 shadow-[0_22px_90px_rgba(0,0,0,0.44)]">
@@ -1563,19 +1570,42 @@ return (
 
                       {phase === "final" ? (
                         <div className="space-y-12">
-                          {finalRemaining !== null ? (
-                            <div className="w-[700px] max-w-full">
-                              <div className="relative flex justify-center">
-                                <OverwatchTimerBadge
-                                  seconds={finalRemaining}
-                                  progress={finalProgress}
-                                />
-                              </div>
-                            </div>
-                          ) : null}
 
                           {isFinalLeaderboardSelected || !selectedFinalQuestionPanel ? (
-                            <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
+                            <div className="mx-auto w-full max-w-[1800px]">
+                              <div className="rounded-[12px] border border-white/10 bg-[#0D1122] px-8 py-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+                                <div className="relative z-20 mb-6 flex items-center justify-center gap-5">
+                                  <img
+                                    src={laurierGold}
+                                    alt=""
+                                    className="h-16 w-auto -translate-y-1.5 select-none"
+                                    draggable={false}
+                                    loading="lazy"
+                                  />
+                                  <h2
+                                    className="text-center text-[52px] uppercase leading-none tracking-[0.04em] px-2"
+                                    style={{
+                                      fontFamily:
+                                        '"Acumin Pro Extra Condensed Bold Italic", "Acumin Pro Extra Condensed", sans-serif',
+                                      fontStyle: "italic",
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    <span className="inline-block pr-[0.08em] bg-[linear-gradient(90deg,#6C5EE1_0%,#B162F7_50%,#E4499B_100%)] bg-clip-text text-transparent">
+                                      Résultats finaux
+                                    </span>
+                                  </h2>
+                                  <img
+                                    src={laurierGold}
+                                    alt=""
+                                    className="h-16 w-auto -translate-y-1.5 scale-x-[-1] select-none"
+                                    draggable={false}
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
+                              </div>
+                            </div>
                           ) : (
                             <div className="flex flex-col items-center">
                               <QuestionPanel
@@ -1767,6 +1797,14 @@ return (
                       }}
                     />
                   </div>
+                  {phase === "final" && finalRemaining !== null ? (
+                    <div className="flex justify-center py-1">
+                      <OverwatchTimerBadge
+                        seconds={finalRemaining}
+                        progress={finalProgress}
+                      />
+                    </div>
+                  ) : null}
                   {phase === "final" ? (
                     <div 
                       className="relative rounded-[6px] bg-[#2A2E44] px-6 py-6 before:pointer-events-none"
