@@ -2,11 +2,6 @@
 import { RefObject, KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import thumbActiveIcon from "../assets/thumb_active.png";
 import thumbInactiveIcon from "../assets/thumb_inactive.png";
-import trafficLight4 from "../assets/traffic_light_4.png";
-import trafficLight3 from "../assets/traffic_light_3.png";
-import trafficLight2 from "../assets/traffic_light_2.png";
-import trafficLight1 from "../assets/traffic_light_1.png";
-import trafficLight0 from "../assets/traffic_light_0.png";
 
 export type Choice = { id: string; label: string };
 
@@ -81,11 +76,9 @@ function Lives({ lives, total }: { lives: number; total: number }) {
 export function OverwatchTimerBadge({
   seconds,
   progress,
-  showTrafficLight = false,
 }: {
   seconds: number | null;
   progress: number;
-  showTrafficLight?: boolean;
 }) {
   const s = Math.max(0, Math.floor(seconds ?? 0));
   const warning = s <= 3;
@@ -133,29 +126,6 @@ export function OverwatchTimerBadge({
     .join(" ");
 
   const violet = "#434B71";
-
-  const trafficLightBySecond: Record<number, string> = {
-    4: trafficLight4,
-    3: trafficLight3,
-    2: trafficLight2,
-    1: trafficLight1,
-    0: trafficLight0,
-  };
-
-  const trafficLightSrc = trafficLightBySecond[s];
-
-  if (showTrafficLight && trafficLightSrc) {
-    return (
-      <div aria-live="polite" className="flex items-center justify-center">
-        <img
-          src={trafficLightSrc}
-          alt={`Compte à rebours : ${s}`}
-          className="h-[116px] w-[116px] object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
-          draggable={false}
-        />
-      </div>
-    );
-  }
 
   return (
     <div aria-live="polite" className="flex items-center justify-center">

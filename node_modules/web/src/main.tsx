@@ -188,8 +188,6 @@ const router = createBrowserRouter([
       { path: "/solo/daily/:date", element: <DailyChallengePlayPage /> },
       { path: "/multi/public", element: <Home /> },
       { path: "/multi/ranking", element: <RankingPage /> },
-      { path: "/multi/race", element: <LobbyRacePage /> },
-      { path: "/multi/race/play", element: <RacePage /> },
       { path: "/me/profile", element: <ProfilePage /> },
       { path: "/players/:playerId/profile", element: <ProfilePage /> },
       { path: "/me/history", element: <HistoryPage /> },

@@ -1,4 +1,5 @@
 // web/src/pages/RacePage.tsx
+/*
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import QuestionPanel from "../components/QuestionPanel";
@@ -468,7 +469,6 @@ export default function RacePage() {
 
       <div className="relative z-10 mx-auto w-full max-w-none px-4 pb-16 pt-8 sm:px-8 lg:px-10 xl:px-14">
         <div className="grid gap-6 lg:grid-cols-[minmax(260px,22vw)_minmax(0,1fr)_minmax(240px,20vw)] xl:gap-8 2xl:gap-10">
-          {/* COLONNE GAUCHE */}
           <div className="flex items-start justify-start">
             <aside className="w-full max-w-xs rounded-2xl border border-slate-800/80 bg-black/60 px-4 py-4 text-sm text-slate-100 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
               <div className="flex items-start justify-between gap-3">
@@ -520,14 +520,11 @@ export default function RacePage() {
             </aside>
           </div>
 
-          {/* COLONNE CENTRALE */}
           <div className="flex flex-col gap-6 px-4 lg:px-8 xl:px-12">
-            {/* BARRE DE PROGRESSION */}
             <div>
               <div className="relative h-[2px] w-full rounded-full bg-slate-900/80">
                 <div className="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-rose-500/40 via-rose-300/25 to-emerald-400/40 opacity-60" />
 
-                {/* Curseurs des joueurs */}
                 {miniMapPlayers.map((player, index) => (
                   <img
                     key={player.id}
@@ -610,7 +607,6 @@ export default function RacePage() {
             )}
           </div>
 
-          {/* COLONNE DROITE */}
           <div className="flex items-start justify-end">
             <div className="w-full max-w-xs rounded-2xl border border-slate-800/70 bg-black/30" />
           </div>
@@ -619,3 +615,4 @@ export default function RacePage() {
     </div>
   );
 }
+*/
