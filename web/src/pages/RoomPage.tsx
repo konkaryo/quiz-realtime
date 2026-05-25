@@ -1573,7 +1573,7 @@ return (
 
                           {isFinalLeaderboardSelected || !selectedFinalQuestionPanel ? (
                             <div className="mx-auto w-full max-w-[1800px]">
-                              <div className="rounded-[12px] border border-white/10 bg-[#0D1122] px-8 py-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+                              <div className="rounded-[12px] border border-white/10 bg-[radial-gradient(circle_at_50%_0%,#151A33_0%,#0D1122_50%,#0D1122_100%)] px-8 py-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
                                 <div className="relative z-20 mb-6 flex items-center justify-center gap-5">
                                   <img
                                     src={laurierGold}
