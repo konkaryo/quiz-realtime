@@ -6,12 +6,16 @@ import goldMedalImage from "../assets/gold_medal.png";
 import silverMedalImage from "../assets/silver_medal.png";
 import bronzeMedalImage from "../assets/bronze_medal.png";
 import crownImage from "../assets/crown.png";
+import { getLevelProgress } from "../utils/experience";
 
 type Row = {
   id: string;
   name: string;
   score: number;
   img?: string | null;
+  bits?: number;
+  xp?: number;
+  experience?: number;
 };
 
 export function FinalLeaderboard({
@@ -23,6 +27,36 @@ export function FinalLeaderboard({
   selfId?: string | null;
   selfName?: string | null;
 }) {
+  const LevelShield = ({ level }: { level: number }) => {
+    const gradientId = React.useId();
+
+    return (
+      <span className="relative inline-flex h-9 w-8 shrink-0 items-center justify-center text-white">
+        <svg
+          viewBox="0 0 100 120"
+          className="absolute inset-0 h-full w-full overflow-visible"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="120" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#9D5CFF" />
+              <stop offset="100%" stopColor="#E245A4" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M6 6 H94 V78 L50 114 L6 78 Z"
+            fill="#20284D"
+            stroke={`url(#${gradientId})`}
+            strokeWidth="3"
+            strokeLinejoin="miter"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        <span className="relative z-10 font-brand text-[18px] leading-none italic">{level}</span>
+      </span>
+    );
+  };
   const isSelfRow = (r: Row) =>
     (!!selfId && r.id === selfId) ||
     (!!selfName && r.name?.toLowerCase() === selfName.toLowerCase());
@@ -38,6 +72,22 @@ export function FinalLeaderboard({
   );
 
   const defaultProfile = "/img/profiles/0.avif";
+  const selfSummary = useMemo(() => {
+    const idx = rows.findIndex((row) => isSelfRow(row));
+    if (idx < 0) return null;
+    const row = rows[idx];
+    return {
+      row,
+      rank: idx + 1,
+      xp: row.xp ?? 0,
+      bits: row.bits ?? 0,
+      experience: row.experience ?? 0,
+    };
+  }, [rows, selfId, selfName]);
+  const selfLevelProgress = useMemo(
+    () => (selfSummary ? getLevelProgress(selfSummary.experience) : null),
+    [selfSummary]
+  );
 
   return (
     <div className="px-2 pb-2 flex justify-center">
@@ -176,6 +226,80 @@ export function FinalLeaderboard({
             })}
           </div>
         </div>
+        {selfSummary ? (
+          <div
+className="mx-auto mt-3 w-full max-w-[720px] rounded-[24px] border border-[#AF3ECF]/60 bg-[#11172B]/95 px-8 py-6 shadow-[0_12px_30px_rgba(0,0,0,0.35)]"
+>
+            <div className="flex items-center gap-3">
+              <div className="w-[70px] text-center font-brand text-[38px] italic leading-none text-white">#{selfSummary.rank}</div>
+              <img
+                src={selfSummary.row.img ?? defaultProfile}
+                alt=""
+                className="h-14 w-14 rounded-[6px] object-cover"
+                draggable={false}
+                loading="lazy"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[15px] md:text-[16px] leading-tight font-semibold text-white">{selfSummary.row.name}</div>
+                <div
+                  className="mt-1 inline-flex rounded px-2 py-0.5 text-[10px] font-semibold uppercase leading-none text-white"
+                  style={{ background: "linear-gradient(90deg, #8541F7 0%, #AF3ECF 50%, #E6388E 100%)" }}
+                >
+                  Vous
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="min-w-[82px] rounded-[6px] bg-white/5 px-3 py-2 text-center">
+                  <div className="font-brand text-[24px] italic leading-none text-white">{Math.round(selfSummary.row.score)}</div>
+                  <div className="mt-1 text-[9px] uppercase tracking-[0.16em] text-white/70">Points</div>
+                </div>
+                <div className="min-w-[82px] rounded-[6px] bg-white/5 px-3 py-2 text-center">
+                  <div className="font-brand text-[24px] italic leading-none text-white">+{selfSummary.xp}</div>
+                  <div className="mt-1 text-[9px] uppercase tracking-[0.16em] text-white/70">Expérience</div>
+                </div>
+                <div className="min-w-[82px] rounded-[6px] bg-white/5 px-3 py-2 text-center">
+                  <div className="font-brand text-[24px] italic leading-none text-white">+{selfSummary.bits}</div>
+                  <div className="mt-1 text-[9px] uppercase tracking-[0.16em] text-white/70">Pièces</div>
+                </div>
+              </div>
+            </div>
+{selfLevelProgress ? (
+<div className="mt-5 w-full rounded-[8px] bg-white/5 px-4 py-4">
+<div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-4">
+      <LevelShield level={selfLevelProgress.level} />
+
+<div className="w-full min-w-0">
+        <div
+          className="text-center text-[20px] tracking-[0.02em] text-white/90"
+          style={{
+            fontFamily:
+              '"Acumin Pro Extra Condensed Bold Italic", "Acumin Pro Extra Condensed", sans-serif',
+            fontStyle: "italic",
+            fontWeight: 700,
+          }}
+        >
+          {selfLevelProgress.gained} / {selfLevelProgress.needed || 1} XP
+        </div>
+
+        <div className="mt-3 h-[8px] w-full overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-[linear-gradient(90deg,#8541F7_0%,#AF3ECF_50%,#E6388E_100%)]"
+            style={{
+              width: `${Math.max(
+                0,
+                Math.min(100, selfLevelProgress.progress * 100)
+              )}%`,
+            }}
+          />
+        </div>
+      </div>
+
+      <LevelShield level={selfLevelProgress.level + 1} />
+    </div>
+  </div>
+) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );

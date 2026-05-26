@@ -1342,11 +1342,36 @@ export default function RoomPage() {
             cls: "bg-[#3B3E4D] text-transparent",
           };
 
+const topRankStyles: Record<number, { outer: string; inner: string; text: string }> = {
+      1: { outer: "from-[#F9D76A] via-[#EFB93B] to-[#D89312]", inner: "from-[#7E6632] to-[#5E4B22]", text: "text-white" },
+      2: { outer: "from-[#D9E0EE] via-[#BBC5D8] to-[#919CB3]", inner: "from-[#5D6578] to-[#464E62]", text: "text-white" },
+      3: { outer: "from-[#F0A66C] via-[#D77E41] to-[#A95A2A]", inner: "from-[#664437] to-[#4D3229]", text: "text-white" },
+    };
+
+    const rankNode = isSelf ? (
+      <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] bg-white pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-black [text-rendering:geometricPrecision]">
+        {rank}
+      </span>
+    ) : rank <= 3 ? (
+      <span className="relative inline-flex h-8 w-8 flex-shrink-0 items-center justify-center" style={{ clipPath: "polygon(50% 2%, 93% 25%, 93% 75%, 50% 98%, 7% 75%, 7% 25%)" }}>
+        <span className={`absolute inset-0 bg-gradient-to-br ${topRankStyles[rank].outer}`} />
+        <span
+          className={`absolute inset-[2px] bg-gradient-to-b ${topRankStyles[rank].inner}`}
+          style={{ clipPath: "polygon(50% 2%, 93% 25%, 93% 75%, 50% 98%, 7% 75%, 7% 25%)" }}
+        />
+        <span className={`relative z-10 pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none ${topRankStyles[rank].text} [text-rendering:geometricPrecision]`}>
+          {rank}
+        </span>
+      </span>
+    ) : (
+      <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] bg-[#1F2437] pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-white [text-rendering:geometricPrecision]">
+        {rank}
+      </span>
+    );
+
 return (
   <div className="flex items-center gap-2">
-    <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] bg-white pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-black [text-rendering:geometricPrecision]">
-      {rank}
-    </span>
+    {rankNode}
 
     <div className="flex-1 min-w-0">
       <PlayerCell row={r} rank={rank} isSelf={isSelf} onNameClick={handlePlayerProfile} />
