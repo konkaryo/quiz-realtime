@@ -12,11 +12,10 @@ import laurierGold from "../assets/laurel_left_gold.png";
 import emptyQuestionImg from "../assets/empty_img.jpg";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
-  OverwatchTimerBadge,
   QuestionProgress as QuestionPanelProgress,
 } from "../components/QuestionPanel";
 import { getLevelFromExperience } from "../utils/experience";
-import { Eye, EyeOff, Settings, X } from "lucide-react";
+import { Eye, EyeOff, List, LogOut, Settings, X } from "lucide-react";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -70,6 +69,50 @@ function maskRoomCode(code: string | null | undefined) {
   const normalized = (code ?? "").trim();
   if (!normalized) return "—";
   return "•".repeat(Math.max(normalized.length, 6));
+}
+
+function FinalCountdownRing({ seconds, progress }: { seconds: number; progress: number }) {
+  const normalizedSeconds = Math.max(0, Math.floor(seconds));
+  const clampedProgress = Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0;
+  const radius = 46;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - clampedProgress);
+
+  return (
+    <div className="w-full rounded-[px] bg-[#0C1222] px-4 pb-4 pt-5 shadow-[0_14px_38px_rgba(2,8,28,0.58),inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <h3 className="font-acumin text-[12px] font-semibold uppercase tracking-[0.06em] text-white">PROCHAINE PARTIE</h3>
+
+      <div className="mt-5 flex justify-center">
+        <div className="relative flex h-[120px] w-[120px] items-center justify-center">
+          <svg className="absolute inset-0 -rotate-90" viewBox="0 0 120 120" aria-hidden>
+            <defs>
+              <linearGradient id="finalCountdownRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#ff5d8f" />
+                <stop offset="100%" stopColor="#b53be9" />
+              </linearGradient>
+            </defs>
+            <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(215,129,233,0.24)" strokeWidth="8" />
+            <circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke="url(#finalCountdownRingGradient)"
+              strokeWidth="8"
+              strokeLinecap="butt"
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              style={{ transition: "stroke-dashoffset 250ms linear" }}
+            />
+          </svg>
+          <div className="relative flex h-[92px] w-[92px] flex-col items-center justify-center rounded-full bg-[#0B1020] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <span className="font-acumin text-[32px] leading-[0.9] font-bold text-white">{normalizedSeconds}</span>
+            <span className="mt-1 font-acumin text-[10px] font-semibold uppercase tracking-[0.16em] text-white/80">sec</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* Récapitulatif final (affiché à gauche uniquement en phase 'final') */
@@ -1201,6 +1244,7 @@ export default function RoomPage() {
     };
   }, [selectedFinalQuestionSnapshot, finalStatsByQuestionId]);
   const isFinalLeaderboardSelected = selectedFinalIndex === 0;
+  const firstFinalQuestionIndex = finalQuestionSnapshots.length > 0 ? 1 : 0;
 
   const selectedFinalQuestionPanel = useMemo(() => {
     if (!selectedFinalQuestion) return null;
@@ -1550,14 +1594,21 @@ return (
                 `}</style>
 
                 <div className="relative px-5 md:px-10 py-4" style={{ minHeight: "100%" }}>
-                  <div className="flex items-start justify-center">
+                  {phase !== "final" ? (
                     <div
-                      className={
-                        phase === "final"
-                          ? "w-full max-w-[1240px]"
-                          : "w-[700px] max-w-full"
-                      }
-                    >
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 opacity-35"
+                      style={{
+                        backgroundImage:
+                          "radial-gradient(circle at center, rgba(8,10,30,0.18) 0%, rgba(6,8,25,0.72) 72%, rgba(6,8,25,0.9) 100%), url('/img/interface/quiz_room.png')",
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        backgroundRepeat: "no-repeat",
+                      }}
+                    />
+                  ) : null}
+                  <div className="flex items-start justify-center">
+                    <div className="w-full max-w-[1800px]">
                       {gameCountdown !== null ? (
                         <div className="flex min-h-[520px] items-center justify-center px-4">
                           <div className="relative w-full max-w-[480px] overflow-hidden rounded-[8px] bg-[#111729] px-10 py-8 shadow-[0_22px_90px_rgba(0,0,0,0.44)]">
@@ -1633,6 +1684,41 @@ return (
                             </div>
                           ) : (
                             <div className="flex flex-col items-center">
+                              {finalTrackerItems.length > 1 ? (
+                                <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+                                  {finalTrackerItems.slice(1).map((status, idx) => {
+                                    const questionIndex = idx + 1;
+                                    const isCurrent = questionIndex === selectedFinalIndex;
+                                    const colorClass =
+                                      status === "correct"
+                                        ? "bg-emerald-600 text-white"
+                                        : status === "correct-mc"
+                                        ? "bg-amber-400 text-white"
+                                        : status === "wrong"
+                                        ? "bg-[#AF2D33] text-white"
+                                        : "bg-white/30 text-white/70";
+                                    const trackerClasses = [
+                                      "flex h-8 w-8 items-center justify-center rounded-[7px] text-[12px] font-semibold",
+                                      "transition-all",
+                                      colorClass,
+                                      isCurrent ? "ring-2 ring-white/70" : "",
+                                    ].join(" ");
+
+                                    return (
+                                      <button
+                                        key={`final-top-q-${idx}`}
+                                        type="button"
+                                        onClick={() => setSelectedFinalIndex(questionIndex)}
+                                        className={trackerClasses}
+                                        aria-label={`Voir question ${questionIndex}`}
+                                        title={`Voir question ${questionIndex}`}
+                                      >
+                                        {questionIndex}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
                               <QuestionPanel
                                 question={selectedFinalQuestionPanel}
                                 index={selectedFinalIndex - 1}
@@ -1751,50 +1837,56 @@ return (
                             </div>
                           )}
                         </div>
-                      ) : normalizedQuestion ? (
-                        <div>
-                          <QuestionPanel
-                            question={normalizedQuestion}
-                            index={index}
-                            totalQuestions={total}
-                            lives={lives}
-                            totalLives={TEXT_LIVES}
-                            remainingSeconds={remaining}
-                            timerProgress={timerProgress}
-                            isReveal={phase === "reveal" && (remaining ?? 0) === 0}
-                            isPlaying={isPlaying}
-                            inputRef={inputRef}
-                            textAnswer={textAnswer}
-                            wrongTextAnswer={wrongTextAnswer}
-                            textLocked={textLocked}
-                            onChangeText={setTextAnswer}
-                            onSubmitText={sendText}
-                            onShowChoices={showMultipleChoice}
-                            feedback={feedbackText}
-                            feedbackResponseMs={feedbackResponseMs}
-                            feedbackWasCorrect={feedbackWasCorrect}
-                            feedbackCorrectLabel={feedbackCorrectLabel}
-                            feedbackPoints={feedbackPoints}
-                            reserveFeedbackSpace
-                            answerMode={answerMode}
-                            choicesRevealed={choicesRevealed}
-                            showChoices={showChoices}
-                            choices={choicesForPanel}
-                            selectedChoice={selected}
-                            correctChoiceId={correctId}
-                            onSelectChoice={(choice) => answerByChoice(choice.id)}
-                            questionProgress={questionProgress}
-                            correctLabelPlacement="above"
-                            animateQuestionText
-                          />
-                        </div>
-                      ) : phase === "countdown" ? null : (
-                        <div className="rounded-2xl border border-white/10 bg-transparent px-4 py-10 text-center text-sm text-white/70">
-                          {phase === "between"
-                            ? ""
-                            : phase === "idle"
-                            ? "En attente des joueurs…"
-                            : "Préparation du prochain round…"}
+                      ) : (
+                        <div className="mx-auto w-full max-w-[1800px]">
+                          <div className="rounded-[12px] border border-white/10 bg-[#0D1122] px-8 py-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+                            {normalizedQuestion ? (
+                              <div>
+                                <QuestionPanel
+                                  question={normalizedQuestion}
+                                  index={index}
+                                  totalQuestions={total}
+                                  lives={lives}
+                                  totalLives={TEXT_LIVES}
+                                  remainingSeconds={remaining}
+                                  timerProgress={timerProgress}
+                                  isReveal={phase === "reveal" && (remaining ?? 0) === 0}
+                                  isPlaying={isPlaying}
+                                  inputRef={inputRef}
+                                  textAnswer={textAnswer}
+                                  wrongTextAnswer={wrongTextAnswer}
+                                  textLocked={textLocked}
+                                  onChangeText={setTextAnswer}
+                                  onSubmitText={sendText}
+                                  onShowChoices={showMultipleChoice}
+                                  feedback={feedbackText}
+                                  feedbackResponseMs={feedbackResponseMs}
+                                  feedbackWasCorrect={feedbackWasCorrect}
+                                  feedbackCorrectLabel={feedbackCorrectLabel}
+                                  feedbackPoints={feedbackPoints}
+                                  reserveFeedbackSpace
+                                  answerMode={answerMode}
+                                  choicesRevealed={choicesRevealed}
+                                  showChoices={showChoices}
+                                  choices={choicesForPanel}
+                                  selectedChoice={selected}
+                                  correctChoiceId={correctId}
+                                  onSelectChoice={(choice) => answerByChoice(choice.id)}
+                                  questionProgress={questionProgress}
+                                  correctLabelPlacement="above"
+                                  animateQuestionText
+                                />
+                              </div>
+                            ) : phase === "countdown" ? null : (
+                              <div className="rounded-2xl border border-white/10 bg-transparent px-4 py-10 text-center text-sm text-white/70">
+                                {phase === "between"
+                                  ? ""
+                                  : phase === "idle"
+                                  ? "En attente des joueurs…"
+                                  : "Préparation du prochain round…"}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1824,87 +1916,27 @@ return (
                   </div>
                   {phase === "final" && finalRemaining !== null ? (
                     <div className="flex justify-center py-1">
-                      <OverwatchTimerBadge
-                        seconds={finalRemaining}
-                        progress={finalProgress}
-                      />
+                      <FinalCountdownRing seconds={finalRemaining} progress={finalProgress} />
                     </div>
                   ) : null}
                   {phase === "final" ? (
-                    <div 
-                      className="relative rounded-[6px] bg-[#2A2E44] px-6 py-6 before:pointer-events-none"
-                    >
-                      <div>
-                        <div className="grid grid-cols-6 gap-2">
-                          {finalTrackerItems.length ? (
-                            finalTrackerItems.map((status, idx) => {
-                            const isFinal = phase === "final";
-                            const isLeaderboardTile = isFinal && idx === 0;
-                            const isCurrent = isFinal
-                              ? idx === selectedFinalIndex
-                              : idx === index && phase !== "between";
-
-                            const colorClass =
-                              status === "correct"
-                                ? "bg-emerald-600 text-white"
-                                : status === "correct-mc"
-                                ? "bg-amber-400 text-white"
-                                : status === "wrong"
-                                ? "bg-[#AF2D33] text-white"
-                                : "bg-white/30 text-white/70";
-
-                            const trackerClasses = [
-                              "flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-semibold",
-                              "transition-all",
-                              colorClass,
-                              isCurrent ? "ring-2 ring-white/70" : "",
-                            ].join(" ");
-
-                            const trackerLabel = isLeaderboardTile
-                              ? "Classement final"
-                              : `Question ${idx}`;
-
-                            return isFinal ? (
-                              <button
-                                key={isLeaderboardTile ? "final-leaderboard" : `q-${idx}`}
-                                type="button"
-                                onClick={() => setSelectedFinalIndex(idx)}
-                                className={trackerClasses}
-                                aria-label={`Voir ${trackerLabel}`}
-                                title={`Voir ${trackerLabel}`}
-                              >
-                                {isLeaderboardTile ? (
-                                  <span
-                                    aria-hidden
-                                    className="flex h-full w-full flex-col items-center justify-center gap-[3px] rounded-[4px]"
-                                  >
-                                    {Array.from({ length: 3 }, (_, lineIdx) => (
-                                      <span
-                                        key={lineIdx}
-                                        className="h-[2px] w-4 rounded-full bg-white/85"
-                                      />
-                                    ))}
-                                  </span>
-                                ) : (
-                                  idx
-                                )}
-                              </button>
-                            ) : (
-                              <div
-                                key={`q-${idx + 1}`}
-                                className={trackerClasses}
-                                aria-label={trackerLabel}
-                                title={trackerLabel}
-                              >
-                                {idx + 1}
-                              </div>
-                            );
-                            })
-                          ) : (
-                            <div className="text-white/45 text-sm">—</div>
-                          )}
-                        </div>
-                      </div>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedFinalIndex(firstFinalQuestionIndex)}
+                        className="mx-auto flex h-12 w-[86%] items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#6a38ff] to-[#ea4aa0] px-4 font-acumin font-semibold text-white transition hover:brightness-110"
+                      >
+                        <span className="text-[16px] leading-none">Voir le détail</span>
+                        <List className="h-5 w-5 text-white/95" strokeWidth={2.3} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => nav("/")}
+                        className="mx-auto flex h-12 w-[86%] items-center justify-center gap-3 rounded-xl bg-[#151A30] px-4 font-acumin font-semibold text-white transition hover:bg-[#1b2340]"
+                      >
+                        <span className="text-[16px] leading-none">Retour au salon</span>
+                        <LogOut className="h-5 w-5 text-white/95" strokeWidth={2.3} />
+                      </button>
                     </div>
                   ) : null}
                 </div>
