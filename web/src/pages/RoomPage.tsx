@@ -1607,7 +1607,7 @@ return (
                       }}
                     />
                   ) : null}
-                  <div className="flex items-start justify-center">
+                  <div className="relative z-10 flex items-start justify-center">
                     <div className="w-full max-w-[1800px]">
                       {gameCountdown !== null ? (
                         <div className="flex min-h-[520px] items-center justify-center px-4">
@@ -1649,7 +1649,11 @@ return (
 
                           {isFinalLeaderboardSelected || !selectedFinalQuestionPanel ? (
                             <div className="mx-auto w-full max-w-[1800px]">
-                              <div className="rounded-[12px] border border-white/10 bg-[radial-gradient(circle_at_50%_0%,#151A33_0%,#0D1122_50%,#0D1122_100%)] px-8 py-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+                              <div className="relative overflow-hidden rounded-[12px] border border-white/10 bg-[#0D1122] px-8 py-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+                                <div
+                                  aria-hidden="true"
+                                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_95%_58%_at_50%_18%,rgba(255,232,145,0.20)_0%,rgba(174,111,255,0.11)_34%,rgba(13,17,34,0.04)_46%,rgba(13,17,34,0)_50%),linear-gradient(180deg,rgba(97,74,149,0.10)_0%,rgba(43,34,84,0.08)_30%,rgba(13,17,34,0)_50%)]"
+                                />
                                 <div className="relative z-20 mb-6 flex items-center justify-center gap-5">
                                   <img
                                     src={laurierGold}
@@ -1679,7 +1683,9 @@ return (
                                     loading="lazy"
                                   />
                                 </div>
-                                <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
+                                <div className="relative z-10">
+                                  <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
+                                </div>
                               </div>
                             </div>
                           ) : (

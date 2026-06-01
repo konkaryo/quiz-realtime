@@ -1,12 +1,55 @@
 // web/src/components/FinalLeaderboard.tsx
 
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import podiumImage from "../assets/podium.png";
 import goldMedalImage from "../assets/gold_medal.png";
 import silverMedalImage from "../assets/silver_medal.png";
 import bronzeMedalImage from "../assets/bronze_medal.png";
 import crownImage from "../assets/crown.png";
 import { getLevelProgress } from "../utils/experience";
+
+const confettiPieces = [
+  { left: "6%", top: "8%", color: "#FF4FA3", width: 6, height: 10, rotate: -22, delay: "0s", duration: "3.8s" },
+  { left: "12%", top: "22%", color: "#A66BFF", width: 5, height: 5, rotate: 36, delay: "-1.2s", duration: "4.4s" },
+  { left: "20%", top: "4%", color: "#6B83FF", width: 7, height: 7, rotate: 48, delay: "-0.8s", duration: "4.1s" },
+  { left: "29%", top: "6%", color: "#FF9B42", width: 5, height: 9, rotate: 26, delay: "-1.8s", duration: "3.6s" },
+  { left: "36%", top: "18%", color: "#8DF7FF", width: 4, height: 8, rotate: -42, delay: "-0.4s", duration: "4.7s" },
+  { left: "45%", top: "10%", color: "#FED865", width: 8, height: 8, rotate: 12, delay: "-2.1s", duration: "4s" },
+  { left: "55%", top: "3%", color: "#E245A4", width: 5, height: 10, rotate: -34, delay: "-1.4s", duration: "4.5s" },
+  { left: "63%", top: "14%", color: "#7CFFB2", width: 6, height: 6, rotate: 41, delay: "-0.2s", duration: "3.9s" },
+  { left: "71%", top: "6%", color: "#B162F7", width: 5, height: 9, rotate: -14, delay: "-1.9s", duration: "4.3s" },
+  { left: "83%", top: "12%", color: "#FFB15D", width: 6, height: 10, rotate: 28, delay: "-0.7s", duration: "3.7s" },
+  { left: "91%", top: "20%", color: "#6C8CFF", width: 5, height: 5, rotate: -38, delay: "-1.6s", duration: "4.6s" },
+  { left: "8%", top: "44%", color: "#FF73D4", width: 5, height: 9, rotate: 55, delay: "-2.3s", duration: "4.2s" },
+  { left: "18%", top: "52%", color: "#FED865", width: 7, height: 7, rotate: -12, delay: "-0.9s", duration: "3.8s" },
+  { left: "78%", top: "46%", color: "#54DFFF", width: 4, height: 8, rotate: 23, delay: "-2s", duration: "4.4s" },
+  { left: "89%", top: "38%", color: "#FF5D8F", width: 6, height: 6, rotate: 42, delay: "-1.1s", duration: "4.1s" },
+];
+
+function PodiumConfetti() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[12px]" aria-hidden="true">
+      {confettiPieces.map((piece, index) => (
+        <span
+          key={`podium-confetti-${index}`}
+          className="absolute rounded-[2px] opacity-90 shadow-[0_0_10px_rgba(255,255,255,0.16)] animate-[podiumConfettiFloat_var(--confetti-duration)_ease-in-out_infinite]"
+          style={
+            {
+              left: piece.left,
+              top: piece.top,
+              width: `${piece.width}px`,
+              height: `${piece.height}px`,
+              backgroundColor: piece.color,
+              transform: `rotate(${piece.rotate}deg)`,
+              animationDelay: piece.delay,
+              "--confetti-duration": piece.duration,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
+  );
+}
 
 type Row = {
   id: string;
@@ -57,9 +100,12 @@ export function FinalLeaderboard({
       </span>
     );
   };
-  const isSelfRow = (r: Row) =>
-    (!!selfId && r.id === selfId) ||
-    (!!selfName && r.name?.toLowerCase() === selfName.toLowerCase());
+  const isSelfRow = useCallback(
+    (r: Row) =>
+      (!!selfId && r.id === selfId) ||
+      (!!selfName && r.name?.toLowerCase() === selfName.toLowerCase()),
+    [selfId, selfName]
+  );
 
   const podiumSlots = useMemo(
     () =>
@@ -83,7 +129,7 @@ export function FinalLeaderboard({
       bits: row.bits ?? 0,
       experience: row.experience ?? 0,
     };
-  }, [rows, selfId, selfName]);
+  }, [rows, isSelfRow]);
   const selfLevelProgress = useMemo(
     () => (selfSummary ? getLevelProgress(selfSummary.experience) : null),
     [selfSummary]
@@ -94,15 +140,24 @@ export function FinalLeaderboard({
       {/* Podium */}
       <div className="w-full px-3 md:px-6 pb-1">
         <div className="relative mx-auto flex w-full justify-center -mt-20 pt-3">
+          <PodiumConfetti />
           <img
             src={podiumImage}
             alt="Podium"
-            className="block h-auto w-[130%] max-w-none -mt-[100px] select-none"
+            className="relative z-20 block h-auto w-[130%] max-w-none -mt-[100px] select-none"
+            style={{
+              WebkitMaskImage:
+                "linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 14%, #000 100%)",
+              WebkitMaskComposite: "source-in",
+              maskImage:
+                "linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 14%, #000 100%)",
+              maskComposite: "intersect",
+            }}
             draggable={false}
             loading="lazy"
           />
 
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-[18%] w-[130%] grid grid-cols-3 items-end gap-0 px-2">
+          <div className="absolute left-1/2 z-30 -translate-x-1/2 bottom-[18%] w-[130%] grid grid-cols-3 items-end gap-0 px-2">
             {podiumSlots.map((slot) => {
               const { row, rank } = slot;
               const isSelf = row ? isSelfRow(row) : false;
