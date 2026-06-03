@@ -1636,8 +1636,8 @@ return (
 
                           {isFinalLeaderboardSelected || !selectedFinalQuestionPanel ? (
                             <div className="mx-auto w-full max-w-[1800px]">
-                              <div className="relative">
-                                <div className="relative z-20 mb-6 flex items-center justify-center gap-5">
+                              <div className="relative pt-8 md:pt-10">
+                                <div className="relative z-20 mb-0 flex items-center justify-center gap-5">
                                   <img
                                     src={laurierGold}
                                     alt=""
@@ -1666,7 +1666,7 @@ return (
                                     loading="lazy"
                                   />
                                 </div>
-                                <div className="relative z-10">
+                                <div className="relative z-10 -mt-4 md:-mt-6">
                                   <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
                                 </div>
                               </div>

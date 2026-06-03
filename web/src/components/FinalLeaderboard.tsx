@@ -185,7 +185,7 @@ export function FinalLeaderboard({
     <div className="px-2 pb-2 flex justify-center">
       {/* Podium */}
       <div className="w-full px-3 md:px-6 pb-1">
-        <div className="relative mx-auto flex w-full justify-center -mt-20 pt-3">
+        <div className="relative mx-auto flex w-full justify-center">
           <PodiumConfetti />
           <img
             src={podiumImage}
@@ -328,7 +328,7 @@ export function FinalLeaderboard({
           </div>
         </div>
         {selfSummary ? (
-          <div className="mx-auto mt-3 flex min-h-[118px] w-full max-w-[720px] items-center overflow-hidden rounded-[24px] border border-[#AF3ECF]/60 bg-[#11172B]/95 px-8 py-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
+          <div className="mx-auto mt-3 flex min-h-[118px] w-full max-w-[720px] items-center overflow-hidden rounded-[24px] bg-[#11172B]/95 px-8 py-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
             <div className="relative h-[86px] w-full">
               {selfLevelProgress ? (
                 <div
