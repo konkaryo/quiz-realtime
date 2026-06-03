@@ -1593,20 +1593,7 @@ return (
                   }
                 `}</style>
 
-                <div className="relative px-5 md:px-10 py-4" style={{ minHeight: "100%" }}>
-                  {phase !== "final" ? (
-                    <div
-                      aria-hidden
-                      className="pointer-events-none absolute inset-0 opacity-35"
-                      style={{
-                        backgroundImage:
-                          "radial-gradient(circle at center, rgba(8,10,30,0.18) 0%, rgba(6,8,25,0.72) 72%, rgba(6,8,25,0.9) 100%), url('/img/interface/quiz_room.png')",
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        backgroundRepeat: "no-repeat",
-                      }}
-                    />
-                  ) : null}
+                <div className="relative px-5 py-4 md:px-10" style={{ minHeight: "100%" }}>
                   <div className="relative z-10 flex items-start justify-center">
                     <div className="w-full max-w-[1800px]">
                       {gameCountdown !== null ? (
@@ -1649,11 +1636,7 @@ return (
 
                           {isFinalLeaderboardSelected || !selectedFinalQuestionPanel ? (
                             <div className="mx-auto w-full max-w-[1800px]">
-                              <div className="relative overflow-hidden rounded-[12px] border border-white/10 bg-[#0D1122] px-8 py-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-                                <div
-                                  aria-hidden="true"
-                                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_95%_58%_at_50%_18%,rgba(255,232,145,0.20)_0%,rgba(174,111,255,0.11)_34%,rgba(13,17,34,0.04)_46%,rgba(13,17,34,0)_50%),linear-gradient(180deg,rgba(97,74,149,0.10)_0%,rgba(43,34,84,0.08)_30%,rgba(13,17,34,0)_50%)]"
-                                />
+                              <div className="relative">
                                 <div className="relative z-20 mb-6 flex items-center justify-center gap-5">
                                   <img
                                     src={laurierGold}
@@ -1845,7 +1828,7 @@ return (
                         </div>
                       ) : (
                         <div className="mx-auto w-full max-w-[1800px]">
-                          <div className="rounded-[12px] border border-white/10 bg-[#0D1122] px-8 py-8 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+                          <div className="relative">
                             {normalizedQuestion ? (
                               <div>
                                 <QuestionPanel

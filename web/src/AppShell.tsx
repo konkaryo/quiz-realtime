@@ -157,6 +157,37 @@ function MenuCard({
   );
 }
 
+function NavLevelShield({ level }: { level: number }) {
+  const gradientId = React.useId();
+
+  return (
+    <span className="relative inline-flex h-9 w-8 shrink-0 items-center justify-center text-white">
+      <svg
+        viewBox="0 0 100 120"
+        className="absolute inset-0 h-full w-full overflow-visible"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="120" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#9D5CFF" />
+            <stop offset="100%" stopColor="#E245A4" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M6 6 H94 V78 L50 114 L6 78 Z"
+          fill="#20284D"
+          stroke={`url(#${gradientId})`}
+          strokeWidth="3"
+          strokeLinejoin="miter"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+      <span className="relative z-10 font-brand text-[18px] leading-none italic">{level}</span>
+    </span>
+  );
+}
+
 /* ---------- ligne de menu utilisateur ---------- */
 function UserMenuItem({
   to,
@@ -971,6 +1002,7 @@ export default function AppShell() {
   ];
 
   const avatarUrl = user?.img || "/img/profiles/0.avif";
+  const formattedDisplayBits = new Intl.NumberFormat("fr-FR").format(displayBits);
   const xpValue = displayExperience;
   const xpProgress = getLevelProgress(xpValue);
   const xpProgressPercent = Math.max(0, Math.min(100, Math.floor(xpProgress.progress * 100)));
@@ -1418,67 +1450,69 @@ export default function AppShell() {
                   justifyContent: "center",
                 }}
               >
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    padding: 2,
-                    borderRadius: 6,
-                    background: `conic-gradient(#eacb4d ${xpProgressPercent}%, rgba(86,83,110,.85) ${xpProgressPercent}% 100%)`,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: 4,
-                      background: "rgba(17,24,39,.96)",
-                      color: "#f8fafc",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      textTransform: "uppercase",
-                      fontFamily:
-                        '"Acumin Pro Extra Condensed Bold Italic", "Arial Narrow", sans-serif',
-                      fontStyle: "italic",
-                      fontWeight: 800,
-                      fontSize: 20,
-                      letterSpacing: 0.5,
-                      lineHeight: 1,
-                      
-                    }}
-                  >
-                    <span style={{ display: "inline-block", transform: "translateY(1px)" }}>
-                      {xpProgress.level}
-                    </span>
-                  </div>
-                </div>
+                <NavLevelShield level={xpProgress.level} />
               </div>
 
               <div
+                aria-label={`${formattedDisplayBits} bits`}
                 style={{
+                  position: "relative",
                   display: "flex",
                   alignItems: "center",
-                  gap: 3,
-                  fontWeight: 700,
-                  fontSize: 13,
-                  color: "#e5e7eb",
+                  height: 45,
+                  minWidth: 118,
+                  paddingRight: 14,
+                  fontWeight: 800,
+                  color: "#f8fafc",
                 }}
               >
-                <span>{displayBits}</span>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    left: 22,
+                    right: 0,
+                    height: 26,
+                    borderRadius: "0 999px 999px 0",
+                    background: "#151A2A",
+                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,.05)",
+                  }}
+                />
                 <img
                   src={bitIconUrl}
-                  alt="Bits"
-                  width={20}
-                  height={20}
-                  style={{ display: "block" }}
+                  alt=""
+                  aria-hidden="true"
+                  width={45}
+                  height={45}
+                  style={{
+                    display: "block",
+                    flexShrink: 0,
+                    zIndex: 1,
+                    filter: "drop-shadow(0 3px 7px rgba(0,0,0,.5))",
+                  }}
                 />
+                <span
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    minWidth: 58,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "0 0 0 8px",
+                    fontSize: 13,
+                    lineHeight: 1,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {formattedDisplayBits}
+                </span>
               </div>
 
               <button
                 type="button"
                 title="Notifications"
-                aria-label="Notifications"
+                aria-label={unreadCount > 0 ? `Notifications (${unreadCount})` : "Notifications"}
                 onClick={() => setNotificationsOpen((prev) => !prev)}
                 style={{
                   display: "inline-flex",
@@ -1495,18 +1529,30 @@ export default function AppShell() {
               >
                 {unreadCount > 0 && (
                   <span
-                    aria-hidden
+                    aria-hidden="true"
                     style={{
                       position: "absolute",
-                      top: 3,
-                      right: 3,
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: "#ef4444",
-                      boxShadow: "0 0 0 1px rgba(15,23,42,.9)",
+                      top: -8,
+                      right: -8,
+                      minWidth: 20,
+                      height: 20,
+                      padding: "0 5px",
+                      display: "inline-grid",
+                      placeItems: "center",
+                      borderRadius: 999,
+                      border: "1px solid rgba(15,23,42,.8)",
+                      background: "#8b5cf6",
+                      color: "#ffffff",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      boxShadow: "0 4px 10px rgba(0,0,0,0.45)",
                     }}
-                  />
+                  >
+                    <span style={{ transform: "translateX(0.5px)", fontVariantNumeric: "tabular-nums" }}>
+                      {unreadCount}
+                    </span>
+                  </span>
                 )}
                 <img
                   src={bellUrl}
@@ -1523,7 +1569,7 @@ export default function AppShell() {
                   title={user?.displayName || "Utilisateur"}
                   style={{
                     display: "flex",
-                    alignItems: "flex-start",
+                    alignItems: "center",
                     gap: 8,
                     padding: "6px 10px",
                     border: "none",
@@ -1561,26 +1607,11 @@ export default function AppShell() {
                   </span>
 
                   <span
-                    style={{
-                      maxWidth: 140,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      lineHeight: 1.2,
-                      paddingBottom: 2,
-                      marginTop: 2,
-                    }}
-                  >
-                    {user?.displayName ?? "Utilisateur"}
-                  </span>
-
-                  <span
                     aria-hidden
                     style={{
                       fontSize: 14,
                       opacity: 0.7,
                       lineHeight: 1,
-                      marginTop: 4,
                       flexShrink: 0,
                     }}
                   >
@@ -1615,6 +1646,62 @@ export default function AppShell() {
                       top: -8,
                       height: 8,
                       background: "transparent",
+                    }}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "2px 12px 12px",
+                      color: "#f8fafc",
+                      fontWeight: 700,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 6,
+                        display: "grid",
+                        placeItems: "center",
+                        background: "rgba(255,255,255,.08)",
+                        color: "#e5e7eb",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="17"
+                        height="17"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 21a8 8 0 0 0-16 0" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </span>
+                    <span
+                      style={{
+                        minWidth: 0,
+                        maxWidth: 230,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {user?.displayName ?? "Utilisateur"}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      height: 1,
+                      background: "rgba(255,255,255,.08)",
+                      margin: "0 0 6px",
                     }}
                   />
                   <UserMenuItem to="/me/profile" label="Profil" />

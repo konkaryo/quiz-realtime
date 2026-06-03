@@ -366,7 +366,7 @@ export default function DailyChallengePage() {
         )}
         {/* PANNEAUX SÉPARÉS */}
         <div className="min-h-0">
-          <div className="grid gap-6 lg:grid-cols-[300px,minmax(0,1fr),300px] xl:grid-cols-[320px,minmax(540px,1fr),320px]">
+          <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr),320px] xl:grid-cols-[360px,minmax(540px,1fr),360px]">
             {/* CLASSEMENT */}
             <aside className="flex h-full flex-col rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
               <div className="text-center text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
@@ -591,8 +591,8 @@ export default function DailyChallengePage() {
                     disabled={!selectedChallenge}
                     onClick={() => selectedDate && navigate(`/solo/daily/${selectedDate}`)}
                     className={[
-                      "mt-auto inline-flex items-center justify-center rounded-[6px] px-6 py-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] transition",
-                      "border border-transparent bg-[#2D7CFF] text-slate-50 hover:bg-[#1F65DB]",
+                      "mt-auto inline-flex items-center justify-center rounded-[6px] px-6 py-2.5 font-sans text-[15px] font-bold transition",
+                      "border border-transparent bg-[#6250C7] text-slate-50 hover:bg-[#6F5BD4]",
                       !selectedChallenge ? "cursor-not-allowed opacity-40" : "",
                     ].join(" ")}
                   >

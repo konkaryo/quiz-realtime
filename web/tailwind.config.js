@@ -8,6 +8,7 @@ export default {
     extend: {
       fontFamily: {
         brand: ['"Acumin Pro Extra Condensed Bold Italic"'],
+        brandUpright: ['"Acumin Pro Extra Condensed SemiBold"'],
         brutal: ['"Brutal Type Black"']
       },
       borderRadius: {

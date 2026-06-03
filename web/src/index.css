@@ -8,6 +8,16 @@
 }
 
 @font-face {
+  font-family: "Acumin Pro Extra Condensed SemiBold";
+  src: url("/fonts/acumin-pro-extra-condensed-smbd.woff2") format("woff2"),
+       url("/fonts/acumin-pro-extra-condensed-smbd.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+@font-face {
   font-family: "Brutal Type Black";
   src: url("/fonts/brutal-type-black.woff2") format("woff2");
   font-weight: 900;
@@ -154,20 +164,19 @@ body[data-page="campaign"] {
   background: transparent; /* coin invisible */
 }
 
-@keyframes podiumConfettiFloat {
-  0%,
+@keyframes podiumConfettiRain {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -18px, 0) rotate(var(--confetti-rotate));
+  }
+  8% {
+    opacity: 0.95;
+  }
+  86% {
+    opacity: 0.95;
+  }
   100% {
-    translate: 0 0;
-    scale: 1;
-    opacity: 0.88;
-  }
-  45% {
-    translate: 10px 18px;
-    scale: 1.08;
-    opacity: 1;
-  }
-  70% {
-    translate: -8px 32px;
-    opacity: 0.72;
+    opacity: 0;
+    transform: translate3d(var(--confetti-drift), 62vh, 0) rotate(calc(var(--confetti-rotate) + 540deg));
   }
 }
