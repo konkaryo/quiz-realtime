@@ -35,7 +35,14 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
 
     const player = await prisma.player.findUnique({
       where: { userId: auth.user.id },
-      select: { id: true, name: true, img: true, bits: true, experience: true },
+      select: {
+        id: true,
+        name: true,
+        img: true,
+        bits: true,
+        experience: true,
+        _count: { select: { gameHistory: true } },
+      },
     });
     if (!player) return null;
 
@@ -64,6 +71,7 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
         name: player.name,
         bits: player.bits ?? 0,
         experience: player.experience ?? 0,
+        gamesPlayed: player._count.gameHistory,
         img: toProfileUrl(player.img ?? null),
       },
     };
@@ -77,7 +85,13 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
         prisma.player.findMany({
           orderBy: [{ bits: "desc" }, { name: "asc" }, { id: "asc" }],
           take: limit,
-          select: { id: true, name: true, bits: true, img: true },
+          select: {
+            id: true,
+            name: true,
+            bits: true,
+            img: true,
+            _count: { select: { gameHistory: true } },
+          },
         }),
         getSelfLeaderboardEntry(req, "bits"),
       ]);
@@ -87,6 +101,7 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
           id: player.id,
           name: player.name,
           bits: player.bits,
+          gamesPlayed: player._count.gameHistory,
           img: toProfileUrl(player.img ?? null),
         })),
         self,
@@ -100,7 +115,13 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
         prisma.player.findMany({
           orderBy: [{ experience: "desc" }, { name: "asc" }, { id: "asc" }],
           take: limit,
-          select: { id: true, name: true, experience: true, img: true },
+          select: {
+            id: true,
+            name: true,
+            experience: true,
+            img: true,
+            _count: { select: { gameHistory: true } },
+          },
         }),
         getSelfLeaderboardEntry(req, "experience"),
       ]);
@@ -110,6 +131,7 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
           id: player.id,
           name: player.name,
           experience: player.experience ?? 0,
+          gamesPlayed: player._count.gameHistory,
           img: toProfileUrl(player.img ?? null),
         })),
         self,
