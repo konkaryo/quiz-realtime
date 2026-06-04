@@ -49,7 +49,7 @@ type Result = {
   img: string | null;
   correct: boolean;
   answer: string | null;
-  mode: "text" | "choice" | "timeout";
+  mode: "text" | "choice" | "timeout" | "skip";
   responseMs: number;
   correctLabel: string;
 };
@@ -71,6 +71,7 @@ type DailyAnswerFeedback = {
   livesLeft?: number;
   score?: number;
   points?: number;
+  skipped?: boolean;
 };
 
 type DailyRoundEnd = {
@@ -329,6 +330,10 @@ export default function DailyChallengePlayPage() {
         setFeedbackCorrectLabel(p.correctLabel);
       }
       if (typeof p.livesLeft === "number") setLives(p.livesLeft);
+      if (p.skipped) {
+        setFeedback("Question passée !");
+        return;
+      }
       if (!p.correct && typeof p.livesLeft === "number" && p.livesLeft > 0) {
         setFeedback("Mauvaise réponse, essayez encore !");
         setTextAnswer("");
@@ -457,6 +462,20 @@ export default function DailyChallengePlayPage() {
     });
   };
 
+  const skipQuestion = () => {
+    if (!socket || phaseRef.current !== "playing" || lives <= 0 || !!feedback?.includes("Bravo"))
+      return;
+    setAnswerMode("text");
+    setChoicesRevealed(true);
+    socket.emit("daily_skip_question", (res: { ok: boolean; reason?: string }) => {
+      if (res?.ok) return;
+      setChoicesRevealed(false);
+      setAnswerMode(null);
+      if (res?.reason === "already" || res?.reason === "too-late") return;
+      setFeedback("Impossible de passer cette question.");
+    });
+  };
+
   // Sauvegarde du score + états des questions à la fin du défi
   useEffect(() => {
     if (phase === "finished" && challengeMeta) {
@@ -552,6 +571,7 @@ export default function DailyChallengePlayPage() {
     onChangeText={setTextAnswer}
     onSubmitText={submitText}
     onShowChoices={showMultipleChoice}
+    onSkipQuestion={skipQuestion}
     feedback={feedback}
     feedbackResponseMs={feedbackResponseMs}
     feedbackWasCorrect={feedbackWasCorrect}

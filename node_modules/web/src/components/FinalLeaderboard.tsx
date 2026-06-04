@@ -203,7 +203,7 @@ export function FinalLeaderboard({
             loading="lazy"
           />
 
-          <div className="absolute left-1/2 z-30 -translate-x-1/2 bottom-[18%] w-[130%] grid grid-cols-3 items-end gap-0 px-2">
+          <div className="absolute left-1/2 z-30 h-[58%] w-[130%] -translate-x-1/2 bottom-[18%] px-2">
             {podiumSlots.map((slot) => {
               const { row, rank } = slot;
               const isSelf = row ? isSelfRow(row) : false;
@@ -243,8 +243,12 @@ export function FinalLeaderboard({
                 <div
                   key={rank}
                   className={[
-                    "relative flex flex-col items-center origin-bottom",
-                    rank === 2 ? "translate-x-[140px] translate-y-[29px]" : rank === 3 ? "-translate-x-[140px] translate-y-[36px]" : "",
+                    "absolute bottom-0 flex -translate-x-1/2 flex-col items-center origin-bottom",
+                    rank === 2
+                      ? "left-[31%] translate-y-[29px]"
+                      : rank === 3
+                      ? "left-[69%] translate-y-[36px]"
+                      : "left-1/2",
                     blockScaleByRank[rank] ?? "scale-100",
                   ].join(" ")}
                 >
@@ -328,7 +332,7 @@ export function FinalLeaderboard({
           </div>
         </div>
         {selfSummary ? (
-          <div className="mx-auto mt-3 flex min-h-[118px] w-full max-w-[720px] items-center overflow-hidden rounded-[24px] bg-[#11172B]/95 px-8 py-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
+          <div className="mx-auto mt-3 flex min-h-[118px] w-full max-w-[720px] items-center overflow-hidden rounded-[8px] bg-[#0C1222] px-8 py-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
             <div className="relative h-[86px] w-full">
               {selfLevelProgress ? (
                 <div

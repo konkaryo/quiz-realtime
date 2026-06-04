@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getThemeMeta } from "../lib/themeMeta";
-import dailyCupImg from "../assets/daily_cup.png";
 import lockImg from "../assets/lock.png";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
+const STORAGE_KEY = "dailyChallenge:results:v1";
 
 const MONTH_NAMES = [
   "janvier",
@@ -21,24 +20,8 @@ const MONTH_NAMES = [
   "décembre",
 ];
 
-const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
+const WEEKDAY_LABELS = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"];
 
-const AVATAR_COLORS = [
-  "#6366f1",
-  "#ec4899",
-  "#22d3ee",
-  "#f97316",
-  "#84cc16",
-  "#14b8a6",
-  "#a855f7",
-  "#facc15",
-  "#38bdf8",
-  "#ef4444",
-];
-
-const STORAGE_KEY = "dailyChallenge:results:v1";
-
-// états des questions stockés depuis DailyChallengePlayPage
 type QuestionState = "pending" | "correct" | "wrong";
 
 type CompletedInfo = {
@@ -55,75 +38,63 @@ type CalendarChallenge = {
   difficultyAverage: number | null;
 };
 
-type LeaderboardEntry = {
-  playerId: string;
-  playerName: string;
-  score: number;
-  img?: string | null;
-};
-
 type CalendarResponse = {
   month: { year: number; month: number };
   today: string;
   challenges: CalendarChallenge[];
 };
 
-function readStorage(): Record<string, CompletedInfo> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object") return parsed as Record<string, CompletedInfo>;
-    return {};
-  } catch {
-    return {};
-  }
+type CalendarCell = {
+  day: number;
+  iso: string;
+};
+
+function isoFromDate(date: Date) {
+  const year = date.getUTCFullYear();
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+  const day = date.getUTCDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-function getCalendarMatrix(year: number, monthIndex: number) {
+function getCalendarMatrix(
+  year: number,
+  monthIndex: number,
+): (CalendarCell | null)[] {
   const firstDay = new Date(Date.UTC(year, monthIndex, 1));
   const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
-  const weekStartMonday = (firstDay.getUTCDay() + 6) % 7; // 0 = lundi
+  const weekStartMonday = (firstDay.getUTCDay() + 6) % 7;
   const totalCells = Math.ceil((weekStartMonday + daysInMonth) / 7) * 7;
-  const cells: (number | null)[] = [];
+  const cells: (CalendarCell | null)[] = [];
   for (let i = 0; i < totalCells; i += 1) {
     const dayNumber = i - weekStartMonday + 1;
-    cells.push(dayNumber > 0 && dayNumber <= daysInMonth ? dayNumber : null);
+    if (dayNumber < 1 || dayNumber > daysInMonth) {
+      cells.push(null);
+      continue;
+    }
+
+    cells.push({
+      day: dayNumber,
+      iso: isoFromParts(year, monthIndex, dayNumber),
+    });
   }
   return cells;
 }
 
 function isoFromParts(year: number, monthIndex: number, day: number) {
-  const mm = (monthIndex + 1).toString().padStart(2, "0");
-  const dd = day.toString().padStart(2, "0");
-  return `${year}-${mm}-${dd}`;
+  return isoFromDate(new Date(Date.UTC(year, monthIndex, day)));
 }
 
-function difficultyLabel(avg: number | null): string {
-  if (avg === null) return "Mixte";
-  if (avg < 1.8) return "Facile";
-  if (avg < 2.6) return "Intermédiaire";
-  return "Difficile";
-}
-
-function topThemeKey(counts: Record<string, number>): string | null {
-  let key: string | null = null;
-  let best = -1;
-  Object.entries(counts).forEach(([theme, count]) => {
-    if (count > best) {
-      best = count;
-      key = theme;
-    }
-  });
-  return key;
-}
-
-function avatarColor(name: string, index: number) {
-  const sum = name
-    .split("")
-    .map((c) => c.charCodeAt(0))
-    .reduce((acc, cur) => acc + cur, 0);
-  return AVATAR_COLORS[(sum + index) % AVATAR_COLORS.length];
+function readStorage(): Record<string, CompletedInfo> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === "object"
+      ? (parsed as Record<string, CompletedInfo>)
+      : {};
+  } catch {
+    return {};
+  }
 }
 
 export default function DailyChallengePage() {
@@ -139,10 +110,11 @@ export default function DailyChallengePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [progress, setProgress] = useState<Record<string, CompletedInfo>>(() => readStorage());
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
-  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
+  const [viewYear, setViewYear] = useState(fallbackYear);
+  const [viewMonthIndex, setViewMonthIndex] = useState(fallbackMonthIndex);
+  const [progress, setProgress] = useState<Record<string, CompletedInfo>>(() =>
+    readStorage(),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -150,16 +122,23 @@ export default function DailyChallengePage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/daily/calendar`, { credentials: "include" });
+        const res = await fetch(`${API_BASE}/daily/calendar`, {
+          credentials: "include",
+        });
         if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error((data as any)?.error || `HTTP ${res.status}`);
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            message?: string;
+          };
+          throw new Error(data.error || data.message || `HTTP ${res.status}`);
         }
         const data = (await res.json()) as CalendarResponse;
         if (cancelled) return;
         setCalendar(data);
         const map = new Map<string, CalendarChallenge>();
-        data.challenges.forEach((c) => map.set(c.date, c));
+        data.challenges.forEach((challenge) =>
+          map.set(challenge.date, challenge),
+        );
         const preferredDate =
           navigationSelectedDate && map.has(navigationSelectedDate)
             ? navigationSelectedDate
@@ -167,23 +146,23 @@ export default function DailyChallengePage() {
         const defaultDate = preferredDate
           ? preferredDate
           : map.has(data.today)
-          ? data.today
-          : data.challenges.length > 0
-          ? data.challenges[0].date
-          : null;
+            ? data.today
+            : data.challenges.length > 0
+              ? data.challenges[0].date
+              : null;
         setSelectedDate(defaultDate);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (cancelled) return;
-        setError(e?.message || "Erreur lors du chargement");
+        setError(e instanceof Error ? e.message : "Erreur lors du chargement");
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
-    loadCalendar();
+    void loadCalendar();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [navigationSelectedDate]);
 
   useEffect(() => {
     const handler = (event: StorageEvent) => {
@@ -191,45 +170,14 @@ export default function DailyChallengePage() {
         setProgress(readStorage());
       }
     };
+
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
   }, []);
 
-  const fetchDailyLeaderboard = useCallback(async (dateIso: string) => {
-    setLeaderboardLoading(true);
-    setLeaderboardError(null);
-    try {
-      const res = await fetch(`${API_BASE}/daily/leaderboard/daily/${dateIso}`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error((data as any)?.error || `HTTP ${res.status}`);
-      }
-      const data = (await res.json()) as { leaderboard: LeaderboardEntry[] };
-      setLeaderboard(data.leaderboard ?? []);
-    } catch (e: any) {
-      setLeaderboard([]);
-      const msg = e?.message;
-      setLeaderboardError(
-        msg === "not_found"
-          ? "Aucun défi trouvé pour cette date."
-          : msg || "Erreur lors du chargement du classement",
-      );
-    } finally {
-      setLeaderboardLoading(false);
-    }
-  }, []);
-
-  // Mois / année renvoyés par l'API = mois en cours (limite max)
   const year = calendar?.month.year ?? fallbackYear;
   const monthIndex = calendar ? calendar.month.month - 1 : fallbackMonthIndex;
 
-  // Mois / année affichés (navigables)
-  const [viewYear, setViewYear] = useState(year);
-  const [viewMonthIndex, setViewMonthIndex] = useState(monthIndex);
-
-  // Recalage de la vue quand on reçoit les données
   useEffect(() => {
     if (selectedDate) {
       const match = selectedDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -254,34 +202,18 @@ export default function DailyChallengePage() {
     return map;
   }, [calendar]);
 
-  // Grille basée sur le mois affiché
   const calendarCells = useMemo(
     () => getCalendarMatrix(viewYear, viewMonthIndex),
     [viewYear, viewMonthIndex],
   );
 
-  const selectedChallenge = selectedDate ? challengeMap.get(selectedDate) : undefined;
-  const selectedProgress = selectedDate ? progress[selectedDate] : undefined;
-  const selectedThemeKey = selectedChallenge ? topThemeKey(selectedChallenge.themeCounts) : null;
-  const selectedThemeMeta = selectedThemeKey ? getThemeMeta(selectedThemeKey) : getThemeMeta(null);
-  const selectedDifficultyLabel = difficultyLabel(selectedChallenge?.difficultyAverage ?? null);
-
+  const selectedChallenge = selectedDate
+    ? challengeMap.get(selectedDate)
+    : undefined;
   const todayIso =
-    calendar?.today ?? isoFromParts(fallbackYear, fallbackMonthIndex, today.getUTCDate());
+    calendar?.today ??
+    isoFromParts(fallbackYear, fallbackMonthIndex, today.getUTCDate());
 
-  useEffect(() => {
-    if (!calendar) return;
-
-    if (!selectedDate) {
-      setLeaderboard([]);
-      setLeaderboardError(null);
-      return;
-    }
-
-    fetchDailyLeaderboard(selectedDate);
-  }, [calendar, fetchDailyLeaderboard, selectedDate]);
-
-  // Navigation mois avec limite max = mois / année de l'API
   const goToMonth = useCallback(
     (delta: number) => {
       if (!delta) return;
@@ -300,22 +232,24 @@ export default function DailyChallengePage() {
       const maxYear = year;
       const maxMonthIndex = monthIndex;
 
-      // Interdit d'aller dans le futur au-delà du mois en cours
-      if (newYear > maxYear || (newYear === maxYear && newMonth > maxMonthIndex)) {
+      if (
+        newYear > maxYear ||
+        (newYear === maxYear && newMonth > maxMonthIndex)
+      ) {
         return;
       }
 
       setViewMonthIndex(newMonth);
       setViewYear(newYear);
     },
-    [viewMonthIndex, viewYear, year, monthIndex],
+    [monthIndex, viewMonthIndex, viewYear, year],
   );
 
-  // Navigation clavier (flèches gauche/droite)
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+        return;
 
       if (e.key === "ArrowLeft") {
         e.preventDefault();
@@ -330,283 +264,218 @@ export default function DailyChallengePage() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [goToMonth]);
 
-  // Libellé du jour sélectionné
-  const selectedDayLabel = selectedDate?.split("-")[2] ?? "";
-  let selectedMonthLabel = MONTH_NAMES[monthIndex];
-  if (selectedDate) {
-    const [, mStr] = selectedDate.split("-");
-    const mIdx = Number(mStr) - 1;
-    if (!Number.isNaN(mIdx) && mIdx >= 0 && mIdx < 12) {
-      selectedMonthLabel = MONTH_NAMES[mIdx];
-    }
-  }
-
   return (
     <div className="relative min-h-full overflow-hidden text-slate-50">
       <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
 
-      {/* CONTENU : même pattern que Home → relative + z-10, pas de min-h-screen */}
-      <div className="relative z-10 mx-auto flex max-w-7xl flex-col px-4 pb-8 sm:px-8 lg:px-10">
-        <header className="flex flex-col items-center justify-between gap-6 md:flex-row">
-          <h1 className="font-brand text-4xl uppercase italic leading-none tracking-wide text-white drop-shadow-[0_4px_14px_rgba(255,255,255,0.15)] sm:text-5xl lg:text-6xl">
-            Défi du jour
+      <div
+        aria-hidden
+        className="fixed inset-0 bg-[radial-gradient(ellipse_at_16%_38%,rgba(24,36,74,0.42),transparent_46%),radial-gradient(ellipse_at_82%_44%,rgba(22,34,70,0.36),transparent_50%)]"
+      />
+      <svg
+        aria-hidden="true"
+        className="fixed inset-0 h-full w-full opacity-70"
+        preserveAspectRatio="none"
+        viewBox="0 0 1440 900"
+      >
+        <defs>
+          <linearGradient id="dailyWaveA" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor="#0A132E" stopOpacity="0.06" />
+            <stop offset="45%" stopColor="#1C2A52" stopOpacity="0.42" />
+            <stop offset="100%" stopColor="#0A132E" stopOpacity="0.06" />
+          </linearGradient>
+          <linearGradient id="dailyWaveB" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor="#101B3A" stopOpacity="0.04" />
+            <stop offset="48%" stopColor="#243A70" stopOpacity="0.34" />
+            <stop offset="100%" stopColor="#101B3A" stopOpacity="0.04" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M-120 220 C 180 105 390 270 650 175 C 900 85 1110 175 1560 70 L1560 0 L-120 0 Z"
+          fill="url(#dailyWaveA)"
+        />
+        <path
+          d="M-120 500 C 180 390 410 545 700 440 C 980 340 1160 420 1560 330 L1560 170 C 1130 265 970 185 690 290 C 410 395 170 250 -120 350 Z"
+          fill="url(#dailyWaveB)"
+        />
+        <path
+          d="M-120 760 C 210 650 430 785 720 690 C 1010 595 1190 675 1560 575 L1560 430 C 1160 535 990 455 715 550 C 425 650 210 520 -120 620 Z"
+          fill="url(#dailyWaveA)"
+          opacity="0.66"
+        />
+        <path
+          d="M-120 350 C 170 250 410 395 690 290 C 970 185 1130 265 1560 170"
+          fill="none"
+          stroke="#314474"
+          strokeOpacity="0.14"
+          strokeWidth="2"
+        />
+        <path
+          d="M-120 620 C 210 520 425 650 715 550 C 990 455 1160 535 1560 430"
+          fill="none"
+          stroke="#2A3B68"
+          strokeOpacity="0.12"
+          strokeWidth="2"
+        />
+      </svg>
+      <div
+        aria-hidden
+        className="fixed inset-0 bg-[linear-gradient(180deg,rgba(6,10,25,0)_0%,rgba(6,10,25,0.16)_58%,#060A19_100%)]"
+      />
+
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-12 sm:px-8 lg:px-10">
+        <header className="text-center">
+          <h1 className="font-brandUpright text-[46px] uppercase leading-[0.9] tracking-[0.01em] text-slate-50 sm:text-[56px]">
+            DÉFI DU JOUR
           </h1>
-          <img
-            src={dailyCupImg}
-            alt=""
-            aria-hidden
-            className="pointer-events-none h-32 w-auto select-none object-contain sm:h-40 md:-mr-10 lg:h-48 xl:-mr-12"
-          />
         </header>
         {(loading || error) && (
-          <div className="text-sm text-slate-200/80">
+          <div className="mt-6 text-center text-sm text-slate-200/80">
             {loading && <span>Chargement des défis…</span>}
-            {!loading && error && <span className="text-rose-200">{error}</span>}
+            {!loading && error && (
+              <span className="text-rose-200">{error}</span>
+            )}
           </div>
         )}
-        {/* PANNEAUX SÉPARÉS */}
-        <div className="min-h-0">
-          <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr),320px] xl:grid-cols-[360px,minmax(540px,1fr),360px]">
-            {/* CLASSEMENT */}
-            <aside className="flex h-full flex-col rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
-              <div className="text-center text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                Classement du jour
-              </div>
-              <div className="mt-2 text-center text-sm font-semibold text-slate-100">
-                {leaderboard.length} joueurs
-              </div>
-              <div className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto pr-2 lb-scroll">
-                {!leaderboardLoading && leaderboardError && (
-                  <div className="text-sm text-rose-200">{leaderboardError}</div>
-                )}
-                {!leaderboardLoading && !leaderboardError && leaderboard.length === 0 && (
-                  <div className="text-sm text-slate-400">
-                    Aucun score disponible pour ce classement.
-                  </div>
-                )}
-                {!leaderboardLoading &&
-                  !leaderboardError &&
-                  leaderboard.map((entry, index) => (
-                    <div
-                      key={`${entry.playerId}-${index}`}
-                      className="mx-auto flex items-center gap-2 rounded-[6px] border border-[#2A2D3C] bg-[#181A28] px-3 py-2 text-slate-50"
-                    >
-                      <div className="w-5 text-left text-[11px] font-bold text-slate-400">
-                        #{index + 1}
-                      </div>
-                      {entry.img ? (
-                        <img
-                          src={entry.img}
-                          alt=""
-                          className="h-7 w-7 flex-shrink-0 rounded-[6px] object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div
-                          className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-xl text-[10px] font-semibold text-slate-50"
-                          style={{ background: avatarColor(entry.playerName, index) }}
-                        >
-                          {entry.playerName
-                            .split(" ")
-                            .map((part) => part[0])
-                            .join("")
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </div>
-                      )}
-                      <div className="ml-0.5 flex min-w-0 flex-1 items-center justify-between">
-                        <div className="truncate text-[13px] font-semibold">
-                          {entry.playerName}
-                        </div>
-                        <div className="flex-shrink-0 text-[11px] font-semibold text-slate-100">
-                          {entry.score}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+        {!loading && !error && (
+          <div className="mx-auto mt-12 flex w-full max-w-[760px] flex-col items-center">
+            <div className="mb-4 grid w-full grid-cols-[1fr_auto_1fr] items-center">
+              <button
+                type="button"
+                onClick={() => goToMonth(-1)}
+                className="relative -top-[8px] justify-self-end pr-8 text-[34px] font-semibold leading-none text-slate-300/80 transition hover:text-white focus:outline-none"
+              >
+                <span className="sr-only">Mois précédent</span>
+                <span aria-hidden>‹</span>
+              </button>
+
+              <div className="min-w-[170px] text-center font-brandUpright text-[28px] uppercase leading-none tracking-[0.01em] text-slate-100 drop-shadow-[0_2px_7px_rgba(255,255,255,0.14)]">
+                {MONTH_NAMES[viewMonthIndex]} {viewYear}
               </div>
 
               <button
                 type="button"
-                onClick={() => navigate("/multi/ranking")}
-                className="mt-4 inline-flex items-center justify-center rounded-[6px] border border-[#2A2D3C] bg-[#181A28] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-100 transition hover:border-[#2D7CFF] hover:text-white"
+                onClick={() => goToMonth(1)}
+                className="relative -top-[8px] justify-self-start pl-8 text-[34px] font-semibold leading-none text-slate-300/80 transition hover:text-white focus:outline-none"
               >
-                Voir le classement
+                <span className="sr-only">Mois suivant</span>
+                <span aria-hidden>›</span>
               </button>
-            </aside>
+            </div>
 
-            {/* CALENDRIER */}
-            <section className="rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
-              <div className="mb-6 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => goToMonth(-1)}
-                  className="flex h-8 w-8 items-center justify-center text-sm font-semibold text-slate-300 hover:text-[#2D7CFF] focus:outline-none"
-                >
-                  <span className="sr-only">Mois précédent</span>
-                  <span className="text-lg leading-none">‹</span>
-                </button>
-
-                <div className="text-sm font-semibold text-slate-100 sm:text-base">
-                  {MONTH_NAMES[viewMonthIndex]} {viewYear}
+            <div className="grid w-full grid-cols-7 gap-1.5 text-center text-[12px] font-black uppercase tracking-[0.05em] text-slate-300/80">
+              {WEEKDAY_LABELS.map((label) => (
+                <div key={label} className="py-2">
+                  {label}
                 </div>
+              ))}
+            </div>
 
-                <button
-                  type="button"
-                  onClick={() => goToMonth(1)}
-                  className="flex h-8 w-8 items-center justify-center text-sm font-semibold text-slate-300 hover:text-[#2D7CFF] focus:outline-none"
-                >
-                  <span className="sr-only">Mois suivant</span>
-                  <span className="text-lg leading-none">›</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-7 justify-items-center gap-x-5 gap-y-3 text-center text-xs text-slate-400 xl:gap-x-6">
-                {WEEKDAY_LABELS.map((label) => (
-                  <div key={label} className="uppercase tracking-[0.32em]">
-                    {label}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 grid grid-cols-7 justify-items-center gap-3 xl:gap-4">
-                {calendarCells.map((day, idx) => {
-                  if (!day) {
-                    return (
-                      <div key={`empty-${idx}`} className="h-10 w-10 rounded-[10px] opacity-0" />
-                    );
-                  }
-
-                  const iso = isoFromParts(viewYear, viewMonthIndex, day);
-                  const challenge = challengeMap.get(iso);
-                  const isToday = iso === todayIso;
-                  const isFuture = iso > todayIso;
-                  const isSelected = iso === selectedDate;
-                  const disabled = !challenge || isFuture;
-
-                  if (disabled) {
-                    return (
-                      <button
-                        key={iso}
-                        type="button"
-                        disabled
-                        className="flex h-12 w-12 cursor-not-allowed items-center justify-center rounded-[6px] bg-[#191C29] text-sm font-semibold text-slate-500/80"
-                      >
-                        {isFuture ? (
-                          <img src={lockImg} alt="Verrouillé" className="h-4 w-4 opacity-70" />
-                        ) : (
-                          <span>{day}</span>
-                        )}
-                      </button>
-                    );
-                  }
-
-                  const classes = [
-                    "flex h-12 w-12 items-center justify-center rounded-[6px] text-sm font-semibold transition-colors",
-                    isSelected
-                      ? "border border-white bg-[#284783] text-white shadow-[0_10px_18px_rgba(0,0,0,0.4)]"
-                      : "bg-[#27314E] text-white hover:bg-[#284783]",
-                    isToday && !isSelected ? "ring-1 ring-[#2D7CFF]/50" : "",
-                  ].join(" ");
-
+            <div className="grid w-full grid-cols-7 gap-1.5">
+              {calendarCells.map((cell, index) => {
+                if (!cell) {
                   return (
-                    <button
-                      key={iso}
-                      type="button"
-                      onClick={() => setSelectedDate(iso)}
-                      className={classes}
-                    >
-                      <span>{day}</span>
-                    </button>
-
+                    <div
+                      key={`empty-${index}`}
+                      aria-hidden
+                      className="h-[48px]"
+                    />
                   );
-                })}
-              </div>
-            </section>
+                }
+                const isToday = cell.iso === todayIso;
+                const isFuture = cell.iso > todayIso;
+                const isSelected = cell.iso === selectedDate;
+                const completedInfo = progress[cell.iso];
+                const canSelect = !isFuture;
+                const isLocked = isFuture;
+                const scoreLabel = new Intl.NumberFormat("fr-FR").format(
+                  completedInfo?.score ?? 0,
+                );
+                const buttonClasses = [
+                  "group relative flex h-[48px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[6px] border text-center transition sm:h-[54px] lg:h-[60px]",
+                  isSelected
+                    ? "border-white bg-white text-[#050B18] shadow-[0_0_0_1px_rgba(255,255,255,0.9),0_0_24px_rgba(255,255,255,0.18)]"
+                    : isLocked
+                      ? "border-[#070B14] bg-[#020611] text-slate-600/70 opacity-55"
+                      : "border-[#13213E] bg-[#050B18] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_26px_rgba(0,0,0,0.18)]",
+                  canSelect && !isSelected
+                    ? "hover:border-[#2D7CFF]/80 hover:bg-[#132345]"
+                    : "",
+                  !canSelect ? "cursor-default" : "cursor-pointer",
+                ].join(" ");
 
-            {/* PANNEAU DÉTAIL DU DÉFI */}
-            <aside className="rounded-[6px] border border-[#2A2D3C] bg-[#1C1F2E] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
-              {selectedChallenge ? (
-                <div className="flex h-full flex-col">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                        Défi du
-                      </div>
-                      <div className="mt-1 text-2xl font-semibold text-slate-50">
-                        {selectedDayLabel} {selectedMonthLabel}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 space-y-3 text-sm text-slate-200">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-300">Difficulté</span>
-                      <span className="rounded-full bg-[#141625] px-3 py-1 text-xs font-semibold text-slate-100">
-                        {selectedDifficultyLabel}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-300">Score</span>
-                      <span className="font-semibold text-slate-50">
-                        {selectedProgress ? `${selectedProgress.score} pts` : "—"}
-                      </span>
-                    </div>
-                  </div>
-                  {selectedProgress?.questionStates &&
-                    selectedProgress.questionStates.length > 0 && (
-                      <div className="mt-5 grid grid-cols-8 gap-1.5">
-                        {Array.from({
-                          length: selectedChallenge.questionCount,
-                        }).map((_, i) => {
-                          const state = selectedProgress.questionStates?.[i];
-                          let colorClasses =
-                            "border-slate-700/90 bg-slate-700/60 text-slate-100";
-
-                          if (state === "correct") {
-                            colorClasses =
-                              "border-[#376D63] bg-[#376D63] text-slate-50 shadow-[0_0_0px_rgba(52,211,153,0.75)]";
-                          } else if (state === "wrong") {
-                            colorClasses =
-                              "border-rose-700 bg-rose-700 text-slate-50 shadow-[0_0_0px_rgba(248,113,113,0.8)]";
-                          }
-
-                          return (
-                            <div
-                              key={i}
-                              className={[
-                                "flex aspect-square w-full items-center justify-center rounded-md text-[11px] font-semibold",
-                                "border",
-                                colorClasses,
-                              ].join(" ")}
-                            >
-                              {i + 1}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
+                return (
                   <button
+                    key={cell.iso}
                     type="button"
-                    disabled={!selectedChallenge}
-                    onClick={() => selectedDate && navigate(`/solo/daily/${selectedDate}`)}
-                    className={[
-                      "mt-auto inline-flex items-center justify-center rounded-[6px] px-6 py-2.5 font-sans text-[15px] font-bold transition",
-                      "border border-transparent bg-[#6250C7] text-slate-50 hover:bg-[#6F5BD4]",
-                      !selectedChallenge ? "cursor-not-allowed opacity-40" : "",
-                    ].join(" ")}
+                    disabled={!canSelect}
+                    onClick={() => setSelectedDate(cell.iso)}
+                    className={buttonClasses}
                   >
-                    Jouer
+                    <span className="text-[18px] font-black leading-none text-inherit">
+                      {cell.day}
+                    </span>
+
+                    <span className="mt-1.5 flex h-4 items-center justify-center leading-none">
+                      {isLocked ? (
+                        <img
+                          src={lockImg}
+                          alt="Verrouillé"
+                          className="h-4 w-4 opacity-55 grayscale"
+                        />
+                      ) : isToday ? (
+                        <span
+                          aria-label="Défi du jour en attente"
+                          role="img"
+                          className={[
+                            "text-[15px] leading-none",
+                            isSelected ? "text-[#050B18]" : "text-slate-200",
+                          ].join(" ")}
+                        >
+                          ⏱
+                        </span>
+                      ) : (
+                        <span
+                          className={[
+                            "inline-flex items-center gap-1 text-[13px] font-semibold drop-shadow-[0_0_8px_rgba(174,67,255,0.35)]",
+                            isSelected ? "text-[#050B18]" : "text-white",
+                          ].join(" ")}
+                        >
+                          <span
+                            aria-hidden
+                            className={[
+                              "inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] text-[10px] font-black leading-none text-white",
+                              completedInfo ? "bg-emerald-500" : "bg-red-600",
+                            ].join(" ")}
+                          >
+                            {completedInfo ? "✓" : "×"}
+                          </span>
+                          <span>{scoreLabel}</span>
+                        </span>
+                      )}
+                    </span>
+
                   </button>
-                </div>
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center text-center text-sm text-slate-300">
-                  <p>Aucun défi sélectionné.</p>
-                </div>
-              )}
-            </aside>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              disabled={!selectedChallenge}
+              onClick={() =>
+                selectedDate && navigate(`/solo/daily/${selectedDate}`)
+              }
+              className={[
+                "mt-8 inline-flex items-center justify-center rounded-[6px] px-10 py-2.5 font-sans text-[15px] font-bold transition",
+                "border border-transparent bg-[#6250C7] text-slate-50 hover:bg-[#6F5BD4]",
+                !selectedChallenge ? "cursor-not-allowed opacity-40" : "",
+              ].join(" ")}
+            >
+              Jouer
+            </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

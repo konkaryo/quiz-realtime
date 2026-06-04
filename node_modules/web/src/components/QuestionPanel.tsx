@@ -194,6 +194,7 @@ type Props = {
   onChangeText: (val: string) => void;
   onSubmitText: () => void;
   onShowChoices: () => void;
+  onSkipQuestion?: () => void;
   qcmUsesLeft?: number;
 
   feedback: string | null;
@@ -236,6 +237,7 @@ export default function DailyQuestionPanel(props: Props) {
     onChangeText,
     onSubmitText,
     onShowChoices,
+    onSkipQuestion,
     qcmUsesLeft,
     // ✅ on ne les affiche plus, mais on garde les props pour compat
     feedback,
@@ -822,6 +824,18 @@ export default function DailyQuestionPanel(props: Props) {
                       </span>
                     ) : null}
                   </button>
+                  {onSkipQuestion ? (
+                    <button
+                      type="button"
+                      onClick={onSkipQuestion}
+                      disabled={textInputDisabled}
+                      aria-label="Passer la question"
+                      title="Passer la question"
+                      className="inline-flex items-center justify-center rounded-[6px] bg-[#AF2D33] px-3 py-2 text-[14px] font-bold leading-none text-white transition hover:bg-[#C43A41] disabled:cursor-not-allowed disabled:opacity-45 disabled:saturate-0"
+                    >
+                      ×
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>

@@ -227,7 +227,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       img: string | null;
       correct: boolean;
       answer: string | null;
-      mode: "text" | "choice" | "timeout";
+      mode: "text" | "choice" | "timeout" | "skip";
       responseMs: number;
       correctLabel: string;
     }[];
@@ -520,6 +520,57 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       const choices = [...q.choices].map(({ id, label }) => ({ id, label })).sort(() => Math.random() - 0.5);
       socket.emit("daily_multiple_choice", { choices });
       ack?.({ ok: true, mcUses: sess.mcUses, mcUsesLeft: Math.max(0, DAILY_MAX_MC_USES - sess.mcUses) });
+    });
+
+    socket.on("daily_skip_question", (ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const sess = dailySessions.get(socket.id);
+      if (!sess) return ack?.({ ok: false, reason: "no-session" });
+      if (sess.answered) return ack?.({ ok: false, reason: "already" });
+      if (!sess.endsAt || Date.now() > sess.endsAt) return ack?.({ ok: false, reason: "too-late" });
+
+      const q = sess.questions[sess.index];
+      if (!q) return ack?.({ ok: false, reason: "no-question" });
+
+      const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
+      sess.answered = true;
+      stopDailyTimer(socket.id);
+
+      const correctChoice = q.choices.find((c) => c.isCorrect) ?? null;
+
+      sess.results.push({
+        questionId: q.id,
+        questionText: q.text,
+        slotLabel: q.slotLabel,
+        theme: q.theme,
+        difficulty: q.difficulty,
+        img: q.img,
+        correct: false,
+        answer: null,
+        mode: "skip",
+        responseMs,
+        correctLabel: q.correctLabel,
+      });
+
+      socket.emit("daily_answer_feedback", {
+        correct: false,
+        correctChoiceId: correctChoice ? correctChoice.id : null,
+        correctLabel: q.correctLabel,
+        responseMs,
+        score: sess.score,
+        points: 0,
+        livesLeft: 0,
+        skipped: true,
+      });
+
+      socket.emit("daily_round_end", {
+        index: sess.index,
+        correctChoiceId: correctChoice ? correctChoice.id : null,
+        correctLabel: q.correctLabel,
+        score: sess.score,
+      });
+
+      queueNextRound(socket);
+      ack?.({ ok: true });
     });
 
 socket.on(

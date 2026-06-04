@@ -199,7 +199,7 @@ function PlayerCell({
         ].join(" ")}
         style={{
           background: isSelf
-            ? "linear-gradient(to right, #7C4DFF, #B85CFF, #F04F9D)"
+            ? "linear-gradient(to right, #6a38ff, #ea4aa0)"
             : "linear-gradient(to bottom, rgba(68, 74, 112, 0.5), rgba(68, 74, 112, 0.35))",
 
         }}
@@ -1913,7 +1913,7 @@ return (
                       <button
                         type="button"
                         onClick={() => setSelectedFinalIndex(firstFinalQuestionIndex)}
-                        className="mx-auto flex h-12 w-[86%] items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#6a38ff] to-[#ea4aa0] px-4 font-acumin font-semibold text-white transition hover:brightness-110"
+                        className="mx-auto flex h-12 w-[86%] items-center justify-center gap-3 rounded-xl bg-[#6250C7] px-4 font-acumin font-semibold text-white transition hover:bg-[#6F5BD4]"
                       >
                         <span className="text-[16px] leading-none">Voir le détail</span>
                         <List className="h-5 w-5 text-white/95" strokeWidth={2.3} />
