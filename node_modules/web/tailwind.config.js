@@ -9,6 +9,7 @@ export default {
       fontFamily: {
         brand: ['"Acumin Pro Extra Condensed Bold Italic"'],
         brandUpright: ['"Acumin Pro Extra Condensed SemiBold"'],
+        inter: ['"Inter"', 'system-ui', 'sans-serif'],
         brutal: ['"Brutal Type Black"']
       },
       borderRadius: {

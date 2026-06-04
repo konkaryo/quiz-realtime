@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   HelpCircle,
   Search,
@@ -24,12 +22,18 @@ type LeaderboardEntry = {
   gamesPlayed?: number;
 };
 
+type SelfLeaderboard = {
+  rank: number;
+  entry: LeaderboardEntry;
+} | null;
+
 const MODE_OPTIONS: Array<{ value: RankingMode; label: string }> = [
   { value: "experience", label: "Expérience" },
   { value: "bits", label: "Bits" },
 ];
 
-const PAGE_SIZE = 10;
+const LEADERBOARD_FETCH_LIMIT = 100;
+const LOAD_CHUNK_SIZE = 50;
 
 function formatValue(value: number) {
   return new Intl.NumberFormat("fr-FR").format(value);
@@ -59,7 +63,7 @@ function ValueBadge({ mode }: { mode: RankingMode }) {
       <img
         src={bitIconUrl}
         alt=""
-        className="h-5 w-5 object-contain"
+        className="h-4 w-4 object-contain"
         draggable={false}
       />
     );
@@ -82,21 +86,21 @@ function RankDisplay({ rank }: { rank: number }) {
           ? "grayscale(1) brightness(1.75) opacity(0.78)"
           : "sepia(1) saturate(1.8) hue-rotate(340deg) brightness(0.95) opacity(0.78)";
     return (
-      <div className="flex items-center justify-center gap-1 font-black leading-none">
+      <div className="flex items-center justify-center gap-0.5 font-semibold leading-none">
         <img
           src={laurelLeftGoldUrl}
           alt=""
-          className="h-6 w-4 object-contain"
+          className="h-[18px] w-3 object-contain"
           style={{ filter: laurelFilter }}
           draggable={false}
         />
-        <span className={`${rankClass} w-6 text-center text-[22px]`}>
+        <span className={`${rankClass} w-5 text-center text-[19px]`}>
           {rank}
         </span>
         <img
           src={laurelLeftGoldUrl}
           alt=""
-          className="h-6 w-4 scale-x-[-1] object-contain"
+          className="h-[18px] w-3 scale-x-[-1] object-contain"
           style={{ filter: laurelFilter }}
           draggable={false}
         />
@@ -105,7 +109,7 @@ function RankDisplay({ rank }: { rank: number }) {
   }
 
   return (
-    <div className="text-center text-[15px] font-black leading-none text-slate-300">
+    <div className="text-center text-[13px] font-medium leading-none text-slate-300">
       {rank}
     </div>
   );
@@ -127,13 +131,13 @@ function PlayerCell({
         <img
           src={entry.img}
           alt={entry.name}
-          className="h-8 w-8 rounded-full border-2 border-white/20 object-cover"
+          className="h-8 w-8 rounded-full object-cover"
           loading="lazy"
           draggable={false}
         />
       ) : (
         <div
-          className="grid h-8 w-8 place-items-center rounded-full border-2 border-white/20 text-[11px] font-black text-white"
+          className="grid h-8 w-8 place-items-center rounded-full text-[10px] font-medium text-white"
           style={{ background: avatarFallback(entry.name, rank - 1) }}
         >
           {initialsFromName(entry.name)}
@@ -141,7 +145,7 @@ function PlayerCell({
       )}
 
       <span
-        className={`notranslate block truncate text-[15px] font-black [text-decoration:none] ${highlight ? "text-white" : "text-slate-200"}`}
+        className={`notranslate block truncate text-[13px] font-medium [text-decoration:none] ${highlight ? "text-white" : "text-slate-200"}`}
         spellCheck={false}
         suppressHydrationWarning
         translate="no"
@@ -169,7 +173,7 @@ function ValueCell({
   return (
     <div className="flex items-center justify-end gap-2">
       <span
-        className={`tabular-nums text-[16px] font-black ${highlighted ? "text-[#FFD832]" : "text-slate-200"}`}
+        className={`tabular-nums text-[14px] font-semibold ${highlighted ? "text-[#FFD832]" : "text-slate-200"}`}
       >
         {formatValue(value)}
       </span>
@@ -178,14 +182,48 @@ function ValueCell({
   );
 }
 
+function LeaderboardRow({
+  entry,
+  rank,
+  mode,
+  highlighted = false,
+  detached = false,
+}: {
+  entry: LeaderboardEntry;
+  rank: number;
+  mode: RankingMode;
+  highlighted?: boolean;
+  detached?: boolean;
+}) {
+  const value = getEntryValue(entry, mode);
+
+  return (
+    <div
+      spellCheck={false}
+      className={[
+        "grid grid-cols-[104px_minmax(120px,1fr)_190px_110px] items-center rounded-[9px] px-2",
+        detached ? "py-2" : "py-1.5",
+        highlighted ? "bg-[#251C59]" : "bg-[#121727]",
+      ].join(" ")}
+    >
+      <RankDisplay rank={rank} />
+      <PlayerCell entry={entry} rank={rank} highlight={highlighted} />
+      <ValueCell value={value} mode={mode} highlighted={rank === 1} />
+      <div className="text-right text-[14px] font-semibold text-slate-200">
+        {formatValue(entry.gamesPlayed ?? 0)}
+      </div>
+    </div>
+  );
+}
 
 export default function RankingPage() {
   const [mode, setMode] = useState<RankingMode>("experience");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [self, setSelf] = useState<SelfLeaderboard>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(LOAD_CHUNK_SIZE);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -196,13 +234,14 @@ export default function RankingPage() {
       setError(null);
 
       try {
-        const res = await fetch(`${API_BASE}/leaderboard/${mode}?limit=100`, {
+        const res = await fetch(`${API_BASE}/leaderboard/${mode}?limit=${LEADERBOARD_FETCH_LIMIT}`, {
           credentials: "include",
           signal: controller.signal,
         });
 
         const data = (await res.json().catch(() => ({}))) as {
           leaderboard?: LeaderboardEntry[];
+          self?: SelfLeaderboard;
           error?: string;
         };
 
@@ -211,10 +250,12 @@ export default function RankingPage() {
         }
 
         setEntries(Array.isArray(data.leaderboard) ? data.leaderboard : []);
+        setSelf(data.self?.entry ? data.self : null);
         setLastUpdated(new Date());
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
         setEntries([]);
+        setSelf(null);
         setError((err as Error).message || "Impossible de charger le classement.");
       } finally {
         if (!controller.signal.aborted) {
@@ -228,7 +269,7 @@ export default function RankingPage() {
   }, [mode]);
 
   useEffect(() => {
-    setPage(1);
+    setVisibleCount(LOAD_CHUNK_SIZE);
   }, [mode, search]);
 
   const filteredEntries = useMemo(() => {
@@ -237,13 +278,12 @@ export default function RankingPage() {
     return entries.filter((entry) => entry.name.toLowerCase().includes(q));
   }, [entries, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
+  const visibleEntries = useMemo(
+    () => filteredEntries.slice(0, visibleCount),
+    [filteredEntries, visibleCount]
+  );
 
-  const paginatedEntries = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredEntries.slice(start, start + PAGE_SIZE);
-  }, [filteredEntries, currentPage]);
+  const hasMoreEntries = visibleCount < filteredEntries.length;
 
   const modeLabel = useMemo(
     () => MODE_OPTIONS.find((option) => option.value === mode)?.label ?? "Expérience",
@@ -253,37 +293,6 @@ export default function RankingPage() {
   const lastUpdatedLabel = lastUpdated
     ? lastUpdated.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
     : "--:--";
-
-  const pagesToShow = useMemo(() => {
-    const pages = new Set<number>([1, currentPage, totalPages]);
-    if (currentPage > 1) pages.add(currentPage - 1);
-    if (currentPage < totalPages) pages.add(currentPage + 1);
-    return Array.from(pages).sort((a, b) => a - b);
-  }, [currentPage, totalPages]);
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      const target = event.target as HTMLElement | null;
-      const tag = target?.tagName?.toLowerCase();
-
-      const isTypingField = tag === "input" || tag === "textarea" || target?.isContentEditable;
-
-      if (isTypingField) return;
-
-      if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        setPage((prev) => Math.max(1, prev - 1));
-      }
-
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        setPage((prev) => Math.min(totalPages, prev + 1));
-      }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [totalPages]);
 
   return (
     <div className="relative min-h-full overflow-hidden text-slate-50" spellCheck={false}>
@@ -343,76 +352,29 @@ export default function RankingPage() {
         className="fixed inset-0 bg-[linear-gradient(180deg,rgba(6,10,25,0)_0%,rgba(6,10,25,0.16)_58%,#060A19_100%)]"
       />
 
-      <div className="relative z-10 mx-auto flex max-w-5xl flex-col px-4 py-12 sm:px-8 lg:px-10">
-        <header className="text-center">
-          <h1 className="font-brandUpright text-[46px] uppercase leading-[0.9] tracking-[0.01em] text-slate-50 sm:text-[56px]">
-            CLASSEMENT
-          </h1>
-        </header>
-
-        <section className="mx-auto mt-9 w-full max-w-[1040px]">
-          <div className="overflow-x-auto rounded-[10px] border border-[#21314C] bg-[#0E1625] backdrop-blur-xl" spellCheck={false}>
-            <div className="grid min-w-[760px] grid-cols-[84px_minmax(260px,1fr)_190px_130px] items-center border-b border-[#1E2B42] bg-[#0E1625] px-5 py-4 font-brandUpright text-[20px] uppercase leading-none tracking-[0.04em] text-slate-400">
-              <div className="text-center">Rang</div>
-              <div>Joueur</div>
-              <div className="flex items-center justify-end gap-2">
-                <span>{modeLabel}</span>
-                <HelpCircle className="h-4 w-4 text-slate-500" aria-hidden="true" />
-              </div>
-              <div className="text-right">Parties</div>
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-12 sm:px-8 lg:px-10">
+        <section className="mx-auto mt-0 grid w-full max-w-6xl gap-24 lg:grid-cols-[250px_minmax(0,1fr)] lg:items-start lg:gap-32">
+          <aside className="flex flex-col gap-6 lg:sticky lg:top-8">
+            <div>
+              <h1 className="font-brandUpright text-[44px] uppercase leading-[0.9] tracking-[0.01em] text-slate-50 sm:text-[54px]">
+                CLASSEMENT
+              </h1>
+              <p className="mt-3 max-w-[230px] text-[13px] font-semibold leading-snug text-slate-400">
+                Les meilleurs joueurs, tous modes confondus.
+              </p>
             </div>
-            <div className="min-w-[760px]">
 
-              {loading && (
-                <div className="border-b border-[#1E2B42] px-5 py-5 text-sm font-bold text-slate-300">
-                  Chargement du classement…
-                </div>
-              )}
-
-              {error && !loading && (
-                <div className="border-b border-[#1E2B42] px-5 py-5 text-sm font-bold text-rose-200">{error}</div>
-              )}
-
-              {!loading && !error && paginatedEntries.length === 0 && (
-                <div className="border-b border-[#1E2B42] px-5 py-5 text-sm font-bold text-slate-300">
-                  Aucun joueur disponible pour ce classement.
-                </div>
-              )}
-
-              {!loading &&
-                !error &&
-                paginatedEntries.map((entry, index) => {
-                  const absoluteRank = (currentPage - 1) * PAGE_SIZE + index + 1;
-                  const value = getEntryValue(entry, mode);
-
-                  return (
-                    <div
-                      key={`${entry.id}-${mode}-${absoluteRank}`}
-                      spellCheck={false}
-                      className="grid grid-cols-[84px_minmax(260px,1fr)_190px_130px] items-center border-b border-[#1E2B42]/85 bg-[#0E1625] px-5 py-2.5 last:border-b-0"
-                    >
-                      <RankDisplay rank={absoluteRank} />
-                      <PlayerCell entry={entry} rank={absoluteRank} />
-                      <ValueCell value={value} mode={mode} highlighted={absoluteRank === 1} />
-                      <div className="text-right text-[15px] font-black text-slate-200">{formatValue(entry.gamesPlayed ?? 0)}</div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 rounded-[10px] border border-[#21314C] bg-[#0E1625] px-5 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2">
               {MODE_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => setMode(option.value)}
                   className={[
-                    "rounded-[12px] px-4 py-2 text-[12px] font-black uppercase tracking-[0.08em] transition",
+                    "w-full rounded-[10px] px-4 py-2.5 text-left text-[12px] font-black uppercase tracking-[0.08em] transition",
                     mode === option.value
-                      ? "bg-[#6E4BFF] text-white"
-                      : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white",
+                      ? "bg-[#6E4BFF] text-white shadow-[0_10px_28px_rgba(110,75,255,0.25)]"
+                      : "bg-transparent text-slate-400 hover:bg-white/5 hover:text-white",
                   ].join(" ")}
                 >
                   {option.label}
@@ -420,7 +382,7 @@ export default function RankingPage() {
               ))}
             </div>
 
-            <div className="relative w-full sm:w-[280px]">
+            <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input
                 value={search}
@@ -435,66 +397,83 @@ export default function RankingPage() {
                 data-gramm="false"
                 data-gramm_editor="false"
                 data-enable-grammarly="false"
-                className="h-10 w-full rounded-[12px] border border-white/10 bg-[#071022]/80 pl-10 pr-4 text-[13px] font-bold text-white outline-none transition placeholder:text-slate-500 focus:border-[#6E4BFF]"
+                className="h-10 w-full rounded-[10px] border border-[#1C2332] bg-[#0C1222]/85 pl-10 pr-4 text-[13px] font-semibold text-white outline-none transition placeholder:text-slate-500 focus:border-[#6E4BFF]"
               />
             </div>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-4 rounded-[10px] border border-[#21314C] bg-[#0E1625] px-5 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-[13px] font-bold text-slate-400">
-              <Clock3 className="h-4 w-4" aria-hidden="true" />
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+              <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Mis à jour à {lastUpdatedLabel}</span>
             </div>
-            <div className="flex items-center gap-2 self-end sm:self-auto">
-              <button
-                type="button"
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage <= 1}
-                className="grid h-10 w-10 place-items-center rounded-[8px] border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-default disabled:text-slate-600 disabled:hover:bg-white/5"
-                aria-label="Page précédente"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+          </aside>
 
-              {pagesToShow.map((pageNumber, index) => {
-                const previousPage = pagesToShow[index - 1];
-                const showEllipsis = previousPage && pageNumber - previousPage > 1;
-
-                return (
-                  <div key={pageNumber} className="flex items-center gap-2">
-                    {showEllipsis && (
-                      <span className="grid h-10 min-w-10 place-items-center rounded-[8px] border border-white/10 bg-white/5 px-3 text-sm font-black text-slate-400">
-                        ...
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setPage(pageNumber)}
-                      className={[
-                        "grid h-10 min-w-10 place-items-center rounded-[8px] border px-3 text-sm font-black transition",
-                        currentPage === pageNumber
-                          ? "border-[#6E4BFF] bg-[#6E4BFF] text-white"
-                          : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white",
-                      ].join(" ")}
-                      aria-label={`Page ${pageNumber}`}
-                      aria-current={currentPage === pageNumber ? "page" : undefined}
-                    >
-                      {pageNumber}
-                    </button>
-                  </div>
-                );
-              })}
-
-              <button
-                type="button"
-                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage >= totalPages}
-                className="grid h-10 w-10 place-items-center rounded-[8px] border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-default disabled:text-slate-600 disabled:hover:bg-white/5"
-                aria-label="Page suivante"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
+          <div className="min-w-0 overflow-x-auto rounded-[14px]">
+            <div className="mr-6 grid min-w-[620px] grid-cols-[104px_minmax(120px,1fr)_190px_110px] items-center px-2 pb-2 pt-1 font-brandUpright text-[17px] uppercase leading-none tracking-[0.04em] text-slate-400">
+              <div className="text-center">Rang</div>
+              <div>Joueur</div>
+              <div className="flex items-center justify-end gap-2">
+                <span>{modeLabel}</span>
+                <HelpCircle className="h-4 w-4 text-slate-500" aria-hidden="true" />
+              </div>
+              <div className="text-right">Parties</div>
             </div>
+
+            <div className="lb-scroll max-h-[calc(100vh-260px)] min-w-[644px] overflow-y-auto pr-6 font-inter">
+              <div className="flex flex-col gap-1.5">
+                {loading && (
+                  <div className="rounded-[9px] bg-[#121727] px-5 py-4 text-sm font-semibold text-slate-300">
+                    Chargement du classement…
+                  </div>
+                )}
+
+                {error && !loading && (
+                  <div className="rounded-[9px] bg-[#121727] px-5 py-4 text-sm font-semibold text-rose-200">{error}</div>
+                )}
+
+                {!loading && !error && visibleEntries.length === 0 && (
+                  <div className="rounded-[9px] bg-[#121727] px-5 py-4 text-sm font-semibold text-slate-300">
+                    Aucun joueur disponible pour ce classement.
+                  </div>
+                )}
+
+                {!loading &&
+                  !error &&
+                  visibleEntries.map((entry, index) => {
+                    const absoluteRank = index + 1;
+                    const isSelf = self?.entry.id === entry.id;
+
+                    return (
+                      <LeaderboardRow
+                        key={`${entry.id}-${mode}-${absoluteRank}`}
+                        entry={entry}
+                        rank={absoluteRank}
+                        mode={mode}
+                        highlighted={isSelf}
+                      />
+                    );
+                  })}
+
+                {!loading && !error && hasMoreEntries && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((count) => count + LOAD_CHUNK_SIZE)}
+                    className="rounded-[9px] border border-dashed border-[#2C3650] bg-[#121727] px-5 py-3 text-center text-[12px] font-black uppercase tracking-[0.08em] text-slate-300 transition hover:border-[#6E4BFF] hover:text-white"
+                  >
+                    Voir davantage
+                  </button>
+                )}
+              </div>
+            </div>
+            {!loading && !error && self && (
+              <div className="mt-4 min-w-[644px] pr-6 font-inter">
+                <LeaderboardRow
+                  entry={self.entry}
+                  rank={self.rank}
+                  mode={mode}
+                  highlighted
+                  detached
+                />
+              </div>
+            )}
           </div>
         </section>
       </div>
