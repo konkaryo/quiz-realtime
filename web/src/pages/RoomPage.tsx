@@ -268,6 +268,7 @@ export default function RoomPage() {
     Record<string, AnsweredStatus>
   >({});
   const [question, setQuestion] = useState<QuestionLite | null>(null);
+  const [dynamicQuestionDisplay, setDynamicQuestionDisplay] = useState(true);
   const [index, setIndex] = useState(0);
   const [total, setTotal] = useState(0);
 
@@ -557,6 +558,7 @@ export default function RoomPage() {
         total: number;
         endsAt: number;
         question: QuestionLite;
+        dynamicQuestionDisplay?: boolean;
         serverNow?: number;
       }) => {
         if (typeof p.serverNow === "number") setSkew(p.serverNow - Date.now());
@@ -577,6 +579,7 @@ export default function RoomPage() {
         const serverNow = nowServer();
         setRoundDuration(Math.max(0, p.endsAt - serverNow));
 
+        setDynamicQuestionDisplay(p.dynamicQuestionDisplay ?? true);
         setQuestion(p.question);
         setAnsweredByPg({});
         setSelected(null);
@@ -1863,7 +1866,7 @@ return (
                                   onSelectChoice={(choice) => answerByChoice(choice.id)}
                                   questionProgress={questionProgress}
                                   correctLabelPlacement="above"
-                                  animateQuestionText
+                                  animateQuestionText={dynamicQuestionDisplay}
                                 />
                               </div>
                             ) : phase === "countdown" ? null : (

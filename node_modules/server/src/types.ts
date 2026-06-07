@@ -34,6 +34,7 @@ export type GameState = {
   pgIds: Set<string>;
   attemptsThisRound: Map<string, number>;
   roundMs: number;
+  dynamicQuestionDisplay: boolean;
   finished?: boolean;
   playerData: Map<
     string,

@@ -79,18 +79,20 @@ async function main() {
       const Body = z.object({
         difficulty:    z.number().int().min(0).max(100).optional(),
         bannedThemes:  z.array(z.nativeEnum(Theme)).optional(),
-        questionCount: z.number().int().min(10).max(30).optional(),
+        questionCount: z.number().int().min(1).max(50).optional(),
         roundSeconds:  z.number().int().min(10).max(30).optional(),
+        dynamicQuestionDisplay: z.boolean().optional(),
         code:          z.string().trim().toUpperCase().optional(),
         visibility:    z.nativeEnum(RoomVisibility).optional(),
       });
       const parsed = Body.safeParse(req.body);
       if (!parsed.success) { return reply.code(400).send({ error: parsed.error.message }); }
       const {
-        difficulty = 50,
+        difficulty = 45,
         bannedThemes = [],
         questionCount = 10,
         roundSeconds = 10,
+        dynamicQuestionDisplay = true,
         code: requestedCodeRaw,
         visibility = RoomVisibility.PRIVATE,
       } = parsed.data;
@@ -127,6 +129,7 @@ async function main() {
             bannedThemes,
             questionCount,
             roundMs,
+            dynamicQuestionDisplay,
             visibility,
             image: roomImage,
           },
@@ -160,6 +163,7 @@ async function main() {
         questionCount: true,
         roundMs: true,
         bannedThemes: true,
+        dynamicQuestionDisplay: true,
       },
     });
     if (!room) return reply.code(404).send({ error: "Room not found" });

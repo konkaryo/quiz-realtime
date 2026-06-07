@@ -293,6 +293,7 @@ export async function startGameForRoom(
     pgIds: new Set(pgs.map((p) => p.id)),
     attemptsThisRound: new Map<string, number>(),
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
+    dynamicQuestionDisplay: room.dynamicQuestionDisplay ?? true,
     roundSeq: 0,
     finished: false,
     playerData,
@@ -431,6 +432,7 @@ async function startRound(
     endsAt: st.endsAt,
     question: { id: q.id, text: q.text, img: q.img, theme: q.theme, difficulty: q.difficulty },
     textLives: TEXT_LIVES,
+    dynamicQuestionDisplay: st.dynamicQuestionDisplay,
     serverNow: Date.now()
     // optional: roundUid: myUid
   });
