@@ -562,7 +562,7 @@ export default function DailyQuestionPanel(props: Props) {
       ) : null}
 
       {/* PANNEAU SUPÉRIEUR */}
-      <div className={`relative ${showTimer ? "mt-14" : "mt-6"} w-[430px] max-w-full aspect-[2.24/1]`}>
+      <div className={`relative ${showTimer ? "mt-10" : "mt-6"} w-[430px] max-w-full aspect-[2.24/1]`}>
         {/* NOM DU THÈME */}
         {question.theme && (
           <div className="absolute -top-4 left-1/2 z-30 -translate-x-1/2 text-center">
@@ -708,10 +708,11 @@ export default function DailyQuestionPanel(props: Props) {
 
       {showAnswerSection ? (
         <>
+          <div className="mt-16 flex h-[128px] w-full items-start justify-center">
 
       {/* ✅ MODE QCM : uniquement les cellules (moins longues + texte centré) */}
       {isQcmMode ? (
-        <div className="mt-20 w-[640px] max-w-full flex justify-center">
+        <div className="w-[640px] max-w-full flex justify-center">
           <div className="grid gap-3 md:grid-cols-2 w-full max-w-[520px]">
             {choices!.map((choice) => {
               const isSelected = selectedChoice === choice.id;
@@ -745,7 +746,7 @@ export default function DailyQuestionPanel(props: Props) {
         </div>
       ) : (
         /* MODE TEXTE : panneau inférieur original (boutons intégrés) */
-        <div className="relative mt-20 w-[580px] max-w-full">
+        <div className="relative mt-8 w-[580px] max-w-full">
           {correctLabelPlacement === "above" ? (
             <div className="pointer-events-none absolute -top-12 left-1/2 z-20 w-full -translate-x-1/2">
               {renderCorrectLabelMeta()}
@@ -847,11 +848,12 @@ export default function DailyQuestionPanel(props: Props) {
           {reserveFeedbackSpace ? <div className="mt-2" /> : null}
         </div>
       )}
+          </div>
         </>
       ) : null}
 
       {showProgress && questionProgress.length > 0 && (
-        <div className="mt-8 flex flex-wrap justify-center gap-1.5">
+        <div className="mt-4 flex flex-wrap justify-center gap-1.5">
           {questionProgress.map((state, i) => {
             const color =
               state === "correct"

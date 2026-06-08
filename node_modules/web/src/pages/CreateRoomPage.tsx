@@ -1,10 +1,15 @@
 // web/src/pages/CreateRoomPage.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { io, Socket } from "socket.io-client";
+import hostCrown from "../assets/crown.png";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
 const NAVBAR_HEIGHT_PX = 52;
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL ??
+  (typeof window !== "undefined" ? window.location.origin : "");
 
 const THEME_OPTIONS = [
   { key: "AUDIOVISUEL", label: "Audiovisuel" },
@@ -61,6 +66,30 @@ type CreateRoomResponse = {
   };
 };
 
+type LobbyPlayer = {
+  id: string;
+  name: string;
+  img?: string | null;
+};
+
+type LobbyStatePayload = {
+  ok: boolean;
+  owner?: { playerId?: string | null };
+  players?: LobbyPlayer[];
+};
+
+type RoomSettingsResponse = {
+  room?: {
+    id?: string;
+    code?: string | null;
+    difficulty?: number;
+    questionCount?: number;
+    roundMs?: number;
+    bannedThemes?: ThemeKey[];
+    dynamicQuestionDisplay?: boolean;
+  };
+};
+
 type RangeStyle = React.CSSProperties & Record<"--p", string>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -111,6 +140,12 @@ function clamp01(n: number) {
 function percent(value: number, min: number, max: number) {
   if (max <= min) return "0%";
   return `${clamp01((value - min) / (max - min)) * 100}%`;
+}
+
+function closestDifficulty(value: number) {
+  return DIFFICULTY_OPTIONS.reduce((closest, option) =>
+    Math.abs(option.value - value) < Math.abs(closest.value - value) ? option : closest,
+  ).value;
 }
 
 function GamepadIcon(props: { className?: string }) {
@@ -286,10 +321,11 @@ function HomeBackground() {
 export default function CreateRoomPage() {
   const nav = useNavigate();
 
+  const { roomId: routeRoomId } = useParams<{ roomId?: string }>();
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [difficulty, setDifficulty] = useState(50);
+  const [difficulty, setDifficulty] = useState(45);
   const [questionCount, setQuestionCount] = useState(10);
   const [questionDuration, setQuestionDuration] = useState(20);
   const [maxPlayers, setMaxPlayers] = useState(50);
@@ -298,11 +334,15 @@ export default function CreateRoomPage() {
   const [code, setCode] = useState("");
   const [activePanel, setActivePanel] = useState<PanelKey>("settings");
   const [themesOpen, setThemesOpen] = useState(false);
+  const [createdRoomId, setCreatedRoomId] = useState<string | null>(null);
+  const [lobbyPlayers, setLobbyPlayers] = useState<LobbyPlayer[]>([]);
+  const [ownerPlayerId, setOwnerPlayerId] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [lobbySocket, setLobbySocket] = useState<Socket | null>(null);
 
   const copyResetTimeoutRef = useRef<number | null>(null);
   const questionDurationHoldTimeoutRef = useRef<number | null>(null);
   const questionDurationHoldIntervalRef = useRef<number | null>(null);
-  const themesDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const navItems: NavItem[] = useMemo(
     () => [
@@ -331,8 +371,17 @@ export default function CreateRoomPage() {
     DIFFICULTY_OPTIONS.findIndex((option) => option.value === difficulty),
   );
   const selectedDifficultyLabel = DIFFICULTY_OPTIONS[selectedDifficultyIndex]?.label ?? "Modéré";
+  const orderedLobbyPlayers = useMemo(() => {
+    if (!ownerPlayerId) return lobbyPlayers;
+    return [...lobbyPlayers].sort((a, b) => {
+      if (a.id === ownerPlayerId) return -1;
+      if (b.id === ownerPlayerId) return 1;
+      return 0;
+    });
+  }, [lobbyPlayers, ownerPlayerId]);
 
   function openPanel(panel: PanelKey) {
+    if (panel === "lobby" && !createdRoomId) return;
     setActivePanel(panel);
     if (panel !== "settings") setThemesOpen(false);
   }
@@ -425,19 +474,100 @@ export default function CreateRoomPage() {
   useEffect(() => {
     if (!themesOpen) return;
 
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (themesDropdownRef.current?.contains(target)) return;
-      setThemesOpen(false);
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setThemesOpen(false);
     }
 
-    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [themesOpen]);
+
+  useEffect(() => {
+    if (!createdRoomId || !code) {
+      setLobbyPlayers([]);
+      setOwnerPlayerId(null);
+      return;
+    }
+
+    const socket = io(SOCKET_URL, {
+      path: "/socket.io",
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+    });
+    setLobbySocket(socket);
+
+    const refreshLobby = () => {
+      socket.emit("lobby_state", {}, (res: LobbyStatePayload) => {
+        if (!res?.ok) return;
+        setLobbyPlayers(res.players ?? []);
+        setOwnerPlayerId(res.owner?.playerId ?? null);
+      });
+    };
+
+    socket.on("connect", () => {
+      socket.emit("join_game", { code });
+      window.setTimeout(refreshLobby, 180);
+    });
+    socket.on("joined", refreshLobby);
+    socket.on("lobby_update", refreshLobby);
+    socket.on("game_started", () => {
+      nav(`/room/${createdRoomId}`);
+    });
+    socket.on("error_msg", (message: string) => setErr(message));
+
+    return () => {
+      socket.off("connect");
+      socket.off("joined", refreshLobby);
+      socket.off("lobby_update", refreshLobby);
+      socket.off("game_started");
+      socket.off("error_msg");
+      socket.close();
+      setLobbySocket(null);
+    };
+  }, [code, createdRoomId, nav]);
+
+  useEffect(() => {
+    if (!routeRoomId) return;
+
+    let cancelled = false;
+    setLoading(true);
+    setErr(null);
+
+    fetchJSON(`/rooms/${routeRoomId}`)
+      .then((data) => {
+        if (cancelled) return;
+        const room = (data as RoomSettingsResponse).room;
+        if (!room?.id) throw new Error("Room introuvable");
+
+        setCreatedRoomId(room.id);
+        setCode(room.code ?? "");
+        if (typeof room.difficulty === "number") setDifficulty(closestDifficulty(room.difficulty));
+        if (typeof room.questionCount === "number") setQuestionCount(room.questionCount);
+        if (typeof room.roundMs === "number") setQuestionDuration(Math.max(1, Math.round(room.roundMs / 1000)));
+        if (Array.isArray(room.bannedThemes)) {
+          setSelectedThemes(THEME_OPTIONS.filter((theme) => !room.bannedThemes?.includes(theme.key)).map((theme) => theme.key));
+        }
+        if (typeof room.dynamicQuestionDisplay === "boolean") {
+          setDynamicQuestionDisplay(room.dynamicQuestionDisplay);
+        }
+        setActivePanel("lobby");
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        const apiError = e as ApiError;
+        setErr(apiError.message || "Impossible de charger le lobby");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routeRoomId]);
 
   function toggleTheme(themeKey: ThemeKey) {
     setSelectedThemes((prev) =>
@@ -515,7 +645,8 @@ export default function CreateRoomPage() {
       if (!id) throw new Error("Création: id manquant");
 
       if (finalCode && finalCode !== code) setCode(finalCode);
-      nav(`/rooms/${id}/lobby`);
+      setCreatedRoomId(id);
+      setActivePanel("lobby");
     } catch (e: unknown) {
       const apiError = e as ApiError;
       if (apiError.status === 409) {
@@ -527,6 +658,40 @@ export default function CreateRoomPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function saveSettings() {
+    if (!createdRoomId) return;
+    setLoading(true);
+    setErr(null);
+    setSaveStatus(null);
+
+    try {
+      await fetchJSON(`/rooms/${createdRoomId}/settings`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          difficulty,
+          questionCount,
+          roundSeconds: questionDuration,
+          dynamicQuestionDisplay,
+          bannedThemes,
+        }),
+      });
+      setSaveStatus("Paramètres sauvegardés.");
+    } catch (e: unknown) {
+      const apiError = e as ApiError;
+      setErr(apiError.message || "Impossible de sauvegarder les paramètres");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function launchGame() {
+    if (!createdRoomId) {
+      void createRoom();
+      return;
+    }
+    lobbySocket?.emit("start_game");
   }
 
   return (
@@ -612,16 +777,19 @@ export default function CreateRoomPage() {
             <nav className="mt-14 w-[150px] max-md:mt-6 max-md:flex max-md:w-full" aria-label="Création de partie privée">
               {navItems.map((item) => {
                 const active = item.key === activePanel;
+                const disabled = item.key === "lobby" && !createdRoomId;
 
                 return (
                   <button
                     key={item.key}
                     type="button"
                     aria-current={active ? "step" : undefined}
+                    disabled={disabled}
                     onClick={() => openPanel(item.key)}
                     className={[
                       "block h-[44px] w-full bg-[#10172D] px-3 text-center font-brandUpright text-[21px] uppercase leading-[44px] tracking-[0.04em] text-white transition max-md:h-12 max-md:flex-1 max-md:leading-[48px]",
                       active ? "bg-[#24304F]" : "hover:bg-[#18213D]",
+                      disabled ? "cursor-not-allowed opacity-35 hover:bg-[#10172D]" : "",
                     ].join(" ")}
                   >
                     {item.label}
@@ -632,14 +800,14 @@ export default function CreateRoomPage() {
 
             <button
               type="button"
-              onClick={createRoom}
-              disabled={loading || !code}
+              onClick={createdRoomId ? launchGame : createRoom}
+              disabled={loading || !code || (createdRoomId !== null && !lobbySocket)}
               className={[
                 "mt-36 h-[40px] w-[250px] rounded-[7px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-6 text-center font-sans text-[15px] font-bold text-slate-50 transition hover:brightness-110 max-md:mt-8 max-md:w-full",
                 loading || !code ? "cursor-not-allowed opacity-50 hover:brightness-100" : "",
               ].join(" ")}
             >
-              {loading ? "Création…" : "Créer la partie"}
+              {loading ? "Création…" : createdRoomId ? "Lancer la partie" : "Créer la partie"}
             </button>
           </aside>
 
@@ -760,60 +928,16 @@ export default function CreateRoomPage() {
                 </SettingRow>
 
                 <SettingRow icon={<TilesIcon className="h-6 w-6" />} label="Thèmes des questions" value={`${selectedThemeCount}/${THEME_OPTIONS.length}`}>
-                  <div ref={themesDropdownRef} className="relative z-20">
-                    <button
-                      type="button"
-                      onClick={() => setThemesOpen((open) => !open)}
-                      aria-expanded={themesOpen}
-                      className="flex h-[28px] w-full items-center justify-between rounded-[3px] bg-white/90 px-3 text-left text-[11px] font-semibold text-[#111827] transition hover:bg-white"
-                    >
-                      <span>{selectedThemeCount}/{THEME_OPTIONS.length} thèmes actifs</span>
-                      <span className="text-[12px]" aria-hidden>{themesOpen ? "▲" : "▼"}</span>
-                    </button>
-
-                    {themesOpen && (
-                      <div className="absolute right-0 top-[38px] z-30 w-full min-w-[260px] rounded-md border border-white/10 bg-[#0B1229] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.35)]">
-                        <div className="mb-3 flex gap-2">
-                          <button
-                            type="button"
-                            onClick={selectAllThemes}
-                            className="rounded bg-white/90 px-3 py-1 text-[11px] font-black uppercase text-[#0B1229] transition hover:bg-white"
-                          >
-                            Tout
-                          </button>
-                          <button
-                            type="button"
-                            onClick={selectNoThemes}
-                            className="rounded bg-white/90 px-3 py-1 text-[11px] font-black uppercase text-[#0B1229] transition hover:bg-white"
-                          >
-                            Aucun
-                          </button>
-                        </div>
-
-                        <div className="grid max-h-[220px] gap-2 overflow-y-auto pr-1">
-                          {sortedThemes.map(({ key, label }) => {
-                            const active = selectedThemes.includes(key);
-
-                            return (
-                              <button
-                                key={key}
-                                type="button"
-                                onClick={() => toggleTheme(key)}
-                                aria-pressed={active}
-                                className={[
-                                  "flex items-center justify-between rounded bg-[#131930] px-3 py-2 text-left text-[13px] font-bold transition",
-                                  active ? "text-white ring-1 ring-[#7C5CFF]/70" : "text-white/45 hover:text-white/75",
-                                ].join(" ")}
-                              >
-                                <span>{label}</span>
-                                <span className={active ? "text-emerald-300" : "text-white/25"}>{active ? "✓" : "—"}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setThemesOpen(true)}
+                    aria-haspopup="dialog"
+                    aria-expanded={themesOpen}
+                    className="flex h-[28px] w-full items-center justify-between rounded-[3px] bg-white/90 px-3 text-left text-[11px] font-semibold text-[#111827] transition hover:bg-white"
+                  >
+                    <span>{selectedThemeCount}/{THEME_OPTIONS.length} thèmes actifs</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.08em] text-[#111827]/70">Modifier</span>
+                  </button>
                 </SettingRow>
 
                 <SettingRow icon={<UsersIcon className="h-6 w-6" />} label="Nombre de joueurs" value={`${maxPlayers}`}>
@@ -866,6 +990,19 @@ export default function CreateRoomPage() {
                     </span>
                   </button>
                 </SettingRow>
+                {createdRoomId && (
+                  <div className="flex flex-col items-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={saveSettings}
+                      disabled={loading}
+                      className="h-10 w-full max-w-[220px] rounded-[6px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-5 text-[14px] font-extrabold text-white shadow-[0_10px_22px_rgba(92,54,221,0.24)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:brightness-100"
+                    >
+                      Sauvegarder
+                    </button>
+                    {saveStatus && <p className="text-right text-xs font-semibold text-emerald-300">{saveStatus}</p>}
+                  </div>
+                )}
               </div>
             )}
 
@@ -902,7 +1039,52 @@ export default function CreateRoomPage() {
             )}
 
             {activePanel === "lobby" && (
-              <div id="create-room-panel-lobby" role="tabpanel" aria-label="Lobby" />
+              <div id="create-room-panel-lobby" role="tabpanel" aria-label="Lobby" className="space-y-4">
+                {createdRoomId ? (
+                  <>
+                    <div className="rounded-md bg-[#0B1229] p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="font-brandUpright text-[18px] uppercase leading-none text-white">
+                          Joueurs ({lobbyPlayers.length}/{maxPlayers})
+                        </h3>
+                        <span className="text-[11px] font-semibold text-white/40">En attente de joueurs…</span>
+                      </div>
+                      <div className="space-y-2">
+                        {orderedLobbyPlayers.map((player) => {
+                          const isOwner = player.id === ownerPlayerId;
+                          return (
+                            <div key={player.id} className="grid grid-cols-[32px,1fr,auto] items-center gap-3 rounded bg-[#131930] px-3 py-2">
+                              <img
+                                src={player.img || "/img/profiles/0.avif"}
+                                alt=""
+                                className="h-7 w-7 rounded-full object-cover"
+                                draggable={false}
+                              />
+                              <div className="flex min-w-0 items-center gap-2">
+                                <p className="truncate text-[13px] font-bold text-white">{player.name}</p>
+                                {isOwner && (
+                                  <img
+                                    src={hostCrown}
+                                    alt="Hôte"
+                                    className="h-4 w-4 shrink-0 object-contain"
+                                    draggable={false}
+                                  />
+                                )}
+                              </div>
+                              <span className="text-[11px] font-bold text-emerald-300">Prêt</span>
+                            </div>
+                          );
+                        })}
+                        {Array.from({ length: Math.max(0, Math.min(5, maxPlayers - lobbyPlayers.length)) }).map((_, index) => (
+                          <div key={`empty-${index}`} className="rounded bg-[#10172D] px-3 py-2 text-[12px] font-semibold text-white/25">
+                            En attente d'un joueur…
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+              </div>
             )}
 
             <div className="sr-only" aria-live="polite">
@@ -912,6 +1094,91 @@ export default function CreateRoomPage() {
           </section>
         </div>
       </main>
+      {themesOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#020617]/62 px-4 backdrop-blur-md"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setThemesOpen(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="themes-dialog-title"
+            className="w-full max-w-[660px] rounded-[18px] border border-white/10 bg-[#131930] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.55)] sm:p-6"
+          >
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h3 id="themes-dialog-title" className="font-brandUpright text-[28px] uppercase leading-none text-white">
+                  Thèmes des questions
+                </h3>
+                <p className="mt-2 text-[13px] font-semibold text-white/55">
+                  {selectedThemeCount}/{THEME_OPTIONS.length} thèmes actifs
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setThemesOpen(false)}
+                aria-label="Fermer la sélection des thèmes"
+                className="grid h-9 w-9 place-items-center rounded-md bg-[#0B1229] text-lg font-black text-white/70 transition hover:bg-[#1b2544] hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mb-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={selectAllThemes}
+                className="rounded-full bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.06em] text-[#0B1229] transition hover:bg-white/90"
+              >
+                Tout sélectionner
+              </button>
+              <button
+                type="button"
+                onClick={selectNoThemes}
+                className="rounded-full border border-white/12 bg-[#0B1229] px-4 py-2 text-[12px] font-black uppercase tracking-[0.06em] text-white/70 transition hover:border-white/25 hover:text-white"
+              >
+                Tout retirer
+              </button>
+            </div>
+
+            <div className="flex max-h-[360px] flex-wrap gap-2 overflow-y-auto pr-1">
+              {sortedThemes.map(({ key, label }) => {
+                const active = selectedThemes.includes(key);
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => toggleTheme(key)}
+                    aria-pressed={active}
+                    className={[
+                      "rounded-full border px-4 py-2 text-[13px] font-extrabold transition",
+                      active
+                        ? "border-[#8D72FF] bg-[#7C5CFF] text-white shadow-[0_8px_20px_rgba(124,92,255,0.24)]"
+                        : "border-white/10 bg-[#0B1229] text-white/45 hover:border-white/25 hover:text-white/80",
+                    ].join(" ")}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setThemesOpen(false)}
+                className="h-10 rounded-[6px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-8 text-[14px] font-extrabold text-white shadow-[0_10px_22px_rgba(92,54,221,0.24)] transition hover:brightness-110"
+              >
+                Valider
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

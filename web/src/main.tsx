@@ -12,9 +12,7 @@ import Home from "./pages/Home";
 import RoomPage from "./pages/RoomPage";
 import CreateRoomPage from "./pages/CreateRoomPage";
 import JoinPrivateRoomPage from "./pages/JoinPrivateRoomPage";
-import RacePage from "./pages/RacePage";
 import LobbyRacePage from "./pages/LobbyRacePage";
-import PrivateLobbyPage from "./pages/PrivateLobbyPage";
 
 // ✅ nouvelle page
 import RankingPage from "./pages/RankingPage";
@@ -201,7 +199,7 @@ const router = createBrowserRouter([
         ),
       },
       { path: "/rooms/new", element: <CreateRoomPage /> },
-      { path: "/rooms/:roomId/lobby", element: <PrivateLobbyPage /> },
+      { path: "/rooms/:roomId/lobby", element: <CreateRoomPage /> },
       { path: "/private/join", element: <JoinPrivateRoomPage /> },
       { path: "/room/:roomId", element: <RoomPage /> },
       { path: "*", element: <Navigate to="/" replace /> },

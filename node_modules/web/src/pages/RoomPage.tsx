@@ -6,16 +6,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
-import Background from "../components/Background";
-import trophy from "../assets/trophy.png";
 import laurierGold from "../assets/laurel_left_gold.png";
 import emptyQuestionImg from "../assets/empty_img.jpg";
+import playerIcon from "../assets/player.png";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
   QuestionProgress as QuestionPanelProgress,
 } from "../components/QuestionPanel";
 import { getLevelFromExperience } from "../utils/experience";
-import { Eye, EyeOff, List, LogOut, Settings, X } from "lucide-react";
+import { List, LogOut } from "lucide-react";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -52,7 +51,6 @@ type RoomMeta = {
   name?: string | null;
   image?: string | null;
 };
-type RoomInfoItem = { label: string; value: string | number };
 type AnsweredStatus = "correct" | "correct-mc" | "wrong";
 type QuestionStatus = "pending" | "correct" | "correct-mc" | "wrong";
 type FinalQuestionStats = { correct: number; correctQcm: number; wrong: number };
@@ -65,10 +63,72 @@ type FinalQuestionSnapshot = {
   correctLabel?: string | null;
 };
 
+function HomePageBackground() {
+  return (
+    <>
+      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
+      <div
+        aria-hidden
+        className="fixed inset-0 bg-[radial-gradient(ellipse_at_16%_38%,rgba(24,36,74,0.42),transparent_46%),radial-gradient(ellipse_at_82%_44%,rgba(22,34,70,0.36),transparent_50%)]"
+      />
+      <svg
+        aria-hidden="true"
+        className="fixed inset-0 h-full w-full opacity-70"
+        preserveAspectRatio="none"
+        viewBox="0 0 1440 900"
+      >
+        <defs>
+          <linearGradient id="roomHomeWaveA" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor="#0A132E" stopOpacity="0.06" />
+            <stop offset="45%" stopColor="#1C2A52" stopOpacity="0.42" />
+            <stop offset="100%" stopColor="#0A132E" stopOpacity="0.06" />
+          </linearGradient>
+          <linearGradient id="roomHomeWaveB" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor="#071028" stopOpacity="0.02" />
+            <stop offset="52%" stopColor="#22315A" stopOpacity="0.36" />
+            <stop offset="100%" stopColor="#071028" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M-120 220 C 180 105 390 270 650 175 C 900 85 1110 175 1560 70 L1560 0 L-120 0 Z"
+          fill="url(#roomHomeWaveA)"
+        />
+        <path
+          d="M-120 500 C 180 390 410 545 700 440 C 980 340 1160 420 1560 330 L1560 170 C 1130 265 970 185 690 290 C 410 395 170 250 -120 350 Z"
+          fill="url(#roomHomeWaveB)"
+        />
+        <path
+          d="M-120 760 C 210 650 430 785 720 690 C 1010 595 1190 675 1560 575 L1560 430 C 1160 535 990 455 715 550 C 425 650 210 520 -120 620 Z"
+          fill="url(#roomHomeWaveA)"
+          opacity="0.66"
+        />
+        <path
+          d="M-120 350 C 170 250 410 395 690 290 C 970 185 1130 265 1560 170"
+          fill="none"
+          stroke="#314474"
+          strokeOpacity="0.14"
+          strokeWidth="2"
+        />
+        <path
+          d="M-120 620 C 210 520 425 650 715 550 C 990 455 1160 535 1560 430"
+          fill="none"
+          stroke="#2A3B68"
+          strokeOpacity="0.12"
+          strokeWidth="2"
+        />
+      </svg>
+      <div
+        aria-hidden
+        className="fixed inset-0 bg-[linear-gradient(180deg,rgba(6,10,25,0)_0%,rgba(6,10,25,0.16)_58%,#060A19_100%)]"
+      />
+    </>
+  );
+}
+
 function maskRoomCode(code: string | null | undefined) {
   const normalized = (code ?? "").trim();
   if (!normalized) return "—";
-  return "•".repeat(Math.max(normalized.length, 6));
+  return "****";
 }
 
 function FinalCountdownRing({ seconds, progress }: { seconds: number; progress: number }) {
@@ -192,16 +252,14 @@ function PlayerCell({
       <div
         className={[
           "w-full min-w-0 flex items-center justify-between gap-3",
-          "rounded-[6px]",
+          "rounded-[6px] border",
           "py-1 pl-3 pr-4",
           "overflow-hidden",
           "text-white",
+          isSelf ? "border-[#7C5CFF] shadow-[0_0_0_1px_rgba(124,92,255,0.45)]" : "border-transparent",
         ].join(" ")}
         style={{
-          background: isSelf
-            ? "linear-gradient(to right, #6a38ff, #ea4aa0)"
-            : "linear-gradient(to bottom, rgba(68, 74, 112, 0.5), rgba(68, 74, 112, 0.35))",
-
+          background: "linear-gradient(to bottom, rgba(68, 74, 112, 0.5), rgba(68, 74, 112, 0.35))",
         }}
       >
         {/* Avatar + Nom */}
@@ -318,7 +376,6 @@ export default function RoomPage() {
   const scoreAnimationRef = useRef<number | null>(null);
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
-  const [isRoomSettingsOpen, setIsRoomSettingsOpen] = useState(false);
   const [isRoomCodeVisible, setIsRoomCodeVisible] = useState(false);
 
   /* ---- recap des questions reçu en fin de partie ---- */
@@ -1109,14 +1166,9 @@ export default function RoomPage() {
   const showChoices = !!mcChoices;
   const textLocked = choicesRevealed || showChoices;
 
-  const visibilityLabel =
-    roomMeta?.visibility === "PUBLIC"
-      ? "Public"
-      : roomMeta?.visibility === "PRIVATE"
-      ? "Privé"
-      : "—";
-
-  const difficultyLabel = normalizedQuestion?.difficulty ?? "—";
+  const isPrivateRoom = roomMeta?.visibility === "PRIVATE";
+  const roomBadgeClass = "inline-flex items-center gap-1.5 rounded-[6px] bg-black/45 px-3 py-1.5 font-brand text-[15px] italic leading-none text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-sm";
+  const displayedRoomCode = isRoomCodeVisible ? roomMeta?.code ?? "—" : maskRoomCode(roomMeta?.code);
 
   // ✅ Layout widths (LG+)
   const leftW = 360;
@@ -1300,37 +1352,6 @@ export default function RoomPage() {
     return `${API_BASE}/img/interface/${imageBis}`;
   }, [roomMeta?.image]);
 
-
-  const roomInfoItems: RoomInfoItem[] = [
-    { label: "Public", value: visibilityLabel },
-    { label: "Joueurs", value: Math.max(leaderboard.length, 1) },
-    { label: "Difficulté", value: difficultyLabel },
-    { label: "ID", value: roomMeta?.id ?? roomId ?? "—" },
-    { label: "Code", value: roomMeta?.code ?? "—" },
-  ];
-
-  useEffect(() => {
-    if (!isRoomSettingsOpen) return;
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsRoomSettingsOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isRoomSettingsOpen]);
-
-  const closeRoomSettings = () => {
-    setIsRoomSettingsOpen(false);
-    setIsRoomCodeVisible(false);
-  };
-
-  const openRoomSettings = () => {
-    setIsRoomSettingsOpen(true);
-  };
-
   const rankLabel = useMemo(() => {
     if (selfIndex < 0) return null;
     const rank = selfIndex + 1;
@@ -1438,8 +1459,7 @@ return (
 
   return (
     <>
-      {/* ✅ fond uni demandé */}
-      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
+      <HomePageBackground />
 
       {/* ✅ Scrollbar style global */}
       <style>{`
@@ -1492,16 +1512,6 @@ return (
     <div className="h-full px-4 pb-5 flex flex-col min-h-0 overflow-visible">
         <div className="relative mb-6 overflow-visible">
 
-            <button
-              type="button"
-              aria-label="Paramètres du salon"
-              title="Paramètres du salon"
-              onClick={openRoomSettings}
-              className="absolute right-[0%] top-2 z-50 inline-flex h-7 w-7 translate-x-[120%] items-center justify-center text-white/70 transition hover:text-white"
-            >
-              <Settings className="h-5 w-5" strokeWidth={2.2} />
-            </button>
-
           <div className="relative aspect-[5/2] w-full overflow-hidden border border-white/20">
 
             <img
@@ -1513,18 +1523,26 @@ return (
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
-            <div className="absolute bottom-0 left-0 right-0 p-3">
-              <div
-                className="truncate text-[15px] font-semibold text-white"
-                title={roomDisplayName}
-              >
-                {roomDisplayName}
+            <div className="absolute inset-0 px-3 py-4 text-white">
+              <div className={`absolute left-3 top-3 max-w-[calc(100%-5.5rem)] ${roomBadgeClass}`} title={roomDisplayName}>
+                <span className="max-w-full truncate">{roomDisplayName}</span>
               </div>
-              <div className="mt-1 flex items-center gap-2 text-[11px] text-white/80">
-                <span>{visibilityLabel}</span>
-                <span aria-hidden>•</span>
-                <span>{Math.max(leaderboard.length, 1)} joueur(s)</span>
+
+              <div className={`absolute right-3 top-3 ${roomBadgeClass}`}>
+                <span>{Math.max(leaderboard.length, 1)}</span>
+                <img src={playerIcon} alt="" className="h-4 w-4 object-contain" draggable={false} />
               </div>
+              {isPrivateRoom && (
+                <button
+                  type="button"
+                  onClick={() => setIsRoomCodeVisible((visible) => !visible)}
+                  className={`absolute bottom-3 left-1/2 max-w-[calc(100%-1.5rem)] -translate-x-1/2 ${roomBadgeClass}`}
+                  aria-label={isRoomCodeVisible ? "Masquer le code du salon" : "Afficher le code du salon"}
+                  title={isRoomCodeVisible ? "Masquer le code" : "Afficher le code"}
+                >
+                  <span className="max-w-full truncate">{displayedRoomCode}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1937,109 +1955,6 @@ return (
           </div>
         </div>
       </div>
-
-      {isRoomSettingsOpen ? (
-        <div
-          className="fixed inset-0 z-[120] flex items-center justify-center px-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Paramètres du salon"
-        >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/65 backdrop-blur-sm"
-            aria-label="Fermer les paramètres du salon"
-            onClick={closeRoomSettings}
-          />
-
-          <div className="relative z-10 w-full max-w-[640px] overflow-hidden rounded-xl border border-white/15 bg-[#191B29]/95 shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-            <button
-              type="button"
-              className="absolute right-4 top-3 inline-flex h-7 w-7 items-center justify-center rounded-md bg-[#E23A4A] text-white transition hover:bg-[#F04656]"
-              onClick={closeRoomSettings}
-              aria-label="Fermer"
-              title="Fermer"
-            >
-              <X className="h-[13px] w-[13px]" strokeWidth={2.8} />
-            </button>
-
-            <div className="border-b border-white/10 px-5 py-4">
-              <div>
-                <h2 className="text-[20px] font-semibold text-white">Paramètres du salon</h2>
-                <p className="mt-1 text-[12px] uppercase tracking-[0.16em] text-white/50">
-                  Informations et accès
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-3 p-5 sm:grid-cols-2">
-              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Nom</div>
-                <div className="mt-1 text-[12px] font-semibold tabular-nums text-white overflow-hidden text-ellipsis whitespace-nowrap" title={roomDisplayName}>
-                  {roomDisplayName}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Visibilité</div>
-                <div className="mt-1 text-[12px] font-semibold tabular-nums text-white overflow-hidden text-ellipsis whitespace-nowrap" title={String(visibilityLabel)}>
-                  {visibilityLabel}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Joueurs</div>
-                <div className="mt-1 text-[12px] font-semibold tabular-nums text-white overflow-hidden text-ellipsis whitespace-nowrap" title={String(Math.max(leaderboard.length, 1))}>
-                  {Math.max(leaderboard.length, 1)}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Difficulté</div>
-                <div className="mt-1 text-[12px] font-semibold tabular-nums text-white overflow-hidden text-ellipsis whitespace-nowrap" title={String(difficultyLabel)}>
-                  {difficultyLabel}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">ID du salon</div>
-                <div className="mt-1 text-[12px] font-semibold tabular-nums text-white overflow-hidden text-ellipsis whitespace-nowrap" title={roomMeta?.id ?? roomId ?? "—"}>
-                  {roomMeta?.id ?? roomId ?? "—"}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 min-w-0 overflow-hidden">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
-                  Code d'accès
-                </div>
-
-                <div className="mt-1 flex items-center justify-between gap-3">
-                  <div
-                    className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[12px] font-semibold tabular-nums text-white"
-                    title={isRoomCodeVisible ? roomMeta?.code ?? "—" : "Code masqué"}
-                  >
-                    {isRoomCodeVisible ? roomMeta?.code ?? "—" : maskRoomCode(roomMeta?.code)}
-                  </div>
-
-                  <button
-                    type="button"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-white/70 transition hover:bg-white/[0.08] hover:text-white"
-                    onClick={() => setIsRoomCodeVisible((prev) => !prev)}
-                    aria-label={isRoomCodeVisible ? "Masquer le code" : "Afficher le code"}
-                    title={isRoomCodeVisible ? "Masquer le code" : "Afficher le code"}
-                  >
-                    {isRoomCodeVisible ? (
-                      <EyeOff className="h-4 w-4" strokeWidth={2.2} />
-                    ) : (
-                      <Eye className="h-4 w-4" strokeWidth={2.2} />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }

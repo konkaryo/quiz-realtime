@@ -188,6 +188,74 @@ async function main() {
     return { room: { ...room, image: resolvedImage } };
   });
 
+  app.patch("/rooms/:id/settings", async (req, reply) => {
+    try {
+      const sid = (req.cookies as any)?.sid as string | undefined;
+      if (!sid) return reply.code(401).send({ error: "Unauthorized" });
+
+      const session = await prisma.session.findUnique({
+        where: { token: sid },
+        select: { userId: true, expiresAt: true },
+      });
+      if (!session || session.expiresAt.getTime() < Date.now()) {
+        return reply.code(401).send({ error: "Unauthorized" });
+      }
+
+      const id = (req.params as any).id as string;
+      const room = await prisma.room.findUnique({
+        where: { id },
+        select: { id: true, ownerId: true, status: true },
+      });
+      if (!room) return reply.code(404).send({ error: "Room not found" });
+      if (room.status === "CLOSED") return reply.code(410).send({ error: "Room closed" });
+      if (room.ownerId !== session.userId) return reply.code(403).send({ error: "Forbidden" });
+
+      const Body = z.object({
+        difficulty: z.number().int().min(0).max(100).optional(),
+        bannedThemes: z.array(z.nativeEnum(Theme)).optional(),
+        questionCount: z.number().int().min(1).max(50).optional(),
+        roundSeconds: z.number().int().min(10).max(30).optional(),
+        dynamicQuestionDisplay: z.boolean().optional(),
+      });
+      const parsed = Body.safeParse(req.body);
+      if (!parsed.success) return reply.code(400).send({ error: parsed.error.message });
+
+      const data: {
+        difficulty?: number;
+        bannedThemes?: Theme[];
+        questionCount?: number;
+        roundMs?: number;
+        dynamicQuestionDisplay?: boolean;
+      } = {};
+      if (typeof parsed.data.difficulty === "number") data.difficulty = parsed.data.difficulty;
+      if (parsed.data.bannedThemes) data.bannedThemes = parsed.data.bannedThemes;
+      if (typeof parsed.data.questionCount === "number") data.questionCount = parsed.data.questionCount;
+      if (typeof parsed.data.roundSeconds === "number") data.roundMs = parsed.data.roundSeconds * 1000;
+      if (typeof parsed.data.dynamicQuestionDisplay === "boolean") {
+        data.dynamicQuestionDisplay = parsed.data.dynamicQuestionDisplay;
+      }
+
+      const updated = await prisma.room.update({
+        where: { id },
+        data,
+        select: {
+          id: true,
+          difficulty: true,
+          bannedThemes: true,
+          questionCount: true,
+          roundMs: true,
+          dynamicQuestionDisplay: true,
+        },
+      });
+
+      emitPublicRoomsUpdated(io);
+      return { room: updated };
+    } catch (e) {
+      req.log.error(e, "PATCH /rooms/:id/settings failed");
+      return reply.code(500).send({ error: "Server error" });
+    }
+  });
+
   app.get("/rooms/new-code", async (_req, reply) => {
     try {
       // On tente quelques fois pour éviter un code déjà pris (unicité DB)
