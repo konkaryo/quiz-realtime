@@ -1,4 +1,5 @@
 import { type DragEvent, useEffect, useMemo, useState } from "react";
+import Background from "../components/Background";
 
 type AdminToolId = "users" | "questions" | "games" | "dailyChallenges";
 
@@ -1456,7 +1457,7 @@ export default function AdminPage() {
   );
   return (
     <div className="relative min-h-full overflow-hidden text-white">
-      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
+      <Background />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1180px] flex-col gap-6 px-4 py-8 sm:px-5 lg:flex-row">
         <aside className="w-full shrink-0 overflow-hidden border border-white/10 bg-[#0c1020]/95 shadow-[0_12px_28px_rgba(0,0,0,.3)] lg:fixed lg:left-0 lg:top-[52px] lg:z-20 lg:h-[calc(100dvh-52px)] lg:w-[280px] lg:overflow-y-auto lg:rounded-none lg:border-y-0 lg:border-l-0 lg:bg-[#0b1020]/95 lg:shadow-[18px_0_40px_rgba(0,0,0,.18)]">

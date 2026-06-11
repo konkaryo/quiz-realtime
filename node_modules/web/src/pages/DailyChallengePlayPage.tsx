@@ -6,6 +6,7 @@ import tabKey from "@/assets/tab-key.svg";
 import enterKey from "@/assets/enter-key.svg";
 import emptyQuestionImg from "../assets/empty_img.jpg";
 import { io, Socket } from "socket.io-client";
+import Background from "../components/Background";
 import QuestionPanel, {
   Choice,
   QuestionLite,
@@ -514,8 +515,8 @@ export default function DailyChallengePlayPage() {
   // RENDER -------------------------------------------------------------------
 
   return (
-    <div className="relative text-slate-50">
-      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
+    <div className="relative min-h-full overflow-hidden text-slate-50">
+      <Background />
 
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10">
 

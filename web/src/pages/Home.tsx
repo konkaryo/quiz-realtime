@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import playerIcon from "../assets/player.png";
+import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 const SOCKET_URL =
@@ -126,61 +127,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-full overflow-hidden text-slate-50">
-      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
-      <div
-        aria-hidden
-        className="fixed inset-0 bg-[radial-gradient(ellipse_at_16%_38%,rgba(24,36,74,0.42),transparent_46%),radial-gradient(ellipse_at_82%_44%,rgba(22,34,70,0.36),transparent_50%)]"
-      />
-      <svg
-        aria-hidden="true"
-        className="fixed inset-0 h-full w-full opacity-70"
-        preserveAspectRatio="none"
-        viewBox="0 0 1440 900"
-      >
-        <defs>
-          <linearGradient id="homeWaveA" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0%" stopColor="#0A132E" stopOpacity="0.06" />
-            <stop offset="45%" stopColor="#1C2A52" stopOpacity="0.42" />
-            <stop offset="100%" stopColor="#0A132E" stopOpacity="0.06" />
-          </linearGradient>
-          <linearGradient id="homeWaveB" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0%" stopColor="#071028" stopOpacity="0.02" />
-            <stop offset="52%" stopColor="#22315A" stopOpacity="0.36" />
-            <stop offset="100%" stopColor="#071028" stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M-120 220 C 180 105 390 270 650 175 C 900 85 1110 175 1560 70 L1560 0 L-120 0 Z"
-          fill="url(#homeWaveA)"
-        />
-        <path
-          d="M-120 500 C 180 390 410 545 700 440 C 980 340 1160 420 1560 330 L1560 170 C 1130 265 970 185 690 290 C 410 395 170 250 -120 350 Z"
-          fill="url(#homeWaveB)"
-        />
-        <path
-          d="M-120 760 C 210 650 430 785 720 690 C 1010 595 1190 675 1560 575 L1560 430 C 1160 535 990 455 715 550 C 425 650 210 520 -120 620 Z"
-          fill="url(#homeWaveA)"
-          opacity="0.66"
-        />
-        <path
-          d="M-120 350 C 170 250 410 395 690 290 C 970 185 1130 265 1560 170"
-          fill="none"
-          stroke="#314474"
-          strokeOpacity="0.14"
-          strokeWidth="2"
-        />
-        <path
-          d="M-120 620 C 210 520 425 650 715 550 C 990 455 1160 535 1560 430"
-          fill="none"
-          stroke="#2A3B68"
-          strokeOpacity="0.12"
-          strokeWidth="2"
-        />
-      </svg>
-      <div
-        aria-hidden
-        className="fixed inset-0 bg-[linear-gradient(180deg,rgba(6,10,25,0)_0%,rgba(6,10,25,0.16)_58%,#060A19_100%)]"
-      />
+      <Background />
 
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-12 sm:px-8 lg:px-10">
         <header className="text-center">

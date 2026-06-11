@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { register } from "../auth/client";
 import logoUrl from "@/assets/synapz.png";
+import Background from "../components/Background";
 
 export default function RegisterPage() {
   const nav = useNavigate();
@@ -26,8 +27,9 @@ export default function RegisterPage() {
   return (
     <div
       style={{
+        position: "relative",
         minHeight: "calc(100dvh - 52px)",
-        background: "#13141F",
+        overflow: "hidden",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -36,8 +38,11 @@ export default function RegisterPage() {
         fontFamily: "system-ui, sans-serif",
       }}
     >
+      <Background />
       <div
         style={{
+          position: "relative",
+          zIndex: 1,
           width: "100%",
           maxWidth: 420,
           background: "#1E2030",

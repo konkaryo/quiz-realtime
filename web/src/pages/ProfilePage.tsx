@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { getLevelProgress } from "../utils/experience";
-
 import { Edit3 } from "lucide-react";
+import Background from "../components/Background";
 
 import {
   BarChart,
@@ -545,7 +545,7 @@ export default function ProfilePage() {
 
   return (
     <div className="relative min-h-screen text-slate-50">
-      <div className="absolute inset-0 bg-[#060A19]" aria-hidden />
+      <Background position="absolute" />
 
       <div className="relative z-10 mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
         {/* ===================== ENTÊTE ===================== */}

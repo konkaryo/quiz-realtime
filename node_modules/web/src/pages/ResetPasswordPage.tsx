@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { API_BASE } from "../auth/client";
+import Background from "../components/Background";
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -45,8 +46,9 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div style={{ minHeight: "calc(100dvh - 52px)", background: "#13141F", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px 72px", color: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 420, background: "#1E2030", borderRadius: 10, padding: "32px 28px", border: "1px solid rgba(255,255,255,.08)", boxShadow: "0 25px 60px rgba(0,0,0,.45)" }}>
+    <div style={{ position: "relative", minHeight: "calc(100dvh - 52px)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px 72px", color: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
+      <Background />
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 420, background: "#1E2030", borderRadius: 10, padding: "32px 28px", border: "1px solid rgba(255,255,255,.08)", boxShadow: "0 25px 60px rgba(0,0,0,.45)" }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, textAlign: "center" }}>Réinitialiser le mot de passe</h1>
         <div style={{ height: 24 }} />
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import cardsUrl from "@/assets/cards.png";
 import bitUrl from "@/assets/bit.png";
+import Background from "../components/Background";
 
 type HistoryQuestionResult = {
   questionId: string;
@@ -137,7 +138,7 @@ export default function HistoryPage() {
 
   return (
     <div className="relative min-h-full overflow-hidden text-white">
-      <div aria-hidden className="fixed inset-0 bg-[#060A19]" />
+      <Background />
 
       <div className="relative z-10 mx-auto w-full max-w-[760px] px-4 py-8 sm:px-5">
         <header className="mb-7">

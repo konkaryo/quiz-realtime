@@ -308,7 +308,7 @@ export async function startGameForRoom(
     io.sockets.sockets.get(sid)?.join(gameRoom);
   }
 
-  const countdownSeconds = Math.max(0, Number(process.env.GAME_COUNTDOWN_SECONDS || 5));
+  const countdownSeconds = Math.max(0, Number(process.env.GAME_COUNTDOWN_SECONDS || 10));
   if (countdownSeconds > 0) {
     const countdownUid = `${st.gameId}:pregame:${Date.now()}`;
     st.roundUid = countdownUid;
@@ -429,7 +429,9 @@ async function startRound(
   io.to(st.roomId).emit("round_begin", {
     index: st.index,
     total: st.questions.length,
+    startedAt: st.roundStartMs,
     endsAt: st.endsAt,
+    durationMs: ROUND_MS,
     question: { id: q.id, text: q.text, img: q.img, theme: q.theme, difficulty: q.difficulty },
     textLives: TEXT_LIVES,
     dynamicQuestionDisplay: st.dynamicQuestionDisplay,
@@ -523,7 +525,7 @@ async function finalizeGameAfterReveal(
   const awarded = await awardBitsForGame(prisma, st.gameId, leaderboard);
   const xpAwarded = await awardXpForGame(prisma, st.gameId, leaderboard);
 
-  const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 100000);
+  const FINAL_LB_MS = Number(process.env.FINAL_LB_MS || 10000);
   io.to(st.roomId).emit("final_leaderboard", { leaderboard, displayMs: FINAL_LB_MS });
   emitPublicRoomsUpdated(io);
   if (awarded.length) {

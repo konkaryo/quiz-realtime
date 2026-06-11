@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE } from "../auth/client";
 import { useAuth } from "../auth/AuthContext";
 import { notifyAuthUpdated } from "../auth/events";
+import Background from "../components/Background";
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
@@ -61,8 +62,9 @@ export default function VerifyEmailPage() {
   const color = state === "success" ? "#86efac" : state === "error" ? "#f87171" : "#f8fafc";
 
   return (
-    <div style={{ minHeight: "calc(100dvh - 52px)", background: "#13141F", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px 72px", color: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 420, background: "#1E2030", borderRadius: 10, padding: "32px 28px", border: "1px solid rgba(255,255,255,.08)", boxShadow: "0 25px 60px rgba(0,0,0,.45)" }}>
+    <div style={{ position: "relative", minHeight: "calc(100dvh - 52px)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px 72px", color: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
+      <Background />
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 420, background: "#1E2030", borderRadius: 10, padding: "32px 28px", border: "1px solid rgba(255,255,255,.08)", boxShadow: "0 25px 60px rgba(0,0,0,.45)" }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, textAlign: "center" }}>Vérification de l'email</h1>
         <div style={{ height: 24 }} />
         <p style={{ margin: 0, color, textAlign: "center" }}>{message}</p>

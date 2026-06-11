@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { API_BASE } from "../auth/client";
+import Background from "../components/Background";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -25,8 +26,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div style={{ minHeight: "calc(100dvh - 52px)", background: "#13141F", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px 72px", color: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 420, background: "#1E2030", borderRadius: 10, padding: "32px 28px", border: "1px solid rgba(255,255,255,.08)", boxShadow: "0 25px 60px rgba(0,0,0,.45)" }}>
+    <div style={{ position: "relative", minHeight: "calc(100dvh - 52px)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px 72px", color: "#f8fafc", fontFamily: "system-ui, sans-serif" }}>
+      <Background />
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 420, background: "#1E2030", borderRadius: 10, padding: "32px 28px", border: "1px solid rgba(255,255,255,.08)", boxShadow: "0 25px 60px rgba(0,0,0,.45)" }}>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, textAlign: "center" }}>Mot de passe oublié ?</h1>
         <div style={{ height: 24 }} />
         <form onSubmit={onSubmit} style={{ display: "grid", gap: 14 }}>

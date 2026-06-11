@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { notifyAuthUpdated } from "@/auth/events";
 import { API_BASE, updateAccount, updatePassword } from "@/auth/client";
+import Background from "../components/Background";
 
 type MeUser = {
   email?: string | null;
@@ -98,7 +99,7 @@ export default function AccountPage() {
 
   return (
     <div style={{ position: "relative", minHeight: "100%", color: "#f8fafc" }}>
-      <div aria-hidden style={{ position: "fixed", inset: 0, background: "#060A19" }} />
+      <Background />
       <div style={{ position: "relative", zIndex: 1, maxWidth: 760, margin: "0 auto", padding: "24px 16px 32px" }}>
         <h1 style={{ margin: 0, color: "#ffffff", fontSize: 34, fontWeight: 800, lineHeight: 1 }}>Compte</h1>
         <p style={{ marginTop: 8, marginBottom: 20, color: "rgba(248,250,252,.72)", fontSize: 16 }}>

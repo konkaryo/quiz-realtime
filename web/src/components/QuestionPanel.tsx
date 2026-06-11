@@ -76,9 +76,13 @@ function Lives({ lives, total }: { lives: number; total: number }) {
 export function OverwatchTimerBadge({
   seconds,
   progress,
+  segmentColor,
+  textClassName,
 }: {
   seconds: number | null;
   progress: number;
+  segmentColor?: string;
+  textClassName?: string;
 }) {
   const s = Math.max(0, Math.floor(seconds ?? 0));
   const warning = s <= 3;
@@ -126,6 +130,7 @@ export function OverwatchTimerBadge({
     .join(" ");
 
   const violet = "#434B71";
+  const activeSegmentColor = segmentColor ?? (warning ? "#FCD34D" : violet);
 
   return (
     <div aria-live="polite" className="flex items-center justify-center">
@@ -155,7 +160,7 @@ export function OverwatchTimerBadge({
               cy={cy}
               r={rArc}
               fill="none"
-              stroke={warning ? "#FCD34D" : violet}
+              stroke={activeSegmentColor}
               opacity={0.8}
               strokeWidth={5}
               strokeLinecap="butt"
@@ -165,7 +170,7 @@ export function OverwatchTimerBadge({
         </svg>
 
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="font-semibold tabular-nums text-[22px] leading-none text-white">
+          <span className={textClassName ?? "font-semibold tabular-nums text-[22px] leading-none text-white"}>
             {s}
           </span>
         </div>
@@ -218,8 +223,16 @@ type Props = {
   showAnswerSection?: boolean;
   showProgress?: boolean;
   animateQuestionText?: boolean;
+  questionRevealStartedAtMs?: number | null;
   correctLabelPlacement?: "above" | "below";
 };
+
+const QUESTION_REVEAL_STEP_MS = 35;
+
+function getVisibleQuestionLength(textLength: number, elapsedMs: number) {
+  if (textLength <= 0) return 0;
+  return Math.min(textLength, Math.max(0, Math.floor(elapsedMs / QUESTION_REVEAL_STEP_MS)));
+}
 
 export default function DailyQuestionPanel(props: Props) {
   const {
@@ -259,11 +272,17 @@ export default function DailyQuestionPanel(props: Props) {
     showAnswerSection = true,
     showProgress = true,
     animateQuestionText = false,
+    questionRevealStartedAtMs = null,
     correctLabelPlacement = "below",
   } = props;
 
   const [visibleQuestionLength, setVisibleQuestionLength] = useState(() =>
-    animateQuestionText ? 0 : question.text.length
+    animateQuestionText
+      ? getVisibleQuestionLength(
+          question.text.length,
+          questionRevealStartedAtMs !== null ? Date.now() - questionRevealStartedAtMs : 0
+        )
+      : question.text.length
   );
 
   useEffect(() => {
@@ -272,22 +291,34 @@ export default function DailyQuestionPanel(props: Props) {
       return;
     }
 
-    setVisibleQuestionLength(0);
-    if (!question.text) return;
+    if (!question.text) {
+      setVisibleQuestionLength(0);
+      return;
+    }
 
-    const stepMs = 35;
-    const intervalId = window.setInterval(() => {
-      setVisibleQuestionLength((current) => {
-        if (current >= question.text.length) {
-          window.clearInterval(intervalId);
-          return question.text.length;
-        }
-        return Math.min(question.text.length, current + 1);
-      });
-    }, stepMs);
+    const revealStartedAtMs = questionRevealStartedAtMs ?? Date.now();
+    let intervalId: number | null = null;
 
-    return () => window.clearInterval(intervalId);
-  }, [animateQuestionText, question.id, question.text]);
+    const updateVisibleQuestionLength = () => {
+      const nextLength = getVisibleQuestionLength(question.text.length, Date.now() - revealStartedAtMs);
+      setVisibleQuestionLength(nextLength);
+      if (nextLength >= question.text.length && intervalId !== null) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    updateVisibleQuestionLength();
+    intervalId = window.setInterval(updateVisibleQuestionLength, QUESTION_REVEAL_STEP_MS);
+    window.addEventListener("focus", updateVisibleQuestionLength);
+    document.addEventListener("visibilitychange", updateVisibleQuestionLength);
+
+    return () => {
+      if (intervalId !== null) window.clearInterval(intervalId);
+      window.removeEventListener("focus", updateVisibleQuestionLength);
+      document.removeEventListener("visibilitychange", updateVisibleQuestionLength);
+    };
+  }, [animateQuestionText, question.id, question.text, questionRevealStartedAtMs]);
 
   const questionTextMeasureRef = useRef<HTMLSpanElement | null>(null);
   const [revealedCharacterRects, setRevealedCharacterRects] = useState<
