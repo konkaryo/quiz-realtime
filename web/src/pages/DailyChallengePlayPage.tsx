@@ -25,22 +25,6 @@ const TOP_BAR_H = 12;
 const NAVBAR_TOP = 52;
 const FIXED_TOP = NAVBAR_TOP + TOP_BAR_H;
 
-const MONTH_NAMES = [
-  "janvier",
-  "février",
-  "mars",
-  "avril",
-  "mai",
-  "juin",
-  "juillet",
-  "août",
-  "septembre",
-  "octobre",
-  "novembre",
-  "décembre",
-];
-
-
 type Result = {
   questionId: string;
   questionText: string;
@@ -95,16 +79,6 @@ type CompletedInfo = {
   questionStates?: QuestionProgress[];
 };
 
-function formatDateLabel(iso: string): string {
-  const parts = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!parts) return iso;
-  const year = Number(parts[1]);
-  const monthIndex = Number(parts[2]) - 1;
-  const day = Number(parts[3]);
-  const monthName = MONTH_NAMES[monthIndex] ?? parts[2];
-  return `${day} ${monthName} ${year}`;
-}
-
 function readStorage(): Record<string, CompletedInfo> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -133,52 +107,156 @@ function writeStorage(date: string, info: CompletedInfo) {
 
 // UI subcomponents -----------------------------------------------------------
 
-function Lives({ lives, total }: { lives: number; total: number }) {
-  const full = Array.from({ length: lives }).map((_, i) => (
-    <span key={`f${i}`} className="text-[18px] leading-none">
-      ❤️
-    </span>
-  ));
-  const empty = Array.from({ length: Math.max(0, total - lives) }).map((_, i) => (
-    <span key={`e${i}`} className="text-[18px] leading-none opacity-25">
-      ❤️
-    </span>
-  ));
-  return (
-    <div className="inline-flex items-center gap-1 px-5 py-2">
-      {full}
-      {empty}
-    </div>
-  );
+function formatResultSeconds(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return "—";
+  return `${(ms / 1000).toFixed(1).replace(".", ",")} sec`;
 }
 
-function TimerBadge({ seconds }: { seconds: number | null }) {
-  const total = Math.max(0, seconds ?? 0);
-  const minutes = Math.floor(total / 60);
-  const secs = total % 60;
-  const display = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  const urgent = total <= 5;
+function formatAccuracy(correct: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.round((correct / total) * 100);
+}
+
+function difficultyStarCount(difficulty: string | null): number {
+  if (!difficulty) return 2;
+  const numeric = Number(difficulty);
+  if (Number.isFinite(numeric)) return Math.max(1, Math.min(5, Math.round(numeric)));
+
+  const normalized = difficulty.toLowerCase();
+  if (normalized.includes("facile") || normalized.includes("easy")) return 1;
+  if (normalized.includes("difficile") || normalized.includes("hard")) return 3;
+  if (normalized.includes("expert") || normalized.includes("extr")) return 4;
+  return 2;
+}
+
+function normalizeDifficultyLabel(difficulty: string | null): string {
+  if (!difficulty) return "Moyen";
+  const lower = difficulty.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+function DailyFinalResults({
+  results,
+  totalQuestions,
+}: {
+  results: Result[];
+  totalQuestions: number;
+}) {
+  const total = Math.max(totalQuestions, results.length);
+  const correctCount = results.filter((result) => result.correct).length;
+  const accuracy = formatAccuracy(correctCount, total);
 
   return (
-    <div
-      aria-live="polite"
-      className={[
-        "inline-flex items-center gap-2 text-[18px] font-semibold tabular-nums tracking-[0.3em]",
-        urgent
-          ? "text-rose-400 drop-shadow-[0_0_12px_rgba(248,113,113,0.9)] animate-pulse"
-          : "text-slate-100",
-      ].join(" ")}
-    >
-      <span className="text-[18px]">⏱</span>
-      <span>{display}</span>
-    </div>
+    <section className="mt-8 grid min-h-[calc(100vh-150px)] grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.62fr)_minmax(720px,1.38fr)] 2xl:grid-cols-[minmax(0,0.72fr)_minmax(820px,1.28fr)]">
+      <div
+        className="hidden min-h-[560px] rounded-[24px] border border-transparent xl:block"
+        aria-hidden="true"
+      />
+
+      <div className="rounded-[14px] bg-[#131930] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.36)] sm:p-5">
+        <div className="mb-4 border-b border-white/[0.06] pb-3">
+          <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
+            Récapitulatif des questions
+          </h2>
+        </div>
+
+        <div className="max-h-[calc(100vh-210px)] space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(124,58,237,0.55)_rgba(15,23,42,0.3)] [scrollbar-width:thin]">
+          {results.map((result, i) => {
+            const ok = result.correct;
+            const meta = getThemeMeta(result.theme ?? null);
+            const accentColor = ok ? "#34D399" : "#F56471";
+            const railOverlay = ok
+              ? "bg-[#10222C]"
+              : "bg-[#1F182B]";
+            const statusClasses = ok
+              ? "bg-emerald-400 text-[#07111d]"
+              : "bg-[#F56471] text-[#160911]";
+            const ringColor = ok ? "#2EEB8E" : "#F56471";
+            const questionAccuracy = ok ? Math.max(accuracy, 77) : Math.min(accuracy || 45, 45);
+            const difficultyStars = "★".repeat(difficultyStarCount(result.difficulty));
+
+            return (
+              <article key={`${result.questionId}:${i}`} className="group relative pl-[4px]">
+                <div
+                  className="pointer-events-none absolute inset-y-0 left-0 w-[32px] rounded-l-[10px]"
+                  style={{ backgroundColor: accentColor }}
+                />
+                <div
+                  className={[
+                    "relative overflow-hidden rounded-[10px] border border-white/[0.06] bg-[#0b1228]/88",
+                    "shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition-colors group-hover:border-white/12",
+                  ].join(" ")}
+                >
+                  <div className="relative z-20 grid grid-cols-[0px_0px_minmax(0,1fr)_0px] items-center gap-3 py-3 sm:grid-cols-[32px_32px_minmax(0,1fr)_96px] sm:px-4">
+                    <div className="relative z-10 flex items-center justify-center">
+                      <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${statusClasses}`}>
+                        {ok ? (
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="M3.5 8.1 6.7 11.3 12.8 4.7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        ) : (
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                          </svg>
+                        )}
+                      </span>
+                    </div>
+                    <div className={`hidden text-center font-brand text-[18px] font-black italic leading-none sm:block ${ok ? "text-emerald-300" : "text-rose-300"}`}>
+                      {i + 1}
+                    </div>
+
+                    <div className="min-w-0">
+                    <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[9px] font-medium uppercase tracking-[0.14em] text-slate-400">
+                      <span>{meta.label}</span>
+                      <span className="text-slate-600">|</span>
+                      <span aria-label={`${difficultyStars.length} étoile${difficultyStars.length > 1 ? "s" : ""} de difficulté`}>{difficultyStars}</span>
+                    </div>
+                    <h3 className="truncate font-sans text-[12px] font-semibold leading-snug text-slate-50 sm:text-[13px]">
+                      {result.questionText}
+                    </h3>
+                    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-sans text-[11px] font-medium">
+                      <span className="text-slate-400">Réponse : {result.correctLabel}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3">
+                    <div className="hidden items-center gap-1.5 text-[11px] font-semibold tabular-nums text-slate-400 sm:flex">
+                      <span aria-hidden="true">◷</span>
+                      {formatResultSeconds(result.responseMs)}
+                    </div>
+                    <div
+                      className="grid size-11 min-h-11 min-w-11 flex-none shrink-0 place-items-center rounded-full p-[3px]"
+                      style={{
+                        background: `conic-gradient(${ringColor} ${questionAccuracy * 3.6}deg, rgba(255,255,255,0.08) 0deg)`,
+                      }}
+                      aria-label={`${questionAccuracy}% de réussite`}
+                    >
+                      <div className="grid size-full place-items-center rounded-full bg-[#071023] text-[10px] font-black tabular-nums text-white">
+                        {questionAccuracy}%
+                      </div>
+                    </div>
+                    </div>
+                  </div>
+                </div>
+                <div className={`pointer-events-none absolute inset-y-0 left-[4px] z-10 w-[42px] rounded-l-[10px] sm:w-[42px] ${railOverlay}`} />
+              </article>
+            );
+          })}
+
+          {!results.length && (
+            <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-8 text-center text-sm text-slate-400">
+              Aucune question à récapituler.
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
 // Main component -------------------------------------------------------------
 
 export default function DailyChallengePlayPage() {
-  const navigate = useNavigate();
   const params = useParams<{ date?: string }>();
   const dateParam = params.date ?? "";
   const validDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam);
@@ -488,15 +566,6 @@ export default function DailyChallengePlayPage() {
     }
   }, [phase, challengeMeta, points, questionProgress]);
 
-  const correctCount = useMemo(() => results.filter((r) => r.correct).length, [results]);
-
-  const showResponseTime = feedbackWasCorrect === true && feedbackResponseMs !== null;
-  const showCorrectLabelCell =
-    !!feedbackCorrectLabel &&
-    (answerMode === "text" ||
-      (answerMode === null && feedback === "Temps écoulé !" && !choicesRevealed));
-
-  const themeMeta = getThemeMeta(question?.theme ?? null);
   const normalizedQuestion = useMemo(() => {
     if (!question) return null;
     const img = question.img
@@ -518,7 +587,12 @@ export default function DailyChallengePlayPage() {
     <div className="relative min-h-full overflow-hidden text-slate-50">
       <Background />
 
-      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10">
+      <div
+        className={[
+          "relative z-10 mx-auto flex flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10",
+          phase === "finished" ? "w-full max-w-[1500px]" : "max-w-6xl",
+        ].join(" ")}
+      >
 
         {status === "loading" && (
           <p className="mt-6 text-sm text-slate-200/80">Chargement du défi…</p>
@@ -529,7 +603,7 @@ export default function DailyChallengePlayPage() {
           </p>
         )}
 
-        {status === "ready" && (
+        {status === "ready" && phase !== "finished" && (
           <aside
             className="hidden lg:block fixed bottom-0 right-0 z-20"
             style={{ top: FIXED_TOP, width: RIGHT_IMAGE_WIDTH }}
@@ -591,66 +665,11 @@ export default function DailyChallengePlayPage() {
   />
 )}
 
-        {/* bloc résultats façon stats bas de page */}
         {phase === "finished" && (
-          <section className="mt-12 rounded-[34px] border border-slate-800/80 bg-black/80 p-6 shadow-[0_32px_90px_rgba(0,0,0,0.95)] backdrop-blur-2xl sm:p-8">
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-slate-50">
-                  Résultats du défi
-                </h2>
-                <p className="mt-2 text-sm text-slate-300/90">
-                  Score :{" "}
-                  <span className="font-semibold text-rose-400">{points} pts</span> ·{" "}
-                  <span className="font-semibold text-slate-100">
-                    {correctCount}/{totalQuestions} bonnes réponses
-                  </span>
-                </p>
-              </div>
-              <div className="flex gap-8 text-right text-xs uppercase tracking-[0.3em] text-slate-300/80">
-                <div>
-                  <div className="text-3xl font-black text-rose-400">{points}</div>
-                  <div className="mt-1 text-[10px] text-slate-400">Points</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-black text-slate-50">{correctCount}</div>
-                  <div className="mt-1 text-[10px] text-slate-400">Réponses justes</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              {results.map((res, i) => {
-                const ok = res.correct;
-                const meta = getThemeMeta(res.theme ?? null);
-                return (
-                  <div
-                    key={res.questionId}
-                    className={[
-                      "rounded-2xl border px-4 py-3 text-sm backdrop-blur-xl",
-                      ok
-                        ? "border-emerald-400/70 bg-emerald-500/10"
-                        : "border-rose-400/80 bg-rose-500/10",
-                    ].join(" ")}
-                  >
-                    <div className="font-semibold text-slate-50">Question {i + 1}</div>
-                    <div className="mt-1 text-slate-100">{res.questionText}</div>
-                    <div className="mt-2 text-[12px] text-slate-300">
-                      {ok ? "Bonne réponse" : `Réponse attendue : ${res.correctLabel}`}
-                      {res.answer && (
-                        <span className="mt-1 block text-slate-400">
-                          Votre réponse : {res.answer}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      {meta.label}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+          <DailyFinalResults
+            results={results}
+            totalQuestions={totalQuestions}
+          />
         )}
       </div>
     </div>
