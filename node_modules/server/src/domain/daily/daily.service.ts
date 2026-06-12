@@ -8,6 +8,7 @@ type ChallengeSummaryRow = {
     id: string;
     slotLabel: string | null;
     position: number;
+    averageScore: number;
     question: {
       id: string;
       theme: string | null;
@@ -23,6 +24,7 @@ type ChallengeDetailRow = {
     id: string;
     slotLabel: string | null;
     position: number;
+    averageScore: number;
     question: {
       id: string;
       text: string;
@@ -55,6 +57,7 @@ export type DailyChallengeQuestionDto = {
   correctLabel: string;
   slotLabel: string | null;
   position: number;
+  averageScore: number;
 };
 
 export type DailyChallengeQuestionPublicDto = {
@@ -66,6 +69,7 @@ export type DailyChallengeQuestionPublicDto = {
   choices: { id: string; label: string }[];
   slotLabel: string | null;
   position: number;
+  averageScore: number;
 };
 
 
@@ -195,6 +199,7 @@ export async function getChallengeByDate(prisma: PrismaClient, dateIso: string):
         correctLabel: correct?.label ?? "",
         slotLabel: entry.slotLabel ?? null,
         position: entry.position,
+        averageScore: entry.averageScore ?? 0,
       };
     });
 
@@ -220,6 +225,7 @@ export function toPublicChallenge(detail: DailyChallengeDetail | null): DailyCha
       img: q.img,
       slotLabel: q.slotLabel,
       position: q.position,
+      averageScore: q.averageScore,
       // Strip correctness/accepted norms
       choices: q.choices.map((c) => ({ id: c.id, label: c.label })),
     })),

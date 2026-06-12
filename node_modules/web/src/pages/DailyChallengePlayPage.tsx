@@ -12,6 +12,13 @@ import QuestionPanel, {
   QuestionLite,
   QuestionProgress,
 } from "../components/QuestionPanel";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 
 const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL ??
@@ -37,6 +44,8 @@ type Result = {
   mode: "text" | "choice" | "timeout" | "skip";
   responseMs: number;
   correctLabel: string;
+  points?: number;
+  averageScore?: number;
 };
 
 type DailyRoundBegin = {
@@ -117,6 +126,11 @@ function formatAccuracy(correct: number, total: number): number {
   return Math.round((correct / total) * 100);
 }
 
+function averageScoreToAccuracy(averageScore: number | undefined, fallback: number): number {
+  if (!Number.isFinite(averageScore)) return fallback;
+  return Math.max(0, Math.min(100, Math.round(averageScore ?? 0)));
+}
+
 function difficultyStarCount(difficulty: string | null): number {
   if (!difficulty) return 2;
   const numeric = Number(difficulty);
@@ -145,6 +159,7 @@ function DailyFinalResults({
   const total = Math.max(totalQuestions, results.length);
   const correctCount = results.filter((result) => result.correct).length;
   const accuracy = formatAccuracy(correctCount, total);
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
 
   return (
     <section className="mt-8 grid min-h-[calc(100vh-150px)] grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.62fr)_minmax(720px,1.38fr)] 2xl:grid-cols-[minmax(0,0.72fr)_minmax(820px,1.28fr)]">
@@ -160,7 +175,7 @@ function DailyFinalResults({
           </h2>
         </div>
 
-        <div className="max-h-[calc(100vh-210px)] space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(124,58,237,0.55)_rgba(15,23,42,0.3)] [scrollbar-width:thin]">
+        <div className="space-y-2 pr-1">
           {results.map((result, i) => {
             const ok = result.correct;
             const meta = getThemeMeta(result.theme ?? null);
@@ -172,7 +187,9 @@ function DailyFinalResults({
               ? "bg-emerald-400 text-[#07111d]"
               : "bg-[#F56471] text-[#160911]";
             const ringColor = ok ? "#2EEB8E" : "#F56471";
-            const questionAccuracy = ok ? Math.max(accuracy, 77) : Math.min(accuracy || 45, 45);
+            const fallbackAccuracy = ok ? Math.max(accuracy, 77) : Math.min(accuracy || 45, 45);
+            const questionAccuracy = averageScoreToAccuracy(result.averageScore, fallbackAccuracy);
+            const pointsWon = Math.max(0, result.points ?? 0);
             const difficultyStars = "★".repeat(difficultyStarCount(result.difficulty));
 
             return (
@@ -183,11 +200,11 @@ function DailyFinalResults({
                 />
                 <div
                   className={[
-                    "relative overflow-hidden rounded-[10px] border border-white/[0.06] bg-[#0b1228]/88",
+                    "relative overflow-hidden rounded-[10px] border border-white/[0.06] bg-[#0F1427]",
                     "shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition-colors group-hover:border-white/12",
                   ].join(" ")}
                 >
-                  <div className="relative z-20 grid grid-cols-[0px_0px_minmax(0,1fr)_0px] items-center gap-3 py-3 sm:grid-cols-[32px_32px_minmax(0,1fr)_96px] sm:px-4">
+                  <div className="relative z-20 grid grid-cols-[42px_0px_minmax(0,1fr)_0px] items-center gap-3 py-3 sm:grid-cols-[42px_26px_minmax(0,1fr)_156px] sm:pl-0 sm:pr-4">
                     <div className="relative z-10 flex items-center justify-center">
                       <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${statusClasses}`}>
                         {ok ? (
@@ -201,7 +218,7 @@ function DailyFinalResults({
                         )}
                       </span>
                     </div>
-                    <div className={`hidden text-center font-brand text-[18px] font-black italic leading-none sm:block ${ok ? "text-emerald-300" : "text-rose-300"}`}>
+                    <div className={`hidden text-center font-brandUpright text-[18px] font-black leading-none sm:block ${ok ? "text-emerald-300" : "text-rose-300"}`}>
                       {i + 1}
                     </div>
 
@@ -211,27 +228,53 @@ function DailyFinalResults({
                       <span className="text-slate-600">|</span>
                       <span aria-label={`${difficultyStars.length} étoile${difficultyStars.length > 1 ? "s" : ""} de difficulté`}>{difficultyStars}</span>
                     </div>
-                    <h3 className="truncate font-sans text-[12px] font-semibold leading-snug text-slate-50 sm:text-[13px]">
-                      {result.questionText}
-                    </h3>
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <h3 className="min-w-0 flex-1 truncate font-sans text-[11px] font-semibold leading-snug text-slate-50 sm:text-[12px]">
+                        {result.questionText}
+                      </h3>
+                      {result.img ? (
+                        <button
+                          type="button"
+                          className="inline-flex h-5 w-5 flex-none items-center justify-center rounded-full border border-slate-500/40 bg-slate-900/50 text-slate-300 transition hover:border-slate-300/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/70"
+                          aria-label={`Afficher l'image de la question ${i + 1}`}
+                          onClick={() =>
+                            setPreviewImage({
+                              src: result.img!,
+                              alt: `Image de la question ${i + 1}`,
+                            })
+                          }
+                        >
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="M2.5 3.5h11v9h-11v-9Z" stroke="currentColor" strokeWidth="1.35" strokeLinejoin="round" />
+                            <path d="m3.7 11.2 2.8-3 2 2 1.7-1.7 2.1 2.7" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+                            <circle cx="10.9" cy="6" r="1" fill="currentColor" />
+                          </svg>
+                        </button>
+                      ) : null}
+                    </div>
                     <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-sans text-[11px] font-medium">
                       <span className="text-slate-400">Réponse : {result.correctLabel}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-3">
-                    <div className="hidden items-center gap-1.5 text-[11px] font-semibold tabular-nums text-slate-400 sm:flex">
-                      <span aria-hidden="true">◷</span>
-                      {formatResultSeconds(result.responseMs)}
+                  <div className="flex items-center justify-end gap-3 sm:justify-start">
+                    <div className="hidden flex-1 flex-col items-center justify-center gap-2 sm:flex">
+                      <div className={`font-brandUpright text-[18px] font-black leading-none tabular-nums ${pointsWon > 0 ? "text-emerald-400" : "text-[#F56471]"}`}>
+                        {pointsWon > 0 ? `+ ${pointsWon} pts` : "0 pt"}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold tabular-nums text-slate-400">
+                        <span aria-hidden="true">◷</span>
+                        {formatResultSeconds(result.responseMs)}
+                      </div>
                     </div>
                     <div
-                      className="grid size-11 min-h-11 min-w-11 flex-none shrink-0 place-items-center rounded-full p-[3px]"
+                      className="grid size-12 min-h-12 min-w-12 flex-none shrink-0 place-items-center rounded-full p-[5px]"
                       style={{
                         background: `conic-gradient(${ringColor} ${questionAccuracy * 3.6}deg, rgba(255,255,255,0.08) 0deg)`,
                       }}
                       aria-label={`${questionAccuracy}% de réussite`}
                     >
-                      <div className="grid size-full place-items-center rounded-full bg-[#071023] text-[10px] font-black tabular-nums text-white">
+                      <div className="grid size-full place-items-center rounded-full bg-[#071023] text-[11px] font-black tabular-nums text-white">
                         {questionAccuracy}%
                       </div>
                     </div>
@@ -250,6 +293,26 @@ function DailyFinalResults({
           )}
         </div>
       </div>
+      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+        <DialogContent className="max-w-[min(92vw,900px)] border-white/10 bg-[#0F1427] p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+          <DialogHeader>
+            <DialogTitle className="pr-8 font-brandUpright text-[22px] uppercase leading-none tracking-[0.04em] text-white">
+              Image de la question
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Aperçu de l'image associée à la question du récapitulatif.
+            </DialogDescription>
+          </DialogHeader>
+          {previewImage ? (
+            <img
+              src={previewImage.src}
+              alt={previewImage.alt}
+              className="max-h-[78vh] w-full rounded-[10px] border border-white/10 bg-black/30 object-contain"
+              draggable={false}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

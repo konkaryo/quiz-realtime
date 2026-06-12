@@ -46,6 +46,45 @@ export async function recordDailyScoreIfFirst(
   }
 }
 
+export type DailyQuestionScoreResult = {
+  entryId: string;
+  points: number;
+};
+
+export async function updateDailyQuestionAverageScores(
+  prisma: PrismaClient,
+  challengeId: string,
+  results: DailyQuestionScoreResult[],
+): Promise<Map<string, number>> {
+  if (!results.length) return new Map();
+
+  const attemptCount = await prisma.dailyChallengeScore.count({ where: { challengeId } });
+  if (attemptCount <= 0) return new Map();
+
+  const previousAttemptCount = Math.max(0, attemptCount - 1);
+  const nextAverages = new Map<string, number>();
+
+  for (const result of results) {
+    const points = Number.isFinite(result.points) ? Math.max(0, result.points) : 0;
+    const entry = await (prisma as any).dailyChallengeQuestion.findUnique({
+      where: { id: result.entryId },
+      select: { id: true, averageScore: true },
+    });
+    if (!entry) continue;
+
+    const previousAverage = Number.isFinite(entry.averageScore) ? entry.averageScore : 0;
+    const nextAverage = ((previousAverage * previousAttemptCount) + points) / attemptCount;
+
+    await (prisma as any).dailyChallengeQuestion.update({
+      where: { id: result.entryId },
+      data: { averageScore: nextAverage },
+    });
+    nextAverages.set(result.entryId, nextAverage);
+  }
+
+  return nextAverages;
+}
+
 export async function getDailyChallengeStats(
   prisma: PrismaClient,
   challengeId: string,

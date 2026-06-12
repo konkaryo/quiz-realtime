@@ -67,18 +67,18 @@ enum EmailTokenType {
 }
 
 model User {
-  id              String    @id @default(cuid())
-  email           String?   @unique
+  id              String       @id @default(cuid())
+  email           String?      @unique
   passwordHash    String?
   displayName     String
   emailVerifiedAt DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
   sessions        Session[]
   player          Player?
-  ownedRooms      Room[]    @relation("UserOwnedRooms")
-  role            Role      @default(USER)
-  guest           Boolean   @default(false)
+  ownedRooms      Room[]       @relation("UserOwnedRooms")
+  role            Role         @default(USER)
+  guest           Boolean      @default(false)
   emailTokens     EmailToken[]
 }
 
@@ -109,42 +109,42 @@ model Session {
 }
 
 model Player {
-  id          String                @id @default(dbgenerated("random_player_id()")) @db.Text
-  userId      String?               @unique
-  user        User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
-  name        String
-  img         String                @default("0")
-  bits        Int                   @default(0)
-  experience  Int                   @default(0)
-  isBot       Boolean               @default(false)
-  bot         Bot?
-  createdAt   DateTime              @default(now())
-  playerGames PlayerGame[]
-  dailyScores DailyChallengeScore[]
-  reports     QuestionReport[]
+  id            String                @id @default(dbgenerated("random_player_id()")) @db.Text
+  userId        String?               @unique
+  user          User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name          String
+  img           String                @default("0")
+  bits          Int                   @default(0)
+  experience    Int                   @default(0)
+  isBot         Boolean               @default(false)
+  bot           Bot?
+  createdAt     DateTime              @default(now())
+  playerGames   PlayerGame[]
+  dailyScores   DailyChallengeScore[]
+  reports       QuestionReport[]
   notifications Notification[]
   gameHistory   PlayerGameHistory[]
 }
 
 model PlayerGameHistory {
-  id               String   @id @default(cuid())
-  playerId         String
-  player           Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  gameId           String
-  playerGameId     String   @unique
-  playedAt         DateTime
-  finalRank        Int
-  totalPlayers     Int
-  finalScore       Int
-  gameDifficulty   Int
-  questionResults  Json
-  xpGained         Int      @default(0)
-  bitsGained       Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  playerId        String
+  player          Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  gameId          String
+  playerGameId    String   @unique
+  playedAt        DateTime
+  finalRank       Int
+  totalPlayers    Int
+  finalScore      Int
+  gameDifficulty  Int
+  questionResults Json
+  xpGained        Int      @default(0)
+  bitsGained      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@index([playerId, playedAt])
   @@unique([playerId, gameId])
+  @@index([playerId, playedAt])
 }
 
 model Notification {
@@ -188,28 +188,27 @@ model BotSkill {
 }
 
 model Room {
-  id            String         @id @default(dbgenerated("random_room_id()")) @db.Text
-  name          String?
-  ownerId       String?
-  owner         User?          @relation("UserOwnedRooms", fields: [ownerId], references: [id], onDelete: SetNull)
-  difficulty    Int            @default(50)
-  popularity    Int            @default(5)
-  code          String?        @unique
-  createdAt     DateTime       @default(now())
-  games         Game[]
-  status        RoomStatus     @default(OPEN)
-  closedAt      DateTime?
-  bannedThemes  Theme[]
-  questionCount Int            @default(10)
-  roundMs       Int            @default(10000)
-  dynamicQuestionDisplay Boolean @default(true)
-  visibility    RoomVisibility @default(PRIVATE)
-  image         String?
+  id                     String         @id @default(dbgenerated("random_room_id()")) @db.Text
+  name                   String?
+  ownerId                String?
+  owner                  User?          @relation("UserOwnedRooms", fields: [ownerId], references: [id], onDelete: SetNull)
+  difficulty             Int            @default(50)
+  popularity             Int            @default(5)
+  code                   String?        @unique
+  createdAt              DateTime       @default(now())
+  games                  Game[]
+  status                 RoomStatus     @default(OPEN)
+  closedAt               DateTime?
+  bannedThemes           Theme[]
+  questionCount          Int            @default(10)
+  roundMs                Int            @default(10000)
+  dynamicQuestionDisplay Boolean        @default(true)
+  visibility             RoomVisibility @default(PRIVATE)
+  image                  String?
 
   @@index([ownerId])
   @@index([status, createdAt])
 }
-
 
 model Game {
   id          String       @id @default(cuid())
@@ -289,14 +288,15 @@ model DailyChallenge {
 }
 
 model DailyChallengeQuestion {
-  id          String         @id @default(cuid())
-  challenge   DailyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  challengeId String
-  question    Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  questionId  String
-  position    Int
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id           String         @id @default(cuid())
+  challenge    DailyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId  String
+  question     Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId   String
+  position     Int
+  averageScore Float          @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@unique([challengeId, position])
   @@index([questionId])

@@ -15,7 +15,7 @@ import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
 import { startGameForRoom } from "../domain/game/game.service";
 import { getChallengeByDate } from "../domain/daily/daily.service";
-import { recordDailyScoreIfFirst } from "../domain/daily/daily-score.service";
+import { recordDailyScoreIfFirst, updateDailyQuestionAverageScores } from "../domain/daily/daily-score.service";
 import { ensurePlayerForUser } from "../domain/player/player.service";
 
 type RacePlayerState = {
@@ -199,12 +199,14 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     challengeId: string;
     playerId: string;
     questions: {
+      entryId: string;
       id: string;
       text: string;
       theme: string | null;
       difficulty: string | null;
       img: string | null;
       slotLabel: string | null;
+      averageScore: number;
       choices: { id: string; label: string; isCorrect: boolean }[];
       acceptedNorms: string[];
       correctLabel: string;
@@ -219,6 +221,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     roundStartMs: number | null;
     timer: NodeJS.Timeout | null;
     results: {
+      entryId: string;
       questionId: string;
       questionText: string;
       slotLabel: string | null;
@@ -230,6 +233,8 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       mode: "text" | "choice" | "timeout" | "skip";
       responseMs: number;
       correctLabel: string;
+      points: number;
+      averageScore: number;
     }[];
   };
 
@@ -258,7 +263,14 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     const nextQuestion = sess.questions[nextIndex];
     if (!nextQuestion) {
       try {
-        await recordDailyScoreIfFirst(prisma, sess.challengeId, sess.playerId, sess.score);
+        const record = await recordDailyScoreIfFirst(prisma, sess.challengeId, sess.playerId, sess.score);
+        if (record.created) {
+          const averages = await updateDailyQuestionAverageScores(prisma, sess.challengeId, sess.results);
+          sess.results = sess.results.map((result) => ({
+            ...result,
+            averageScore: averages.get(result.entryId) ?? result.averageScore,
+          }));
+        }
       } catch (err) {
         console.error("[daily_score_record]", err);
       }
@@ -277,6 +289,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
       const q = sess.questions[sess.index];
       sess.results.push({
+        entryId: q.entryId,
         questionId: q.id,
         questionText: q.text,
         slotLabel: q.slotLabel,
@@ -288,6 +301,8 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         mode: "timeout",
         responseMs,
         correctLabel: q.correctLabel,
+        points: 0,
+        averageScore: q.averageScore,
       });
       socket.emit("daily_round_end", {
         index: sess.index,
@@ -304,12 +319,14 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       endsAt: sess.endsAt,
       serverNow: Date.now(),
       question: {
+        entryId: nextQuestion.entryId,
         id: nextQuestion.id,
         text: nextQuestion.text,
         theme: nextQuestion.theme,
         difficulty: nextQuestion.difficulty,
         img: nextQuestion.img,
         slotLabel: nextQuestion.slotLabel,
+        averageScore: nextQuestion.averageScore,
       },
       score: sess.score,
     });
@@ -538,6 +555,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       const correctChoice = q.choices.find((c) => c.isCorrect) ?? null;
 
       sess.results.push({
+        entryId: q.entryId,
         questionId: q.id,
         questionText: q.text,
         slotLabel: q.slotLabel,
@@ -549,6 +567,8 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         mode: "skip",
         responseMs,
         correctLabel: q.correctLabel,
+        points: 0,
+        averageScore: q.averageScore,
       });
 
       socket.emit("daily_answer_feedback", {
@@ -603,6 +623,7 @@ socket.on(
     sess.score += gained;
 
     sess.results.push({
+      entryId: q.entryId,
       questionId: q.id,
       questionText: q.text,
       slotLabel: q.slotLabel,
@@ -614,6 +635,8 @@ socket.on(
       mode: "choice",
       responseMs,
       correctLabel: q.correctLabel,
+      points: gained,
+      averageScore: q.averageScore,
     });
 
     const correctChoice = q.choices.find((c) => c.isCorrect) ?? null;
@@ -699,6 +722,7 @@ socket.on(
       }
 
       sess.results.push({
+        entryId: q.entryId,
         questionId: q.id,
         questionText: q.text,
         slotLabel: q.slotLabel,
@@ -710,6 +734,8 @@ socket.on(
         mode: "text",
         responseMs,
         correctLabel: q.correctLabel,
+        points: gained,
+        averageScore: q.averageScore,
       });
 
       const baseFeedback = {
