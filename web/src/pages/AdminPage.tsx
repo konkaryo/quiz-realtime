@@ -109,6 +109,21 @@ type AdminDailyChallengeDetail = {
   questions: AdminDailyChallengeQuestion[];
 };
 
+type AdminDailySimulationResult = {
+  botId: string;
+  playerId: string;
+  name: string;
+  score: number;
+  recorded: boolean;
+};
+
+type AdminDailySimulationResponse = {
+  simulatedCount: number;
+  recordedCount: number;
+  skippedCount: number;
+  results: AdminDailySimulationResult[];
+};
+
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -766,6 +781,10 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
   const [questionSearchLoading, setQuestionSearchLoading] = useState(false);
   const [insertLoading, setInsertLoading] = useState(false);
   const [insertError, setInsertError] = useState<string | null>(null);
+  const [simulationBotCount, setSimulationBotCount] = useState(5);
+  const [simulationLoading, setSimulationLoading] = useState(false);
+  const [simulationError, setSimulationError] = useState<string | null>(null);
+  const [simulationResult, setSimulationResult] = useState<AdminDailySimulationResponse | null>(null);
 
   useEffect(() => {
     if (!openedQuestionActionsId) return;
@@ -877,6 +896,8 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
 
         const payload = (await res.json()) as { challenge?: AdminDailyChallengeDetail };
         setSelectedChallenge(payload.challenge ?? null);
+        setSimulationResult(null);
+        setSimulationError(null);
       } catch (loadError) {
         if (loadError instanceof DOMException && loadError.name === "AbortError") return;
         setSelectedChallenge(null);
@@ -1092,6 +1113,51 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
     }
   }
 
+  async function simulateSelectedChallenge() {
+    if (!selectedChallenge) return;
+
+    setSimulationLoading(true);
+    setSimulationError(null);
+    setSimulationResult(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/daily/${selectedChallenge.date}/simulate`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ botCount: simulationBotCount }),
+      });
+
+      const payload = (await res.json().catch(() => ({}))) as Partial<AdminDailySimulationResponse> & { error?: string };
+
+      if (!res.ok) {
+        const message = payload.error === "daily_challenge_empty"
+          ? "Ce défi ne contient aucune question à simuler."
+          : payload.error === "not_found"
+            ? "Ce défi du jour est introuvable."
+            : "Impossible de simuler ce défi pour les bots.";
+        throw new Error(message);
+      }
+
+      setSimulationResult({
+        simulatedCount: payload.simulatedCount ?? 0,
+        recordedCount: payload.recordedCount ?? 0,
+        skippedCount: payload.skippedCount ?? 0,
+        results: Array.isArray(payload.results) ? payload.results : [],
+      });
+
+      const refresh = await fetch(`${API_BASE}/admin/daily/${selectedChallenge.date}`, { credentials: "include" });
+      if (refresh.ok) {
+        const refreshedPayload = (await refresh.json()) as { challenge?: AdminDailyChallengeDetail };
+        if (refreshedPayload.challenge) setSelectedChallenge(refreshedPayload.challenge);
+      }
+    } catch (simulateError) {
+      setSimulationError(simulateError instanceof Error ? simulateError.message : "Impossible de simuler ce défi pour les bots.");
+    } finally {
+      setSimulationLoading(false);
+    }
+  }
+
   function shiftMonth(delta: number) {
     const next = new Date(Date.UTC(viewYear, viewMonthIndex + delta, 1));
     setViewYear(next.getUTCFullYear());
@@ -1185,6 +1251,71 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
         {!detailLoading && detailError ? (
           <div className="rounded-[12px] border border-red-400/30 bg-red-500/10 p-6 text-sm text-red-100">
             {detailError}
+          </div>
+        ) : null}
+
+        {!detailLoading && !detailError && selectedChallenge ? (
+          <div className="mb-3 rounded-[12px] border border-[#eacb4d]/25 bg-[#eacb4d]/10 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0">
+                <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#f7df7b]">
+                  Simulation bots
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-white/65">
+                  Simule le défi sélectionné avec les capacités des bots, enregistre les scores en base et met à jour les statistiques.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-[0.08em] text-white/55">
+                  Nombre de bots
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={simulationBotCount}
+                    onChange={(event) => {
+                      const nextValue = Number.parseInt(event.target.value, 10);
+                      setSimulationBotCount(Number.isFinite(nextValue) ? Math.min(100, Math.max(1, nextValue)) : 1);
+                    }}
+                    className="h-10 w-28 rounded-lg border border-white/10 bg-[#0f172a] px-3 text-sm font-bold text-white outline-none transition focus:border-[#eacb4d]/70"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => void simulateSelectedChallenge()}
+                  disabled={simulationLoading || selectedChallenge.questionCount === 0}
+                  className="h-10 rounded-lg border border-[#eacb4d]/45 bg-[#eacb4d]/20 px-4 text-xs font-black uppercase tracking-[0.08em] text-[#f7df7b] transition hover:bg-[#eacb4d]/30 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {simulationLoading ? "Simulation…" : "Simuler"}
+                </button>
+              </div>
+            </div>
+
+            {simulationError ? (
+              <div className="mt-3 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm font-semibold text-red-100">
+                {simulationError}
+              </div>
+            ) : null}
+
+            {simulationResult ? (
+              <div className="mt-3 rounded-lg border border-white/10 bg-[#0f172a]/70 p-3 text-sm text-white/70">
+                <div className="font-bold text-white">
+                  {simulationResult.recordedCount} score{simulationResult.recordedCount > 1 ? "s" : ""} enregistré{simulationResult.recordedCount > 1 ? "s" : ""}
+                  {simulationResult.skippedCount > 0 ? ` · ${simulationResult.skippedCount} déjà existant${simulationResult.skippedCount > 1 ? "s" : ""}` : ""}
+                </div>
+                {simulationResult.results.length > 0 ? (
+                  <div className="mt-2 flex max-h-32 flex-col gap-1 overflow-y-auto text-xs text-white/60">
+                    {simulationResult.results.slice(0, 12).map((result) => (
+                      <div key={`${result.botId}-${result.playerId}`} className="flex justify-between gap-3">
+                        <span className="truncate">{result.name}{result.recorded ? "" : " (ignoré)"}</span>
+                        <span className="font-bold text-white/80">{result.score} pts</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ) : null}
 

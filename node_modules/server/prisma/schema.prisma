@@ -109,21 +109,23 @@ model Session {
 }
 
 model Player {
-  id            String                @id @default(dbgenerated("random_player_id()")) @db.Text
-  userId        String?               @unique
-  user          User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
-  name          String
-  img           String                @default("0")
-  bits          Int                   @default(0)
-  experience    Int                   @default(0)
-  isBot         Boolean               @default(false)
-  bot           Bot?
-  createdAt     DateTime              @default(now())
-  playerGames   PlayerGame[]
-  dailyScores   DailyChallengeScore[]
-  reports       QuestionReport[]
-  notifications Notification[]
-  gameHistory   PlayerGameHistory[]
+  id                   String                         @id @default(dbgenerated("random_player_id()")) @db.Text
+  userId               String?                        @unique
+  user                 User?                          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name                 String
+  img                  String                         @default("0")
+  bits                 Int                            @default(0)
+  experience           Int                            @default(0)
+  isBot                Boolean                        @default(false)
+  bot                  Bot?
+  createdAt            DateTime                       @default(now())
+  playerGames          PlayerGame[]
+  dailyScores          DailyChallengeScore[]
+  dailyMonthlyScores   DailyChallengeMonthlyScore[]
+  dailyQuestionResults DailyChallengeQuestionResult[]
+  reports              QuestionReport[]
+  notifications        Notification[]
+  gameHistory          PlayerGameHistory[]
 }
 
 model PlayerGameHistory {
@@ -220,17 +222,18 @@ model Game {
 }
 
 model Question {
-  id              String                   @id @default(cuid())
-  text            String
-  choices         Choice[]
-  theme           Theme?
-  difficulty      String?
-  img             String?
-  playerGames     PlayerGame[]
-  acceptedAnswers AcceptedAnswer[]
-  answers         Answer[]
-  dailyEntries    DailyChallengeQuestion[]
-  reports         QuestionReport[]
+  id                    String                         @id @default(cuid())
+  text                  String
+  choices               Choice[]
+  theme                 Theme?
+  difficulty            String?
+  img                   String?
+  playerGames           PlayerGame[]
+  acceptedAnswers       AcceptedAnswer[]
+  answers               Answer[]
+  dailyEntries          DailyChallengeQuestion[]
+  dailyChallengeResults DailyChallengeQuestionResult[]
+  reports               QuestionReport[]
 }
 
 model PlayerGame {
@@ -288,32 +291,75 @@ model DailyChallenge {
 }
 
 model DailyChallengeQuestion {
-  id           String         @id @default(cuid())
-  challenge    DailyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  id           String                         @id @default(cuid())
+  challenge    DailyChallenge                 @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   challengeId  String
-  question     Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question     Question                       @relation(fields: [questionId], references: [id], onDelete: Cascade)
   questionId   String
   position     Int
-  averageScore Float          @default(0)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  averageScore Float                          @default(0)
+  correctRate  Float                          @default(0)
+  createdAt    DateTime                       @default(now())
+  updatedAt    DateTime                       @updatedAt
+  results      DailyChallengeQuestionResult[]
 
   @@unique([challengeId, position])
   @@index([questionId])
 }
 
 model DailyChallengeScore {
-  id          String         @id @default(cuid())
-  challenge   DailyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  challengeId String
-  player      Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  playerId    String
-  score       Int
-  createdAt   DateTime       @default(now())
+  id              String                         @id @default(cuid())
+  challenge       DailyChallenge                 @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId     String
+  player          Player                         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId        String
+  score           Int
+  createdAt       DateTime                       @default(now())
+  questionResults DailyChallengeQuestionResult[]
 
   @@unique([challengeId, playerId], name: "challenge_player_unique")
   @@index([challengeId])
   @@index([playerId])
+}
+
+model DailyChallengeMonthlyScore {
+  id               String   @id @default(cuid())
+  player           Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId         String
+  year             Int
+  month            Int
+  totalScore       Int      @default(0)
+  challengesPlayed Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([playerId, year, month], name: "player_month_unique")
+  @@index([year, month, totalScore])
+  @@index([playerId])
+}
+
+model DailyChallengeQuestionResult {
+  id         String                 @id @default(cuid())
+  score      DailyChallengeScore    @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+  scoreId    String
+  entry      DailyChallengeQuestion @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  entryId    String
+  question   Question               @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId String
+  player     Player                 @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId   String
+  correct    Boolean
+  attempts   Int                    @default(0)
+  responseMs Int                    @default(-1)
+  points     Int                    @default(0)
+  mode       String
+  answer     String?
+  createdAt  DateTime               @default(now())
+
+  @@unique([scoreId, entryId])
+  @@index([entryId])
+  @@index([playerId])
+  @@index([questionId])
 }
 
 model QuestionReport {

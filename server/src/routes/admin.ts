@@ -4,6 +4,7 @@ import { z } from "zod";
 import { currentUser } from "../auth";
 import { toImgUrl, toProfileUrl } from "../domain/media/media.service";
 import { getChallengeByDate, listChallengesForMonth } from "../domain/daily/daily.service";
+import { simulateDailyChallengeForBots } from "../domain/daily/daily-bot-simulation.service";
 
 type Opts = { prisma: PrismaClient };
 
@@ -367,6 +368,41 @@ export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
       const challenge = await getChallengeByDate(prisma, date);
       return reply.code(201).send({ challenge });
+    });
+
+    app.post("/daily/:date/simulate", { preHandler: requireAdmin(prisma) }, async (req, reply) => {
+      const date = (req.params as { date?: string }).date ?? "";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return reply.code(400).send({ error: "invalid_date" });
+      }
+
+      const Body = z.object({
+        botCount: z.coerce.number().int().min(1).max(100).default(5),
+      });
+      const parsed = Body.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        return reply.code(400).send({ error: "invalid_payload" });
+      }
+
+      try {
+        const simulation = await simulateDailyChallengeForBots(prisma, date, parsed.data.botCount);
+        return {
+          challengeId: simulation.challengeId,
+          requestedBotCount: parsed.data.botCount,
+          simulatedCount: simulation.results.length,
+          recordedCount: simulation.results.filter((result) => result.recorded).length,
+          skippedCount: simulation.results.filter((result) => !result.recorded).length,
+          results: simulation.results,
+        };
+      } catch (err) {
+        if (err instanceof Error && err.message === "daily_challenge_not_found") {
+          return reply.code(404).send({ error: "not_found" });
+        }
+        if (err instanceof Error && err.message === "daily_challenge_empty") {
+          return reply.code(400).send({ error: "daily_challenge_empty" });
+        }
+        throw err;
+      }
     });
 
     app.get("/daily/:date", { preHandler: requireAdmin(prisma) }, async (req, reply) => {

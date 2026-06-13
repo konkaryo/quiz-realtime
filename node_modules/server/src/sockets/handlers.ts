@@ -15,7 +15,7 @@ import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
 import { startGameForRoom } from "../domain/game/game.service";
 import { getChallengeByDate } from "../domain/daily/daily.service";
-import { recordDailyScoreIfFirst, updateDailyQuestionAverageScores } from "../domain/daily/daily-score.service";
+import { getMonthlyDailyRankingSnapshot, recordDailyQuestionResults, recordDailyScoreIfFirst, updateDailyQuestionAverageScores } from "../domain/daily/daily-score.service";
 import { ensurePlayerForUser } from "../domain/player/player.service";
 
 type RacePlayerState = {
@@ -207,6 +207,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       img: string | null;
       slotLabel: string | null;
       averageScore: number;
+      correctRate: number;
       choices: { id: string; label: string; isCorrect: boolean }[];
       acceptedNorms: string[];
       correctLabel: string;
@@ -229,18 +230,26 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       difficulty: string | null;
       img: string | null;
       correct: boolean;
+      attempts: number;
       answer: string | null;
       mode: "text" | "choice" | "timeout" | "skip";
       responseMs: number;
       correctLabel: string;
       points: number;
       averageScore: number;
+      correctRate: number;
     }[];
   };
 
   const dailySessions = new Map<string, DailySession>();
   const DAILY_ROUND_MS = Number(process.env.DAILY_ROUND_MS || 20000);
   const DAILY_MAX_MC_USES = 3;
+
+  function parseDailyMonth(dateIso: string): { year: number; monthIndex: number } | null {
+    const [year, month] = dateIso.split("-").map((value) => Number(value));
+    if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) return null;
+    return { year, monthIndex: month - 1 };
+  }
 
   const stopDailyTimer = (socketId: string) => {
     const sess = dailySessions.get(socketId);
@@ -262,19 +271,31 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     const nextIndex = sess.index + 1;
     const nextQuestion = sess.questions[nextIndex];
     if (!nextQuestion) {
+      let monthlyRanking: Awaited<ReturnType<typeof getMonthlyDailyRankingSnapshot>> | null = null;
       try {
         const record = await recordDailyScoreIfFirst(prisma, sess.challengeId, sess.playerId, sess.score);
-        if (record.created) {
-          const averages = await updateDailyQuestionAverageScores(prisma, sess.challengeId, sess.results);
+        if (record.created && record.scoreId) {
+          await recordDailyQuestionResults(prisma, record.scoreId, sess.playerId, sess.results);
+          const stats = await updateDailyQuestionAverageScores(prisma, sess.challengeId, sess.results);
           sess.results = sess.results.map((result) => ({
             ...result,
-            averageScore: averages.get(result.entryId) ?? result.averageScore,
+            averageScore: stats.averageScores.get(result.entryId) ?? result.averageScore,
+            correctRate: stats.correctRates.get(result.entryId) ?? result.correctRate,
           }));
+        }
+        const monthParts = parseDailyMonth(sess.date);
+        if (monthParts) {
+          monthlyRanking = await getMonthlyDailyRankingSnapshot(
+            prisma,
+            sess.playerId,
+            monthParts.year,
+            monthParts.monthIndex,
+          );
         }
       } catch (err) {
         console.error("[daily_score_record]", err);
       }
-      socket.emit("daily_finished", { score: sess.score, results: sess.results });
+      socket.emit("daily_finished", { score: sess.score, results: sess.results, monthlyRanking });
       return;
     }
     sess.index = nextIndex;
@@ -297,12 +318,14 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         difficulty: q.difficulty,
         img: q.img,
         correct: false,
+        attempts: 0,
         answer: null,
         mode: "timeout",
         responseMs,
         correctLabel: q.correctLabel,
         points: 0,
         averageScore: q.averageScore,
+        correctRate: q.correctRate,
       });
       socket.emit("daily_round_end", {
         index: sess.index,
@@ -563,12 +586,14 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         difficulty: q.difficulty,
         img: q.img,
         correct: false,
+        attempts: 0,
         answer: null,
         mode: "skip",
         responseMs,
         correctLabel: q.correctLabel,
         points: 0,
         averageScore: q.averageScore,
+        correctRate: q.correctRate,
       });
 
       socket.emit("daily_answer_feedback", {
@@ -631,12 +656,14 @@ socket.on(
       difficulty: q.difficulty,
       img: q.img,
       correct: isCorrect,
+      attempts: 1,
       answer: choice.label,
       mode: "choice",
       responseMs,
       correctLabel: q.correctLabel,
       points: gained,
       averageScore: q.averageScore,
+      correctRate: q.correctRate,
     });
 
     const correctChoice = q.choices.find((c) => c.isCorrect) ?? null;
@@ -730,12 +757,14 @@ socket.on(
         difficulty: q.difficulty,
         img: q.img,
         correct,
+        attempts: correct ? sess.attempts + 1 : sess.attempts,
         answer: raw,
         mode: "text",
         responseMs,
         correctLabel: q.correctLabel,
         points: gained,
         averageScore: q.averageScore,
+        correctRate: q.correctRate,
       });
 
       const baseFeedback = {

@@ -1,0 +1,2 @@
+ALTER TABLE "Room"
+ADD COLUMN IF NOT EXISTS "dynamicQuestionDisplay" BOOLEAN NOT NULL DEFAULT true;

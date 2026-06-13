@@ -9,6 +9,17 @@ export type DailyChallengeLeaderboardEntry = {
   img?: string | null;
 };
 
+export type MonthlyDailyRankingSnapshot = {
+  year: number;
+  month: number;
+  totalScore: number;
+  rank: number | null;
+  totalPlayers: number;
+  percentile: number | null;
+  bands: { label: string; percentile: number; score: number }[];
+  distribution: { index: number; score: number; highlighted: boolean }[];
+};
+
 function isMissingDailyScoreTableError(err: unknown): boolean {
   return (
     err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -16,10 +27,36 @@ function isMissingDailyScoreTableError(err: unknown): boolean {
   );
 }
 
-function monthRange(year: number, monthIndex: number) {
-  const start = new Date(Date.UTC(year, monthIndex, 1));
-  const end = new Date(Date.UTC(year, monthIndex + 1, 1));
-  return { start, end };
+function monthParts(date: Date): { year: number; month: number } {
+  return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1 };
+}
+
+async function incrementMonthlyDailyScore(
+  prisma: PrismaClient,
+  playerId: string,
+  challengeDate: Date,
+  score: number,
+): Promise<void> {
+  const { year, month } = monthParts(challengeDate);
+  try {
+    await (prisma as any).dailyChallengeMonthlyScore.upsert({
+      where: { player_month_unique: { playerId, year, month } },
+      update: {
+        totalScore: { increment: score },
+        challengesPlayed: { increment: 1 },
+      },
+      create: {
+        playerId,
+        year,
+        month,
+        totalScore: score,
+        challengesPlayed: 1,
+      },
+    });
+  } catch (err) {
+    if (isMissingDailyScoreTableError(err)) return;
+    throw err;
+  }
 }
 
 export async function recordDailyScoreIfFirst(
@@ -27,20 +64,26 @@ export async function recordDailyScoreIfFirst(
   challengeId: string,
   playerId: string,
   score: number,
-): Promise<{ created: boolean }>
+): Promise<{ created: boolean; scoreId: string | null }>
 {
   try {
-    await prisma.dailyChallengeScore.create({
+    const created = await prisma.dailyChallengeScore.create({ 
       data: { challengeId, playerId, score },
+      select: { id: true, challenge: { select: { date: true } } },
     });
-    return { created: true };
+    await incrementMonthlyDailyScore(prisma, playerId, created.challenge.date, score);
+    return { created: true, scoreId: created.id };
   } catch (err: any) {
     if (isMissingDailyScoreTableError(err)) {
-      return { created: false };
+      return { created: false, scoreId: null };
     }
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       // Duplicate (challengeId, playerId) -> first score already recorded
-      return { created: false };
+      const existing = await prisma.dailyChallengeScore.findUnique({
+        where: { challenge_player_unique: { challengeId, playerId } },
+        select: { id: true },
+      });
+      return { created: false, scoreId: existing?.id ?? null };
     }
     throw err;
   }
@@ -49,40 +92,78 @@ export async function recordDailyScoreIfFirst(
 export type DailyQuestionScoreResult = {
   entryId: string;
   points: number;
+  correct: boolean;
 };
+
+export type DailyQuestionResultDetail = DailyQuestionScoreResult & {
+  questionId: string;
+  attempts: number;
+  responseMs: number;
+  mode: "text" | "choice" | "timeout" | "skip";
+  answer?: string | null;
+};
+
+export async function recordDailyQuestionResults(
+  prisma: PrismaClient,
+  scoreId: string,
+  playerId: string,
+  results: DailyQuestionResultDetail[],
+): Promise<void> {
+  if (!results.length) return;
+
+  await (prisma as any).dailyChallengeQuestionResult.createMany({
+    data: results.map((result) => ({
+      scoreId,
+      playerId,
+      entryId: result.entryId,
+      questionId: result.questionId,
+      correct: result.correct,
+      attempts: Math.max(0, Math.round(result.attempts)),
+      responseMs: Number.isFinite(result.responseMs) ? Math.max(0, Math.round(result.responseMs)) : -1,
+      points: Number.isFinite(result.points) ? Math.max(0, Math.round(result.points)) : 0,
+      mode: result.mode,
+      answer: result.answer ?? null,
+    })),
+    skipDuplicates: true,
+  });
+}
 
 export async function updateDailyQuestionAverageScores(
   prisma: PrismaClient,
   challengeId: string,
   results: DailyQuestionScoreResult[],
-): Promise<Map<string, number>> {
-  if (!results.length) return new Map();
+): Promise<{ averageScores: Map<string, number>; correctRates: Map<string, number> }> {
+  if (!results.length) return { averageScores: new Map(), correctRates: new Map() };
 
   const attemptCount = await prisma.dailyChallengeScore.count({ where: { challengeId } });
-  if (attemptCount <= 0) return new Map();
+  if (attemptCount <= 0) return { averageScores: new Map(), correctRates: new Map() };
 
   const previousAttemptCount = Math.max(0, attemptCount - 1);
   const nextAverages = new Map<string, number>();
+  const nextCorrectRates = new Map<string, number>();
 
   for (const result of results) {
     const points = Number.isFinite(result.points) ? Math.max(0, result.points) : 0;
     const entry = await (prisma as any).dailyChallengeQuestion.findUnique({
       where: { id: result.entryId },
-      select: { id: true, averageScore: true },
+      select: { id: true, averageScore: true, correctRate: true },
     });
     if (!entry) continue;
 
     const previousAverage = Number.isFinite(entry.averageScore) ? entry.averageScore : 0;
+    const previousCorrectRate = Number.isFinite(entry.correctRate) ? entry.correctRate : 0;
     const nextAverage = ((previousAverage * previousAttemptCount) + points) / attemptCount;
+    const nextCorrectRate = ((previousCorrectRate * previousAttemptCount) + (result.correct ? 100 : 0)) / attemptCount;
 
     await (prisma as any).dailyChallengeQuestion.update({
       where: { id: result.entryId },
-      data: { averageScore: nextAverage },
+      data: { averageScore: nextAverage, correctRate: nextCorrectRate },
     });
     nextAverages.set(result.entryId, nextAverage);
+    nextCorrectRates.set(result.entryId, nextCorrectRate);
   }
 
-  return nextAverages;
+  return { averageScores: nextAverages, correctRates: nextCorrectRates };
 }
 
 export async function getDailyChallengeStats(
@@ -151,26 +232,20 @@ export async function getPlayerMonthlyDailyScore(
   monthIndex: number,
 ): Promise<{ totalScore: number; challengesPlayed: number }>
 {
-  const { start, end } = monthRange(year, monthIndex);
-  const aggregate = await prisma.dailyChallengeScore
-    .aggregate({
-      where: {
-        playerId,
-        challenge: { date: { gte: start, lt: end } },
-      },
-      _sum: { score: true },
-      _count: { _all: true },
+  const month = monthIndex + 1;
+  const row = await (prisma as any).dailyChallengeMonthlyScore
+    .findUnique({
+      where: { player_month_unique: { playerId, year, month } },
+      select: { totalScore: true, challengesPlayed: true },
     })
-    .catch((err) => {
-      if (isMissingDailyScoreTableError(err)) {
-        return { _sum: { score: null }, _count: { _all: 0 } } as const;
-      }
+    .catch((err: unknown) => {
+      if (isMissingDailyScoreTableError(err)) return null;
       throw err;
     });
 
   return {
-    totalScore: aggregate._sum.score ?? 0,
-    challengesPlayed: aggregate._count._all,
+    totalScore: row?.totalScore ?? 0,
+    challengesPlayed: row?.challengesPlayed ?? 0,
   };
 }
 
@@ -180,45 +255,91 @@ export async function getMonthlyDailyLeaderboard(
   monthIndex: number,
   limit = 10,
 ): Promise<DailyChallengeLeaderboardEntry[]> {
-  const { start, end } = monthRange(year, monthIndex);
+  const month = monthIndex + 1;
 
-  const aggregates = await prisma.dailyChallengeScore
-    .groupBy({
-      by: ["playerId"],
-      where: {
-        challenge: { date: { gte: start, lt: end } },
-      },
-      _sum: { score: true },
-      _min: { createdAt: true },
+  const rows = await (prisma as any).dailyChallengeMonthlyScore
+    .findMany({
+      where: { year, month },
       orderBy: [
-        { _sum: { score: "desc" } },
-        { _min: { createdAt: "asc" } },
+        { totalScore: "desc" },
+        { createdAt: "asc" },
       ],
+      select: {
+        totalScore: true,
+        player: { select: { id: true, name: true, img: true } },
+      },
       take: limit,
     })
-    .catch((err): Prisma.DailyChallengeScoreGroupByOutputType[] => {
+    .catch((err: unknown) => {
       if (isMissingDailyScoreTableError(err)) return [];
       throw err;
     });
 
-  if (aggregates.length === 0) return [];
+  return rows.map((row: { totalScore: number; player: { id: string; name: string; img: string | null } }) => ({
+    playerId: row.player.id,
+    playerName: row.player.name,
+    score: row.totalScore,
+    img: toProfileUrl(row.player.img),
+  }));
+}
 
-  const players = await prisma.player.findMany({
-    where: { id: { in: aggregates.map((row) => row.playerId) } },
-    select: { id: true, name: true, img: true },
+function scoreAtPercentile(rows: { totalScore: number }[], percentile: number): number {
+  if (!rows.length) return 0;
+  const index = Math.min(rows.length - 1, Math.max(0, Math.ceil((percentile / 100) * rows.length) - 1));
+  return rows[index]?.totalScore ?? 0;
+}
+
+export async function getMonthlyDailyRankingSnapshot(
+  prisma: PrismaClient,
+  playerId: string,
+  year: number,
+  monthIndex: number,
+): Promise<MonthlyDailyRankingSnapshot> {
+  const month = monthIndex + 1;
+  const rows = await (prisma as any).dailyChallengeMonthlyScore
+    .findMany({
+      where: { year, month },
+      orderBy: [
+        { totalScore: "desc" },
+        { createdAt: "asc" },
+      ],
+      select: { playerId: true, totalScore: true },
+    })
+    .catch((err: unknown) => {
+      if (isMissingDailyScoreTableError(err)) return [];
+      throw err;
+    }) as { playerId: string; totalScore: number }[];
+
+  const playerIndex = rows.findIndex((row) => row.playerId === playerId);
+  const rank = playerIndex >= 0 ? playerIndex + 1 : null;
+  const totalPlayers = rows.length;
+  const totalScore = playerIndex >= 0 ? rows[playerIndex].totalScore : 0;
+  const percentile = rank && totalPlayers > 0 ? Math.round((rank / totalPlayers) * 1000) / 10 : null;
+  const barCount = 28;
+  const distribution = Array.from({ length: barCount }, (_, index) => {
+    const ratio = barCount <= 1 ? 0 : index / (barCount - 1);
+    const rowIndex = rows.length ? Math.min(rows.length - 1, Math.round(ratio * (rows.length - 1))) : -1;
+    const barPercentile = ratio * 100;
+    const highlighted = percentile !== null && Math.abs(barPercentile - percentile) <= 100 / barCount;
+    return { index, score: rowIndex >= 0 ? rows[rowIndex].totalScore : 0, highlighted };
   });
 
-  const playerById = new Map(
-    players.map((p) => [p.id, { name: p.name, img: toProfileUrl(p.img) }]),
-  );
-
-
-  return aggregates.map((row) => ({
-    playerId: row.playerId,
-    playerName: playerById.get(row.playerId)?.name ?? "",
-    score: row._sum?.score ?? 0,
-    img: playerById.get(row.playerId)?.img ?? null,
-  }));
+  return {
+    year,
+    month,
+    totalScore,
+    rank,
+    totalPlayers,
+    percentile,
+    bands: [
+      { label: "Top 1%", percentile: 1, score: scoreAtPercentile(rows, 1) },
+      { label: "Top 10%", percentile: 10, score: scoreAtPercentile(rows, 10) },
+      { label: "Top 50%", percentile: 50, score: scoreAtPercentile(rows, 50) },
+      { label: "Top 90%", percentile: 90, score: scoreAtPercentile(rows, 90) },
+      { label: "Top 100%", percentile: 100, score: scoreAtPercentile(rows, 100) },
+    ],
+    distribution,
+  };
 }
 
 export async function getDailyLeaderboardForDate(
