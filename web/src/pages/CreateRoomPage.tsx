@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import hostCrown from "../assets/crown.png";
 import Background from "../components/Background";
+import { Edit3 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -248,7 +249,7 @@ function SettingRow({ icon, label, value, children }: SettingRowProps) {
   return (
     <div className="grid min-h-[52px] grid-cols-[24px,minmax(112px,1fr),minmax(150px,230px)] items-center gap-5 bg-[#0B1229] px-4 py-3 max-sm:grid-cols-[24px,1fr] max-sm:gap-x-3 max-sm:gap-y-2">
       <div className="text-white">{icon}</div>
-      <div className="font-brandUpright text-[18px] uppercase leading-none tracking-[0.05em] text-white">
+      <div className="font-brandUpright text-[18px] leading-none tracking-[0.02em] text-white">
         {label}
       </div>
       <div className="max-sm:col-span-2">{children}</div>
@@ -875,7 +876,10 @@ export default function CreateRoomPage() {
                     className="flex h-[28px] w-full items-center justify-between rounded-[3px] bg-white/90 px-3 text-left text-[11px] font-semibold text-[#111827] transition hover:bg-white"
                   >
                     <span>{selectedThemeCount}/{THEME_OPTIONS.length} thèmes actifs</span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.08em] text-[#111827]/70">Modifier</span>
+                    <span className="inline-flex items-center justify-center text-[#111827]/70" aria-hidden="true">
+                      <Edit3 className="h-3 w-3" strokeWidth={2.4} />
+                    </span>
+                    <span className="sr-only">Modifier les thèmes</span>
                   </button>
                 </SettingRow>
 

@@ -82,7 +82,7 @@ type MonthlyRankingSnapshot = {
   totalPlayers: number;
   percentile: number | null;
   bands: { label: string; percentile: number; score: number }[];
-  distribution: { index: number; score: number; highlighted: boolean }[];
+  distribution: { index: number; count: number; minScore: number; maxScore: number; highlighted: boolean }[];
 };
 
 type DailyFinished = { score: number; results: Result[]; monthlyRanking?: MonthlyRankingSnapshot | null };
@@ -159,9 +159,13 @@ function difficultyStarCount(difficulty: string | null): number {
 }
 
 function MonthlyRankingChart({ ranking }: { ranking: MonthlyRankingSnapshot | null }) {
-  const maxScore = Math.max(1, ...(ranking?.distribution.map((bar) => bar.score) ?? [0]));
-  const userPosition = ranking?.percentile !== null && ranking?.percentile !== undefined
-    ? Math.min(100, Math.max(0, ranking.percentile))
+  const bars = ranking?.distribution.length
+    ? ranking.distribution
+    : Array.from({ length: 20 }, (_, index) => ({ index, count: 0, minScore: 0, maxScore: 0, highlighted: false }));
+  const maxPlayerCount = Math.max(1, ...bars.map((bar) => bar.count));
+  const chartMaxScore = Math.max(0, ...bars.map((bar) => bar.maxScore));
+  const userPosition = ranking && chartMaxScore > 0
+    ? Math.min(100, Math.max(0, (ranking.totalScore / chartMaxScore) * 100))
     : null;
   const rankLabel = ranking?.rank && ranking.totalPlayers > 0
     ? `${ranking.rank}/${ranking.totalPlayers}`
@@ -194,18 +198,23 @@ function MonthlyRankingChart({ ranking }: { ranking: MonthlyRankingSnapshot | nu
           </div>
         ) : null}
         <div className="flex h-full items-end gap-1.5">
-          {(ranking?.distribution.length ? ranking.distribution : Array.from({ length: 28 }, (_, index) => ({ index, score: 0, highlighted: false }))).map((bar) => {
-            const height = 18 + (bar.score / maxScore) * 64;
-            const isBeforePlayer = userPosition !== null && ((bar.index / 27) * 100) <= userPosition;
+          {bars.map((bar) => {
+            const height = 12 + (bar.count / maxPlayerCount) * 70;
+            const title = `${bar.count} joueur${bar.count > 1 ? "s" : ""} · ${formatPoints(bar.minScore)} – ${formatPoints(bar.maxScore)}`;
             return (
               <div
                 key={bar.index}
-                className={`flex-1 rounded-t-[4px] transition ${bar.highlighted ? "bg-violet-300 shadow-[0_0_18px_rgba(167,139,250,0.55)]" : isBeforePlayer ? "bg-violet-500" : "bg-slate-700/35"}`}
+                className={`flex-1 rounded-t-[4px] transition ${bar.highlighted ? "bg-violet-300 shadow-[0_0_18px_rgba(167,139,250,0.55)]" : "bg-slate-700/45"}`}
                 style={{ height }}
-                title={formatPoints(bar.score)}
+                title={title}
+                aria-label={title}
               />
             );
           })}
+        </div>
+        <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-slate-500">
+          <span>0 pt</span>
+          <span>{formatPoints(chartMaxScore)}</span>
         </div>
       </div>
 

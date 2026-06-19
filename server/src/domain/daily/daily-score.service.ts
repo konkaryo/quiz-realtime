@@ -17,7 +17,7 @@ export type MonthlyDailyRankingSnapshot = {
   totalPlayers: number;
   percentile: number | null;
   bands: { label: string; percentile: number; score: number }[];
-  distribution: { index: number; score: number; highlighted: boolean }[];
+  distribution: { index: number; count: number; minScore: number; maxScore: number; highlighted: boolean }[];
 };
 
 function isMissingDailyScoreTableError(err: unknown): boolean {
@@ -315,13 +315,36 @@ export async function getMonthlyDailyRankingSnapshot(
   const totalPlayers = rows.length;
   const totalScore = playerIndex >= 0 ? rows[playerIndex].totalScore : 0;
   const percentile = rank && totalPlayers > 0 ? Math.round((rank / totalPlayers) * 1000) / 10 : null;
-  const barCount = 28;
-  const distribution = Array.from({ length: barCount }, (_, index) => {
-    const ratio = barCount <= 1 ? 0 : index / (barCount - 1);
-    const rowIndex = rows.length ? Math.min(rows.length - 1, Math.round(ratio * (rows.length - 1))) : -1;
-    const barPercentile = ratio * 100;
-    const highlighted = percentile !== null && Math.abs(barPercentile - percentile) <= 100 / barCount;
-    return { index, score: rowIndex >= 0 ? rows[rowIndex].totalScore : 0, highlighted };
+  const barCount = 20;
+  const highestScore = Math.max(0, ...rows.map((row) => row.totalScore));
+  const segmentSize = highestScore > 0 ? highestScore / barCount : 1;
+  const counts = Array.from({ length: barCount }, () => 0);
+
+  for (const row of rows) {
+    const segmentIndex = highestScore > 0
+      ? Math.min(barCount - 1, Math.floor(row.totalScore / segmentSize))
+      : 0;
+    counts[segmentIndex] += 1;
+  }
+
+  const playerSegmentIndex = rank !== null
+    ? highestScore > 0
+      ? Math.min(barCount - 1, Math.floor(totalScore / segmentSize))
+      : 0
+    : null;
+
+  const distribution = counts.map((count, index) => {
+    const minScore = highestScore > 0 ? Math.round(index * segmentSize) : 0;
+    const maxScore = highestScore > 0
+      ? Math.round(index === barCount - 1 ? highestScore : (index + 1) * segmentSize)
+      : 0;
+    return {
+      index,
+      count,
+      minScore,
+      maxScore,
+      highlighted: playerSegmentIndex === index,
+    };
   });
 
   return {

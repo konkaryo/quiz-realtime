@@ -105,9 +105,16 @@ export function FinalLeaderboard({
         <div className="grid w-full grid-cols-1 place-items-center gap-4 md:grid-cols-3 md:items-end md:gap-4">
           {winnerCards.map((card) => {
             const row = rows[card.rank - 1];
-            if (!row) return null;
+            if (!row) {
+              return (
+                <div
+                  key={`podium-placeholder-${card.rank}`}
+                  className={["hidden md:block", card.widthClassName, card.topOffsetClassName].join(" ")}
+                  aria-hidden="true"
+                />
+              );
+            }
 
-            const isSelf = isSelfRow(row);
             const level = playerLevel(row);
 
             return (
@@ -119,7 +126,6 @@ export function FinalLeaderboard({
                   card.widthClassName,
                   card.topOffsetClassName,
                   card.cardClassName,
-                  isSelf ? "ring-2 ring-white/50" : "",
                 ].join(" ")}
               >
                 <span
