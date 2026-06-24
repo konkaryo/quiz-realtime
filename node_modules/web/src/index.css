@@ -187,6 +187,28 @@ body[data-page="campaign"] {
   background: transparent; /* coin invisible */
 }
 
+.profile-themes-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff transparent;
+}
+
+.profile-themes-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.profile-themes-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.profile-themes-scroll::-webkit-scrollbar-thumb {
+  background-color: #ffffff;
+  border-radius: 2px;
+}
+
+.profile-themes-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @keyframes podiumConfettiRain {
   0% {
     opacity: 0;

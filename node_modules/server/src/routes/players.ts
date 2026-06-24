@@ -5,6 +5,7 @@ import { z } from "zod";
 import { toProfileUrl } from "../domain/media/media.service";
 import { currentUser } from "../auth";
 import { CFG } from "../config";
+import { refreshPlayerStats } from "../domain/player/player-stats.service";
 
 type HistoryQuestionResult = {
   questionId: string;
@@ -367,29 +368,8 @@ export function playerRoutes({ prisma }: { prisma: PrismaClient }) {
         return reply.code(404).send({ stats: {}, totalQuestions: 0 });
       }
 
-      const answerStatsFilter = {
-        playerGame: { playerId: player.id },
-        questionId: { not: null },
-      };
-
-      const [answers, totalQuestions, avgTextResponse] = await Promise.all([
-        prisma.answer.findMany({
-          where: answerStatsFilter,
-          orderBy: { createdAt: "desc" },
-          take: 1000,
-          select: {
-            correct: true,
-            playerGameId: true,
-            questionId: true,
-            question: { select: { theme: true } },
-          },
-        }),
-        prisma.answer
-          .groupBy({
-            by: ["playerGameId", "questionId"],
-            where: answerStatsFilter,
-          })
-          .then((rows) => rows.length),
+      const [playerStats, avgTextResponse] = await Promise.all([
+        refreshPlayerStats(prisma, player.id),
         prisma.answer.aggregate({
           where: {
             playerGame: { playerId: player.id },
@@ -401,38 +381,8 @@ export function playerRoutes({ prisma }: { prisma: PrismaClient }) {
         }),
       ]);
 
-      const seenQuestions = new Map<string, { theme: string; correct: boolean }>();
-      for (const ans of answers) {
-        if (!ans.questionId) continue;
-        const theme = ans.question?.theme;
-        if (!theme) continue;
-
-        const key = `${ans.playerGameId}:${ans.questionId}`;
-        const existing = seenQuestions.get(key);
-        if (!existing) {
-          seenQuestions.set(key, { theme, correct: ans.correct });
-        } else if (!existing.correct && ans.correct) {
-          seenQuestions.set(key, { ...existing, correct: true });
-        }
-      }
-
-      const stats = new Map<string, { total: number; correct: number }>();
-      for (const entry of seenQuestions.values()) {
-        const statEntry = stats.get(entry.theme) ?? { total: 0, correct: 0 };
-        statEntry.total += 1;
-        if (entry.correct) statEntry.correct += 1;
-        stats.set(entry.theme, statEntry);
-      }
-
-      const payload: Record<string, { total: number; correct: number; accuracy: number }> = {};
-      for (const [theme, entry] of stats) {
-        const accuracy = entry.total > 0 ? Math.round((entry.correct / entry.total) * 100) : 0;
-        payload[theme] = { ...entry, accuracy };
-      }
-
       return reply.send({
-        stats: payload,
-        totalQuestions,
+        ...playerStats,
         avgTextResponseMs: avgTextResponse._avg.responseMs ?? null,
       });
     });

@@ -266,7 +266,7 @@ export default function DailyChallengePage() {
   }, [goToMonth]);
 
   return (
-    <div className="relative min-h-full overflow-hidden text-slate-50">
+    <div className="relative min-h-full overflow-hidden font-inter text-slate-50">
       <Background />
 
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-12 sm:px-8 lg:px-10">
@@ -289,7 +289,7 @@ export default function DailyChallengePage() {
               <button
                 type="button"
                 onClick={() => goToMonth(-1)}
-                className="relative -top-[8px] justify-self-end pr-8 text-[34px] font-semibold leading-none text-slate-300/80 transition hover:text-white focus:outline-none"
+                className="relative -top-[8px] justify-self-end pr-8 font-brandUpright text-[34px] leading-none text-slate-300/80 transition hover:text-white focus:outline-none"
               >
                 <span className="sr-only">Mois précédent</span>
                 <span aria-hidden>‹</span>
@@ -302,14 +302,14 @@ export default function DailyChallengePage() {
               <button
                 type="button"
                 onClick={() => goToMonth(1)}
-                className="relative -top-[8px] justify-self-start pl-8 text-[34px] font-semibold leading-none text-slate-300/80 transition hover:text-white focus:outline-none"
+                className="relative -top-[8px] justify-self-start pl-8 font-brandUpright text-[34px] leading-none text-slate-300/80 transition hover:text-white focus:outline-none"
               >
                 <span className="sr-only">Mois suivant</span>
                 <span aria-hidden>›</span>
               </button>
             </div>
 
-            <div className="grid w-full grid-cols-7 gap-1.5 text-center text-[12px] font-black uppercase tracking-[0.05em] text-slate-300/80">
+            <div className="grid w-full grid-cols-7 gap-1.5 text-center font-inter text-[12px] font-black uppercase tracking-[0.05em] text-slate-300/80">
               {WEEKDAY_LABELS.map((label) => (
                 <div key={label} className="py-2">
                   {label}
@@ -328,7 +328,6 @@ export default function DailyChallengePage() {
                     />
                   );
                 }
-                const isToday = cell.iso === todayIso;
                 const isFuture = cell.iso > todayIso;
                 const isSelected = cell.iso === selectedDate;
                 const completedInfo = progress[cell.iso];
@@ -342,10 +341,10 @@ export default function DailyChallengePage() {
                   isSelected
                     ? "border-white bg-white text-[#050B18] shadow-[0_0_0_1px_rgba(255,255,255,0.9),0_0_24px_rgba(255,255,255,0.18)]"
                     : isLocked
-                      ? "border-[#070B14] bg-[#020611] text-slate-600/70 opacity-55"
-                      : "border-[#13213E] bg-[#050B18] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_26px_rgba(0,0,0,0.18)]",
+                      ? "border-[#1F2A4F] bg-[#111733] text-slate-500/80 opacity-65"
+                      : "border-[#3E4772] bg-[#2B3158]/90 text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_26px_rgba(0,0,0,0.16)]",
                   canSelect && !isSelected
-                    ? "hover:border-[#2D7CFF]/80 hover:bg-[#132345]"
+                    ? "hover:border-[#7A84BB]/80 hover:bg-[#343B68]"
                     : "",
                   !canSelect ? "cursor-default" : "cursor-pointer",
                 ].join(" ");
@@ -358,7 +357,7 @@ export default function DailyChallengePage() {
                     onClick={() => setSelectedDate(cell.iso)}
                     className={buttonClasses}
                   >
-                    <span className="text-[18px] font-black leading-none text-inherit">
+                    <span className="font-brutal text-[18px] leading-none text-inherit">
                       {cell.day}
                     </span>
 
@@ -369,34 +368,28 @@ export default function DailyChallengePage() {
                           alt="Verrouillé"
                           className="h-4 w-4 opacity-55 grayscale"
                         />
-                      ) : isToday ? (
+                      ) : completedInfo ? (
                         <span
-                          aria-label="Défi du jour en attente"
-                          role="img"
                           className={[
-                            "text-[15px] leading-none",
-                            isSelected ? "text-[#050B18]" : "text-slate-200",
+                            "inline-flex min-w-[42px] items-center justify-center rounded-[4px] border px-2 py-0.5 font-inter text-[11px] font-black leading-none",
+                            isSelected
+                              ? "border-emerald-700/60 bg-emerald-200 text-emerald-950"
+                              : "border-emerald-400/70 bg-emerald-500/25 text-emerald-100",
                           ].join(" ")}
                         >
-                          ⏱
+                          {scoreLabel}
                         </span>
                       ) : (
                         <span
+                          aria-label="Défi non joué"
                           className={[
-                            "inline-flex items-center gap-1 text-[13px] font-semibold drop-shadow-[0_0_8px_rgba(174,67,255,0.35)]",
-                            isSelected ? "text-[#050B18]" : "text-white",
+                            "inline-flex h-4 w-4 items-center justify-center rounded-[3px] font-brutal text-[12px] leading-none",
+                            isSelected
+                              ? "bg-slate-300 text-slate-800"
+                              : "bg-slate-500/70 text-slate-200",
                           ].join(" ")}
                         >
-                          <span
-                            aria-hidden
-                            className={[
-                              "inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] text-[10px] font-black leading-none text-white",
-                              completedInfo ? "bg-emerald-500" : "bg-red-600",
-                            ].join(" ")}
-                          >
-                            {completedInfo ? "✓" : "×"}
-                          </span>
-                          <span>{scoreLabel}</span>
+                          ×
                         </span>
                       )}
                     </span>
@@ -413,7 +406,7 @@ export default function DailyChallengePage() {
                 selectedDate && navigate(`/solo/daily/${selectedDate}`)
               }
               className={[
-                "mt-8 inline-flex items-center justify-center rounded-[6px] px-10 py-2.5 font-sans text-[15px] font-bold transition",
+                "mt-8 inline-flex items-center justify-center rounded-[6px] px-10 py-2.5 font-inter text-[15px] font-bold transition",
                 "border border-transparent bg-[#6250C7] text-slate-50 hover:bg-[#6F5BD4]",
                 !selectedChallenge ? "cursor-not-allowed opacity-40" : "",
               ].join(" ")}

@@ -126,6 +126,24 @@ model Player {
   reports              QuestionReport[]
   notifications        Notification[]
   gameHistory          PlayerGameHistory[]
+  stats                PlayerStats?
+}
+
+model PlayerStats {
+  id                 String   @id @default(cuid())
+  playerId           String   @unique
+  player             Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  totalQuestions     Int      @default(0)
+  easyQuestions      Int      @default(0)
+  moderateQuestions  Int      @default(0)
+  difficultQuestions Int      @default(0)
+  extremeQuestions   Int      @default(0)
+  themeStats         Json     @default("{}")
+  lastUpdatedAt      DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([lastUpdatedAt])
 }
 
 model PlayerGameHistory {

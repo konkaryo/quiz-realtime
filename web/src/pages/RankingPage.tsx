@@ -77,7 +77,16 @@ function ValueBadge({ mode }: { mode: RankingMode }) {
   );
 }
 
-function RankDisplay({ rank }: { rank: number }) {
+function RankDisplay({ rank, highlighted = false }: { rank: number; highlighted?: boolean }) {
+  if (highlighted) {
+    return (
+      <div className="flex justify-center">
+        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-[4px] bg-white px-1.5 tabular-nums text-[12px] font-extrabold leading-none text-[#191F31]">
+          {rank}
+        </span>
+      </div>
+    );
+  }
   if (rank <= 3) {
     const rankClass = rank === 1 ? "text-[#FFD832]" : rank === 2 ? "text-[#D6DEEA]" : "text-[#F39A45]";
     const laurelFilter =
@@ -146,7 +155,7 @@ function PlayerCell({
       )}
 
       <span
-        className={`notranslate block truncate text-[13px] font-medium [text-decoration:none] ${highlight ? "text-white" : "text-slate-200"}`}
+        className={`notranslate block truncate rounded-[4px] text-[13px] [text-decoration:none] ${highlight ? "bg-white px-2 py-1 font-extrabold leading-none text-[#191F31]" : "font-medium text-slate-200"}`}
         spellCheck={false}
         suppressHydrationWarning
         translate="no"
@@ -174,11 +183,11 @@ function ValueCell({
   return (
     <div className="flex items-center justify-end gap-2">
       <span
-        className={`tabular-nums text-[14px] font-semibold ${highlighted ? "text-[#FFD832]" : "text-slate-200"}`}
+        className={`inline-flex items-center gap-2 rounded-[4px] tabular-nums text-[14px] font-semibold ${highlighted ? "bg-white px-2 py-1 leading-none text-[#191F31]" : "text-slate-200"}`}
       >
         {formatValue(value)}
+        <ValueBadge mode={mode} />
       </span>
-      <ValueBadge mode={mode} />
     </div>
   );
 }
@@ -204,14 +213,16 @@ function LeaderboardRow({
       className={[
         "grid grid-cols-[104px_minmax(120px,1fr)_190px_110px] items-center rounded-[9px] px-2",
         detached ? "py-2" : "py-1.5",
-        highlighted ? "bg-[#251C59]" : "bg-[#121727]",
+        "bg-[#131829]",
       ].join(" ")}
     >
-      <RankDisplay rank={rank} />
+      <RankDisplay rank={rank} highlighted={highlighted} />
       <PlayerCell entry={entry} rank={rank} highlight={highlighted} />
-      <ValueCell value={value} mode={mode} highlighted={rank === 1} />
-      <div className="text-right text-[14px] font-semibold text-slate-200">
-        {formatValue(entry.gamesPlayed ?? 0)}
+      <ValueCell value={value} mode={mode} highlighted={highlighted} />
+      <div className="flex justify-end">
+        <span className={`rounded-[4px] text-right text-[14px] font-semibold ${highlighted ? "bg-white px-2 py-1 leading-none text-[#191F31]" : "text-slate-200"}`}>
+          {formatValue(entry.gamesPlayed ?? 0)}
+        </span>
       </div>
     </div>
   );
@@ -367,17 +378,17 @@ export default function RankingPage() {
             <div className="lb-scroll max-h-[calc(100vh-260px)] min-w-[644px] overflow-y-auto pr-6 font-inter">
               <div className="flex flex-col gap-1.5">
                 {loading && (
-                  <div className="rounded-[9px] bg-[#121727] px-5 py-4 text-sm font-semibold text-slate-300">
+                  <div className="rounded-[9px] bg-[#131829] px-5 py-4 text-sm font-semibold text-slate-300">
                     Chargement du classement…
                   </div>
                 )}
 
                 {error && !loading && (
-                  <div className="rounded-[9px] bg-[#121727] px-5 py-4 text-sm font-semibold text-rose-200">{error}</div>
+                  <div className="rounded-[9px] bg-[#131829] px-5 py-4 text-sm font-semibold text-rose-200">{error}</div>
                 )}
 
                 {!loading && !error && visibleEntries.length === 0 && (
-                  <div className="rounded-[9px] bg-[#121727] px-5 py-4 text-sm font-semibold text-slate-300">
+                  <div className="rounded-[9px] bg-[#131829] px-5 py-4 text-sm font-semibold text-slate-300">
                     Aucun joueur disponible pour ce classement.
                   </div>
                 )}
@@ -403,7 +414,7 @@ export default function RankingPage() {
                   <button
                     type="button"
                     onClick={() => setVisibleCount((count) => count + LOAD_CHUNK_SIZE)}
-                    className="rounded-[9px] border border-dashed border-[#2C3650] bg-[#121727] px-5 py-3 text-center text-[12px] font-black uppercase tracking-[0.08em] text-slate-300 transition hover:border-[#6E4BFF] hover:text-white"
+                    className="rounded-[9px] border border-dashed border-[#2C3650] bg-[#131829] px-5 py-3 text-center text-[12px] font-black uppercase tracking-[0.08em] text-slate-300 transition hover:border-[#6E4BFF] hover:text-white"
                   >
                     Voir davantage
                   </button>
