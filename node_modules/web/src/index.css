@@ -41,12 +41,29 @@
 }
 
 @font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter_24pt-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: "Brutal Type Black";
   src: url("/fonts/brutal-type-black.woff2") format("woff2");
   font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
+
+@font-face {
+  font-family: "Acumin Pro SemiBold";
+  src: url("/fonts/AcuminPro-Semibold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 
 @tailwind base;
 @tailwind components;

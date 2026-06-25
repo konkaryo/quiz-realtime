@@ -10,6 +10,7 @@ export default {
         brand: ['"Acumin Pro Extra Condensed Bold Italic"'],
         brandUpright: ['"Acumin Pro Extra Condensed SemiBold"'],
         inter: ['"Inter"', 'system-ui', 'sans-serif'],
+        acuminSemiBold: ['"Acumin Pro SemiBold"', 'system-ui', 'sans-serif'],
         brutal: ['"Brutal Type Black"']
       },
       borderRadius: {
