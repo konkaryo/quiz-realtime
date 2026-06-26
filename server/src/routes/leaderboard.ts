@@ -9,6 +9,7 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
   async function getLimit(query: unknown, reply: any) {
     const Query = z.object({
       limit: z.coerce.number().int().min(1).max(100).optional(),
+      all: z.coerce.boolean().optional(),
     });
     const parsed = Query.safeParse(query);
     if (!parsed.success) {
@@ -16,7 +17,7 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
       return null;
     }
 
-    return parsed.data.limit ?? 50;
+    return parsed.data.all ? undefined : parsed.data.limit ?? 50;
   }
 
   function isBeforeInRanking(
@@ -29,7 +30,7 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
     return a.id.localeCompare(b.id, "fr", { sensitivity: "base" }) < 0;
   }
 
-  async function getSelfLeaderboardEntry(req: FastifyRequest, mode: "bits" | "experience") {
+  async function getSelfLeaderboardEntry(req: FastifyRequest, mode: "bits" | "experience", includeImage = true) {
     const auth = await currentUser(prisma, req);
     if (!auth.user) return null;
 
@@ -72,19 +73,39 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
         bits: player.bits ?? 0,
         experience: player.experience ?? 0,
         gamesPlayed: player._count.gameHistory,
-        img: toProfileUrl(player.img ?? null),
+        img: includeImage ? toProfileUrl(player.img ?? null) : null,
       },
     };
   }
 
   return async function register(app: FastifyInstance) {
+    app.get("/profile-images", async (req, reply) => {
+      const Query = z.object({
+        ids: z.string().min(1),
+      });
+      const parsed = Query.safeParse(req.query);
+      if (!parsed.success) return reply.code(400).send({ error: "invalid_player_ids" });
+
+      const ids = Array.from(new Set(parsed.data.ids.split(",").map((id) => id.trim()).filter(Boolean))).slice(0, 50);
+      if (ids.length === 0) return reply.send({ images: {} });
+
+      const players = await prisma.player.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, img: true },
+      });
+
+      return reply.send({
+        images: Object.fromEntries(players.map((player) => [player.id, toProfileUrl(player.img ?? null)])),
+      });
+    });
     app.get("/bits", async (req, reply) => {
       const limit = await getLimit(req.query, reply);
       if (limit === null) return;
+      const includeImages = limit !== undefined;
       const [players, self] = await Promise.all([
         prisma.player.findMany({
           orderBy: [{ bits: "desc" }, { name: "asc" }, { id: "asc" }],
-          take: limit,
+          ...(limit === undefined ? {} : { take: limit }),
           select: {
             id: true,
             name: true,
@@ -93,7 +114,7 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
             _count: { select: { gameHistory: true } },
           },
         }),
-        getSelfLeaderboardEntry(req, "bits"),
+        getSelfLeaderboardEntry(req, "bits", includeImages),
       ]);
 
       return reply.send({
@@ -102,7 +123,7 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
           name: player.name,
           bits: player.bits,
           gamesPlayed: player._count.gameHistory,
-          img: toProfileUrl(player.img ?? null),
+          img: includeImages ? toProfileUrl(player.img ?? null) : null,
         })),
         self,
       });
@@ -114,7 +135,7 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
       const [players, self] = await Promise.all([
         prisma.player.findMany({
           orderBy: [{ experience: "desc" }, { name: "asc" }, { id: "asc" }],
-          take: limit,
+          ...(limit === undefined ? {} : { take: limit }),
           select: {
             id: true,
             name: true,

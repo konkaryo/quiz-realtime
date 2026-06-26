@@ -8,15 +8,17 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? (typeof window !== "undefined"
 
 type RankingKind = "general" | "daily";
 type PeriodMode = "week" | "month" | "today";
-type ScoreMode = "experience" | "daily";
+type ScoreMode = "bits" | "daily";
 
 type LeaderboardEntry = {
   id: string;
   name: string;
   img?: string | null;
+  bits?: number;
   experience?: number;
   score?: number;
   gamesPlayed?: number;
+  rank?: number;
 };
 
 type SelfLeaderboard = { rank: number; entry: LeaderboardEntry } | null;
@@ -24,8 +26,6 @@ type SelfLeaderboard = { rank: number; entry: LeaderboardEntry } | null;
 type DailyLeaderboardEntry = { playerId: string; playerName: string; score: number; img?: string | null };
 
 const PAGE_SIZE = 10;
-const LEADERBOARD_FETCH_LIMIT = 100;
-const CENTERED_ROW_OFFSET = Math.floor(PAGE_SIZE / 2);
 
 const FILTERS: Array<{ value: RankingKind; label: string; icon: typeof Star }> = [
   { value: "general", label: "Classement général", icon: Star },
@@ -80,7 +80,7 @@ function initialsFromName(name: string) {
 }
 
 function getEntryValue(entry: LeaderboardEntry, mode: ScoreMode) {
-  return mode === "daily" ? entry.score ?? 0 : entry.experience ?? 0;
+  return mode === "daily" ? entry.score ?? 0 : entry.bits ?? 0;
 }
 
 function ValueBadge() {
@@ -102,11 +102,36 @@ function RankDisplay({ rank }: { rank: number }) {
   return <div className="text-center font-inter text-[13px] font-black leading-none text-slate-200">{rank}</div>;
 }
 
-function rankRowBackground(rank: number) {
+function rankRowBackground(rank: number, highlighted = false) {
   if (rank === 1) return "linear-gradient(90deg, rgba(255,216,50,0.18) 0%, rgba(255,216,50,0.08) 32%, rgba(255,216,50,0) 100%)";
   if (rank === 2) return "linear-gradient(90deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.07) 32%, rgba(255,255,255,0) 100%)";
   if (rank === 3) return "linear-gradient(90deg, rgba(243,154,69,0.18) 0%, rgba(243,154,69,0.08) 32%, rgba(243,154,69,0) 100%)";
+  if (highlighted) return "linear-gradient(90deg, rgba(110,75,255,0.22) 0%, rgba(110,75,255,0.11) 32%, rgba(110,75,255,0) 100%)";
   return undefined;
+}
+
+function rankAccentColor(rank: number, highlighted = false) {
+  if (rank === 1) return "#FFD832";
+  if (rank === 2) return "#D6DEEA";
+  if (rank === 3) return "#F39A45";
+  if (highlighted) return "#8B5CF6";
+  return undefined;
+}
+
+function getVisiblePageButtons(currentPage: number, totalPages: number) {
+  const pages = new Set([1, totalPages, currentPage]);
+  if (currentPage > 1) pages.add(currentPage - 1);
+  if (currentPage < totalPages) pages.add(currentPage + 1);
+
+  const sortedPages = Array.from(pages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b);
+
+  return sortedPages.flatMap((page, index) => {
+    const previous = sortedPages[index - 1];
+    if (previous && page - previous > 1) return [`ellipsis-${previous}-${page}`, page] as const;
+    return [page] as const;
+  });
 }
 
 function PlayerCell({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
@@ -123,14 +148,18 @@ function PlayerCell({ entry, rank }: { entry: LeaderboardEntry; rank: number }) 
 }
 
 function LeaderboardRow({ entry, rank, mode, highlighted = false }: { entry: LeaderboardEntry; rank: number; mode: ScoreMode; highlighted?: boolean }) {
-  const podiumBackground = highlighted ? undefined : rankRowBackground(rank);
+  const rowBackground = rankRowBackground(rank, highlighted);
+  const accentColor = rankAccentColor(rank, highlighted);
   return (
     <div
       className={[
         "grid grid-cols-[88px_minmax(150px,1fr)_170px_110px] items-center border-t border-white/[0.07] pl-0 pr-5 py-2 transition",
-        highlighted ? "bg-[#6E4BFF]/20 shadow-[inset_3px_0_0_#8B5CF6]" : podiumBackground ? "" : "bg-transparent hover:bg-white/[0.035]",
+        rowBackground ? "" : "bg-transparent hover:bg-white/[0.035]",
       ].join(" ")}
-      style={podiumBackground ? { background: podiumBackground } : undefined}
+      style={{
+        ...(rowBackground ? { background: rowBackground } : {}),
+        ...(accentColor ? { boxShadow: `inset 3px 0 0 ${accentColor}` } : {}),
+      }}
     >
       <RankDisplay rank={rank} />
       <PlayerCell entry={entry} rank={rank} />
@@ -153,8 +182,9 @@ export default function RankingPage() {
   const [search, setSearch] = useState("");
   const [startIndex, setStartIndex] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [profileImages, setProfileImages] = useState<Record<string, string | null>>({});
 
-  const scoreMode: ScoreMode = kind === "daily" ? "daily" : "experience";
+  const scoreMode: ScoreMode = kind === "daily" ? "daily" : "bits";
 
   useEffect(() => {
     const controller = new AbortController();
@@ -164,13 +194,17 @@ export default function RankingPage() {
       try {
         const url = kind === "daily"
           ? dailyLeaderboardUrl(period)
-          : `${API_BASE}/leaderboard/experience?limit=${LEADERBOARD_FETCH_LIMIT}`;
+          : `${API_BASE}/leaderboard/bits?all=true`;
         const res = await fetch(url, { credentials: "include", signal: controller.signal });
         const data = (await res.json().catch(() => ({}))) as { leaderboard?: LeaderboardEntry[] | DailyLeaderboardEntry[]; self?: SelfLeaderboard; error?: string };
         if (!res.ok) throw new Error(data.error || "Impossible de charger le classement.");
-        const rows = (data.leaderboard ?? []).map(normalizeLeaderboardEntry);
+        const rows = (data.leaderboard ?? []).map((row, index) => ({
+          ...normalizeLeaderboardEntry(row),
+          rank: index + 1,
+        }));
         setEntries(rows);
         setSelf(kind === "general" && data.self?.entry ? data.self : null);
+        setProfileImages({});
         setLastUpdated(new Date());
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
@@ -194,22 +228,59 @@ export default function RankingPage() {
   }, [entries, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE));
-  const currentPage = Math.min(totalPages, Math.floor(startIndex / PAGE_SIZE) + 1);
   const clampedStartIndex = Math.min(startIndex, Math.max(0, filteredEntries.length - PAGE_SIZE));
+  const currentPage = Math.min(totalPages, Math.floor(clampedStartIndex / PAGE_SIZE) + 1);
   const pageEntries = filteredEntries.slice(clampedStartIndex, clampedStartIndex + PAGE_SIZE);
+  const displayedEntries = useMemo(() => pageEntries.map((entry) => ({
+    ...entry,
+    img: kind === "general" ? profileImages[entry.id] ?? entry.img ?? null : entry.img ?? null,
+  })), [kind, pageEntries, profileImages]);
+  const displayedSelf = useMemo(() => self ? {
+    ...self,
+    entry: {
+      ...self.entry,
+      img: kind === "general" ? profileImages[self.entry.id] ?? self.entry.img ?? null : self.entry.img ?? null,
+    },
+  } : null, [kind, profileImages, self]);
   const lastUpdatedLabel = lastUpdated ? lastUpdated.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "--:--";
-  const selfValue = self ? getEntryValue(self.entry, scoreMode) : 0;
+  const selfValue = displayedSelf ? getEntryValue(displayedSelf.entry, scoreMode) : 0;
+  const visiblePageButtons = getVisiblePageButtons(currentPage, totalPages);
+
+  useEffect(() => {
+    if (kind !== "general") return;
+
+    const ids = Array.from(new Set([...pageEntries.map((entry) => entry.id), ...(self?.entry.id ? [self.entry.id] : [])]))
+      .filter((id) => !(id in profileImages));
+    if (ids.length === 0) return;
+
+    const controller = new AbortController();
+    async function loadVisibleProfileImages() {
+      const url = `${API_BASE}/leaderboard/profile-images?ids=${encodeURIComponent(ids.join(","))}`;
+      const res = await fetch(url, { credentials: "include", signal: controller.signal });
+      const data = (await res.json().catch(() => ({}))) as { images?: Record<string, string | null> };
+      if (!res.ok) return;
+      setProfileImages((current) => ({ ...current, ...(data.images ?? {}) }));
+    }
+
+    void loadVisibleProfileImages();
+    return () => controller.abort();
+  }, [kind, pageEntries, profileImages, self?.entry.id]);
+
+  function goToPage(page: number) {
+    const safePage = Math.min(totalPages, Math.max(1, page));
+    setStartIndex((safePage - 1) * PAGE_SIZE);
+  }
 
   function showSelfRanking() {
     if (!self) return;
     const index = entries.findIndex((entry) => entry.id === self.entry.id);
     if (index < 0) return;
 
-    const centeredStart = Math.max(0, index - CENTERED_ROW_OFFSET);
+    const pageStart = Math.floor(index / PAGE_SIZE) * PAGE_SIZE;
     const maxStartIndex = Math.max(0, entries.length - PAGE_SIZE);
 
     setSearch("");
-    setStartIndex(Math.min(maxStartIndex, centeredStart));
+    setStartIndex(Math.min(maxStartIndex, pageStart));
   }
 
   return (
@@ -229,12 +300,12 @@ export default function RankingPage() {
               {kind === "daily" && <div className="mt-6"><label className="font-acuminSemiBold text-[11px] font-semibold uppercase text-slate-400">Période</label><select value={period} onChange={(event) => setPeriod(event.target.value as PeriodMode)} className="mt-2 h-9 w-full rounded-[5px] border border-white/[0.06] bg-[#131829] px-3 font-inter text-[12px] font-bold text-slate-200 outline-none">{PERIODS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>}
             </div>
 
-            {self && (
+            {displayedSelf && (
               <div className="rounded-xl border border-white/[0.06] bg-[#131829] p-4 shadow-[0_22px_55px_rgba(0,0,0,0.34)] backdrop-blur-xl">
                 <h2 className="font-brandUpright text-[21px] uppercase leading-none text-slate-200">Votre classement</h2>
 
                 <div className="mt-8 text-center">
-                  <div className="font-brandUpright text-[44px] leading-none text-white">#{formatValue(self.rank)}</div>
+                  <div className="font-brandUpright text-[44px] leading-none text-white">#{formatValue(displayedSelf.rank)}</div>
                   <div className="text-[12px] font-inter text-slate-400">Sur {formatValue(entries.length)} joueurs</div>
                 </div>
 
@@ -270,14 +341,14 @@ export default function RankingPage() {
             </div>
 
             <div className="overflow-hidden rounded-[7px] border border-white/[0.06] bg-[#131829] shadow-[0_22px_80px_rgba(0,0,0,0.34)]">
-              <div className="grid min-w-[650px] grid-cols-[88px_minmax(150px,1fr)_170px_110px] pl-0 pr-5 py-3 font-acuminSemiBold text-[11px] font-semibold uppercase leading-none tracking-[0.04em] text-slate-400"><div className="text-center">Rang</div><div>Joueur</div><div className="text-right">Points</div><div className="text-right">Parties</div></div>
+              <div className="grid min-w-[650px] grid-cols-[88px_minmax(150px,1fr)_170px_110px] pl-0 pr-5 py-3 font-acuminSemiBold text-[11px] font-semibold uppercase leading-none tracking-[0.04em] text-slate-400"><div className="text-center">Rang</div><div>Joueur</div><div className="text-right">{kind === "general" ? "Bits" : "Points"}</div><div className="text-right">Parties</div></div>
               <div className="min-w-[650px] font-inter">
                 {loading && <div className="border-t border-white/[0.07] px-5 py-4 font-inter text-sm font-semibold text-slate-300">Chargement du classement…</div>}
                 {error && !loading && <div className="border-t border-white/[0.07] px-5 py-4 font-inter text-sm font-semibold text-rose-200">{error}</div>}
-                {!loading && !error && pageEntries.length === 0 && <div className="border-t border-white/[0.07] px-5 py-4 font-inter text-sm font-semibold text-slate-300">Aucun joueur disponible pour ce classement.</div>}
-                {!loading && !error && pageEntries.map((entry, index) => { const absoluteRank = clampedStartIndex + index + 1; return <LeaderboardRow key={`${entry.id}-${kind}-${absoluteRank}`} entry={entry} rank={absoluteRank} mode={scoreMode} highlighted={self?.entry.id === entry.id} />; })}
+                {!loading && !error && displayedEntries.length === 0 && <div className="border-t border-white/[0.07] px-5 py-4 font-inter text-sm font-semibold text-slate-300">Aucun joueur disponible pour ce classement.</div>}
+                {!loading && !error && displayedEntries.map((entry, index) => { const absoluteRank = entry.rank ?? clampedStartIndex + index + 1; return <LeaderboardRow key={`${entry.id}-${kind}-${absoluteRank}`} entry={entry} rank={absoluteRank} mode={scoreMode} highlighted={displayedSelf?.entry.id === entry.id} />; })}
               </div>
-              <div className="flex min-w-[650px] items-center justify-between border-t border-white/[0.07] px-5 py-3 font-inter text-[12px] font-semibold text-slate-400"><div className="flex items-center gap-2"><Clock3 className="h-3.5 w-3.5" />Mis à jour à {lastUpdatedLabel}</div><div className="flex items-center gap-2"><button type="button" onClick={() => setStartIndex((index) => Math.max(0, index - PAGE_SIZE))} disabled={clampedStartIndex === 0} className="grid h-8 w-8 place-items-center rounded-[5px] bg-white/[0.055] text-white disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>{Array.from({ length: Math.min(3, totalPages) }, (_, i) => i + 1).map((p) => <button key={p} type="button" onClick={() => setStartIndex((p - 1) * PAGE_SIZE)} className={["h-8 min-w-8 rounded-[5px] px-2 font-inter font-black", currentPage === p ? "bg-[#6E4BFF] text-white" : "bg-white/[0.045] text-slate-300"].join(" ")}>{p}</button>)}{totalPages > 4 && <span className="px-1">…</span>}{totalPages > 3 && <button type="button" onClick={() => setStartIndex((totalPages - 1) * PAGE_SIZE)} className={["h-8 min-w-8 rounded-[5px] px-2 font-inter font-black", currentPage === totalPages ? "bg-[#6E4BFF] text-white" : "bg-white/[0.045] text-slate-300"].join(" ")}>{totalPages}</button>}<button type="button" onClick={() => setStartIndex((index) => Math.min(Math.max(0, filteredEntries.length - PAGE_SIZE), index + PAGE_SIZE))} disabled={clampedStartIndex + PAGE_SIZE >= filteredEntries.length} className="grid h-8 w-8 place-items-center rounded-[5px] bg-white/[0.055] text-white disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button></div></div>
+              <div className="flex min-w-[650px] items-center justify-between border-t border-white/[0.07] px-5 py-3 font-inter text-[12px] font-semibold text-slate-400"><div className="flex items-center gap-2"><Clock3 className="h-3.5 w-3.5" />Mis à jour à {lastUpdatedLabel}</div><div className="flex items-center gap-2"><button type="button" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="grid h-8 w-8 place-items-center rounded-[5px] bg-white/[0.055] text-white disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>{visiblePageButtons.map((page) => typeof page === "number" ? <button key={page} type="button" onClick={() => goToPage(page)} className={["h-8 min-w-8 rounded-[5px] px-2 font-inter font-black", currentPage === page ? "bg-[#6E4BFF] text-white" : "bg-white/[0.045] text-slate-300"].join(" ")}>{page}</button> : <span key={page} className="px-1">…</span>)}<button type="button" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="grid h-8 w-8 place-items-center rounded-[5px] bg-white/[0.055] text-white disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button></div></div>
             </div>
           </main>
         </section>
