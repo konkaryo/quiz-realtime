@@ -11,6 +11,9 @@ import laurierGold from "../assets/laurel_left_gold.png";
 import emptyQuestionImg from "../assets/empty_img.jpg";
 import playerIcon from "../assets/player.png";
 import crownImage from "../assets/crown.png";
+import goldMedalImage from "../assets/gold_medal.png";
+import silverMedalImage from "../assets/silver_medal.png";
+import bronzeMedalImage from "../assets/bronze_medal.png";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
   OverwatchTimerBadge,
@@ -197,7 +200,7 @@ function PlayerCell({
           "py-1 pl-3 pr-4",
           "overflow-hidden",
           "text-white",
-          isSelf ? "border-[#7C5CFF] shadow-[0_0_0_1px_rgba(124,92,255,0.45)]" : "border-transparent",
+          isSelf ? "border-white shadow-[0_0_0_1px_rgba(255,255,255,0.45)]" : "border-transparent",
         ].join(" ")}
         style={{
           background: "linear-gradient(to bottom, rgba(68, 74, 112, 0.5), rgba(68, 74, 112, 0.35))",
@@ -1385,26 +1388,25 @@ export default function RoomPage() {
             cls: "bg-[#3B3E4D] text-transparent",
           };
 
-const topRankStyles: Record<number, { outer: string; inner: string; text: string }> = {
-      1: { outer: "from-[#F9D76A] via-[#EFB93B] to-[#D89312]", inner: "from-[#7E6632] to-[#5E4B22]", text: "text-white" },
-      2: { outer: "from-[#D9E0EE] via-[#BBC5D8] to-[#919CB3]", inner: "from-[#5D6578] to-[#464E62]", text: "text-white" },
-      3: { outer: "from-[#F0A66C] via-[#D77E41] to-[#A95A2A]", inner: "from-[#664437] to-[#4D3229]", text: "text-white" },
+    const medalByRank: Record<number, string> = {
+      1: goldMedalImage,
+      2: silverMedalImage,
+      3: bronzeMedalImage,
     };
 
-    const rankNode = isSelf ? (
+    const rankNode = rank <= 3 ? (
+      <span className="relative inline-flex h-7 w-7 flex-shrink-0 items-center justify-center">
+        <img
+          src={medalByRank[rank]}
+          alt={`Rang ${rank}`}
+          className="absolute h-9 w-9 max-w-none object-contain"
+          draggable={false}
+          loading="lazy"
+        />
+      </span>
+    ) : isSelf ? (
       <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] bg-white pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-black [text-rendering:geometricPrecision]">
         {rank}
-      </span>
-    ) : rank <= 3 ? (
-      <span className="relative inline-flex h-8 w-8 flex-shrink-0 items-center justify-center" style={{ clipPath: "polygon(50% 2%, 93% 25%, 93% 75%, 50% 98%, 7% 75%, 7% 25%)" }}>
-        <span className={`absolute inset-0 bg-gradient-to-br ${topRankStyles[rank].outer}`} />
-        <span
-          className={`absolute inset-[2px] bg-gradient-to-b ${topRankStyles[rank].inner}`}
-          style={{ clipPath: "polygon(50% 2%, 93% 25%, 93% 75%, 50% 98%, 7% 75%, 7% 25%)" }}
-        />
-        <span className={`relative z-10 pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none ${topRankStyles[rank].text} [text-rendering:geometricPrecision]`}>
-          {rank}
-        </span>
       </span>
     ) : (
       <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] bg-[#1F2437] pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-white [text-rendering:geometricPrecision]">
@@ -1601,16 +1603,12 @@ return (
                         <div className="flex min-h-[620px] items-center justify-center px-4 py-6">
                           <div className="flex w-full max-w-[880px] flex-col items-center text-center">
                             <div className="flex items-center justify-center text-[#8E63FF]">
-                              <h1 className="font-brand text-[38px] italic leading-none tracking-[0.08em] text-[#A675FF] drop-shadow-[0_0_18px_rgba(126,92,255,0.32)] md:text-[46px]">
+                              <h1 className="font-brand text-[38px] italic leading-none tracking-[0.08em] text-white drop-shadow-[0_0_18px_rgba(126,92,255,0.32)] md:text-[46px]">
                                 LA PARTIE COMMENCE BIENTÔT
                               </h1>
                             </div>
-                            <p className="mt-4 font-inter text-[17px] font-semibold text-white/88">
-                              Préparez-vous, la <span className="text-[#A675FF]">première question</span> arrive !
-                            </p>
-
-                            <div className="mt-7 flex h-[196px] items-center justify-center">
-                              <div className="scale-[2.05]">
+                            <div className="mt-7 flex h-[176px] items-center justify-center">
+                              <div className="scale-[1.82]">
                                 <OverwatchTimerBadge
                                   seconds={gameCountdownRemainingSeconds ?? gameCountdown ?? 0}
                                   progress={gameCountdownProgress}
@@ -1652,7 +1650,7 @@ return (
                                           loading="lazy"
                                         />
                                       ) : null}
-                                      <div className="h-[74px] w-[74px] rounded-full bg-[linear-gradient(135deg,#7C5CFF_0%,#A855F7_100%)] p-[3px] shadow-[0_0_20px_rgba(124,92,255,0.55)]">
+                                      <div className="h-[74px] w-[74px] rounded-full">
                                         <img
                                           src={player.img ?? "/img/profiles/0.avif"}
                                           alt=""
