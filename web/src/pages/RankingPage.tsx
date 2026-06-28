@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Search, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import bitIconUrl from "@/assets/bit.png";
 import laurelLeftGoldUrl from "@/assets/laurel_left_gold.png";
 import Background from "../components/Background";
@@ -7,7 +8,6 @@ import Background from "../components/Background";
 const API_BASE = import.meta.env.VITE_API_BASE ?? (typeof window !== "undefined" ? window.location.origin : "");
 
 type RankingKind = "general" | "daily";
-type PeriodMode = "week" | "month" | "today";
 type ScoreMode = "bits" | "daily";
 
 type LeaderboardEntry = {
@@ -23,7 +23,7 @@ type LeaderboardEntry = {
 
 type SelfLeaderboard = { rank: number; entry: LeaderboardEntry } | null;
 
-type DailyLeaderboardEntry = { playerId: string; playerName: string; score: number; img?: string | null };
+type DailyLeaderboardEntry = { playerId: string; playerName: string; score: number; gamesPlayed?: number; img?: string | null };
 
 const PAGE_SIZE = 10;
 
@@ -32,27 +32,33 @@ const FILTERS: Array<{ value: RankingKind; label: string; icon: typeof Star }> =
   { value: "daily", label: "Défi du jour", icon: CalendarDays },
 ];
 
-const PERIODS: Array<{ value: PeriodMode; label: string }> = [
-  { value: "week", label: "Semaine" },
-  { value: "month", label: "Mois" },
-  { value: "today", label: "Aujourd'hui" },
-];
-
 function formatValue(value: number) {
   return new Intl.NumberFormat("fr-FR").format(value);
-}
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 function currentMonth() {
   return new Date().toISOString().slice(0, 7);
 }
 
-function dailyLeaderboardUrl(period: PeriodMode) {
-  if (period === "today") return `${API_BASE}/daily/leaderboard/daily/${todayIso()}`;
-  return `${API_BASE}/daily/leaderboard/monthly?month=${currentMonth()}`;
+function formatMonthOption(monthIso: string) {
+  const [year, month] = monthIso.split("-").map(Number);
+  const label = new Intl.DateTimeFormat("fr-FR", { month: "long" }).format(new Date(year, month - 1, 1));
+  return `${year} - ${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+}
+
+function getMonthOptions(count = 24) {
+  const date = new Date();
+  date.setDate(1);
+
+  return Array.from({ length: count }, (_, index) => {
+    const optionDate = new Date(date.getFullYear(), date.getMonth() - index, 1);
+    const value = `${optionDate.getFullYear()}-${String(optionDate.getMonth() + 1).padStart(2, "0")}`;
+    return { value, label: formatMonthOption(value) };
+  });
+}
+
+function dailyLeaderboardUrl(monthIso: string) {
+  return `${API_BASE}/daily/leaderboard/monthly?month=${encodeURIComponent(monthIso)}&all=true`;
 }
 
 function isDailyLeaderboardEntry(row: LeaderboardEntry | DailyLeaderboardEntry): row is DailyLeaderboardEntry {
@@ -66,8 +72,13 @@ function normalizeLeaderboardEntry(row: LeaderboardEntry | DailyLeaderboardEntry
     name: row.playerName,
     img: row.img,
     score: row.score,
-    gamesPlayed: 0,
+    gamesPlayed: row.gamesPlayed ?? 0,
   };
+}
+
+function normalizeSelfLeaderboard(self: SelfLeaderboard | { rank: number; entry: DailyLeaderboardEntry } | null | undefined): SelfLeaderboard {
+  if (!self?.entry) return null;
+  return { rank: self.rank, entry: normalizeLeaderboardEntry(self.entry) };
 }
 
 function avatarFallback(name: string, index: number) {
@@ -83,8 +94,9 @@ function getEntryValue(entry: LeaderboardEntry, mode: ScoreMode) {
   return mode === "daily" ? entry.score ?? 0 : entry.bits ?? 0;
 }
 
-function ValueBadge() {
-  return <img src={bitIconUrl} alt="" className="h-4 w-4 object-contain" draggable={false} />;
+function ValueBadge({ mode }: { mode: ScoreMode }) {
+  const sizeClass = mode === "bits" ? "h-6 w-6" : "h-4 w-4";
+  return <img src={bitIconUrl} alt="" className={`${sizeClass} object-contain`} draggable={false} />;
 }
 
 function RankDisplay({ rank }: { rank: number }) {
@@ -118,6 +130,12 @@ function rankAccentColor(rank: number, highlighted = false) {
   return undefined;
 }
 
+function isEditableKeyboardTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return target.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select";
+}
+
 function getVisiblePageButtons(currentPage: number, totalPages: number) {
   const pages = new Set([1, totalPages, currentPage]);
   if (currentPage > 1) pages.add(currentPage - 1);
@@ -147,15 +165,28 @@ function PlayerCell({ entry, rank }: { entry: LeaderboardEntry; rank: number }) 
   );
 }
 
-function LeaderboardRow({ entry, rank, mode, highlighted = false }: { entry: LeaderboardEntry; rank: number; mode: ScoreMode; highlighted?: boolean }) {
+function LeaderboardRow({ entry, rank, mode, highlighted = false, onClick }: { entry: LeaderboardEntry; rank: number; mode: ScoreMode; highlighted?: boolean; onClick?: (entry: LeaderboardEntry) => void }) {
   const rowBackground = rankRowBackground(rank, highlighted);
   const accentColor = rankAccentColor(rank, highlighted);
+  const isClickable = Boolean(onClick);
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (!onClick || (event.key !== "Enter" && event.key !== " ")) return;
+    event.preventDefault();
+    onClick(entry);
+  }
   return (
     <div
+      role={isClickable ? "link" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      aria-label={isClickable ? `Voir le profil de ${entry.name}` : undefined}
+      onClick={onClick ? () => onClick(entry) : undefined}
+      onKeyDown={handleKeyDown}
       className={[
         "grid grid-cols-[88px_minmax(150px,1fr)_170px_110px] items-center border-t border-white/[0.07] pl-0 pr-5 py-2 transition",
+        isClickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E4BFF] focus-visible:ring-inset" : "",
         rowBackground ? "" : "bg-transparent hover:bg-white/[0.035]",
-      ].join(" ")}
+      ].filter(Boolean).join(" ")}
       style={{
         ...(rowBackground ? { background: rowBackground } : {}),
         ...(accentColor ? { boxShadow: `inset 3px 0 0 ${accentColor}` } : {}),
@@ -165,7 +196,7 @@ function LeaderboardRow({ entry, rank, mode, highlighted = false }: { entry: Lea
       <PlayerCell entry={entry} rank={rank} />
       <div className="flex items-center justify-end gap-1.5 font-inter tabular-nums text-[13px] font-extrabold text-slate-100">
         {formatValue(getEntryValue(entry, mode))}
-        <ValueBadge />
+        <ValueBadge mode={mode} />
       </div>
       <div className="text-right font-inter tabular-nums text-[13px] font-extrabold text-slate-100">{formatValue(entry.gamesPlayed ?? 0)}</div>
     </div>
@@ -173,8 +204,9 @@ function LeaderboardRow({ entry, rank, mode, highlighted = false }: { entry: Lea
 }
 
 export default function RankingPage() {
+  const navigate = useNavigate();
   const [kind, setKind] = useState<RankingKind>("general");
-  const [period, setPeriod] = useState<PeriodMode>("week");
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [self, setSelf] = useState<SelfLeaderboard>(null);
   const [loading, setLoading] = useState(true);
@@ -185,6 +217,7 @@ export default function RankingPage() {
   const [profileImages, setProfileImages] = useState<Record<string, string | null>>({});
 
   const scoreMode: ScoreMode = kind === "daily" ? "daily" : "bits";
+  const monthOptions = useMemo(() => getMonthOptions(), []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -193,7 +226,7 @@ export default function RankingPage() {
       setError(null);
       try {
         const url = kind === "daily"
-          ? dailyLeaderboardUrl(period)
+          ? dailyLeaderboardUrl(selectedMonth)
           : `${API_BASE}/leaderboard/bits?all=true`;
         const res = await fetch(url, { credentials: "include", signal: controller.signal });
         const data = (await res.json().catch(() => ({}))) as { leaderboard?: LeaderboardEntry[] | DailyLeaderboardEntry[]; self?: SelfLeaderboard; error?: string };
@@ -203,7 +236,7 @@ export default function RankingPage() {
           rank: index + 1,
         }));
         setEntries(rows);
-        setSelf(kind === "general" && data.self?.entry ? data.self : null);
+        setSelf(normalizeSelfLeaderboard(data.self));
         setProfileImages({});
         setLastUpdated(new Date());
       } catch (err) {
@@ -217,9 +250,9 @@ export default function RankingPage() {
     }
     void loadLeaderboard();
     return () => controller.abort();
-  }, [kind, period]);
+  }, [kind, selectedMonth]);
 
-  useEffect(() => setStartIndex(0), [kind, period]);
+  useEffect(() => setStartIndex(0), [kind, selectedMonth]);
 
   const filteredEntries = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -233,21 +266,20 @@ export default function RankingPage() {
   const pageEntries = filteredEntries.slice(clampedStartIndex, clampedStartIndex + PAGE_SIZE);
   const displayedEntries = useMemo(() => pageEntries.map((entry) => ({
     ...entry,
-    img: kind === "general" ? profileImages[entry.id] ?? entry.img ?? null : entry.img ?? null,
-  })), [kind, pageEntries, profileImages]);
+    img: profileImages[entry.id] ?? entry.img ?? null,
+  })), [pageEntries, profileImages]);
   const displayedSelf = useMemo(() => self ? {
     ...self,
     entry: {
       ...self.entry,
-      img: kind === "general" ? profileImages[self.entry.id] ?? self.entry.img ?? null : self.entry.img ?? null,
+      img: profileImages[self.entry.id] ?? self.entry.img ?? null,
     },
-  } : null, [kind, profileImages, self]);
+  } : null, [profileImages, self]);
   const lastUpdatedLabel = lastUpdated ? lastUpdated.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "--:--";
   const selfValue = displayedSelf ? getEntryValue(displayedSelf.entry, scoreMode) : 0;
   const visiblePageButtons = getVisiblePageButtons(currentPage, totalPages);
 
   useEffect(() => {
-    if (kind !== "general") return;
 
     const ids = Array.from(new Set([...pageEntries.map((entry) => entry.id), ...(self?.entry.id ? [self.entry.id] : [])]))
       .filter((id) => !(id in profileImages));
@@ -264,11 +296,32 @@ export default function RankingPage() {
 
     void loadVisibleProfileImages();
     return () => controller.abort();
-  }, [kind, pageEntries, profileImages, self?.entry.id]);
+  }, [pageEntries, profileImages, self?.entry.id]);
 
   function goToPage(page: number) {
     const safePage = Math.min(totalPages, Math.max(1, page));
     setStartIndex((safePage - 1) * PAGE_SIZE);
+  }
+
+  useEffect(() => {
+    function handleRankingPaginationShortcut(event: KeyboardEvent) {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (isEditableKeyboardTarget(event.target)) return;
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+
+      const nextPage = event.key === "ArrowRight" ? currentPage + 1 : currentPage - 1;
+      if (nextPage < 1 || nextPage > totalPages) return;
+
+      event.preventDefault();
+      setStartIndex((nextPage - 1) * PAGE_SIZE);
+    }
+
+    window.addEventListener("keydown", handleRankingPaginationShortcut);
+    return () => window.removeEventListener("keydown", handleRankingPaginationShortcut);
+  }, [currentPage, totalPages]);
+
+  function showPlayerProfile(entry: LeaderboardEntry) {
+    navigate(`/players/${entry.id}/profile`);
   }
 
   function showSelfRanking() {
@@ -297,7 +350,7 @@ export default function RankingPage() {
                   return <button key={option.value} type="button" onClick={() => setKind(option.value)} className={["flex items-center gap-3 rounded-[5px] px-3 py-2.5 text-left font-inter text-[12px] font-extrabold transition", kind === option.value ? "bg-[#5F55C8] text-white" : "bg-white/[0.045] text-slate-300 hover:bg-white/10 hover:text-white"].join(" ")}><Icon className="h-4 w-4" aria-hidden="true" />{option.label}</button>;
                 })}
               </div>
-              {kind === "daily" && <div className="mt-6"><label className="font-acuminSemiBold text-[11px] font-semibold uppercase text-slate-400">Période</label><select value={period} onChange={(event) => setPeriod(event.target.value as PeriodMode)} className="mt-2 h-9 w-full rounded-[5px] border border-white/[0.06] bg-[#131829] px-3 font-inter text-[12px] font-bold text-slate-200 outline-none">{PERIODS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>}
+              {kind === "daily" && <div className="mt-6"><label className="font-acuminSemiBold text-[11px] font-semibold uppercase text-slate-400">Période</label><select value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} className="mt-2 h-9 w-full rounded-[5px] border border-white/[0.06] bg-[#131829] px-3 font-inter text-[12px] font-bold text-slate-200 outline-none">{monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>}
             </div>
 
             {displayedSelf && (
@@ -345,8 +398,8 @@ export default function RankingPage() {
               <div className="min-w-[650px] font-inter">
                 {loading && <div className="border-t border-white/[0.07] px-5 py-4 font-inter text-sm font-semibold text-slate-300">Chargement du classement…</div>}
                 {error && !loading && <div className="border-t border-white/[0.07] px-5 py-4 font-inter text-sm font-semibold text-rose-200">{error}</div>}
-                {!loading && !error && displayedEntries.length === 0 && <div className="border-t border-white/[0.07] px-5 py-4 font-inter text-sm font-semibold text-slate-300">Aucun joueur disponible pour ce classement.</div>}
-                {!loading && !error && displayedEntries.map((entry, index) => { const absoluteRank = entry.rank ?? clampedStartIndex + index + 1; return <LeaderboardRow key={`${entry.id}-${kind}-${absoluteRank}`} entry={entry} rank={absoluteRank} mode={scoreMode} highlighted={displayedSelf?.entry.id === entry.id} />; })}
+                {!loading && !error && displayedEntries.length === 0 && <div className="border-t border-white/[0.07] px-5 py-3 font-inter text-[12px] font-medium text-slate-400">Aucune donnée disponible pour ce classement.</div>}
+                {!loading && !error && displayedEntries.map((entry, index) => { const absoluteRank = entry.rank ?? clampedStartIndex + index + 1; return <LeaderboardRow key={`${entry.id}-${kind}-${absoluteRank}`} entry={entry} rank={absoluteRank} mode={scoreMode} highlighted={displayedSelf?.entry.id === entry.id} onClick={showPlayerProfile} />; })}
               </div>
               <div className="flex min-w-[650px] items-center justify-between border-t border-white/[0.07] px-5 py-3 font-inter text-[12px] font-semibold text-slate-400"><div className="flex items-center gap-2"><Clock3 className="h-3.5 w-3.5" />Mis à jour à {lastUpdatedLabel}</div><div className="flex items-center gap-2"><button type="button" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="grid h-8 w-8 place-items-center rounded-[5px] bg-white/[0.055] text-white disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>{visiblePageButtons.map((page) => typeof page === "number" ? <button key={page} type="button" onClick={() => goToPage(page)} className={["h-8 min-w-8 rounded-[5px] px-2 font-inter font-black", currentPage === page ? "bg-[#6E4BFF] text-white" : "bg-white/[0.045] text-slate-300"].join(" ")}>{page}</button> : <span key={page} className="px-1">…</span>)}<button type="button" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="grid h-8 w-8 place-items-center rounded-[5px] bg-white/[0.055] text-white disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button></div></div>
             </div>

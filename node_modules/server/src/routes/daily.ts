@@ -3,7 +3,8 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { PrismaClient } from "@prisma/client";
 import { getChallengeByDate, listChallengesForMonth, toPublicChallenge } from "../domain/daily/daily.service";
-import { getDailyLeaderboardForDate, getMonthlyDailyLeaderboard } from "../domain/daily/daily-score.service";
+import { getDailyLeaderboardForDate, getMonthlyDailyLeaderboard, getMonthlyDailySelfLeaderboard } from "../domain/daily/daily-score.service";
+import { currentUser } from "../auth";
 
 function parseMonth(input?: string | null) {
   const now = new Date();
@@ -70,12 +71,30 @@ export function dailyRoutes({ prisma }: { prisma: PrismaClient }) {
 
     app.get("/leaderboard/monthly", async (req, reply) => {
       try {
-        const monthParam = (req.query as any)?.month as string | undefined;
-        const { year, monthIndex } = parseMonth(monthParam);
-        const leaderboard = await getMonthlyDailyLeaderboard(prisma, year, monthIndex, 10);
+        const Query = z.object({
+          month: z.string().optional(),
+          limit: z.coerce.number().int().min(1).max(100).optional(),
+          all: z.coerce.boolean().optional(),
+        });
+        const parsed = Query.safeParse(req.query);
+        if (!parsed.success) return reply.code(400).send({ error: "invalid_monthly_leaderboard_query" });
+
+        const { year, monthIndex } = parseMonth(parsed.data.month);
+        const limit = parsed.data.all ? undefined : parsed.data.limit ?? 10;
+        const includeImages = limit !== undefined;
+        const auth = await currentUser(prisma, req);
+        const currentPlayer = auth.user
+          ? await prisma.player.findUnique({ where: { userId: auth.user.id }, select: { id: true } })
+          : null;
+        const playerId = currentPlayer?.id ?? null;
+        const [leaderboard, self] = await Promise.all([
+          getMonthlyDailyLeaderboard(prisma, year, monthIndex, limit, includeImages),
+          playerId ? getMonthlyDailySelfLeaderboard(prisma, playerId, year, monthIndex, includeImages) : Promise.resolve(null),
+        ]);
         return reply.send({
           month: { year, month: monthIndex + 1 },
           leaderboard,
+          self,
         });
       } catch (err: any) {
         req.log.error(err, "[GET /daily/leaderboard/monthly]");

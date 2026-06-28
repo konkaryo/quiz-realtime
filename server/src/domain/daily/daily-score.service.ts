@@ -6,8 +6,11 @@ export type DailyChallengeLeaderboardEntry = {
   playerId: string;
   playerName: string;
   score: number;
+  gamesPlayed?: number;
   img?: string | null;
 };
+
+export type DailyChallengeSelfLeaderboard = { rank: number; entry: DailyChallengeLeaderboardEntry } | null;
 
 export type MonthlyDailyRankingSnapshot = {
   year: number;
@@ -253,7 +256,8 @@ export async function getMonthlyDailyLeaderboard(
   prisma: PrismaClient,
   year: number,
   monthIndex: number,
-  limit = 10,
+  limit?: number,
+  includeImages = true,
 ): Promise<DailyChallengeLeaderboardEntry[]> {
   const month = monthIndex + 1;
 
@@ -266,21 +270,67 @@ export async function getMonthlyDailyLeaderboard(
       ],
       select: {
         totalScore: true,
+        challengesPlayed: true,
         player: { select: { id: true, name: true, img: true } },
       },
-      take: limit,
+      ...(limit === undefined ? {} : { take: limit }),
     })
     .catch((err: unknown) => {
       if (isMissingDailyScoreTableError(err)) return [];
       throw err;
     });
 
-  return rows.map((row: { totalScore: number; player: { id: string; name: string; img: string | null } }) => ({
+  return rows.map((row: { totalScore: number; challengesPlayed: number; player: { id: string; name: string; img: string | null } }) => ({
     playerId: row.player.id,
     playerName: row.player.name,
     score: row.totalScore,
-    img: toProfileUrl(row.player.img),
+    gamesPlayed: row.challengesPlayed,
+    img: includeImages ? toProfileUrl(row.player.img) : null,
   }));
+}
+
+export async function getMonthlyDailySelfLeaderboard(
+  prisma: PrismaClient,
+  playerId: string,
+  year: number,
+  monthIndex: number,
+  includeImage = true,
+): Promise<DailyChallengeSelfLeaderboard> {
+  const month = monthIndex + 1;
+
+  const rows = await (prisma as any).dailyChallengeMonthlyScore
+    .findMany({
+      where: { year, month },
+      orderBy: [
+        { totalScore: "desc" },
+        { createdAt: "asc" },
+      ],
+      select: {
+        playerId: true,
+        totalScore: true,
+        challengesPlayed: true,
+        player: { select: { id: true, name: true, img: true } },
+      },
+    })
+    .catch((err: unknown) => {
+      if (isMissingDailyScoreTableError(err)) return [];
+      throw err;
+    }) as Array<{ totalScore: number; challengesPlayed: number; playerId: string; player: { id: string; name: string; img: string | null } }>;
+
+  const index = rows.findIndex((row) => row.playerId === playerId);
+  if (index < 0) return null;
+
+  const row = rows[index];
+  return {
+    rank: index + 1,
+    entry: {
+      playerId: row.player.id,
+      playerName: row.player.name,
+      score: row.totalScore,
+      gamesPlayed: row.challengesPlayed,
+      img: includeImage ? toProfileUrl(row.player.img) : null,
+    },
+  };
 }
 
 function scoreAtPercentile(rows: { totalScore: number }[], percentile: number): number {
