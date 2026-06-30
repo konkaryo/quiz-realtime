@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Search, Star } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import bitIconUrl from "@/assets/bit.png";
-import laurelLeftGoldUrl from "@/assets/laurel_left_gold.png";
+import goldRankingUrl from "@/assets/gold_ranking.png";
+import silverRankingUrl from "@/assets/silver_ranking.png";
+import bronzeRankingUrl from "@/assets/bronze_ranking.png";
 import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? (typeof window !== "undefined" ? window.location.origin : "");
@@ -100,14 +102,12 @@ function ValueBadge({ mode }: { mode: ScoreMode }) {
 }
 
 function RankDisplay({ rank }: { rank: number }) {
-  if (rank <= 3) {
-    const rankClass = rank === 1 ? "text-[#FFD832]" : rank === 2 ? "text-[#D6DEEA]" : "text-[#F39A45]";
-    const laurelFilter = rank === 1 ? "" : rank === 2 ? "grayscale(1) brightness(1.75) opacity(0.78)" : "sepia(1) saturate(1.8) hue-rotate(340deg) brightness(0.95) opacity(0.78)";
+  const topRankImage = rank === 1 ? goldRankingUrl : rank === 2 ? silverRankingUrl : rank === 3 ? bronzeRankingUrl : null;
+
+  if (topRankImage) {
     return (
-      <div className="flex items-center justify-center gap-0.5 font-inter font-black leading-none">
-        <img src={laurelLeftGoldUrl} alt="" className="h-[23px] w-4 object-contain" style={{ filter: laurelFilter }} draggable={false} />
-        <span className={`${rankClass} w-5 text-center font-brandUpright text-[25px]`}>{rank}</span>
-        <img src={laurelLeftGoldUrl} alt="" className="h-[23px] w-4 scale-x-[-1] object-contain" style={{ filter: laurelFilter }} draggable={false} />
+      <div className="relative flex h-[25px] items-center justify-center overflow-visible">
+        <img src={topRankImage} alt={`Rang ${rank}`} className="pointer-events-none absolute h-[32px] w-[106px] max-w-none object-contain" draggable={false} />
       </div>
     );
   }
@@ -205,7 +205,8 @@ function LeaderboardRow({ entry, rank, mode, highlighted = false, onClick }: { e
 
 export default function RankingPage() {
   const navigate = useNavigate();
-  const [kind, setKind] = useState<RankingKind>("general");
+  const [searchParams] = useSearchParams();
+  const [kind, setKind] = useState<RankingKind>(() => searchParams.get("kind") === "daily" ? "daily" : "general");
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [self, setSelf] = useState<SelfLeaderboard>(null);

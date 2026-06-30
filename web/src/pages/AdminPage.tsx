@@ -781,6 +781,8 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
   const [questionSearchLoading, setQuestionSearchLoading] = useState(false);
   const [insertLoading, setInsertLoading] = useState(false);
   const [insertError, setInsertError] = useState<string | null>(null);
+  const [randomSelectionLoading, setRandomSelectionLoading] = useState(false);
+  const [randomSelectionError, setRandomSelectionError] = useState<string | null>(null);
   const [simulationBotCount, setSimulationBotCount] = useState(5);
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
@@ -898,6 +900,7 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
         setSelectedChallenge(payload.challenge ?? null);
         setSimulationResult(null);
         setSimulationError(null);
+        setRandomSelectionError(null);
       } catch (loadError) {
         if (loadError instanceof DOMException && loadError.name === "AbortError") return;
         setSelectedChallenge(null);
@@ -1024,6 +1027,60 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
     const nextQuestions = getReorderedQuestions(selectedChallenge.questions, sourceEntryId, targetEntryId);
     setSelectedChallenge({ ...selectedChallenge, questions: nextQuestions });
     void persistQuestionOrder(nextQuestions);
+  }
+
+  async function selectRandomQuestionsForChallenge() {
+    if (!selectedDate) return;
+
+    setRandomSelectionLoading(true);
+    setRandomSelectionError(null);
+    setInsertError(null);
+    setDetailError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/daily/${selectedDate}/questions/random`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const payload = (await res.json().catch(() => ({}))) as {
+        challenge?: AdminDailyChallengeDetail;
+        error?: string;
+      };
+
+      if (!res.ok) {
+        const message = payload.error === "not_enough_questions"
+          ? "Il n’y a pas assez de questions pour générer un défi de 15 questions."
+          : "Impossible de sélectionner aléatoirement les questions du défi.";
+        throw new Error(message);
+      }
+
+      if (payload.challenge) {
+        const updatedChallenge = payload.challenge;
+        setSelectedChallenge(updatedChallenge);
+        setChallenges((current) => {
+          const nextSummary: AdminDailyChallengeSummary = {
+            date: updatedChallenge.date,
+            questionCount: updatedChallenge.questionCount,
+            slotLabels: updatedChallenge.questions.map((question) => question.slotLabel ?? ""),
+            themeCounts: updatedChallenge.questions.reduce<Record<string, number>>((acc, question) => {
+              if (question.theme) acc[question.theme] = (acc[question.theme] ?? 0) + 1;
+              return acc;
+            }, {}),
+            difficultyAverage: null,
+          };
+          const exists = current.some((challenge) => challenge.date === nextSummary.date);
+          const next = exists
+            ? current.map((challenge) => challenge.date === nextSummary.date ? nextSummary : challenge)
+            : [...current, nextSummary];
+          return next.sort((a, b) => a.date.localeCompare(b.date));
+        });
+      }
+    } catch (randomError) {
+      setRandomSelectionError(randomError instanceof Error ? randomError.message : "Impossible de sélectionner aléatoirement les questions du défi.");
+    } finally {
+      setRandomSelectionLoading(false);
+    }
   }
 
   async function insertQuestionIntoChallenge(question: AdminQuestion) {
@@ -1314,6 +1371,34 @@ function DailyChallengesPanel({ emptyState }: { emptyState: string }) {
                     ))}
                   </div>
                 ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {!detailLoading && !detailError && selectedDate ? (
+          <div className="mb-3 rounded-[12px] border border-violet-300/25 bg-violet-500/10 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-[0.08em] text-violet-100">
+                  Génération aléatoire
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-white/65">
+                  Remplace les questions du jour sélectionné par 15 questions choisies aléatoirement.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void selectRandomQuestionsForChallenge()}
+                disabled={randomSelectionLoading || orderSaving || insertLoading}
+                className="h-10 rounded-lg border border-violet-300/45 bg-violet-500/20 px-4 text-xs font-black uppercase tracking-[0.08em] text-violet-100 transition hover:bg-violet-500/30 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {randomSelectionLoading ? "Sélection…" : "Sélectionner 15 questions"}
+              </button>
+            </div>
+            {randomSelectionError ? (
+              <div className="mt-3 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm font-semibold text-red-100">
+                {randomSelectionError}
               </div>
             ) : null}
           </div>

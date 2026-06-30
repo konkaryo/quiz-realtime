@@ -48,6 +48,7 @@ type NavItem = {
 type SettingRowProps = {
   icon: React.ReactNode;
   label: string;
+  description: string;
   value: string;
   children: React.ReactNode;
 };
@@ -245,14 +246,17 @@ function RefreshIcon(props: { className?: string }) {
   );
 }
 
-function SettingRow({ icon, label, value, children }: SettingRowProps) {
+function SettingRow({ icon, label, description, value, children }: SettingRowProps) {
   return (
-    <div className="grid min-h-[52px] grid-cols-[24px,minmax(112px,1fr),minmax(150px,230px)] items-center gap-5 bg-[#0B1229] px-4 py-3 max-sm:grid-cols-[24px,1fr] max-sm:gap-x-3 max-sm:gap-y-2">
+    <div className="grid min-h-[64px] grid-cols-[24px,minmax(112px,1fr),minmax(150px,230px)] items-center gap-5 rounded-[8px] border border-white/[0.06] bg-[#131829] px-4 py-3 max-sm:grid-cols-[24px,1fr] max-sm:gap-x-3 max-sm:gap-y-2">
       <div className="text-white">{icon}</div>
-      <div className="font-brandUpright text-[18px] leading-none tracking-[0.02em] text-white">
-        {label}
+      <div className="translate-y-[1px]">
+        <div className="font-brandUpright text-[17px] uppercase leading-none tracking-[0.05em] text-white">
+          {label}
+        </div>
+        <p className="mt-1.5 font-inter text-[11px] font-medium leading-none text-slate-400">{description}</p>
       </div>
-      <div className="max-sm:col-span-2">{children}</div>
+      <div className="font-inter max-sm:col-span-2">{children}</div>
       <div className="sr-only">{value}</div>
     </div>
   );
@@ -751,17 +755,8 @@ export default function CreateRoomPage() {
             </button>
           </aside>
 
-          <section className="rounded-[14px] bg-[#131930] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.36)] sm:p-5">
-            <div className="mb-6 flex items-start justify-between gap-4 px-1">
-              <div>
-                <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
-                  {activePanel === "settings" ? "Paramètres" : activePanel === "code" ? "Code" : "Lobby"}
-                </h2>
-              </div>
-              <div className="rounded bg-[#0B1229] px-3 py-2 font-mono text-sm font-black tracking-[0.18em] text-white/90">
-                {code || "----"}
-              </div>
-            </div>
+          <div className="flex flex-col">
+            <section>
             {err && (
               <div className="mb-4 rounded-md border border-rose-300/40 bg-rose-950/45 px-4 py-3 text-sm text-rose-100">
                 {err}
@@ -773,6 +768,7 @@ export default function CreateRoomPage() {
                 <SettingRow
                   icon={<GamepadIcon className="h-6 w-6" />}
                   label="Mode de jeu"
+                  description="Choisissez le mode de jeu"
                   value="Classique"
                 >
                   <select
@@ -783,7 +779,7 @@ export default function CreateRoomPage() {
                   </select>
                 </SettingRow>
 
-                <SettingRow icon={<QuestionIcon className="h-5 w-5" />} label="Nombre de questions" value={`${questionCount}`}>
+                <SettingRow icon={<QuestionIcon className="h-5 w-5" />} label="Nombre de questions" description="Définissez le nombre de questions" value={`${questionCount}`}>
                   <div className="flex items-center gap-3">
                     <input
                       id="question-count"
@@ -796,11 +792,11 @@ export default function CreateRoomPage() {
                       className="create-room-range"
                       style={rangeStyle(qcountP)}
                     />
-                    <span className="w-8 text-right font-brandUpright text-[16px] leading-none text-white">{questionCount}</span>
+                    <span className="w-8 text-right font-inter text-[11px] font-semibold leading-none text-white">{questionCount}</span>
                   </div>
                 </SettingRow>
 
-                <SettingRow icon={<ChartIcon className="h-6 w-6" />} label="Difficulté des questions" value={selectedDifficultyLabel}>
+                <SettingRow icon={<ChartIcon className="h-6 w-6" />} label="Difficulté des questions" description="Ajustez la difficulté des questions" value={selectedDifficultyLabel}>
                   <div className="flex h-[32px] items-center justify-center gap-2">
                     <button
                       type="button"
@@ -811,7 +807,7 @@ export default function CreateRoomPage() {
                     >
                       −
                     </button>
-                    <div className="flex h-full min-w-[82px] flex-1 items-center justify-center rounded-[5px] bg-[#0D1429] px-4 font-brandUpright text-[16px] leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                    <div className="flex h-full min-w-[82px] flex-1 items-center justify-center rounded-[5px] bg-[#0D1429] px-4 font-inter text-[11px] font-semibold leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                       {selectedDifficultyLabel}
                     </div>
                     <button
@@ -826,7 +822,7 @@ export default function CreateRoomPage() {
                   </div>
                 </SettingRow>
 
-                <SettingRow icon={<TimerIcon className="h-6 w-6" />} label="Temps pour répondre" value={`${questionDuration}s`}>
+                <SettingRow icon={<TimerIcon className="h-6 w-6" />} label="Temps pour répondre" description="Temps disponible par question (secondes)" value={`${questionDuration}s`}>
                   <div className="flex h-[32px] items-center justify-center gap-2">
                     <button
                       type="button"
@@ -845,7 +841,7 @@ export default function CreateRoomPage() {
                     >
                       −
                     </button>
-                    <div className="flex h-full min-w-[82px] flex-1 items-center justify-center rounded-[5px] bg-[#0D1429] px-4 font-brandUpright text-[18px] leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                    <div className="flex h-full min-w-[82px] flex-1 items-center justify-center rounded-[5px] bg-[#0D1429] px-4 font-inter text-[11px] font-semibold leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                       {questionDuration}
                     </div>
                     <button
@@ -867,7 +863,7 @@ export default function CreateRoomPage() {
                   </div>
                 </SettingRow>
 
-                <SettingRow icon={<TilesIcon className="h-6 w-6" />} label="Thèmes des questions" value={`${selectedThemeCount}/${THEME_OPTIONS.length}`}>
+                <SettingRow icon={<TilesIcon className="h-6 w-6" />} label="Thèmes des questions" description="Sélectionnez les thèmes de la partie" value={`${selectedThemeCount}/${THEME_OPTIONS.length}`}>
                   <button
                     type="button"
                     onClick={() => setThemesOpen(true)}
@@ -883,7 +879,7 @@ export default function CreateRoomPage() {
                   </button>
                 </SettingRow>
 
-                <SettingRow icon={<UsersIcon className="h-6 w-6" />} label="Nombre de joueurs" value={`${maxPlayers}`}>
+                <SettingRow icon={<UsersIcon className="h-6 w-6" />} label="Nombre de joueurs" description="Définissez le nombre de participants" value={`${maxPlayers}`}>
                   <div className="flex items-center gap-3">
                     <input
                       id="max-players"
@@ -896,13 +892,14 @@ export default function CreateRoomPage() {
                       className="create-room-range"
                       style={rangeStyle(maxPlayersP)}
                     />
-                    <span className="w-8 text-right font-brandUpright text-[16px] leading-none text-white">{maxPlayers}</span>
+                    <span className="w-8 text-right font-inter text-[11px] font-semibold leading-none text-white">{maxPlayers}</span>
                   </div>
                 </SettingRow>
 
                 <SettingRow
                   icon={<DynamicTextIcon className="h-6 w-6" />}
                   label="Affichage dynamique des questions"
+                  description="Affiche les questions en temps réel"
                   value={dynamicQuestionDisplay ? "Activé" : "Désactivé"}
                 >
                   <button
@@ -933,25 +930,12 @@ export default function CreateRoomPage() {
                     </span>
                   </button>
                 </SettingRow>
-                {createdRoomId && (
-                  <div className="flex flex-col items-end gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={saveSettings}
-                      disabled={loading}
-                      className="h-10 w-full max-w-[220px] rounded-[6px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-5 text-[14px] font-extrabold text-white shadow-[0_10px_22px_rgba(92,54,221,0.24)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:brightness-100"
-                    >
-                      Sauvegarder
-                    </button>
-                    {saveStatus && <p className="text-right text-xs font-semibold text-emerald-300">{saveStatus}</p>}
-                  </div>
-                )}
               </div>
             )}
 
             {activePanel === "code" && (
               <div id="create-room-panel-code" role="tabpanel" aria-label="Code" className="space-y-4">
-                <div className="rounded-lg bg-[#0B1229] p-6 text-center">
+                <div className="mx-auto w-full max-w-[420px] rounded-[8px] border border-white/[0.06] bg-[#131829] p-6 text-center">
                   <p className="font-brandUpright text-[18px] uppercase leading-none tracking-[0.05em] text-white/80">
                     Code de la partie
                   </p>
@@ -962,7 +946,7 @@ export default function CreateRoomPage() {
                     <button
                       type="button"
                       onClick={refreshCodeFromServer}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#24304F] text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#2d3b61]"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-white/[0.055] text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-white/10"
                     >
                       <RefreshIcon className="h-4 w-4" />
                       Régénérer
@@ -971,7 +955,7 @@ export default function CreateRoomPage() {
                       type="button"
                       onClick={copyCode}
                       disabled={!code}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#7C5CFF] text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#8c70ff] disabled:cursor-not-allowed disabled:opacity-45"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-white/[0.055] text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       <CopyIcon className="h-4 w-4" />
                       {copied ? "Copié !" : "Copier"}
@@ -985,7 +969,7 @@ export default function CreateRoomPage() {
               <div id="create-room-panel-lobby" role="tabpanel" aria-label="Lobby" className="space-y-4">
                 {createdRoomId ? (
                   <>
-                    <div className="rounded-md bg-[#0B1229] p-4">
+                    <div className="rounded-[8px] border border-white/[0.06] bg-[#131829] p-4">
                       <div className="mb-3 flex items-center justify-between">
                         <h3 className="font-brandUpright text-[18px] uppercase leading-none text-white">
                           Joueurs ({lobbyPlayers.length}/{maxPlayers})
@@ -1034,7 +1018,21 @@ export default function CreateRoomPage() {
               {copied ? "Le code a été copié dans le presse-papiers." : ""}
               {bannedThemes.length === 0 ? "Tous les thèmes sont inclus." : `${bannedThemes.length} thème(s) exclu(s).`}
             </div>
-          </section>
+            </section>
+            {activePanel === "settings" && createdRoomId && (
+              <div className="mt-6 flex flex-col items-end gap-2">
+                <button
+                  type="button"
+                  onClick={saveSettings}
+                  disabled={loading}
+                  className="h-10 w-full max-w-[220px] rounded-[6px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-5 text-[14px] font-extrabold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:brightness-100"
+                >
+                  Sauvegarder
+                </button>
+                {saveStatus && <p className="text-right text-xs font-semibold text-emerald-300">{saveStatus}</p>}
+              </div>
+            )}
+          </div>
         </div>
       </main>
       {themesOpen && (

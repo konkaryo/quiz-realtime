@@ -19,20 +19,20 @@ export type ThemeKey =
 export type ThemeMeta = { label: string; color: string };
 
 export const THEME_META: Record<string, ThemeMeta> = {
-  AUDIOVISUEL:     { label: "Audiovisuel",    color: "#14B8A6" },
-  ARTS:            { label: "Arts",           color: "#F59E0B" },
-  CROYANCES:       { label: "Croyances",      color: "#818CF8" },
-  DIVERS:          { label: "Divers",         color: "#A3A3A3" },
-  GEOGRAPHIE:      { label: "Géographie",     color: "#22D3EE" },
-  HISTOIRE:        { label: "Histoire",       color: "#FAFAFA" },
-  LITTERATURE:     { label: "Littérature",    color: "#D946EF" },
-  MUSIQUE:         { label: "Musique",        color: "#EC4899" },
-  NATURE:          { label: "Nature",         color: "#22C55E" },
-  POP_CULTURE:     { label: "Pop culture",    color: "#EAB308" },
-  SCIENCE:         { label: "Science",        color: "#EF4444" },
-  SOCIETE:         { label: "Société",        color: "#3B82F6" },
-  SPORT:           { label: "Sport",          color: "#84CC16" },
-  TRADITIONS:      { label: "Traditions",     color: "#F97316" },
+  AUDIOVISUEL:     { label: "Audiovisuel",    color: "#42B8A7" },
+  ARTS:            { label: "Arts",           color: "#B889F0" },
+  CROYANCES:       { label: "Croyances",      color: "#8E8FE8" },
+  DIVERS:          { label: "Divers",         color: "#9EA8BF" },
+  GEOGRAPHIE:      { label: "Géographie",     color: "#4DB8E4" },
+  HISTOIRE:        { label: "Histoire",       color: "#BEC7DA" },
+  LITTERATURE:     { label: "Littérature",    color: "#B65ACB" },
+  MUSIQUE:         { label: "Musique",        color: "#D066B8" },
+  NATURE:          { label: "Nature",         color: "#69C8A5" },
+  POP_CULTURE:     { label: "Pop culture",    color: "#A970FF" },
+  SCIENCE:         { label: "Science",        color: "#D87AA8" },
+  SOCIETE:         { label: "Société",        color: "#6D86E8" },
+  SPORT:           { label: "Sport",          color: "#7CC4D8" },
+  TRADITIONS:      { label: "Traditions",     color: "#C47ACB" },
 };
 
 export function getThemeMeta(theme?: string | null): ThemeMeta {

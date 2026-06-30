@@ -63,6 +63,7 @@ const winnerCards: WinnerCardConfig[] = [
 ];
 
 const defaultProfile = "/img/profiles/0.avif";
+const neutralWinnerBorderColor = "#6A6D78";
 
 function playerLevel(row: Row) {
   return getLevelFromExperience(row.experience ?? 0);
@@ -85,19 +86,19 @@ export function FinalLeaderboard({
     (!!selfId && row.id === selfId) ||
     (!!selfName && row.name?.toLowerCase() === selfName.toLowerCase());
 
-  const otherRows = rows.slice(3);
-  const activeOtherIndex = otherRows.findIndex((row) => isSelfRow(row));
+  const rankingRows = rows;
+  const activeRankingIndex = rankingRows.findIndex((row) => isSelfRow(row));
   const rankingScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = rankingScrollRef.current;
-    if (!container || activeOtherIndex < 0) return;
+    if (!container || activeRankingIndex < 0) return;
 
     const activeRow = container.querySelector<HTMLElement>("[data-active-player='true']");
     if (!activeRow) return;
 
     container.scrollTop = activeRow.offsetTop - container.clientHeight / 2 + activeRow.clientHeight / 2;
-  }, [activeOtherIndex, otherRows.length]);
+  }, [activeRankingIndex, rankingRows.length]);
 
   return (
     <section className="px-2 pb-4 pt-8 md:pt-12">
@@ -146,6 +147,19 @@ export function FinalLeaderboard({
                       <stop offset="92%" stopColor={card.borderColor} stopOpacity="0" />
                     </linearGradient>
                   </defs>
+                  <rect
+                    x="0.8"
+                    y="0.8"
+                    width="98.4"
+                    height="98.4"
+                    rx="5"
+                    ry="5"
+                    fill="none"
+                    stroke={neutralWinnerBorderColor}
+                    strokeOpacity="0.58"
+                    strokeWidth="1.4"
+                    vectorEffect="non-scaling-stroke"
+                  />
                   <rect
                     x="0.8"
                     y="0.8"
@@ -211,12 +225,12 @@ export function FinalLeaderboard({
           })}
         </div>
 
-        {otherRows.length > 0 ? (
+        {rankingRows.length > 0 ? (
           <div className="mt-6 w-full max-w-[820px] overflow-hidden rounded-[10px] bg-[#191F31] font-inter shadow-[0_18px_55px_rgba(0,0,0,0.32)] md:mt-7">
             <div ref={rankingScrollRef} className="max-h-[220px] overflow-y-auto py-2 [scrollbar-color:rgba(255,255,255,0.28)_transparent] [scrollbar-width:thin]">
               <ol>
-                {otherRows.map((row, index) => {
-                  const rank = index + 4;
+                {rankingRows.map((row, index) => {
+                  const rank = index + 1;
                   const isSelf = isSelfRow(row);
                   const level = playerLevel(row);
                   const rankClass = isSelf ? "bg-white text-[#191F31]" : "text-white";

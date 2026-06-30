@@ -60,6 +60,7 @@ export default function JoinPrivateRoomPage() {
 
   const activeIndex =
     normalized.length < MAX_LEN ? normalized.length : MAX_LEN - 1;
+  const isCodeComplete = normalized.length === MAX_LEN;
   const showCaret = isFocused && normalized.length < MAX_LEN;
 
   function focusHiddenInput() {
@@ -178,7 +179,7 @@ export default function JoinPrivateRoomPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-white">
+    <div className="relative min-h-screen overflow-hidden font-inter text-white">
       <Background />
 
       <style>{`
@@ -216,9 +217,6 @@ export default function JoinPrivateRoomPage() {
             <h1 className="font-brandUpright text-[42px] uppercase leading-[0.9] tracking-[0.01em] text-slate-50 sm:text-[56px]">
               REJOINDRE UNE PARTIE PRIVÉE
             </h1>
-            <p className="mt-5 text-[13px] font-semibold text-slate-200/90 sm:text-sm">
-              Saisis le code de la partie privée pour la rejoindre.
-            </p>
           </header>
 
           <div className="mx-auto mt-9 flex w-fit flex-col items-center">
@@ -252,13 +250,13 @@ export default function JoinPrivateRoomPage() {
                       key={idx}
                       className={[
                         "relative flex h-[62px] w-[58px] items-center justify-center",
-                        "rounded-[8px] border border-[#7C4DFF]/85 bg-[#0C1222]",
-                        "shadow-[0_0_0_1px_rgba(124,77,255,0.08),0_12px_30px_rgba(0,0,0,0.24),inset_0_0_20px_rgba(124,77,255,0.06)]",
+                        "rounded-[8px] border bg-[#0C1222] shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]",
+                        isCodeComplete ? "border-[#7C4DFF]/85" : "border-white/[0.12]",
                         "sm:h-[72px] sm:w-[66px]",
                       ].join(" ")}
                     >
                       {ch ? (
-                        <span className="font-mono text-3xl font-bold text-slate-100 sm:text-4xl">
+                        <span className="font-acuminSemiBold text-3xl font-bold text-slate-100 sm:text-4xl">
                           {ch}
                         </span>
                       ) : isActive ? (
@@ -318,7 +316,7 @@ export default function JoinPrivateRoomPage() {
               className={[
                 "inline-flex w-full items-center justify-center",
                 "rounded-[7px] border-0 bg-gradient-to-r from-[#6D4CFF] to-[#7B42FF] px-4 py-3.5",
-                "text-[13px] font-extrabold text-white shadow-[0_14px_30px_rgba(94,59,235,0.28)] transition",
+                "text-[13px] font-extrabold text-white transition",
                 "hover:brightness-110",
                 loading || normalized.length !== MAX_LEN
                   ? "cursor-not-allowed opacity-50 hover:brightness-100"

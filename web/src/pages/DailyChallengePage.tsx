@@ -214,6 +214,8 @@ export default function DailyChallengePage() {
   const todayIso =
     calendar?.today ??
     isoFromParts(fallbackYear, fallbackMonthIndex, today.getUTCDate());
+  const canGoToNextMonth =
+    viewYear < year || (viewYear === year && viewMonthIndex < monthIndex);
 
   const goToMonth = useCallback(
     (delta: number) => {
@@ -285,31 +287,33 @@ export default function DailyChallengePage() {
         )}
         {!loading && !error && (
           <div className="mx-auto mt-12 flex w-full max-w-[760px] flex-col items-center">
-            <div className="mb-4 grid w-full grid-cols-[1fr_auto_1fr] items-center">
+            <div className="relative mb-4 flex w-full items-center justify-center">
               <button
                 type="button"
                 onClick={() => goToMonth(-1)}
-                className="relative -top-[8px] justify-self-end pr-8 font-brandUpright text-[34px] leading-none text-slate-300/80 transition hover:text-white focus:outline-none"
+                className="absolute left-0 grid h-9 w-9 place-items-center rounded-full border border-white/[0.08] bg-white/[0.04] font-brandUpright text-[30px] leading-none text-white transition hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
               >
                 <span className="sr-only">Mois précédent</span>
-                <span aria-hidden>‹</span>
+                <span aria-hidden className="translate-y-[1px]">‹</span>
               </button>
 
               <div className="min-w-[170px] text-center font-brandUpright text-[28px] uppercase leading-none tracking-[0.01em] text-slate-100 drop-shadow-[0_2px_7px_rgba(255,255,255,0.14)]">
                 {MONTH_NAMES[viewMonthIndex]} {viewYear}
               </div>
 
-              <button
-                type="button"
-                onClick={() => goToMonth(1)}
-                className="relative -top-[8px] justify-self-start pl-8 font-brandUpright text-[34px] leading-none text-slate-300/80 transition hover:text-white focus:outline-none"
-              >
-                <span className="sr-only">Mois suivant</span>
-                <span aria-hidden>›</span>
-              </button>
+              {canGoToNextMonth ? (
+                <button
+                  type="button"
+                  onClick={() => goToMonth(1)}
+                  className="absolute right-0 grid h-9 w-9 place-items-center rounded-full border border-white/[0.08] bg-white/[0.04] font-brandUpright text-[30px] leading-none text-white transition hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                >
+                  <span className="sr-only">Mois suivant</span>
+                  <span aria-hidden className="translate-y-[1px]">›</span>
+                </button>
+              ) : null}
             </div>
 
-            <div className="grid w-full grid-cols-7 gap-1.5 text-center font-inter text-[12px] font-black uppercase tracking-[0.05em] text-slate-300/80">
+            <div className="grid w-full grid-cols-7 gap-1.5 text-center font-inter text-[12px] font-semibold uppercase tracking-[0.05em] text-slate-300/80">
               {WEEKDAY_LABELS.map((label) => (
                 <div key={label} className="py-2">
                   {label}
@@ -330,6 +334,7 @@ export default function DailyChallengePage() {
                 }
                 const isFuture = cell.iso > todayIso;
                 const isSelected = cell.iso === selectedDate;
+                const isToday = cell.iso === todayIso;
                 const completedInfo = progress[cell.iso];
                 const canSelect = !isFuture;
                 const isLocked = isFuture;
@@ -337,15 +342,13 @@ export default function DailyChallengePage() {
                   completedInfo?.score ?? 0,
                 );
                 const buttonClasses = [
-                  "group relative flex h-[48px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[6px] border text-center transition sm:h-[54px] lg:h-[60px]",
+                  "group relative flex h-[48px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[6px] border bg-gradient-to-b from-[#1A2339] to-[#151E32] text-center transition sm:h-[54px] lg:h-[60px]",
                   isSelected
-                    ? "border-white bg-white text-[#050B18] shadow-[0_0_0_1px_rgba(255,255,255,0.9),0_0_24px_rgba(255,255,255,0.18)]"
+                    ? "border-white text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]"
                     : isLocked
-                      ? "border-[#1F2A4F] bg-[#111733] text-slate-500/80 opacity-65"
-                      : "border-[#3E4772] bg-[#2B3158]/90 text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_26px_rgba(0,0,0,0.16)]",
-                  canSelect && !isSelected
-                    ? "hover:border-[#7A84BB]/80 hover:bg-[#343B68]"
-                    : "",
+                      ? "border-white/[0.04] text-slate-500/80 opacity-65"
+                      : "border-white/[0.06] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]",
+                  canSelect && !isSelected ? "hover:border-white/[0.12]" : "",
                   !canSelect ? "cursor-default" : "cursor-pointer",
                 ].join(" ");
 
@@ -357,7 +360,7 @@ export default function DailyChallengePage() {
                     onClick={() => setSelectedDate(cell.iso)}
                     className={buttonClasses}
                   >
-                    <span className="font-brutal text-[18px] leading-none text-inherit">
+                    <span className="font-acuminSemiBold text-[18px] leading-none text-inherit">
                       {cell.day}
                     </span>
 
@@ -371,25 +374,25 @@ export default function DailyChallengePage() {
                       ) : completedInfo ? (
                         <span
                           className={[
-                            "inline-flex min-w-[42px] items-center justify-center rounded-[4px] border px-2 py-0.5 font-inter text-[11px] font-black leading-none",
-                            isSelected
-                              ? "border-emerald-700/60 bg-emerald-200 text-emerald-950"
-                              : "border-emerald-400/70 bg-emerald-500/25 text-emerald-100",
+                            "inline-flex min-w-[42px] items-center justify-center font-inter text-[11px] font-black leading-none",
+                            "text-emerald-500",
                           ].join(" ")}
                         >
                           {scoreLabel}
                         </span>
+                      ) : isToday ? (
+                        <span
+                          aria-label="Défi du jour non joué"
+                          className="inline-flex items-center justify-center font-inter text-[12px] font-black leading-none tracking-[0.08em] text-slate-400/85"
+                        >
+                          ...
+                        </span>
                       ) : (
                         <span
                           aria-label="Défi non joué"
-                          className={[
-                            "inline-flex h-4 w-4 items-center justify-center rounded-[3px] font-brutal text-[12px] leading-none",
-                            isSelected
-                              ? "bg-slate-300 text-slate-800"
-                              : "bg-slate-500/70 text-slate-200",
-                          ].join(" ")}
+                          className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-slate-500/35 font-inter text-[10px] font-black leading-none text-slate-400/85"
                         >
-                          ×
+                          −
                         </span>
                       )}
                     </span>
@@ -402,16 +405,19 @@ export default function DailyChallengePage() {
             <button
               type="button"
               disabled={!selectedChallenge}
-              onClick={() =>
-                selectedDate && navigate(`/solo/daily/${selectedDate}`)
-              }
+              onClick={() => {
+                if (!selectedDate) return;
+                navigate(`/solo/daily/${selectedDate}`, {
+                  state: progress[selectedDate] ? { completedInfo: progress[selectedDate] } : undefined,
+                });
+              }}
               className={[
                 "mt-8 inline-flex items-center justify-center rounded-[6px] px-10 py-2.5 font-inter text-[15px] font-bold transition",
                 "border border-transparent bg-[#6250C7] text-slate-50 hover:bg-[#6F5BD4]",
                 !selectedChallenge ? "cursor-not-allowed opacity-40" : "",
               ].join(" ")}
             >
-              Jouer
+              {selectedDate && progress[selectedDate] ? "Voir les résultats" : "Jouer"}
             </button>
           </div>
         )}

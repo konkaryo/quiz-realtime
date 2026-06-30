@@ -349,11 +349,11 @@ export default function ProfilePage() {
       <main className="relative z-10 mx-auto h-full max-w-[1280px] overflow-hidden px-4 pb-6 pt-9 sm:px-6 lg:px-8">
         <header className="mb-8 grid gap-7 lg:grid-cols-[380px_1fr] lg:items-center">
           <div className="flex items-center gap-6">
-            <div className="relative h-[108px] w-[108px] shrink-0 rounded-full">
-              <button type="button" onClick={canEditAvatar ? () => setIsAvatarEditorOpen(true) : undefined} disabled={!canEditAvatar} className={`relative h-full w-full overflow-hidden rounded-full bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-200 disabled:cursor-default ${canEditAvatar ? "hover:ring-2 hover:ring-white hover:ring-offset-2 hover:ring-offset-[#090f24]" : ""}`} aria-label={canEditAvatar ? "Modifier la photo de profil" : `Photo de profil de ${displayName}`}>
+            <div className="group relative h-[108px] w-[108px] shrink-0 rounded-full">
+              <button type="button" onClick={canEditAvatar ? () => setIsAvatarEditorOpen(true) : undefined} disabled={!canEditAvatar} className={`relative h-full w-full overflow-hidden rounded-full bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6d28d9] disabled:cursor-default ${canEditAvatar ? "hover:ring-2 hover:ring-[#6d28d9] hover:ring-offset-2 hover:ring-offset-[#090f24]" : ""}`} aria-label={canEditAvatar ? "Modifier la photo de profil" : `Photo de profil de ${displayName}`}>
                 <img src={avatarUrl} alt={`Photo de profil de ${displayName}`} className="h-full w-full object-cover" />
               </button>
-              {canEditAvatar ? <span className="pointer-events-none absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-[#6d28d9] text-white shadow-lg"><Pencil className="h-4 w-4" /></span> : null}
+              {canEditAvatar ? <span className="pointer-events-none absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-[#6d28d9] text-white opacity-0 shadow-lg transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"><Pencil className="h-4 w-4" /></span> : null}
             </div>
 
             <div className="min-w-0 -translate-y-2">

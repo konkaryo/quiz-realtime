@@ -1,8 +1,9 @@
 // web/src/pages/DailyChallengePlayPage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { getThemeMeta } from "../lib/themeMeta";
 import emptyQuestionImg from "../assets/empty_img.jpg";
+import laurelLeftGoldUrl from "../assets/laurel_left_gold.png";
 import { io, Socket } from "socket.io-client";
 import Background from "../components/Background";
 import QuestionPanel, {
@@ -131,9 +132,8 @@ function formatResultSeconds(ms: number): string {
   return `${(ms / 1000).toFixed(1).replace(".", ",")} sec`;
 }
 
-function formatPoints(value: number): string {
-  if (!Number.isFinite(value)) return "0 pts";
-  return `${Math.round(value).toLocaleString("fr-FR")} pts`;
+function formatIntegerFr(value: number): string {
+  return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
 function formatAccuracy(correct: number, total: number): number {
@@ -158,88 +158,46 @@ function difficultyStarCount(difficulty: string | null): number {
   return 2;
 }
 
-function MonthlyRankingChart({ ranking }: { ranking: MonthlyRankingSnapshot | null }) {
-  const bars = ranking?.distribution.length
-    ? ranking.distribution
-    : Array.from({ length: 20 }, (_, index) => ({ index, count: 0, minScore: 0, maxScore: 0, highlighted: false }));
-  const maxPlayerCount = Math.max(1, ...bars.map((bar) => bar.count));
-  const chartMaxScore = Math.max(0, ...bars.map((bar) => bar.maxScore));
-  const userPosition = ranking && chartMaxScore > 0
-    ? Math.min(100, Math.max(0, (ranking.totalScore / chartMaxScore) * 100))
-    : null;
-  const rankLabel = ranking?.rank && ranking.totalPlayers > 0
-    ? `${ranking.rank}/${ranking.totalPlayers}`
-    : "—";
+function DailyFinalScoreHero({ score, ranking }: { score: number; ranking: MonthlyRankingSnapshot | null }) {
+  const rankLabel = ranking?.rank ? `${ranking.rank}` : "—";
+  const rankSuffix = ranking?.rank ? (ranking.rank === 1 ? "er" : "ème") : "";
+  const totalPlayersLabel = ranking?.totalPlayers ? formatIntegerFr(ranking.totalPlayers) : "—";
+  const topLabel = ranking?.percentile !== null && ranking?.percentile !== undefined
+    ? `TOP ${Math.max(1, Math.ceil(ranking.percentile))}%`
+    : "TOP —";
 
   return (
-    <aside className="rounded-[14px] border border-white/[0.07] bg-[#0F1427]/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.28)] xl:min-h-[260px]">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-brandUpright text-[21px] uppercase leading-none tracking-[0.05em] text-white">
-            Répartition du classement
-          </h2>
-          <p className="mt-2 text-xs font-semibold text-slate-400">
-            Classement mensuel {ranking ? `${String(ranking.month).padStart(2, "0")}/${ranking.year}` : ""}
-          </p>
-        </div>
-        <div className="rounded-lg border border-violet-300/25 bg-violet-500/15 px-3 py-2 text-right">
-          <div className="text-[10px] font-black uppercase tracking-[0.12em] text-violet-200">Vous</div>
-          <div className="mt-1 text-sm font-black tabular-nums text-white">{rankLabel}</div>
+    <header className="mx-auto flex w-full max-w-[760px] flex-col items-center text-center">
+      <h1 className="font-brandUpright text-[34px] uppercase leading-none tracking-[0.08em] text-white drop-shadow-[0_4px_18px_rgba(255,255,255,0.12)] sm:text-[42px]">
+        Votre score
+      </h1>
+      <div className="mt-8 w-full max-w-[440px] rounded-[20px] bg-white px-6 py-5 text-[#070D25] shadow-[0_0_0_1px_rgba(255,255,255,0.75),0_0_30px_rgba(155,92,255,0.36)] sm:px-7 sm:py-6">
+        <div className="flex items-end justify-center gap-3 font-brandUpright font-black tabular-nums">
+          <span className="text-[58px] leading-[0.82] tracking-[-0.035em] sm:text-[82px]">{formatIntegerFr(score)}</span>
+          <span className="pb-1 text-[22px] font-extrabold leading-none text-slate-500 sm:pb-2 sm:text-[28px]">pts</span>
         </div>
       </div>
 
-      <div className="relative mt-7 h-[120px] overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.16),transparent_42%)] px-2 pt-8">
-        {userPosition !== null ? (
-          <div
-            className="absolute top-0 z-20 -translate-x-1/2 rounded-md bg-violet-500 px-2 py-1 text-[11px] font-black text-white shadow-[0_8px_20px_rgba(124,58,237,0.35)]"
-            style={{ left: `${userPosition}%` }}
-          >
-            Vous
-          </div>
-        ) : null}
-        <div className="flex h-full items-end gap-1.5">
-          {bars.map((bar) => {
-            const height = 12 + (bar.count / maxPlayerCount) * 70;
-            const title = `${bar.count} joueur${bar.count > 1 ? "s" : ""} · ${formatPoints(bar.minScore)} – ${formatPoints(bar.maxScore)}`;
-            return (
-              <div
-                key={bar.index}
-                className={`flex-1 rounded-t-[4px] transition ${bar.highlighted ? "bg-violet-300 shadow-[0_0_18px_rgba(167,139,250,0.55)]" : "bg-slate-700/45"}`}
-                style={{ height }}
-                title={title}
-                aria-label={title}
-              />
-            );
-          })}
+      <div className="mt-9 flex w-full max-w-[460px] items-center justify-center gap-7 font-inter font-black tabular-nums sm:gap-10">
+        <img src={laurelLeftGoldUrl} alt="" className="h-12 w-8 object-contain brightness-110 hue-rotate-[18deg] saturate-[1.8]" draggable={false} />
+        <div className="flex items-end gap-3 leading-none">
+          <span className="text-[42px] text-white sm:text-[54px]">
+            {rankLabel}<sup className="ml-1 align-super text-[0.5em] leading-none text-[#9B5CFF]">{rankSuffix}</sup>
+          </span>
+          <span className="pb-1 text-[30px] text-slate-600 sm:text-[38px]">/</span>
+          <span className="pb-1 text-[30px] text-slate-500 sm:text-[38px]">{totalPlayersLabel}</span>
         </div>
-        <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-slate-500">
-          <span>0 pt</span>
-          <span>{formatPoints(chartMaxScore)}</span>
-        </div>
+        <img src={laurelLeftGoldUrl} alt="" className="h-12 w-8 scale-x-[-1] object-contain brightness-110 hue-rotate-[18deg] saturate-[1.8]" draggable={false} />
       </div>
 
-      <div className="mt-3 grid grid-cols-5 gap-2 text-[11px] font-bold text-slate-300">
-        {(ranking?.bands ?? [
-          { label: "Top 1%", percentile: 1, score: 0 },
-          { label: "Top 10%", percentile: 10, score: 0 },
-          { label: "Top 50%", percentile: 50, score: 0 },
-          { label: "Top 90%", percentile: 90, score: 0 },
-          { label: "Top 100%", percentile: 100, score: 0 },
-        ]).map((band) => (
-          <div key={band.label} className="min-w-0">
-            <div className="truncate text-white/90">{band.label}</div>
-            <div className="mt-1 truncate text-slate-400">{formatPoints(band.score)}</div>
-          </div>
-        ))}
+      <div className="mt-5 flex items-center gap-2.5 font-inter text-[15px] font-black uppercase tracking-[0.02em] text-white">
+        <svg className="h-7 w-7 text-[#9B5CFF]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 16.5 9.6 11l3.8 3.8L20 7.8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M15 7.8h5v5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        {topLabel}
       </div>
-
-      <div className="mt-5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
-        <div className="text-xs font-semibold text-slate-400">Votre total du mois</div>
-        <div className="mt-1 font-brandUpright text-[28px] uppercase leading-none text-white">
-          {formatPoints(ranking?.totalScore ?? 0)}
-        </div>
-      </div>
-    </aside>
+    </header>
   );
 }
 
@@ -247,19 +205,42 @@ function DailyFinalResults({
   results,
   totalQuestions,
   monthlyRanking,
+  score,
 }: {
   results: Result[];
   totalQuestions: number;
   monthlyRanking: MonthlyRankingSnapshot | null;
+  score: number;
 }) {
   const total = Math.max(totalQuestions, results.length);
   const correctCount = results.filter((result) => result.correct).length;
   const accuracy = formatAccuracy(correctCount, total);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
+  const [showAnswers, setShowAnswers] = useState(false);
+  const navigate = useNavigate();
 
   return (
-    <section className="mt-8 grid min-h-[calc(100vh-150px)] grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.62fr)_minmax(720px,1.38fr)] 2xl:grid-cols-[minmax(0,0.72fr)_minmax(820px,1.28fr)]">
-      <MonthlyRankingChart ranking={monthlyRanking} />
+    <>
+      <DailyFinalScoreHero score={score} ranking={monthlyRanking} />
+      <div className="mx-auto mt-10 flex w-full max-w-[520px] flex-col gap-3 sm:flex-row sm:justify-center">
+        <button
+          type="button"
+          onClick={() => setShowAnswers(true)}
+          className="h-11 rounded-[10px] border border-white/10 bg-white/[0.08] px-5 font-inter text-[12px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-white/[0.13]"
+        >
+          Voir les réponses
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/multi/ranking?kind=daily")}
+          className="h-11 rounded-[10px] border border-[#9B5CFF]/50 bg-[#9B5CFF]/20 px-5 font-inter text-[12px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#9B5CFF]/30"
+        >
+          Voir le classement
+        </button>
+      </div>
+
+      {showAnswers ? (
+      <section className="mx-auto mt-10 w-full max-w-[1180px]">
 
       <div className="rounded-[14px] bg-[#131930] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.36)] sm:p-5">
         <div className="mb-4 border-b border-white/[0.06] pb-3">
@@ -406,7 +387,9 @@ function DailyFinalResults({
           ) : null}
         </DialogContent>
       </Dialog>
-    </section>
+      </section>
+      ) : null}
+    </>
   );
 }
 
@@ -414,19 +397,23 @@ function DailyFinalResults({
 
 export default function DailyChallengePlayPage() {
   const params = useParams<{ date?: string }>();
+  const location = useLocation();
   const dateParam = params.date ?? "";
   const validDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam);
+  const completedInfoFromNavigation = (location.state as { completedInfo?: CompletedInfo } | null)?.completedInfo;
+  const completedInfo = completedInfoFromNavigation ?? (validDate ? readStorage()[dateParam] : undefined);
+  const shouldShowStoredResults = Boolean(completedInfo);
 
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    validDate ? "loading" : "error",
+    !validDate ? "error" : shouldShowStoredResults ? "ready" : "loading",
   );
   const [error, setError] = useState<string | null>(validDate ? null : "Défi introuvable");
   const [socket, setSocket] = useState<Socket | null>(null);
   const [socketStatus, setSocketStatus] = useState<SocketStatus>("idle");
   const [challengeMeta, setChallengeMeta] = useState<ChallengeMeta>(null);
   const [index, setIndex] = useState(0);
-  const [totalQuestions, setTotalQuestions] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "playing" | "reveal" | "finished">("idle");
+  const [totalQuestions, setTotalQuestions] = useState(completedInfo?.questionStates?.length ?? 0);
+  const [phase, setPhase] = useState<"idle" | "playing" | "reveal" | "finished">(shouldShowStoredResults ? "finished" : "idle");
   const [lives, setLives] = useState(TEXT_LIVES);
   const [showChoices, setShowChoices] = useState(false);
   const [choices, setChoices] = useState<Choice[] | null>(null);
@@ -446,12 +433,12 @@ export default function DailyChallengePlayPage() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [monthlyRanking, setMonthlyRanking] = useState<MonthlyRankingSnapshot | null>(null);
-  const [points, setPoints] = useState(0);
+  const [points, setPoints] = useState(completedInfo?.score ?? 0);
   const [skew, setSkew] = useState(0);
   const [nowTick, setNowTick] = useState(Date.now());
-  const [questionProgress, setQuestionProgress] = useState<QuestionProgress[]>([]);
+  const [questionProgress, setQuestionProgress] = useState<QuestionProgress[]>(completedInfo?.questionStates ?? []);
 
-  const phaseRef = useRef<"idle" | "playing" | "reveal" | "finished">("idle");
+  const phaseRef = useRef<"idle" | "playing" | "reveal" | "finished">(shouldShowStoredResults ? "finished" : "idle");
   const feedbackWasCorrectRef = useRef<boolean | null>(null);
   const revealTimeoutRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -492,7 +479,7 @@ export default function DailyChallengePlayPage() {
   }, [nowTick, endsAt, skew]);
 
   useEffect(() => {
-    if (!validDate) return;
+    if (!validDate || shouldShowStoredResults) return;
     let cancelled = false;
 
     const s = io(SOCKET_URL, {
@@ -649,7 +636,7 @@ export default function DailyChallengePlayPage() {
       cancelled = true;
       s.close();
     };
-  }, [dateParam, validDate]);
+  }, [dateParam, validDate, shouldShowStoredResults]);
 
   useEffect(() => {
     if (phase === "playing") inputRef.current?.focus();
@@ -828,6 +815,7 @@ export default function DailyChallengePlayPage() {
             results={results}
             totalQuestions={totalQuestions}
             monthlyRanking={monthlyRanking}
+            score={points}
           />
         )}
       </div>

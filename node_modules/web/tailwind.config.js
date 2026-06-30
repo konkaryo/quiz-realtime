@@ -11,6 +11,7 @@ export default {
         brandUpright: ['"Acumin Pro Extra Condensed SemiBold"'],
         inter: ['"Inter"', 'system-ui', 'sans-serif'],
         acuminSemiBold: ['"Acumin Pro SemiBold"', 'system-ui', 'sans-serif'],
+        acuminMedium: ['"Acumin Pro Medium"', 'system-ui', 'sans-serif'],
         brutal: ['"Brutal Type Black"']
       },
       borderRadius: {

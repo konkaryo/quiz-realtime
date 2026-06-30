@@ -298,6 +298,53 @@ export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       }
     });
 
+    app.post("/daily/:date/questions/random", { preHandler: requireAdmin(prisma) }, async (req, reply) => {
+      const date = (req.params as { date?: string }).date ?? "";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return reply.code(400).send({ error: "invalid_date" });
+      }
+
+      const allQuestions = await prisma.question.findMany({
+        select: { id: true },
+      });
+      if (allQuestions.length < 15) {
+        return reply.code(400).send({ error: "not_enough_questions" });
+      }
+
+      const selectedQuestions = [...allQuestions];
+      for (let index = selectedQuestions.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [selectedQuestions[index], selectedQuestions[swapIndex]] = [selectedQuestions[swapIndex], selectedQuestions[index]];
+      }
+
+      const [year, month, day] = date.split("-").map((value) => Number(value));
+      const challengeDate = new Date(Date.UTC(year, month - 1, day));
+
+      await prisma.$transaction(async (tx) => {
+        const challenge = await tx.dailyChallenge.upsert({
+          where: { date: challengeDate },
+          create: { date: challengeDate },
+          update: {},
+          select: { id: true },
+        });
+
+        await tx.dailyChallengeQuestion.deleteMany({
+          where: { challengeId: challenge.id },
+        });
+
+        await tx.dailyChallengeQuestion.createMany({
+          data: selectedQuestions.slice(0, 15).map((question, index) => ({
+            challengeId: challenge.id,
+            questionId: question.id,
+            position: index + 1,
+          })),
+        });
+      });
+
+      const challenge = await getChallengeByDate(prisma, date);
+      return reply.code(201).send({ challenge });
+    });
+
     app.post("/daily/:date/questions", { preHandler: requireAdmin(prisma) }, async (req, reply) => {
       const date = (req.params as { date?: string }).date ?? "";
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {

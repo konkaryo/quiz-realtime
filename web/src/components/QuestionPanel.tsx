@@ -417,7 +417,7 @@ export default function DailyQuestionPanel(props: Props) {
     "relative z-10 h-full w-full rounded-[14px] border border-white/15 bg-[#2E324A] px-2 py-1 md:px-4 md:py-2";
 
   const bottomPanelClass =
-    "relative w-full bg-[#2A2E44] rounded-[9px] p-3 md:p-4";
+    "relative w-full bg-[#2A2E44] rounded-[9px] p-2.5 md:p-3";
 
   const topPanelStyle = { boxShadow: "none" as const };
 
@@ -890,7 +890,7 @@ export default function DailyQuestionPanel(props: Props) {
               state === "correct"
                 ? "bg-emerald-600"
                 : state === "wrong"
-                ? "bg-red-500"
+                ? "bg-[#AF2D33]"
                 : "bg-slate-700/60";
 
             return (

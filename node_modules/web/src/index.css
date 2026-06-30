@@ -64,6 +64,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Acumin Pro Medium";
+  src: url("/fonts/AcuminPro-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 
 @tailwind base;
 @tailwind components;

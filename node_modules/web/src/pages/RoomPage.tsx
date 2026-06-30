@@ -7,7 +7,6 @@ import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
 import Background from "../components/Background";
-import laurierGold from "../assets/laurel_left_gold.png";
 import emptyQuestionImg from "../assets/empty_img.jpg";
 import playerIcon from "../assets/player.png";
 import crownImage from "../assets/crown.png";
@@ -77,42 +76,19 @@ function maskRoomCode(code: string | null | undefined) {
 
 function FinalCountdownRing({ seconds, progress }: { seconds: number; progress: number }) {
   const normalizedSeconds = Math.max(0, Math.floor(seconds));
-  const clampedProgress = Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0;
-  const radius = 46;
-  const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference * (1 - clampedProgress);
 
   return (
-    <div className="w-full rounded-[px] bg-[#0C1222] px-4 pb-4 pt-5 shadow-[0_14px_38px_rgba(2,8,28,0.58),inset_0_1px_0_rgba(255,255,255,0.05)]">
+    <div className="w-full rounded-[10px] bg-[#0C1222] px-4 pb-4 pt-5 shadow-[0_14px_38px_rgba(2,8,28,0.58),inset_0_1px_0_rgba(255,255,255,0.05)]">
       <h3 className="font-acumin text-[12px] font-semibold uppercase tracking-[0.06em] text-white">PROCHAINE PARTIE</h3>
 
       <div className="mt-5 flex justify-center">
-        <div className="relative flex h-[120px] w-[120px] items-center justify-center">
-          <svg className="absolute inset-0 -rotate-90" viewBox="0 0 120 120" aria-hidden>
-            <defs>
-              <linearGradient id="finalCountdownRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#ff5d8f" />
-                <stop offset="100%" stopColor="#b53be9" />
-              </linearGradient>
-            </defs>
-            <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(215,129,233,0.24)" strokeWidth="8" />
-            <circle
-              cx="60"
-              cy="60"
-              r={radius}
-              fill="none"
-              stroke="url(#finalCountdownRingGradient)"
-              strokeWidth="8"
-              strokeLinecap="butt"
-              strokeDasharray={circumference}
-              strokeDashoffset={dashOffset}
-              style={{ transition: "stroke-dashoffset 250ms linear" }}
-            />
-          </svg>
-          <div className="relative flex h-[92px] w-[92px] flex-col items-center justify-center rounded-full bg-[#0B1020] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-            <span className="font-acumin text-[32px] leading-[0.9] font-bold text-white">{normalizedSeconds}</span>
-            <span className="mt-1 font-acumin text-[10px] font-semibold uppercase tracking-[0.16em] text-white/80">sec</span>
-          </div>
+        <div className="scale-[1.18]">
+          <OverwatchTimerBadge
+            seconds={normalizedSeconds}
+            progress={progress}
+            segmentColor="#8E63FF"
+            textClassName="font-acumin text-[28px] font-bold leading-[0.9] text-white"
+          />
         </div>
       </div>
     </div>
@@ -196,14 +172,16 @@ function PlayerCell({
       <div
         className={[
           "w-full min-w-0 flex items-center justify-between gap-3",
-          "rounded-[6px] border",
+          "rounded-[6px]",
           "py-1 pl-3 pr-4",
           "overflow-hidden",
           "text-white",
-          isSelf ? "border-white shadow-[0_0_0_1px_rgba(255,255,255,0.45)]" : "border-transparent",
         ].join(" ")}
         style={{
           background: "linear-gradient(to bottom, rgba(68, 74, 112, 0.5), rgba(68, 74, 112, 0.35))",
+          borderColor: isSelf ? "#FFFFFF" : "transparent",
+          borderStyle: "solid",
+          borderWidth: isSelf ? 2 : 1,
         }}
       >
         {/* Avatar + Nom */}
@@ -1376,7 +1354,7 @@ export default function RoomPage() {
         : status === "correct-mc"
         ? {
             ch: "~",
-            cls: "bg-amber-400 text-white",
+            cls: "bg-[#6F5BD4] text-white",
           }
         : status === "wrong"
         ? {
@@ -1422,7 +1400,7 @@ return (
       <PlayerCell row={r} rank={rank} isSelf={isSelf} onNameClick={handlePlayerProfile} />
     </div>
 
-    {/* ✅ Badge: carré neutre/vert/jaune/rouge */}
+    {/* ✅ Badge: carré neutre/vert/violet/rouge */}
     <span
       className={`flex-shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-[5px] text-[12px] font-extrabold leading-none ${badgeVisual.cls}`}
       title={badgeTitle}
@@ -1699,29 +1677,8 @@ return (
 
                           {isFinalLeaderboardSelected || !selectedFinalQuestionPanel ? (
                             <div className="mx-auto w-full max-w-[1800px]">
-                              <div className="relative pt-8 md:pt-10">
-                                <div className="relative z-20 mb-0 flex -translate-y-5 items-center justify-center gap-5">
-                                  <img
-                                    src={laurierGold}
-                                    alt=""
-                                    className="h-16 w-auto -translate-y-1.5 select-none"
-                                    draggable={false}
-                                    loading="lazy"
-                                  />
-                                  <h2 className="px-2 text-center font-brandUpright text-[46px] uppercase leading-[0.9] tracking-[0.01em] text-white sm:text-[56px]">
-                                    Classement
-                                  </h2>
-                                  <img
-                                    src={laurierGold}
-                                    alt=""
-                                    className="h-16 w-auto -translate-y-1.5 scale-x-[-1] select-none"
-                                    draggable={false}
-                                    loading="lazy"
-                                  />
-                                </div>
-                                <div className="relative z-10 -mt-4 md:-mt-6">
-                                  <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
-                                </div>
+                              <div className="relative pt-2 md:pt-4">
+                                <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
                               </div>
                             </div>
                           ) : (
@@ -1735,7 +1692,7 @@ return (
                                       status === "correct"
                                         ? "bg-emerald-600 text-white"
                                         : status === "correct-mc"
-                                        ? "bg-amber-400 text-white"
+                                        ? "bg-[#6F5BD4] text-white"
                                         : status === "wrong"
                                         ? "bg-[#AF2D33] text-white"
                                         : "bg-white/30 text-white/70";
@@ -1816,7 +1773,7 @@ return (
                                     ) : null}
                                     {selectedFinalStatsLayout.stats.correctQcm > 0 ? (
                                       <div
-                                        className="h-[10px] min-w-[14px] rounded-[3px] bg-amber-400"
+                                        className="h-[10px] min-w-[14px] rounded-[3px] bg-[#6F5BD4]"
                                         style={{ width: selectedFinalStatsLayout.qcmWidth }}
                                       />
                                     ) : null}
@@ -1853,7 +1810,7 @@ return (
                                         <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
                                           {selectedFinalStatsLayout.stats.correctQcm}
                                         </span>
-                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-amber-400 text-[12px] font-semibold leading-none text-white">
+                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#6F5BD4] text-[12px] font-semibold leading-none text-white">
                                           ~
                                         </span>
                                       </div>
@@ -2124,7 +2081,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
       <div className="mt-2 space-y-3">
         <div className="grid grid-cols-3 gap-2">
           <div className={`h-[10px] rounded-[3px] ${stats.correct > 0 ? "bg-emerald-600" : "bg-emerald-900/35"}`} />
-          <div className={`h-[10px] rounded-[3px] ${stats.correctQcm > 0 ? "bg-amber-400" : "bg-amber-900/35"}`} />
+          <div className={`h-[10px] rounded-[3px] ${stats.correctQcm > 0 ? "bg-[#6F5BD4]" : "bg-[#6F5BD4]/35"}`} />
           <div className={`h-[10px] rounded-[3px] ${stats.wrong > 0 ? "bg-[#AF2D33]" : "bg-[#AF2D33]/35"}`} />
         </div>
 
@@ -2137,7 +2094,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
           </div>
           <div className="flex items-center justify-center gap-2">
             <span className="tabular-nums text-[18px] font-brand italic leading-none">{stats.correctQcm}</span>
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-amber-400 text-[12px] font-semibold leading-none text-white">
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#6F5BD4] text-[12px] font-semibold leading-none text-white">
               ~
             </span>
           </div>
