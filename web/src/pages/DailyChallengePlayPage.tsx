@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { getThemeMeta } from "../lib/themeMeta";
 import emptyQuestionImg from "../assets/empty_img.jpg";
-import laurelLeftGoldUrl from "../assets/laurel_left_gold.png";
 import { io, Socket } from "socket.io-client";
 import Background from "../components/Background";
 import QuestionPanel, {
@@ -18,6 +17,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
+
+const API_BASE =
+  import.meta.env.VITE_API_BASE ??
+  (typeof window !== "undefined" ? window.location.origin : "");
 
 const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL ??
@@ -75,9 +78,9 @@ type DailyRoundEnd = {
   score: number;
 };
 
-type MonthlyRankingSnapshot = {
-  year: number;
-  month: number;
+type DailyRankingSnapshot = {
+  year?: number;
+  month?: number;
   totalScore: number;
   rank: number | null;
   totalPlayers: number;
@@ -86,7 +89,21 @@ type MonthlyRankingSnapshot = {
   distribution: { index: number; count: number; minScore: number; maxScore: number; highlighted: boolean }[];
 };
 
-type DailyFinished = { score: number; results: Result[]; monthlyRanking?: MonthlyRankingSnapshot | null };
+type DailyFinished = {
+  score: number;
+  results: Result[];
+  monthlyRanking?: DailyRankingSnapshot | null;
+  dailyRanking?: DailyRankingSnapshot | null;
+};
+
+type CompletedResultPayload = {
+  score: number;
+  completedAt: string;
+  questionCount: number;
+  results: Result[];
+  monthlyRanking?: DailyRankingSnapshot | null;
+  dailyRanking?: DailyRankingSnapshot | null;
+};
 
 type ChallengeMeta = { date: string; questionCount: number } | null;
 
@@ -136,6 +153,42 @@ function formatIntegerFr(value: number): string {
   return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
+function buildRankingCurvePath(distribution?: DailyRankingSnapshot["distribution"]): {
+  line: string;
+  area: string;
+  marker: { x: number; y: number } | null;
+} {
+  const width = 300;
+  const baseline = 98;
+  const values = distribution?.length
+    ? distribution.map((bucket) => bucket.count)
+    : [2, 2, 3, 5, 7, 8, 7, 5, 6, 9, 11, 10, 7, 5, 6, 7, 6, 8, 12, 13];
+  const max = Math.max(1, ...values);
+  const points = values.map((value, index) => {
+    const x = values.length <= 1 ? 0 : (index / (values.length - 1)) * width;
+    const y = baseline - (value / max) * 54;
+    return { x, y };
+  });
+  const line = points.reduce((path, point, index) => {
+    if (index === 0) return `M${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+
+    const previous = points[index - 1];
+    const next = points[index + 1] ?? point;
+    const beforePrevious = points[index - 2] ?? previous;
+    const control1X = previous.x + (point.x - beforePrevious.x) / 6;
+    const control1Y = previous.y + (point.y - beforePrevious.y) / 6;
+    const control2X = point.x - (next.x - previous.x) / 6;
+    const control2Y = point.y - (next.y - previous.y) / 6;
+
+    return `${path} C${control1X.toFixed(1)} ${control1Y.toFixed(1)}, ${control2X.toFixed(1)} ${control2Y.toFixed(1)}, ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+  }, "");
+
+  const highlightedIndex = distribution?.findIndex((bucket) => bucket.highlighted) ?? -1;
+  const highlightedPoint = highlightedIndex >= 0 ? points[highlightedIndex] : null;
+  const area = `${line} L${width} ${baseline} L0 ${baseline} Z`;
+  return { line, area, marker: highlightedPoint };
+} 
+
 function formatAccuracy(correct: number, total: number): number {
   if (total <= 0) return 0;
   return Math.round((correct / total) * 100);
@@ -158,46 +211,170 @@ function difficultyStarCount(difficulty: string | null): number {
   return 2;
 }
 
-function DailyFinalScoreHero({ score, ranking }: { score: number; ranking: MonthlyRankingSnapshot | null }) {
+function DailyFinalScoreHero({
+  score,
+  ranking,
+  results,
+  totalQuestions,
+}: {
+  score: number;
+  ranking: DailyRankingSnapshot | null;
+  results: Result[];
+  totalQuestions: number;
+}) {
   const rankLabel = ranking?.rank ? `${ranking.rank}` : "—";
   const rankSuffix = ranking?.rank ? (ranking.rank === 1 ? "er" : "ème") : "";
-  const totalPlayersLabel = ranking?.totalPlayers ? formatIntegerFr(ranking.totalPlayers) : "—";
+  const totalPlayersLabel = ranking?.totalPlayers 
+    ? `${formatIntegerFr(ranking.totalPlayers)} joueurs`
+    : "— joueurs";
   const topLabel = ranking?.percentile !== null && ranking?.percentile !== undefined
     ? `TOP ${Math.max(1, Math.ceil(ranking.percentile))}%`
     : "TOP —";
+  const [animatedScore, setAnimatedScore] = useState(0);
+  const scoreProgress = Math.max(0, Math.min(1, animatedScore / 2000));
+  const curve = buildRankingCurvePath(ranking?.distribution);
+  const summaryTotal = Math.max(totalQuestions, results.length);
+  const summaryCorrect = results.filter((result) => result.correct).length;
+  const totalResponseMs = results.reduce((sum, result) => (Number.isFinite(result.responseMs) && result.responseMs > 0 ? sum + result.responseMs : sum), 0);
+  const totalSecondsLabel = `${(totalResponseMs / 1000).toFixed(1).replace(".", ",")} secondes`;
+  const xpGained = results.reduce((sum, result) => {
+    if (!result.correct) return sum;
+    if (result.mode === "text") return sum + 10;
+    if (result.mode === "choice") return sum + 6;
+    return sum;
+  }, 0);
+  const progressStates = Array.from({ length: summaryTotal }, (_, index) => {
+    const result = results[index];
+    if (!result) return "pending";
+    return result.correct ? "correct" : "wrong";
+  });
+
+  useEffect(() => {
+    const durationMs = 1700;
+    const startedAt = performance.now();
+    let frame = 0;
+
+    const tick = (now: number) => {
+      const elapsed = now - startedAt;
+      const progress = Math.min(1, elapsed / durationMs);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setAnimatedScore(Math.round(score * eased));
+
+      if (progress < 1) {
+        frame = window.requestAnimationFrame(tick);
+      }
+    };
+
+    setAnimatedScore(0);
+    frame = window.requestAnimationFrame(tick);
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [score]);
 
   return (
-    <header className="mx-auto flex w-full max-w-[760px] flex-col items-center text-center">
+    <section className="mx-auto flex w-full max-w-[1280px] flex-col items-center text-center">
       <h1 className="font-brandUpright text-[34px] uppercase leading-none tracking-[0.08em] text-white drop-shadow-[0_4px_18px_rgba(255,255,255,0.12)] sm:text-[42px]">
         Votre score
       </h1>
-      <div className="mt-8 w-full max-w-[440px] rounded-[20px] bg-white px-6 py-5 text-[#070D25] shadow-[0_0_0_1px_rgba(255,255,255,0.75),0_0_30px_rgba(155,92,255,0.36)] sm:px-7 sm:py-6">
-        <div className="flex items-end justify-center gap-3 font-brandUpright font-black tabular-nums">
-          <span className="text-[58px] leading-[0.82] tracking-[-0.035em] sm:text-[82px]">{formatIntegerFr(score)}</span>
-          <span className="pb-1 text-[22px] font-extrabold leading-none text-slate-500 sm:pb-2 sm:text-[28px]">pts</span>
-        </div>
-      </div>
 
-      <div className="mt-9 flex w-full max-w-[460px] items-center justify-center gap-7 font-inter font-black tabular-nums sm:gap-10">
-        <img src={laurelLeftGoldUrl} alt="" className="h-12 w-8 object-contain brightness-110 hue-rotate-[18deg] saturate-[1.8]" draggable={false} />
-        <div className="flex items-end gap-3 leading-none">
-          <span className="text-[42px] text-white sm:text-[54px]">
-            {rankLabel}<sup className="ml-1 align-super text-[0.5em] leading-none text-[#9B5CFF]">{rankSuffix}</sup>
-          </span>
-          <span className="pb-1 text-[30px] text-slate-600 sm:text-[38px]">/</span>
-          <span className="pb-1 text-[30px] text-slate-500 sm:text-[38px]">{totalPlayersLabel}</span>
-        </div>
-        <img src={laurelLeftGoldUrl} alt="" className="h-12 w-8 scale-x-[-1] object-contain brightness-110 hue-rotate-[18deg] saturate-[1.8]" draggable={false} />
-      </div>
+      <div className="mt-8 grid w-full items-start gap-5 lg:grid-cols-[minmax(260px,1fr)_minmax(220px,280px)_minmax(300px,1fr)] lg:gap-20">
+        <aside className="order-2 min-h-[250px] rounded-[18px] border border-white/[0.08] bg-[#0F1427]/80 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] lg:order-1">
+          <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
+            Résumé
+          </h2>
+          <div className="mt-6 flex flex-wrap gap-1.5">
+            {progressStates.map((state, index) => {
+              const color =
+                state === "correct"
+                  ? "bg-emerald-600"
+                  : state === "wrong"
+                    ? "bg-[#AF2D33]"
+                    : "bg-slate-700/60";
 
-      <div className="mt-5 flex items-center gap-2.5 font-inter text-[15px] font-black uppercase tracking-[0.02em] text-white">
-        <svg className="h-7 w-7 text-[#9B5CFF]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M4 16.5 9.6 11l3.8 3.8L20 7.8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M15 7.8h5v5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        {topLabel}
+              return (
+                <div
+                  key={index}
+                  className={`flex h-[30px] w-[30px] items-center justify-center rounded-md text-[11px] font-semibold text-slate-50 ${color}`}
+                >
+                  {index + 1}
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-6 space-y-3 font-inter text-[14px] font-medium text-slate-200">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-slate-400">Bonnes réponses</span>
+              <span className="text-white">{summaryCorrect}/{summaryTotal}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-slate-400">Temps total</span>
+              <span className="text-white">{totalSecondsLabel}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-slate-400">XP gagnée</span>
+              <span className="text-white">+ {xpGained}</span>
+            </div>
+          </div>
+        </aside>
+
+        <div className="order-1 flex justify-center lg:order-2">
+          <div
+            className="grid size-[220px] place-items-center rounded-full p-[8px] sm:size-[260px]"
+            style={{
+              background: `conic-gradient(#9B5CFF ${scoreProgress * 360}deg, rgba(255,255,255,0.08) 0deg)`,
+            }}
+            aria-label={`Score ${formatIntegerFr(animatedScore)} points sur 2000`}
+          >
+            <div className="grid size-full place-items-center rounded-full border border-white/[0.07] bg-[#081126] shadow-[inset_0_0_55px_rgba(155,92,255,0.12)]">
+              <div className="translate-y-3 font-brand font-black italic leading-none text-white tabular-nums">
+                <div className="text-[64px] tracking-[-0.04em] sm:text-[82px]">
+                  {formatIntegerFr(animatedScore)}
+                </div>
+                <div className="text-[30px] sm:text-[36px]">pts</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside className="order-3 rounded-[18px] border border-white/[0.08] bg-[#0F1427]/80 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+          <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
+            Classement
+          </h2>
+          <div className="mt-8 flex items-end justify-center gap-3 font-brand font-black italic leading-none tabular-nums">
+            <span className="text-[38px] text-white sm:text-[48px]">
+              {rankLabel}
+              <sup className="ml-1 align-super text-[0.45em] leading-none text-white">
+                {rankSuffix}
+              </sup>
+            </span>
+            <span className="pb-1.5 text-[22px] text-slate-600 sm:text-[28px]">/</span>
+            <span className="pb-1.5 text-[18px] text-slate-500 sm:text-[23px]">
+              {totalPlayersLabel}
+            </span>
+          </div>
+          <svg className="mt-6 h-[120px] w-full overflow-visible" viewBox="0 0 300 116" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="daily-ranking-area" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="#9B5CFF" stopOpacity="0.72" />
+                <stop offset="100%" stopColor="#9B5CFF" stopOpacity="0.06" />
+              </linearGradient>
+            </defs>
+            <path d={curve.area} fill="url(#daily-ranking-area)" />
+            <path d={curve.line} fill="none" stroke="#9B5CFF" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+            {curve.marker ? (
+              <circle cx={curve.marker.x} cy={curve.marker.y} r="5" fill="#FFFFFF" stroke="#9B5CFF" strokeWidth="3" />
+            ) : null}
+          </svg>
+          <div className="mt-3 flex items-center justify-center gap-2.5 font-inter text-[15px] font-black uppercase tracking-[0.02em] text-white">
+            <svg className="h-7 w-7 text-[#9B5CFF]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 16.5 9.6 11l3.8 3.8L20 7.8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M15 7.8h5v5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {topLabel}
+          </div>
+        </aside>
       </div>
-    </header>
+    </section>
   );
 }
 
@@ -209,7 +386,7 @@ function DailyFinalResults({
 }: {
   results: Result[];
   totalQuestions: number;
-  monthlyRanking: MonthlyRankingSnapshot | null;
+  monthlyRanking: DailyRankingSnapshot | null;
   score: number;
 }) {
   const total = Math.max(totalQuestions, results.length);
@@ -221,173 +398,241 @@ function DailyFinalResults({
 
   return (
     <>
-      <DailyFinalScoreHero score={score} ranking={monthlyRanking} />
-      <div className="mx-auto mt-10 flex w-full max-w-[520px] flex-col gap-3 sm:flex-row sm:justify-center">
-        <button
-          type="button"
-          onClick={() => setShowAnswers(true)}
-          className="h-11 rounded-[10px] border border-white/10 bg-white/[0.08] px-5 font-inter text-[12px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-white/[0.13]"
-        >
-          Voir les réponses
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate("/multi/ranking?kind=daily")}
-          className="h-11 rounded-[10px] border border-[#9B5CFF]/50 bg-[#9B5CFF]/20 px-5 font-inter text-[12px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#9B5CFF]/30"
-        >
-          Voir le classement
-        </button>
+      <div className="flex min-h-[calc(100vh-220px)] flex-col justify-center">
+        <DailyFinalScoreHero score={score} ranking={monthlyRanking} results={results} totalQuestions={totalQuestions} />
+        <div className="mx-auto mt-10 flex w-full max-w-[520px] flex-col gap-3 sm:flex-row sm:justify-center">
+          <button
+            type="button"
+            onClick={() => setShowAnswers(true)}
+            className="inline-flex h-11 items-center justify-center rounded-[6px] border border-white/[0.08] bg-[#1F2437] px-8 font-inter text-[15px] font-bold text-slate-50 transition hover:bg-[#2A3046]"
+          >
+            Voir les réponses
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/multi/ranking?kind=daily")}
+            className="inline-flex h-11 items-center justify-center rounded-[6px] border border-transparent bg-[#6250C7] px-8 font-inter text-[15px] font-bold text-slate-50 transition hover:bg-[#6F5BD4]"
+          >
+            Voir le classement
+          </button>
+        </div>
       </div>
 
       {showAnswers ? (
-      <section className="mx-auto mt-10 w-full max-w-[1180px]">
+        <section className="mx-auto mt-10 w-full max-w-[1280px]">
+          <div className="rounded-[14px] bg-[#131930] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.36)] sm:p-5">
+            <div className="mb-4 border-b border-white/[0.06] pb-3">
+              <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
+                Récapitulatif des questions
+              </h2>
+            </div>
 
-      <div className="rounded-[14px] bg-[#131930] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.36)] sm:p-5">
-        <div className="mb-4 border-b border-white/[0.06] pb-3">
-          <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
-            Récapitulatif des questions
-          </h2>
-        </div>
+            <div className="space-y-2 pr-1">
+              {results.map((result, i) => {
+                const ok = result.correct;
+                const meta = getThemeMeta(result.theme ?? null);
+                const accentColor = ok ? "#34D399" : "#F56471";
+                const railOverlay = ok ? "bg-[#10222C]" : "bg-[#1F182B]";
+                const statusClasses = ok
+                  ? "bg-emerald-400 text-[#07111d]"
+                  : "bg-[#F56471] text-[#160911]";
+                const ringColor = ok ? "#2EEB8E" : "#F56471";
+                const fallbackAccuracy = ok
+                  ? Math.max(accuracy, 77)
+                  : Math.min(accuracy || 45, 45);
+                const questionAccuracy = correctRateToAccuracy(
+                  result.correctRate,
+                  fallbackAccuracy,
+                );
+                const pointsWon = Math.max(0, result.points ?? 0);
+                const difficultyStars = "★".repeat(
+                  difficultyStarCount(result.difficulty),
+                );
 
-        <div className="space-y-2 pr-1">
-          {results.map((result, i) => {
-            const ok = result.correct;
-            const meta = getThemeMeta(result.theme ?? null);
-            const accentColor = ok ? "#34D399" : "#F56471";
-            const railOverlay = ok
-              ? "bg-[#10222C]"
-              : "bg-[#1F182B]";
-            const statusClasses = ok
-              ? "bg-emerald-400 text-[#07111d]"
-              : "bg-[#F56471] text-[#160911]";
-            const ringColor = ok ? "#2EEB8E" : "#F56471";
-            const fallbackAccuracy = ok ? Math.max(accuracy, 77) : Math.min(accuracy || 45, 45);
-            const questionAccuracy = correctRateToAccuracy(result.correctRate, fallbackAccuracy);
-            const pointsWon = Math.max(0, result.points ?? 0);
-            const difficultyStars = "★".repeat(difficultyStarCount(result.difficulty));
-
-            return (
-              <article key={`${result.questionId}:${i}`} className="group relative pl-[4px]">
-                <div
-                  className="pointer-events-none absolute inset-y-0 left-0 w-[32px] rounded-l-[10px]"
-                  style={{ backgroundColor: accentColor }}
-                />
-                <div
-                  className={[
-                    "relative overflow-hidden rounded-[10px] border border-white/[0.06] bg-[#0F1427]",
-                    "shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition-colors group-hover:border-white/12",
-                  ].join(" ")}
-                >
-                  <div className="relative z-20 grid grid-cols-[42px_0px_minmax(0,1fr)_0px] items-center gap-3 py-3 sm:grid-cols-[42px_26px_minmax(0,1fr)_156px] sm:pl-0 sm:pr-4">
-                    <div className="relative z-10 flex items-center justify-center">
-                      <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${statusClasses}`}>
-                        {ok ? (
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                            <path d="M3.5 8.1 6.7 11.3 12.8 4.7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        ) : (
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                            <path d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                          </svg>
-                        )}
-                      </span>
-                    </div>
-                    <div className={`hidden text-center font-brandUpright text-[18px] font-black leading-none sm:block ${ok ? "text-emerald-300" : "text-rose-300"}`}>
-                      {i + 1}
-                    </div>
-
-                    <div className="min-w-0">
-                    <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[9px] font-medium uppercase tracking-[0.14em] text-slate-400">
-                      <span>{meta.label}</span>
-                      <span className="text-slate-600">|</span>
-                      <span aria-label={`${difficultyStars.length} étoile${difficultyStars.length > 1 ? "s" : ""} de difficulté`}>{difficultyStars}</span>
-                    </div>
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <h3 className="min-w-0 flex-1 truncate font-sans text-[11px] font-semibold leading-snug text-slate-50 sm:text-[12px]">
-                        {result.questionText}
-                      </h3>
-                      {result.img ? (
-                        <button
-                          type="button"
-                          className="inline-flex h-5 w-5 flex-none items-center justify-center rounded-full border border-slate-500/40 bg-slate-900/50 text-slate-300 transition hover:border-slate-300/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/70"
-                          aria-label={`Afficher l'image de la question ${i + 1}`}
-                          onClick={() =>
-                            setPreviewImage({
-                              src: result.img!,
-                              alt: `Image de la question ${i + 1}`,
-                            })
-                          }
+                return (
+                  <article
+                    key={`${result.questionId}:${i}`}
+                    className="group relative pl-[4px]"
+                  >
+                    <div
+                      className="pointer-events-none absolute inset-y-0 left-0 w-[32px] rounded-l-[10px]"
+                      style={{ backgroundColor: accentColor }}
+                    />
+                    <div
+                      className={[
+                        "relative overflow-hidden rounded-[10px] border border-white/[0.06] bg-[#0F1427]",
+                        "shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition-colors group-hover:border-white/12",
+                      ].join(" ")}
+                    >
+                      <div className="relative z-20 grid grid-cols-[42px_0px_minmax(0,1fr)_0px] items-center gap-3 py-3 sm:grid-cols-[42px_26px_minmax(0,1fr)_156px] sm:pl-0 sm:pr-4">
+                        <div className="relative z-10 flex items-center justify-center">
+                          <span
+                            className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${statusClasses}`}
+                          >
+                            {ok ? (
+                              <svg
+                                className="h-3.5 w-3.5"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                aria-hidden="true"
+                              >
+                                <path
+                                  d="M3.5 8.1 6.7 11.3 12.8 4.7"
+                                  stroke="currentColor"
+                                  strokeWidth="2.2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            ) : (
+                              <svg
+                                className="h-3.5 w-3.5"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                aria-hidden="true"
+                              >
+                                <path
+                                  d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5"
+                                  stroke="currentColor"
+                                  strokeWidth="2.4"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                            )}
+                          </span>
+                        </div>
+                        <div
+                          className={`hidden text-center font-brandUpright text-[18px] font-black leading-none sm:block ${ok ? "text-emerald-300" : "text-rose-300"}`}
                         >
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                            <path d="M2.5 3.5h11v9h-11v-9Z" stroke="currentColor" strokeWidth="1.35" strokeLinejoin="round" />
-                            <path d="m3.7 11.2 2.8-3 2 2 1.7-1.7 2.1 2.7" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
-                            <circle cx="10.9" cy="6" r="1" fill="currentColor" />
-                          </svg>
-                        </button>
-                      ) : null}
-                    </div>
-                    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-sans text-[11px] font-medium">
-                      <span className="text-slate-400">Réponse : {result.correctLabel}</span>
-                    </div>
-                  </div>
+                          {i + 1}
+                        </div>
 
-                  <div className="flex items-center justify-end gap-3 sm:justify-start">
-                    <div className="hidden flex-1 flex-col items-center justify-center gap-2 sm:flex">
-                      <div className={`font-brandUpright text-[18px] font-black leading-none tabular-nums ${pointsWon > 0 ? "text-emerald-400" : "text-[#F56471]"}`}>
-                        {pointsWon > 0 ? `+ ${pointsWon} pts` : "0 pt"}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold tabular-nums text-slate-400">
-                        <span aria-hidden="true">◷</span>
-                        {formatResultSeconds(result.responseMs)}
+                        <div className="min-w-0">
+                          <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[9px] font-medium uppercase tracking-[0.14em] text-slate-400">
+                            <span>{meta.label}</span>
+                            <span className="text-slate-600">|</span>
+                            <span
+                              aria-label={`${difficultyStars.length} étoile${difficultyStars.length > 1 ? "s" : ""} de difficulté`}
+                            >
+                              {difficultyStars}
+                            </span>
+                          </div>
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <h3 className="min-w-0 flex-1 truncate font-sans text-[11px] font-semibold leading-snug text-slate-50 sm:text-[12px]">
+                              {result.questionText}
+                            </h3>
+                            {result.img ? (
+                              <button
+                                type="button"
+                                className="inline-flex h-5 w-5 flex-none items-center justify-center rounded-full border border-slate-500/40 bg-slate-900/50 text-slate-300 transition hover:border-slate-300/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/70"
+                                aria-label={`Afficher l'image de la question ${i + 1}`}
+                                onClick={() =>
+                                  setPreviewImage({
+                                    src: result.img!,
+                                    alt: `Image de la question ${i + 1}`,
+                                  })
+                                }
+                              >
+                                <svg
+                                  className="h-3.5 w-3.5"
+                                  viewBox="0 0 16 16"
+                                  fill="none"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    d="M2.5 3.5h11v9h-11v-9Z"
+                                    stroke="currentColor"
+                                    strokeWidth="1.35"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path
+                                    d="m3.7 11.2 2.8-3 2 2 1.7-1.7 2.1 2.7"
+                                    stroke="currentColor"
+                                    strokeWidth="1.35"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                  <circle
+                                    cx="10.9"
+                                    cy="6"
+                                    r="1"
+                                    fill="currentColor"
+                                  />
+                                </svg>
+                              </button>
+                            ) : null}
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-sans text-[11px] font-medium">
+                            <span className="text-slate-400">
+                              Réponse : {result.correctLabel}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 sm:justify-start">
+                          <div className="hidden flex-1 flex-col items-center justify-center gap-2 sm:flex">
+                            <div
+                              className={`font-brandUpright text-[18px] font-black leading-none tabular-nums ${pointsWon > 0 ? "text-emerald-400" : "text-[#F56471]"}`}
+                            >
+                              {pointsWon > 0 ? `+ ${pointsWon} pts` : "0 pt"}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] font-semibold tabular-nums text-slate-400">
+                              <span aria-hidden="true">◷</span>
+                              {formatResultSeconds(result.responseMs)}
+                            </div>
+                          </div>
+                          <div
+                            className="grid size-12 min-h-12 min-w-12 flex-none shrink-0 place-items-center rounded-full p-[5px]"
+                            style={{
+                              background: `conic-gradient(${ringColor} ${questionAccuracy * 3.6}deg, rgba(255,255,255,0.08) 0deg)`,
+                            }}
+                            aria-label={`${questionAccuracy}% de réussite`}
+                          >
+                            <div className="grid size-full place-items-center rounded-full bg-[#071023] text-[11px] font-black tabular-nums text-white">
+                              {questionAccuracy}%
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div
-                      className="grid size-12 min-h-12 min-w-12 flex-none shrink-0 place-items-center rounded-full p-[5px]"
-                      style={{
-                        background: `conic-gradient(${ringColor} ${questionAccuracy * 3.6}deg, rgba(255,255,255,0.08) 0deg)`,
-                      }}
-                      aria-label={`${questionAccuracy}% de réussite`}
-                    >
-                      <div className="grid size-full place-items-center rounded-full bg-[#071023] text-[11px] font-black tabular-nums text-white">
-                        {questionAccuracy}%
-                      </div>
-                    </div>
-                    </div>
-                  </div>
-                </div>
-                <div className={`pointer-events-none absolute inset-y-0 left-[4px] z-10 w-[42px] rounded-l-[10px] sm:w-[42px] ${railOverlay}`} />
-              </article>
-            );
-          })}
+                      className={`pointer-events-none absolute inset-y-0 left-[4px] z-10 w-[42px] rounded-l-[10px] sm:w-[42px] ${railOverlay}`}
+                    />
+                  </article>
+                );
+              })}
 
-          {!results.length && (
-            <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-8 text-center text-sm text-slate-400">
-              Aucune question à récapituler.
+              {!results.length && (
+                <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-8 text-center text-sm text-slate-400">
+                  Aucune question à récapituler.
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
-      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-        <DialogContent className="max-w-[min(92vw,900px)] border-white/10 bg-[#0F1427] p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
-          <DialogHeader>
-            <DialogTitle className="pr-8 font-brandUpright text-[22px] uppercase leading-none tracking-[0.04em] text-white">
-              Image de la question
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Aperçu de l'image associée à la question du récapitulatif.
-            </DialogDescription>
-          </DialogHeader>
-          {previewImage ? (
-            <img
-              src={previewImage.src}
-              alt={previewImage.alt}
-              className="max-h-[78vh] w-full rounded-[10px] border border-white/10 bg-black/30 object-contain"
-              draggable={false}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
-      </section>
+          </div>
+          <Dialog
+            open={!!previewImage}
+            onOpenChange={(open) => !open && setPreviewImage(null)}
+          >
+            <DialogContent className="max-w-[min(92vw,900px)] border-white/10 bg-[#0F1427] p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+              <DialogHeader>
+                <DialogTitle className="pr-8 font-brandUpright text-[22px] uppercase leading-none tracking-[0.04em] text-white">
+                  Image de la question
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                  Aperçu de l'image associée à la question du récapitulatif.
+                </DialogDescription>
+              </DialogHeader>
+              {previewImage ? (
+                <img
+                  src={previewImage.src}
+                  alt={previewImage.alt}
+                  className="max-h-[78vh] w-full rounded-[10px] border border-white/10 bg-black/30 object-contain"
+                  draggable={false}
+                />
+              ) : null}
+            </DialogContent>
+          </Dialog>
+        </section>
       ) : null}
     </>
   );
@@ -400,9 +645,17 @@ export default function DailyChallengePlayPage() {
   const location = useLocation();
   const dateParam = params.date ?? "";
   const validDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam);
-  const completedInfoFromNavigation = (location.state as { completedInfo?: CompletedInfo } | null)?.completedInfo;
-  const completedInfo = completedInfoFromNavigation ?? (validDate ? readStorage()[dateParam] : undefined);
-  const shouldShowStoredResults = Boolean(completedInfo);
+  const completedInfoFromNavigation = (
+    location.state as { completedInfo?: CompletedInfo } | null
+  )?.completedInfo;
+  const completedInfoFromStorage = validDate
+    ? readStorage()[dateParam]
+    : undefined;
+  const [serverCompleted, setServerCompleted] =
+    useState<CompletedResultPayload | null>(null);
+  const [completedLookupDone, setCompletedLookupDone] = useState(!validDate);
+  const completedInfo = completedInfoFromNavigation ?? completedInfoFromStorage;
+  const shouldShowStoredResults = Boolean(completedInfo || serverCompleted);
 
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     !validDate ? "error" : shouldShowStoredResults ? "ready" : "loading",
@@ -432,7 +685,13 @@ export default function DailyChallengePlayPage() {
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [results, setResults] = useState<Result[]>([]);
-  const [monthlyRanking, setMonthlyRanking] = useState<MonthlyRankingSnapshot | null>(null);
+  const [monthlyRanking, setMonthlyRanking] =
+    useState<DailyRankingSnapshot | null>(
+      serverCompleted?.monthlyRanking ?? null,
+    );
+    const [dailyRanking, setDailyRanking] = useState<DailyRankingSnapshot | null>(
+    serverCompleted?.dailyRanking ?? null,
+  );
   const [points, setPoints] = useState(completedInfo?.score ?? 0);
   const [skew, setSkew] = useState(0);
   const [nowTick, setNowTick] = useState(Date.now());
@@ -479,7 +738,54 @@ export default function DailyChallengePlayPage() {
   }, [nowTick, endsAt, skew]);
 
   useEffect(() => {
-    if (!validDate || shouldShowStoredResults) return;
+    if (!validDate) return;
+
+    let cancelled = false;
+    setCompletedLookupDone(false);
+
+    fetch(`${API_BASE}/daily/results/${dateParam}`, { credentials: "include" })
+      .then(async (res) => {
+        if (cancelled) return;
+        if (res.status === 404 || res.status === 401) {
+          setCompletedLookupDone(true);
+          return;
+        }
+        if (!res.ok) throw new Error("daily_result_lookup_failed");
+        const payload = (await res.json()) as {
+          completed?: CompletedResultPayload;
+        };
+        if (!payload.completed) {
+          setCompletedLookupDone(true);
+          return;
+        }
+        setServerCompleted(payload.completed);
+        setResults(payload.completed.results);
+        setMonthlyRanking(payload.completed.monthlyRanking ?? null);
+        setDailyRanking(payload.completed.dailyRanking ?? null);
+        setPoints(payload.completed.score);
+        setTotalQuestions(payload.completed.questionCount);
+        setQuestionProgress(
+          payload.completed.results.map((result) =>
+            result.correct ? "correct" : "wrong",
+          ),
+        );
+        setPhase("finished");
+        phaseRef.current = "finished";
+        setStatus("ready");
+        setCompletedLookupDone(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCompletedLookupDone(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dateParam, validDate]);
+
+  useEffect(() => {
+    if (!validDate || shouldShowStoredResults || !completedLookupDone) return;
     let cancelled = false;
 
     const s = io(SOCKET_URL, {
@@ -607,6 +913,7 @@ export default function DailyChallengePlayPage() {
       setPoints(p.score);
       setResults(p.results);
       setMonthlyRanking(p.monthlyRanking ?? null);
+      setDailyRanking(p.dailyRanking ?? null);
     });
 
     s.on("disconnect", () => {
@@ -636,7 +943,7 @@ export default function DailyChallengePlayPage() {
       cancelled = true;
       s.close();
     };
-  }, [dateParam, validDate, shouldShowStoredResults]);
+  }, [dateParam, validDate, shouldShowStoredResults, completedLookupDone]);
 
   useEffect(() => {
     if (phase === "playing") inputRef.current?.focus();
@@ -814,7 +1121,7 @@ export default function DailyChallengePlayPage() {
           <DailyFinalResults
             results={results}
             totalQuestions={totalQuestions}
-            monthlyRanking={monthlyRanking}
+            monthlyRanking={dailyRanking}
             score={points}
           />
         )}

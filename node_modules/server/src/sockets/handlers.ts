@@ -15,7 +15,7 @@ import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
 import { startGameForRoom } from "../domain/game/game.service";
 import { getChallengeByDate } from "../domain/daily/daily.service";
-import { getMonthlyDailyRankingSnapshot, recordDailyQuestionResults, recordDailyScoreIfFirst, updateDailyQuestionAverageScores } from "../domain/daily/daily-score.service";
+import { getDailyChallengeRankingSnapshot, getMonthlyDailyRankingSnapshot, recordDailyQuestionResults, recordDailyScoreIfFirst, updateDailyQuestionAverageScores } from "../domain/daily/daily-score.service";
 import { ensurePlayerForUser } from "../domain/player/player.service";
 
 type RacePlayerState = {
@@ -272,6 +272,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     const nextQuestion = sess.questions[nextIndex];
     if (!nextQuestion) {
       let monthlyRanking: Awaited<ReturnType<typeof getMonthlyDailyRankingSnapshot>> | null = null;
+      let dailyRanking: Awaited<ReturnType<typeof getDailyChallengeRankingSnapshot>> | null = null;
       try {
         const record = await recordDailyScoreIfFirst(prisma, sess.challengeId, sess.playerId, sess.score);
         if (record.created && record.scoreId) {
@@ -284,18 +285,23 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           }));
         }
         const monthParts = parseDailyMonth(sess.date);
-        if (monthParts) {
-          monthlyRanking = await getMonthlyDailyRankingSnapshot(
-            prisma,
-            sess.playerId,
-            monthParts.year,
-            monthParts.monthIndex,
-          );
-        }
+        const rankings = await Promise.all([
+          monthParts
+            ? getMonthlyDailyRankingSnapshot(
+                prisma,
+                sess.playerId,
+                monthParts.year,
+                monthParts.monthIndex,
+              )
+            : Promise.resolve(null),
+          getDailyChallengeRankingSnapshot(prisma, sess.challengeId, sess.playerId),
+        ]);
+        monthlyRanking = rankings[0];
+        dailyRanking = rankings[1];
       } catch (err) {
         console.error("[daily_score_record]", err);
       }
-      socket.emit("daily_finished", { score: sess.score, results: sess.results, monthlyRanking });
+      socket.emit("daily_finished", { score: sess.score, results: sess.results, monthlyRanking, dailyRanking });
       return;
     }
     sess.index = nextIndex;

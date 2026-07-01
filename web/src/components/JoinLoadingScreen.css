@@ -18,6 +18,15 @@
   z-index: 50;
 }
 
+.join-loading-screen__background {
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  z-index: 0;
+}
+
 .join-loading-screen__base,
 .join-loading-screen__radials,
 .join-loading-screen__waves,

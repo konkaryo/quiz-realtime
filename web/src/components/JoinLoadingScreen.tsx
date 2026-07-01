@@ -13,13 +13,18 @@ export default function JoinLoadingScreen({
       className="join-loading-screen"
       style={{
         top: offsetTop,
-        ["--join-loading-bg-offset" as string]: `${-offsetTop}px`,
         ["--join-loading-center" as string]: "40%",
       }}
       role="status"
       aria-live="polite"
     >
-      <Background position="absolute" />
+      <div
+        className="join-loading-screen__background"
+        style={{ top: -offsetTop }}
+        aria-hidden
+      >
+        <Background position="absolute" />
+      </div>
       <div className="join-loading-screen__content">
         <svg
           className="microchip"

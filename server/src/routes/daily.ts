@@ -3,7 +3,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { PrismaClient } from "@prisma/client";
 import { getChallengeByDate, listChallengesForMonth, toPublicChallenge } from "../domain/daily/daily.service";
-import { getDailyLeaderboardForDate, getMonthlyDailyLeaderboard, getMonthlyDailySelfLeaderboard } from "../domain/daily/daily-score.service";
+import {getDailyLeaderboardForDate, getMonthlyDailyLeaderboard, getMonthlyDailySelfLeaderboard, getPlayerDailyChallengeCompletedResult} from "../domain/daily/daily-score.service";
 import { currentUser } from "../auth";
 
 function parseMonth(input?: string | null) {
@@ -41,7 +41,19 @@ export function dailyRoutes({ prisma }: { prisma: PrismaClient }) {
       try {
         const monthParam = (req.query as any)?.month as string | undefined;
         const { year, monthIndex } = parseMonth(monthParam);
-        const summaries = await listChallengesForMonth(prisma, year, monthIndex);
+        const auth = await currentUser(prisma, req);
+        const player = auth.user
+          ? await prisma.player.findUnique({
+              where: { userId: auth.user.id },
+              select: { id: true },
+            })
+          : null;
+        const summaries = await listChallengesForMonth(
+          prisma,
+          year,
+          monthIndex,
+          player?.id ?? null,
+        );
         return reply.send({
           month: { year, month: monthIndex + 1 },
           today: todayIso(),
@@ -67,6 +79,43 @@ export function dailyRoutes({ prisma }: { prisma: PrismaClient }) {
       }
 
       return reply.send({ challenge });
+    });
+
+    app.get("/results/:date", async (req, reply) => {
+      const Params = z.object({
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      });
+      const parsed = Params.safeParse(req.params);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: "invalid_date" });
+      }
+
+      const auth = await currentUser(prisma, req);
+      if (!auth.user) {
+        return reply.code(401).send({ error: "unauthorized" });
+      }
+
+      const player = await prisma.player.findUnique({
+        where: { userId: auth.user.id },
+        select: { id: true },
+      });
+      if (!player) {
+        return reply.code(404).send({ error: "not_found" });
+      }
+
+      const { found, completed } = await getPlayerDailyChallengeCompletedResult(
+        prisma,
+        parsed.data.date,
+        player.id,
+      );
+      if (!found) {
+        return reply.code(404).send({ error: "not_found" });
+      }
+      if (!completed) {
+        return reply.code(404).send({ error: "not_completed" });
+      }
+
+      return reply.send({ completed });
     });
 
     app.get("/leaderboard/monthly", async (req, reply) => {

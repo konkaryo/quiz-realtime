@@ -1541,7 +1541,7 @@ export default function AppShell() {
                       placeItems: "center",
                       borderRadius: 999,
                       border: "1px solid rgba(15,23,42,.8)",
-                      background: "#DE46A9",
+                      background: "#EF4444",
                       color: "#ffffff",
                       fontSize: 10,
                       fontWeight: 700,

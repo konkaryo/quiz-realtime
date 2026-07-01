@@ -10,23 +10,36 @@ export type DailyChallengeLeaderboardEntry = {
   img?: string | null;
 };
 
-export type DailyChallengeSelfLeaderboard = { rank: number; entry: DailyChallengeLeaderboardEntry } | null;
+export type DailyChallengeSelfLeaderboard = {
+  rank: number;
+  entry: DailyChallengeLeaderboardEntry;
+} | null;
 
-export type MonthlyDailyRankingSnapshot = {
-  year: number;
-  month: number;
+export type RankingDistributionBucket = {
+  index: number;
+  count: number;
+  minScore: number;
+  maxScore: number;
+  highlighted: boolean;
+};
+
+export type DailyChallengeRankingSnapshot = {
   totalScore: number;
   rank: number | null;
   totalPlayers: number;
   percentile: number | null;
   bands: { label: string; percentile: number; score: number }[];
-  distribution: { index: number; count: number; minScore: number; maxScore: number; highlighted: boolean }[];
+  distribution: RankingDistributionBucket[];
+};
+
+export type MonthlyDailyRankingSnapshot = DailyChallengeRankingSnapshot & {
+  year: number;
+  month: number;
 };
 
 function isMissingDailyScoreTableError(err: unknown): boolean {
   return (
-    err instanceof Prisma.PrismaClientKnownRequestError &&
-    err.code === "P2021"
+    err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2021"
   );
 }
 
@@ -67,14 +80,18 @@ export async function recordDailyScoreIfFirst(
   challengeId: string,
   playerId: string,
   score: number,
-): Promise<{ created: boolean; scoreId: string | null }>
-{
+): Promise<{ created: boolean; scoreId: string | null }> {
   try {
     const created = await prisma.dailyChallengeScore.create({ 
       data: { challengeId, playerId, score },
       select: { id: true, challenge: { select: { date: true } } },
     });
-    await incrementMonthlyDailyScore(prisma, playerId, created.challenge.date, score);
+    await incrementMonthlyDailyScore(
+      prisma,
+      playerId,
+      created.challenge.date,
+      score,
+    );
     return { created: true, scoreId: created.id };
   } catch (err: any) {
     if (isMissingDailyScoreTableError(err)) {
@@ -135,11 +152,18 @@ export async function updateDailyQuestionAverageScores(
   prisma: PrismaClient,
   challengeId: string,
   results: DailyQuestionScoreResult[],
-): Promise<{ averageScores: Map<string, number>; correctRates: Map<string, number> }> {
-  if (!results.length) return { averageScores: new Map(), correctRates: new Map() };
+): Promise<{
+  averageScores: Map<string, number>;
+  correctRates: Map<string, number>;
+}> {
+  if (!results.length)
+    return { averageScores: new Map(), correctRates: new Map() };
 
-  const attemptCount = await prisma.dailyChallengeScore.count({ where: { challengeId } });
-  if (attemptCount <= 0) return { averageScores: new Map(), correctRates: new Map() };
+  const attemptCount = await prisma.dailyChallengeScore.count({
+    where: { challengeId },
+  });
+  if (attemptCount <= 0)
+    return { averageScores: new Map(), correctRates: new Map() };
 
   const previousAttemptCount = Math.max(0, attemptCount - 1);
   const nextAverages = new Map<string, number>();
@@ -339,6 +363,77 @@ function scoreAtPercentile(rows: { totalScore: number }[], percentile: number): 
   return rows[index]?.totalScore ?? 0;
 }
 
+export async function getDailyChallengeRankingSnapshot(
+  prisma: PrismaClient,
+  challengeId: string,
+  playerId: string,
+): Promise<DailyChallengeRankingSnapshot> {
+  const rows = await prisma.dailyChallengeScore
+    .findMany({
+      where: { challengeId },
+      orderBy: [{ score: "desc" }, { createdAt: "asc" }],
+      select: { playerId: true, score: true },
+    })
+    .catch((err: unknown) => {
+      if (isMissingDailyScoreTableError(err)) return [];
+      throw err;
+    });
+
+  const normalizedRows = rows.map((row) => ({
+    playerId: row.playerId,
+    totalScore: row.score,
+  }));
+  const playerIndex = normalizedRows.findIndex((row) => row.playerId === playerId);
+  const rank = playerIndex >= 0 ? playerIndex + 1 : null;
+  const totalPlayers = normalizedRows.length;
+  const totalScore = playerIndex >= 0 ? normalizedRows[playerIndex].totalScore : 0;
+  const percentile = rank && totalPlayers > 0 ? Math.round((rank / totalPlayers) * 1000) / 10 : null;
+  const barCount = 20;
+  const highestScore = Math.max(0, ...normalizedRows.map((row) => row.totalScore));
+  const segmentSize = highestScore > 0 ? highestScore / barCount : 1;
+  const counts = Array.from({ length: barCount }, () => 0);
+
+  for (const row of normalizedRows) {
+    const segmentIndex = highestScore > 0
+      ? Math.min(barCount - 1, Math.floor(row.totalScore / segmentSize))
+      : 0;
+    counts[segmentIndex] += 1;
+  }
+
+  const playerSegmentIndex = rank !== null
+    ? highestScore > 0
+      ? Math.min(barCount - 1, Math.floor(totalScore / segmentSize))
+      : 0
+    : null;
+
+  return {
+    totalScore,
+    rank,
+    totalPlayers,
+    percentile,
+    bands: [
+      { label: "Top 1%", percentile: 1, score: scoreAtPercentile(normalizedRows, 1) },
+      { label: "Top 10%", percentile: 10, score: scoreAtPercentile(normalizedRows, 10) },
+      { label: "Top 50%", percentile: 50, score: scoreAtPercentile(normalizedRows, 50) },
+      { label: "Top 90%", percentile: 90, score: scoreAtPercentile(normalizedRows, 90) },
+      { label: "Top 100%", percentile: 100, score: scoreAtPercentile(normalizedRows, 100) },
+    ],
+    distribution: counts.map((count, index) => {
+      const minScore = highestScore > 0 ? Math.round(index * segmentSize) : 0;
+      const maxScore = highestScore > 0
+        ? Math.round(index === barCount - 1 ? highestScore : (index + 1) * segmentSize)
+        : 0;
+      return {
+        index,
+        count,
+        minScore,
+        maxScore,
+        highlighted: playerSegmentIndex === index,
+      };
+    }),
+  };
+}
+
 export async function getMonthlyDailyRankingSnapshot(
   prisma: PrismaClient,
   playerId: string,
@@ -412,6 +507,154 @@ export async function getMonthlyDailyRankingSnapshot(
       { label: "Top 100%", percentile: 100, score: scoreAtPercentile(rows, 100) },
     ],
     distribution,
+  };
+}
+
+export type DailyChallengeCompletedResult = {
+  score: number;
+  completedAt: string;
+  questionCount: number;
+  results: Array<{
+    questionId: string;
+    questionText: string;
+    slotLabel: string | null;
+    theme: string | null;
+    difficulty: string | null;
+    img: string | null;
+    correct: boolean;
+    attempts: number;
+    answer: string | null;
+    mode: "text" | "choice" | "timeout" | "skip";
+    responseMs: number;
+    correctLabel: string;
+    points: number;
+    averageScore: number;
+    correctRate: number;
+  }>;
+  monthlyRanking: MonthlyDailyRankingSnapshot | null;
+  dailyRanking: DailyChallengeRankingSnapshot | null;
+};
+
+function isDailyQuestionMode(
+  value: string,
+): value is "text" | "choice" | "timeout" | "skip" {
+  return (
+    value === "text" ||
+    value === "choice" ||
+    value === "timeout" ||
+    value === "skip"
+  );
+}
+
+export async function getPlayerDailyChallengeCompletedResult(
+  prisma: PrismaClient,
+  dateIso: string,
+  playerId: string,
+): Promise<{
+  found: boolean;
+  completed: DailyChallengeCompletedResult | null;
+}> {
+  const [year, month, day] = dateIso.split("-").map((v) => Number(v));
+  if (!year || !month || !day) return { found: false, completed: null };
+
+  const start = new Date(Date.UTC(year, month - 1, day));
+  const end = new Date(Date.UTC(year, month - 1, day + 1));
+
+  const challenge = await prisma.dailyChallenge.findFirst({
+    where: { date: { gte: start, lt: end } },
+    select: {
+      id: true,
+      date: true,
+      _count: { select: { entries: true } },
+      scores: {
+        where: { playerId },
+        select: {
+          id: true,
+          score: true,
+          createdAt: true,
+          questionResults: {
+            orderBy: { entry: { position: "asc" } },
+            select: {
+              correct: true,
+              attempts: true,
+              responseMs: true,
+              points: true,
+              mode: true,
+              answer: true,
+              entry: {
+                select: {
+                  id: true,
+                  position: true,
+                  averageScore: true,
+                  correctRate: true,
+                },
+              },
+              question: {
+                select: {
+                  id: true,
+                  text: true,
+                  theme: true,
+                  difficulty: true,
+                  img: true,
+                  choices: {
+                    where: { isCorrect: true },
+                    select: { label: true },
+                    take: 1,
+                  },
+                },
+              },
+            },
+          },
+        },
+        take: 1,
+      },
+    },
+  });
+
+  if (!challenge) return { found: false, completed: null };
+
+  const score = challenge.scores[0];
+  if (!score) return { found: true, completed: null };
+
+  const monthPartsValue = monthParts(challenge.date);
+  const [monthlyRanking, dailyRanking] = await Promise.all([
+    getMonthlyDailyRankingSnapshot(
+      prisma,
+      playerId,
+      monthPartsValue.year,
+      monthPartsValue.month - 1,
+    ),
+    getDailyChallengeRankingSnapshot(prisma, challenge.id, playerId),
+  ]);
+
+  return {
+    found: true,
+    completed: {
+      score: score.score,
+      completedAt: score.createdAt.toISOString(),
+      questionCount: challenge._count.entries,
+      monthlyRanking,
+      dailyRanking,
+      results: score.questionResults.map((result) => ({
+        questionId: result.question.id,
+        questionText: result.question.text,
+        slotLabel: result.entry.position
+          ? `Question ${result.entry.position}`
+          : null,
+        theme: result.question.theme ?? null,
+        difficulty: result.question.difficulty ?? null,
+        img: result.question.img ?? null,
+        correct: result.correct,
+        attempts: result.attempts,
+        answer: result.answer ?? null,
+        mode: isDailyQuestionMode(result.mode) ? result.mode : "text",
+        responseMs: result.responseMs,
+        correctLabel: result.question.choices[0]?.label ?? "",
+        points: result.points,
+        averageScore: result.entry.averageScore,
+        correctRate: result.entry.correctRate,
+      })),
+    },
   };
 }
 

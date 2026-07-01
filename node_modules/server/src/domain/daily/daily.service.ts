@@ -4,6 +4,7 @@ import { toImgUrl } from "../media/media.service";
 
 type ChallengeSummaryRow = {
   date: Date;
+  scores?: { score: number; createdAt: Date }[];
   entries: {
     id: string;
     slotLabel: string | null;
@@ -42,6 +43,7 @@ type ChallengeDetailRow = {
 export type DailyChallengeSummary = {
   date: string;
   questionCount: number;
+  completed: { score: number; completedAt: string } | null;
   slotLabels: string[];
   themeCounts: Record<string, number>;
   difficultyAverage: number | null;
@@ -104,11 +106,19 @@ export async function listChallengesForMonth(
   prisma: PrismaClient,
   year: number,
   monthIndex: number,
+  playerId?: string | null,
 ): Promise<DailyChallengeSummary[]> {
   const { start, end } = monthRange(year, monthIndex);
   const rows = (await (prisma as any).dailyChallenge.findMany({
     where: { date: { gte: start, lt: end } },
     include: {
+      scores: playerId
+        ? {
+            where: { playerId },
+            select: { score: true, createdAt: true },
+            take: 1,
+          }
+        : false,
       entries: {
         orderBy: { position: "asc" },
         include: {
@@ -141,10 +151,17 @@ export async function listChallengesForMonth(
     });
 
     const difficultyAverage = diffCount > 0 ? diffSum / diffCount : null;
+    const completedScore = row.scores?.[0] ?? null;
 
     return {
       date: isoDate(row.date),
       questionCount: row.entries.length,
+      completed: completedScore
+        ? {
+            score: completedScore.score,
+            completedAt: completedScore.createdAt.toISOString(),
+          }
+        : null,
       slotLabels,
       themeCounts,
       difficultyAverage,
@@ -152,7 +169,10 @@ export async function listChallengesForMonth(
   });
 }
 
-export async function getChallengeByDate(prisma: PrismaClient, dateIso: string): Promise<DailyChallengeDetail | null> {
+export async function getChallengeByDate(
+  prisma: PrismaClient,
+  dateIso: string,
+): Promise<DailyChallengeDetail | null> {
   const [year, month, day] = dateIso.split("-").map((v) => Number(v));
   if (!year || !month || !day) return null;
   const start = new Date(Date.UTC(year, month - 1, day));

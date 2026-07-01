@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import lockImg from "../assets/lock.png";
 import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
-const STORAGE_KEY = "dailyChallenge:results:v1";
 
 const MONTH_NAMES = [
   "janvier",
@@ -37,6 +36,7 @@ type CalendarChallenge = {
   slotLabels: string[];
   themeCounts: Record<string, number>;
   difficultyAverage: number | null;
+  completed: { score: number; completedAt: string } | null;
 };
 
 type CalendarResponse = {
@@ -85,17 +85,25 @@ function isoFromParts(year: number, monthIndex: number, day: number) {
   return isoFromDate(new Date(Date.UTC(year, monthIndex, day)));
 }
 
-function readStorage(): Record<string, CompletedInfo> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as unknown;
-    return parsed && typeof parsed === "object"
-      ? (parsed as Record<string, CompletedInfo>)
-      : {};
-  } catch {
-    return {};
-  }
+function parseIsoMonth(
+  dateIso: string | null,
+): { year: number; monthIndex: number } | null {
+  const match = dateIso?.match(/^(\d{4})-(\d{2})-\d{2}$/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(monthIndex) ||
+    monthIndex < 0 ||
+    monthIndex > 11
+  )
+    return null;
+  return { year, monthIndex };
+}
+
+function monthParam(year: number, monthIndex: number) {
+  return `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 }
 
 export default function DailyChallengePage() {
@@ -106,16 +114,19 @@ export default function DailyChallengePage() {
   const today = new Date();
   const fallbackYear = today.getUTCFullYear();
   const fallbackMonthIndex = today.getUTCMonth();
+  const initialView = parseIsoMonth(navigationSelectedDate) ?? {
+    year: fallbackYear,
+    monthIndex: fallbackMonthIndex,
+  };
+  const initialSelectionDoneRef = useRef(false);
 
   const [calendar, setCalendar] = useState<CalendarResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [viewYear, setViewYear] = useState(fallbackYear);
-  const [viewMonthIndex, setViewMonthIndex] = useState(fallbackMonthIndex);
-  const [progress, setProgress] = useState<Record<string, CompletedInfo>>(() =>
-    readStorage(),
-  );
+  const [viewYear, setViewYear] = useState(initialView.year);
+  const [viewMonthIndex, setViewMonthIndex] = useState(initialView.monthIndex);
+  const [progress, setProgress] = useState<Record<string, CompletedInfo>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -123,9 +134,10 @@ export default function DailyChallengePage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/daily/calendar`, {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${API_BASE}/daily/calendar?month=${monthParam(viewYear, viewMonthIndex)}`,
+          { credentials: "include" },
+        );
         if (!res.ok) {
           const data = (await res.json().catch(() => ({}))) as {
             error?: string;
@@ -136,22 +148,39 @@ export default function DailyChallengePage() {
         const data = (await res.json()) as CalendarResponse;
         if (cancelled) return;
         setCalendar(data);
+        setProgress(
+          Object.fromEntries(
+            data.challenges
+              .filter((challenge) => challenge.completed)
+              .map((challenge) => [
+                challenge.date,
+                {
+                  score: challenge.completed!.score,
+                  completedAt: challenge.completed!.completedAt,
+                },
+              ]),
+          ),
+        );
         const map = new Map<string, CalendarChallenge>();
         data.challenges.forEach((challenge) =>
           map.set(challenge.date, challenge),
         );
-        const preferredDate =
-          navigationSelectedDate && map.has(navigationSelectedDate)
-            ? navigationSelectedDate
-            : null;
-        const defaultDate = preferredDate
-          ? preferredDate
-          : map.has(data.today)
-            ? data.today
-            : data.challenges.length > 0
-              ? data.challenges[0].date
+        if (!initialSelectionDoneRef.current) {
+          const preferredDate =
+            navigationSelectedDate && map.has(navigationSelectedDate)
+              ? navigationSelectedDate
               : null;
-        setSelectedDate(defaultDate);
+          const currentMonth = monthParam(viewYear, viewMonthIndex);
+          const defaultDate = preferredDate
+            ? preferredDate
+            : data.today.startsWith(currentMonth)
+              ? data.today
+              : data.challenges.length > 0
+                ? data.challenges[0].date
+                : null;
+          setSelectedDate(defaultDate);
+          initialSelectionDoneRef.current = true;
+        }
       } catch (e: unknown) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Erreur lors du chargement");
@@ -163,37 +192,7 @@ export default function DailyChallengePage() {
     return () => {
       cancelled = true;
     };
-  }, [navigationSelectedDate]);
-
-  useEffect(() => {
-    const handler = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEY) {
-        setProgress(readStorage());
-      }
-    };
-
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, []);
-
-  const year = calendar?.month.year ?? fallbackYear;
-  const monthIndex = calendar ? calendar.month.month - 1 : fallbackMonthIndex;
-
-  useEffect(() => {
-    if (selectedDate) {
-      const match = selectedDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (match) {
-        setViewYear(Number(match[1]));
-        setViewMonthIndex(Number(match[2]) - 1);
-        return;
-      }
-    }
-
-    if (calendar) {
-      setViewYear(calendar.month.year);
-      setViewMonthIndex(calendar.month.month - 1);
-    }
-  }, [calendar, selectedDate]);
+  }, [navigationSelectedDate, viewMonthIndex, viewYear]);
 
   const challengeMap = useMemo(() => {
     const map = new Map<string, CalendarChallenge>();
@@ -215,7 +214,8 @@ export default function DailyChallengePage() {
     calendar?.today ??
     isoFromParts(fallbackYear, fallbackMonthIndex, today.getUTCDate());
   const canGoToNextMonth =
-    viewYear < year || (viewYear === year && viewMonthIndex < monthIndex);
+    viewYear < fallbackYear ||
+    (viewYear === fallbackYear && viewMonthIndex < fallbackMonthIndex);
 
   const goToMonth = useCallback(
     (delta: number) => {
@@ -232,12 +232,9 @@ export default function DailyChallengePage() {
         newYear += 1;
       }
 
-      const maxYear = year;
-      const maxMonthIndex = monthIndex;
-
       if (
-        newYear > maxYear ||
-        (newYear === maxYear && newMonth > maxMonthIndex)
+        newYear > fallbackYear ||
+        (newYear === fallbackYear && newMonth > fallbackMonthIndex)
       ) {
         return;
       }
@@ -245,7 +242,7 @@ export default function DailyChallengePage() {
       setViewMonthIndex(newMonth);
       setViewYear(newYear);
     },
-    [monthIndex, viewMonthIndex, viewYear, year],
+    [fallbackMonthIndex, fallbackYear, viewMonthIndex, viewYear],
   );
 
   useEffect(() => {
@@ -277,13 +274,8 @@ export default function DailyChallengePage() {
             DÉFI DU JOUR
           </h1>
         </header>
-        {(loading || error) && (
-          <div className="mt-6 text-center text-sm text-slate-200/80">
-            {loading && <span>Chargement des défis…</span>}
-            {!loading && error && (
-              <span className="text-rose-200">{error}</span>
-            )}
-          </div>
+        {!loading && error && (
+          <div className="mt-6 text-center text-sm text-rose-200">{error}</div>
         )}
         {!loading && !error && (
           <div className="mx-auto mt-12 flex w-full max-w-[760px] flex-col items-center">
