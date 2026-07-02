@@ -63,7 +63,6 @@ const winnerCards: WinnerCardConfig[] = [
 ];
 
 const defaultProfile = "/img/profiles/0.avif";
-const neutralWinnerBorderColor = "#6A6D78";
 
 function playerLevel(row: Row) {
   return getLevelFromExperience(row.experience ?? 0);
@@ -140,13 +139,6 @@ export function FinalLeaderboard({
                   aria-hidden="true"
                   focusable="false"
                 >
-                  <defs>
-                    <linearGradient id={`winner-card-border-${card.rank}`} x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor={card.borderColor} stopOpacity="1" />
-                      <stop offset="42%" stopColor={card.borderColor} stopOpacity="0.55" />
-                      <stop offset="92%" stopColor={card.borderColor} stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
                   <rect
                     x="0.8"
                     y="0.8"
@@ -155,20 +147,8 @@ export function FinalLeaderboard({
                     rx="5"
                     ry="5"
                     fill="none"
-                    stroke={neutralWinnerBorderColor}
-                    strokeOpacity="0.58"
-                    strokeWidth="1.4"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                  <rect
-                    x="0.8"
-                    y="0.8"
-                    width="98.4"
-                    height="98.4"
-                    rx="5"
-                    ry="5"
-                    fill="none"
-                    stroke={`url(#winner-card-border-${card.rank})`}
+                    stroke={card.borderColor}
+                    strokeOpacity="1"
                     strokeWidth="1.8"
                     vectorEffect="non-scaling-stroke"
                   />

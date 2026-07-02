@@ -31,12 +31,17 @@ type NotificationItem = {
   type: "INVITATION" | "MESSAGE" | "REWARD" | "INFO";
   message: string;
   read: boolean;
+  data?: unknown;
 };
 
 type NotificationView = NotificationItem & {
   displayMessage: string;
   joinHref?: string;
   inviterName?: string;
+  rewardBits?: number;
+  rewardRank?: number;
+  rewardDate?: string;
+  claimable?: boolean;
 };
 
 type PlayerSearchItem = {
@@ -49,6 +54,21 @@ const INVITATION_PREFIX = "__invite__";
 const INVITATION_TTL_MS = 5 * 60 * 1000;
 
 function parseNotification(notification: NotificationItem): NotificationView {
+  if (notification.type === "REWARD") {
+    const data = notification.data;
+    const rewardData = typeof data === "object" && data !== null && !Array.isArray(data) ? data as Record<string, unknown> : {};
+    const bits = Number(rewardData.bits ?? 0);
+    const rank = Number(rewardData.rank ?? 0);
+    const date = typeof rewardData.date === "string" ? rewardData.date : undefined;
+    return {
+      ...notification,
+      rewardBits: Number.isFinite(bits) ? bits : undefined,
+      rewardRank: Number.isFinite(rank) ? rank : undefined,
+      rewardDate: date,
+      claimable: rewardData.kind === "daily_challenge_bits",
+      displayMessage: notification.message,
+    };
+  }
   if (notification.type !== "INVITATION" || !notification.message.startsWith(`${INVITATION_PREFIX}:`)) {
     return { ...notification, displayMessage: notification.message };
   }
@@ -73,6 +93,34 @@ function formatRemainingDuration(issuedAt: string) {
   const totalMinutes = Math.ceil(diffMs / 60000);
   if (totalMinutes <= 1) return "Expire dans moins d’une minute";
   return `Expire dans ${totalMinutes} min`;
+}
+
+function formatNotificationIssuedAt(issuedAt: string) {
+  const issuedTime = new Date(issuedAt).getTime();
+  if (!Number.isFinite(issuedTime)) return "—";
+
+  const elapsedMs = Math.max(0, Date.now() - issuedTime);
+  const elapsedSeconds = Math.floor(elapsedMs / 1000);
+  const elapsedMinutes = Math.floor(elapsedMs / 60000);
+  const elapsedHours = Math.floor(elapsedMs / 3600000);
+
+  if (elapsedMs < 24 * 3600000) {
+    if (elapsedMinutes < 1) {
+      return `Il y a ${Math.max(1, elapsedSeconds)} seconde${elapsedSeconds > 1 ? "s" : ""}`;
+    }
+    if (elapsedHours < 1) {
+      return `Il y a ${elapsedMinutes} minute${elapsedMinutes > 1 ? "s" : ""}`;
+    }
+    return `Il y a ${elapsedHours} heure${elapsedHours > 1 ? "s" : ""}`;
+  }
+
+  if (elapsedMs < 48 * 3600000) return "Hier";
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(issuedTime));
 }
 
 const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
@@ -158,32 +206,25 @@ function MenuCard({
 }
 
 function NavLevelShield({ level }: { level: number }) {
-  const gradientId = React.useId();
 
   return (
-    <span className="relative inline-flex h-9 w-8 shrink-0 items-center justify-center text-white">
+    <span className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center text-white">
       <svg
-        viewBox="0 0 100 120"
+        viewBox="0 0 72 72"
         className="absolute inset-0 h-full w-full overflow-visible"
         aria-hidden="true"
         focusable="false"
       >
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="120" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#9D5CFF" />
-            <stop offset="100%" stopColor="#E245A4" />
-          </linearGradient>
-        </defs>
         <path
-          d="M6 6 H94 V78 L50 114 L6 78 Z"
-          fill="#20284D"
-          stroke={`url(#${gradientId})`}
-          strokeWidth="3"
-          strokeLinejoin="miter"
+          d="M36 3 64.6 19.5v33L36 69 7.4 52.5v-33L36 3z"
+          fill="#172033"
+          stroke="#8b5cf6"
+          strokeWidth="2"
+          strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
         />
       </svg>
-      <span className="relative z-10 font-brand text-[18px] leading-none italic">{level}</span>
+      <span className="relative z-10 font-inter text-[16px] font-black leading-none">{level}</span>
     </span>
   );
 }
@@ -451,8 +492,11 @@ export default function AppShell() {
         method: "POST",
         credentials: "include",
       });
-      setNotifications([]);
-      setUnreadCount(0);
+      setNotifications((prev) => {
+        const remaining = prev.filter((item) => item.type === "REWARD" && item.claimable);
+        setUnreadCount(remaining.length);
+        return remaining;
+      });
     } catch {}
   }, []);
 
@@ -505,6 +549,36 @@ export default function AppShell() {
       setInvitePendingId(null);
     }
   }, [currentInviteContext, refreshUnreadCount]);
+
+  const handleNotificationClaim = React.useCallback(async (notification: NotificationView) => {
+    if (!notification.claimable) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/notifications/${notification.id}/claim`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const payload = (await res.json().catch(() => ({}))) as { claimed?: boolean; bits?: number; totalBits?: number; reason?: string };
+      if (!res.ok) throw new Error(payload.reason || "claim_failed");
+
+      if (Number.isFinite(payload.totalBits)) {
+        window.dispatchEvent(new CustomEvent("bits-updated", { detail: { total: Number(payload.totalBits) } }));
+      }
+
+      setNotifications((prev) => prev.filter((item) => item.id !== notification.id));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      toast({
+        title: payload.claimed ? "Récompense récupérée" : "Récompense déjà récupérée",
+        description: `${payload.bits ?? notification.rewardBits ?? 0} bit${(payload.bits ?? notification.rewardBits ?? 0) > 1 ? "s" : ""} ajouté${(payload.bits ?? notification.rewardBits ?? 0) > 1 ? "s" : ""} à votre compte.`,
+      });
+    } catch {
+      toast({
+        title: "Récompense indisponible",
+        description: "Impossible de récupérer cette récompense pour le moment.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
 
   const handleNotificationJoin = React.useCallback(async (notification: NotificationView) => {
     const href = notification.joinHref;
@@ -583,23 +657,18 @@ export default function AppShell() {
   }, []);
 
   useEffect(() => {
-    void loadUnreadNotifications();
-  }, [loadUnreadNotifications]);
-
-  useEffect(() => {
     notifyIncomingInvitations(notifications);
   }, [notifications, notifyIncomingInvitations]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
       void refreshUnreadCount();
-      void loadUnreadNotifications();
-    }, 10_000);
+    }, 60_000);
 
     return () => {
       window.clearInterval(timer);
     };
-  }, [loadUnreadNotifications, refreshUnreadCount]);
+  }, [refreshUnreadCount]);
 
   useEffect(() => {
     displayBitsRef.current = displayBits;
@@ -830,9 +899,10 @@ export default function AppShell() {
   }, []);
 
   useEffect(() => {
-    if (!notificationsOpen) return;
+    if (!notificationsOpen || unreadCount === 0) return;
+    if (notifications.length >= unreadCount) return;
     void loadUnreadNotifications();
-  }, [notificationsOpen, loadUnreadNotifications]);
+  }, [notificationsOpen, unreadCount, notifications.length, loadUnreadNotifications]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -1369,22 +1439,43 @@ export default function AppShell() {
                             void sendInvite(player);
                           }}
                           disabled={!canInvite || invitePendingId === player.id}
+                          aria-label={invitePendingId === player.id ? "Invitation en cours" : `Inviter ${player.name}`}
+                          title={invitePendingId === player.id ? "Invitation en cours" : "Inviter"}
                           style={{
-                            borderRadius: 999,
-                            border: "1px solid rgba(111,91,212,.55)",
-                            background: canInvite ? "rgba(111,91,212,.18)" : "rgba(255,255,255,.04)",
-                            color: canInvite ? "#e9ddff" : "#64748b",
-                            padding: "6px 10px",
-                            fontSize: 11,
-                            fontWeight: 800,
-                            textTransform: "uppercase",
-                            letterSpacing: ".08em",
+                            position: "relative",
+                            display: "grid",
+                            placeItems: "center",
+                            width: 18,
+                            height: 18,
+                            borderRadius: 5,
+                            border: "1px solid rgba(255,255,255,.9)",
+                            background: "#FFFFFF",
                             cursor: !canInvite || invitePendingId === player.id ? "not-allowed" : "pointer",
-                            opacity: invitePendingId === player.id ? 0.75 : 1,
+                            opacity: !canInvite ? 0.38 : invitePendingId === player.id ? 0.7 : 1,
                             flexShrink: 0,
+                            boxShadow: "0 5px 12px rgba(0,0,0,.22)",
                           }}
                         >
-                          {invitePendingId === player.id ? "Envoi…" : "Inviter"}
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              position: "absolute",
+                              width: 9,
+                              height: 2,
+                              borderRadius: 999,
+                              background: "#161926",
+                            }}
+                          />
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              position: "absolute",
+                              width: 2,
+                              height: 9,
+                              borderRadius: 999,
+                              background: "#161926",
+                            }}
+                          />
                         </button>
                       </div>
                     );
@@ -1705,7 +1796,6 @@ export default function AppShell() {
                     }}
                   />
                   <UserMenuItem to="/me/profile" label="Profil" />
-                  <UserMenuItem to="/me/history" label="Historique" />
                   <UserMenuItem to="/me/achievements" label="Succès" divider />
                   {isAdmin && <UserMenuItem to="/admin" label="Administration" />}
                   <UserMenuItem to="/me/account" label="Compte" />
@@ -1752,6 +1842,23 @@ export default function AppShell() {
               cursor: "pointer",
             }}
           />
+          <style>{`
+            .app-notifications-scroll {
+              scrollbar-width: thin;
+              scrollbar-color: #eef1ff rgba(255,255,255,0.08);
+            }
+            .app-notifications-scroll::-webkit-scrollbar { width: 10px; }
+            .app-notifications-scroll::-webkit-scrollbar-track {
+              background: rgba(255,255,255,0.08);
+              border-radius: 999px;
+            }
+            .app-notifications-scroll::-webkit-scrollbar-thumb {
+              background: #eef1ff;
+              border-radius: 999px;
+              border: 3px solid rgba(6,10,25,0.35);
+              background-clip: padding-box;
+            }
+          `}</style>
           <aside
             style={{
               position: "fixed",
@@ -1759,7 +1866,7 @@ export default function AppShell() {
               right: 0,
               bottom: 0,
               width: "min(360px, 92vw)",
-              background: "linear-gradient(180deg,#070d22,#0b1738)",
+              background: "#131829",
               borderLeft: "1px solid rgba(255,255,255,.12)",
               zIndex: 100,
               color: "#e2e8f0",
@@ -1767,17 +1874,29 @@ export default function AppShell() {
               flexDirection: "column",
             }}
           >
-            <div style={{ padding: "16px 14px", borderBottom: "1px solid rgba(255,255,255,.1)", fontWeight: 800, letterSpacing: ".05em", fontSize: 12 }}>
-              NOTIFICATIONS
+            <div className="border-b border-white/[0.1] px-[14px] py-4 font-brandUpright text-[18px] uppercase leading-none tracking-[0.05em] text-white/95">
+              Notifications
             </div>
-            <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 8, overflowY: "auto", flex: 1 }}>
+            <div
+              className="app-notifications-scroll"
+              style={{
+                padding: "10px 10px 10px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                overflowY: "auto",
+                flex: 1,
+                direction: "rtl",
+              }}
+            >
               {notificationsLoading ? (
-                <div style={{ opacity: 0.8, fontSize: 13 }}>Chargement...</div>
+                <div style={{ direction: "ltr", opacity: 0.8, fontSize: 13 }}>Chargement...</div>
               ) : notifications.length === 0 ? (
-                <div style={{ opacity: 0.8, fontSize: 13 }}>Aucune notification non lue.</div>
+                <div style={{ direction: "ltr", opacity: 0.8, fontSize: 13 }}>Aucune notification non lue.</div>
 ) : (
   notifications.map((notif) => {
     const isInvitation = notif.type === "INVITATION" && !!notif.joinHref;
+    const isReward = notif.type === "REWARD" && !!notif.claimable;
     const remainingLabel = isInvitation
       ? formatRemainingDuration(notif.issuedAt)
       : null;
@@ -1785,7 +1904,17 @@ export default function AppShell() {
     return (
       <div
         key={notif.id}
+        onClick={isReward ? () => void handleNotificationClaim(notif) : undefined}
+        role={isReward ? "button" : undefined}
+        tabIndex={isReward ? 0 : undefined}
+        onKeyDown={isReward ? (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            void handleNotificationClaim(notif);
+          }
+        } : undefined}
         style={{
+          direction: "ltr",
           display: "flex",
           gap: 10,
           alignItems: "flex-start",
@@ -1793,15 +1922,10 @@ export default function AppShell() {
           border: "1px solid rgba(255,255,255,.12)",
           borderRadius: 8,
           padding: "10px 10px",
+          cursor: isReward ? "pointer" : "default",
         }}
       >
-        <span style={{ color: "#22d3ee", marginTop: 1 }}>●</span>
-
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontSize: 11, opacity: 0.75, marginBottom: 3 }}>
-            {notif.type}
-          </div>
-
           <div style={{ fontSize: 13, lineHeight: 1.35 }}>
             {notif.displayMessage}
           </div>
@@ -1813,8 +1937,32 @@ export default function AppShell() {
           )}
 
           <div style={{ fontSize: 11, opacity: 0.65, marginTop: 4 }}>
-            {new Date(notif.issuedAt).toLocaleString("fr-FR")}
+            {formatNotificationIssuedAt(notif.issuedAt)}
           </div>
+
+          {isReward && (
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void handleNotificationClaim(notif);
+                }}
+                style={{
+                  height: 30,
+                  padding: "0 12px",
+                  borderRadius: 6,
+                  border: "1px solid transparent",
+                  background: "#6250C7",
+                  color: "#ffffff",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                Récupérer {notif.rewardBits ?? 0} bit{(notif.rewardBits ?? 0) > 1 ? "s" : ""}
+              </button>
+            </div>
+          )}
 
           {isInvitation && notif.joinHref && (
             <div style={{ marginTop: 8 }}>
@@ -1851,15 +1999,17 @@ export default function AppShell() {
                   width: "100%",
                   height: 34,
                   borderRadius: 6,
-                  border: "1px solid rgba(255,255,255,.5)",
-                  background: "#ffffff",
-                  color: "#0f172a",
-                  fontWeight: 700,
+                  border: "1px solid transparent",
+                  background: "#6250C7",
+                  color: "#ffffff",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  fontWeight: 800,
                   cursor: notifications.length === 0 ? "not-allowed" : "pointer",
                   opacity: notifications.length === 0 ? 0.6 : 1,
                 }}
               >
-                TOUT MARQUER COMME LU
+                Tout marquer comme lu
               </button>
             </div>
           </aside>

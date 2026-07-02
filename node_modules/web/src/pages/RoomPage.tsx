@@ -55,6 +55,8 @@ type RoomMeta = {
   visibility: "PUBLIC" | "PRIVATE";
   name?: string | null;
   image?: string | null;
+  ownerId?: string | null;
+  manualQuestionLaunch?: boolean;
 };
 type AnsweredStatus = "correct" | "correct-mc" | "wrong";
 type QuestionStatus = "pending" | "correct" | "correct-mc" | "wrong";
@@ -249,6 +251,9 @@ export default function RoomPage() {
   >({});
   const [question, setQuestion] = useState<QuestionLite | null>(null);
   const [dynamicQuestionDisplay, setDynamicQuestionDisplay] = useState(true);
+  const [manualQuestionLaunch, setManualQuestionLaunch] = useState(false);
+  const [manualNextAvailable, setManualNextAvailable] = useState(false);
+  const [manualNextPending, setManualNextPending] = useState(false);
   const [index, setIndex] = useState(0);
   const [total, setTotal] = useState(0);
 
@@ -566,6 +571,7 @@ export default function RoomPage() {
         durationMs?: number;
         question: QuestionLite;
         dynamicQuestionDisplay?: boolean;
+        manualQuestionLaunch?: boolean;
         serverNow?: number;
       }) => {
         const nextSkew = typeof p.serverNow === "number" ? p.serverNow - Date.now() : skew;
@@ -592,6 +598,9 @@ export default function RoomPage() {
         setRoundDuration(durationMs);
 
         setDynamicQuestionDisplay(p.dynamicQuestionDisplay ?? true);
+        setManualQuestionLaunch(p.manualQuestionLaunch ?? false);
+        setManualNextAvailable(false);
+        setManualNextPending(false);
         setQuestion(p.question);
         setAnsweredByPg({});
         setSelected(null);
@@ -798,6 +807,20 @@ export default function RoomPage() {
         setPending(false);
       }
     );
+
+    s.on("manual_round_ready", (p: { index?: number; total?: number }) => {
+      if (typeof p.index === "number") {
+        setIndex(p.index);
+        indexRef.current = p.index;
+      }
+      if (typeof p.total === "number") {
+        setTotal(p.total);
+        totalRef.current = p.total;
+      }
+      setManualNextAvailable(true);
+      setManualNextPending(false);
+      setPending(false);
+    });
 
     s.on("leaderboard_update", (p: { leaderboard: LeaderRow[] }) => {
       setLeaderboard(applyAvatarOverrides(p.leaderboard ?? []));
@@ -1123,6 +1146,7 @@ export default function RoomPage() {
   const textLocked = choicesRevealed || showChoices;
 
   const isPrivateRoom = roomMeta?.visibility === "PRIVATE";
+  const isRoomOwner = !!selfId && !!roomMeta?.ownerId && roomMeta.ownerId === selfId;
   const roomBadgeClass = "inline-flex items-center gap-1.5 rounded-[6px] bg-black/45 px-3 py-1.5 font-brand text-[15px] italic leading-none text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-sm";
   const displayedRoomCode = isRoomCodeVisible ? roomMeta?.code ?? "—" : maskRoomCode(roomMeta?.code);
 
@@ -1145,10 +1169,29 @@ export default function RoomPage() {
   const questionProgress: QuestionPanelProgress[] = useMemo(
     () =>
       questionTrackerItems.map((status) =>
-        status === "wrong" ? "wrong" : status === "pending" ? "pending" : "correct"
+        status === "wrong"
+          ? "wrong"
+          : status === "correct-mc"
+            ? "correct-mc"
+            : status === "correct"
+              ? "correct"
+              : "pending"
       ),
     [questionTrackerItems]
   );
+
+  function launchNextQuestion() {
+    if (!socket || !manualNextAvailable || !isRoomOwner) return;
+    setManualNextPending(true);
+    socket.emit("launch_next_question", {}, (res?: { ok?: boolean; reason?: string }) => {
+      if (res?.ok) {
+        setManualNextAvailable(false);
+        return;
+      }
+      setManualNextPending(false);
+      setFeedback(res?.reason === "forbidden" ? "Seul le propriétaire peut lancer la question." : "Impossible de lancer la question.");
+    });
+  }
 
   const finalQuestions = useMemo(() => {
     if (!finalRecap?.length) return [];
@@ -1873,6 +1916,10 @@ return (
                                   onSelectChoice={(choice) => answerByChoice(choice.id)}
                                   questionProgress={questionProgress}
                                   correctLabelPlacement="above"
+                                  manualNextAvailable={manualQuestionLaunch && manualNextAvailable}
+                                  manualNextIsOwner={isRoomOwner}
+                                  manualNextPending={manualNextPending}
+                                  onManualNext={launchNextQuestion}
                                   animateQuestionText={dynamicQuestionDisplay}
                                   questionRevealStartedAtMs={questionRevealStartedAtMs}
                                 />
@@ -1926,18 +1973,18 @@ return (
                       <button
                         type="button"
                         onClick={() => setSelectedFinalIndex(firstFinalQuestionIndex)}
-                        className="mx-auto flex h-12 w-[86%] items-center justify-center gap-3 rounded-xl bg-[#6250C7] px-4 font-acumin font-semibold text-white transition hover:bg-[#6F5BD4]"
+                        className="mx-auto flex h-11 w-[86%] items-center justify-center gap-3 rounded-[6px] bg-[#6250C7] px-4 font-inter text-[13px] font-extrabold text-white transition hover:bg-[#6F5BD4]"
                       >
-                        <span className="text-[16px] leading-none">Voir le détail</span>
-                        <List className="h-5 w-5 text-white/95" strokeWidth={2.3} />
+                        <span className="leading-none">Voir le détail</span>
+                        <List className="h-4 w-4 text-white/95" strokeWidth={2.3} />
                       </button>
                       <button
                         type="button"
                         onClick={() => nav("/")}
-                        className="mx-auto flex h-12 w-[86%] items-center justify-center gap-3 rounded-xl bg-[#151A30] px-4 font-acumin font-semibold text-white transition hover:bg-[#1b2340]"
+                        className="mx-auto flex h-11 w-[86%] items-center justify-center gap-3 rounded-[6px] bg-[#151A30] px-4 font-inter text-[13px] font-extrabold text-white transition hover:bg-[#1b2340]"
                       >
-                        <span className="text-[16px] leading-none">Retour au salon</span>
-                        <LogOut className="h-5 w-5 text-white/95" strokeWidth={2.3} />
+                        <span className="leading-none">Retour au salon</span>
+                        <LogOut className="h-4 w-4 text-white/95" strokeWidth={2.3} />
                       </button>
                     </div>
                   ) : null}

@@ -337,7 +337,7 @@ export default function JoinPrivateRoomPage() {
             <button
               type="button"
               onClick={() => nav("/rooms/new")}
-              className="inline-flex w-full items-center justify-center rounded-[7px] border border-slate-400/70 bg-transparent px-4 py-3.5 text-[13px] font-extrabold text-white shadow-[0_12px_28px_rgba(0,0,0,0.22)] transition hover:border-white hover:bg-white/5"
+              className="inline-flex w-full items-center justify-center rounded-[7px] border border-white/[0.08] bg-[#1F2437] px-4 py-3.5 text-[13px] font-extrabold text-slate-50 shadow-[0_12px_28px_rgba(0,0,0,0.22)] transition hover:bg-[#2A3046]"
             >
               Créer une partie
             </button>

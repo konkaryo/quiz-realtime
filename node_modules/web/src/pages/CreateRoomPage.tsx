@@ -46,7 +46,6 @@ type NavItem = {
 };
 
 type SettingRowProps = {
-  icon: React.ReactNode;
   label: string;
   description: string;
   value: string;
@@ -90,10 +89,36 @@ type RoomSettingsResponse = {
     roundMs?: number;
     bannedThemes?: ThemeKey[];
     dynamicQuestionDisplay?: boolean;
+    manualQuestionLaunch?: boolean;
   };
 };
 
 type RangeStyle = React.CSSProperties & Record<"--p", string>;
+
+type SavedRoomSettings = {
+  difficulty: number;
+  questionCount: number;
+  questionDuration: number;
+  dynamicQuestionDisplay: boolean;
+  manualQuestionLaunch: boolean;
+  bannedThemes: ThemeKey[];
+};
+
+function areThemeListsEqual(left: ThemeKey[], right: ThemeKey[]) {
+  return left.length === right.length && left.every((theme, index) => theme === right[index]);
+}
+
+function areRoomSettingsEqual(left: SavedRoomSettings, right: SavedRoomSettings) {
+  return (
+    left.difficulty === right.difficulty &&
+    left.questionCount === right.questionCount &&
+    left.questionDuration === right.questionDuration &&
+    left.dynamicQuestionDisplay === right.dynamicQuestionDisplay &&
+    left.manualQuestionLaunch === right.manualQuestionLaunch &&
+    areThemeListsEqual(left.bannedThemes, right.bannedThemes)
+  );
+}
+
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -151,83 +176,6 @@ function closestDifficulty(value: number) {
   ).value;
 }
 
-function GamepadIcon(props: { className?: string }) {
-  return (
-    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M7.25 10.15h9.5c2.03 0 3.71 1.48 4.02 3.48l.46 2.93a2.54 2.54 0 0 1-4.4 2.15l-1.62-1.76H8.79l-1.62 1.76a2.54 2.54 0 0 1-4.4-2.15l.46-2.93a4.07 4.07 0 0 1 4.02-3.48Z"
-        fill="currentColor"
-      />
-      <path d="M8.4 13.05v2.7M7.05 14.4h2.7" stroke="#0B1229" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M15.95 13.95h.02M18 15.45h.02" stroke="#0B1229" strokeWidth="2.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function QuestionIcon(props: { className?: string }) {
-  return (
-    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="9" fill="currentColor" />
-      <path
-        d="M10.1 9.2A2.25 2.25 0 0 1 12.25 8c1.22 0 2.15.77 2.15 1.86 0 1.52-1.8 1.75-1.8 3.18M12.5 16h.01"
-        stroke="#0B1229"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ChartIcon(props: { className?: string }) {
-  return (
-    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M4 17h3v3H4v-3Zm6-5h3v8h-3v-8Zm6-4h4v12h-4V8Z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function TimerIcon(props: { className?: string }) {
-  return (
-    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M12 21a8 8 0 1 0-8-8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M12 13V8m0 5 3 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M9 3h6M4 6l2-2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function TilesIcon(props: { className?: string }) {
-  return (
-    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="5" y="5" width="5" height="5" rx="1" fill="currentColor" />
-      <rect x="14" y="5" width="5" height="5" rx="1" fill="currentColor" />
-      <rect x="5" y="14" width="5" height="5" rx="1" fill="currentColor" />
-      <rect x="14" y="14" width="5" height="5" rx="1" fill="currentColor" />
-    </svg>
-  );
-}
-
-function UsersIcon(props: { className?: string }) {
-  return (
-    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M8.2 11.6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.6 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2.7 19.4c.4-3 2.44-5 5.5-5s5.1 2 5.5 5H2.7Zm7.6 0c.4-3 2.44-5 5.5-5s5.1 2 5.5 5h-11Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function DynamicTextIcon(props: { className?: string }) {
-  return (
-    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M4 6h16M4 12h10M4 18h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M17 13l3 3-3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 function CopyIcon(props: { className?: string }) {
   return (
     <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -246,17 +194,16 @@ function RefreshIcon(props: { className?: string }) {
   );
 }
 
-function SettingRow({ icon, label, description, value, children }: SettingRowProps) {
+function SettingRow({ label, description, value, children }: SettingRowProps) {
   return (
-    <div className="grid min-h-[64px] grid-cols-[24px,minmax(112px,1fr),minmax(150px,230px)] items-center gap-5 rounded-[8px] border border-white/[0.06] bg-[#131829] px-4 py-3 max-sm:grid-cols-[24px,1fr] max-sm:gap-x-3 max-sm:gap-y-2">
-      <div className="text-white">{icon}</div>
+    <div className="grid min-h-[71px] grid-cols-[minmax(123px,1fr),minmax(165px,253px)] items-center gap-5 rounded-[8px] border border-white/[0.06] bg-[#131930] px-4 py-3 max-sm:grid-cols-1 max-sm:gap-y-3">
       <div className="translate-y-[1px]">
-        <div className="font-brandUpright text-[17px] uppercase leading-none tracking-[0.05em] text-white">
+        <div className="font-brandUpright text-[18px] uppercase leading-none tracking-[0.05em] text-white">
           {label}
         </div>
-        <p className="mt-1.5 font-inter text-[11px] font-medium leading-none text-slate-400">{description}</p>
+        <p className="mt-1.5 font-inter text-[12px] font-medium leading-none text-slate-400">{description}</p>
       </div>
-      <div className="font-inter max-sm:col-span-2">{children}</div>
+      <div className="font-inter">{children}</div>
       <div className="sr-only">{value}</div>
     </div>
   );
@@ -274,6 +221,7 @@ export default function CreateRoomPage() {
   const [questionDuration, setQuestionDuration] = useState(20);
   const [maxPlayers, setMaxPlayers] = useState(50);
   const [dynamicQuestionDisplay, setDynamicQuestionDisplay] = useState(true);
+  const [manualQuestionLaunch, setManualQuestionLaunch] = useState(false);
   const [selectedThemes, setSelectedThemes] = useState<ThemeKey[]>(THEME_OPTIONS.map((theme) => theme.key));
   const [code, setCode] = useState("");
   const [activePanel, setActivePanel] = useState<PanelKey>("settings");
@@ -282,6 +230,7 @@ export default function CreateRoomPage() {
   const [lobbyPlayers, setLobbyPlayers] = useState<LobbyPlayer[]>([]);
   const [ownerPlayerId, setOwnerPlayerId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [savedSettings, setSavedSettings] = useState<SavedRoomSettings | null>(null);
   const [lobbySocket, setLobbySocket] = useState<Socket | null>(null);
 
   const copyResetTimeoutRef = useRef<number | null>(null);
@@ -315,6 +264,18 @@ export default function CreateRoomPage() {
     DIFFICULTY_OPTIONS.findIndex((option) => option.value === difficulty),
   );
   const selectedDifficultyLabel = DIFFICULTY_OPTIONS[selectedDifficultyIndex]?.label ?? "Modéré";
+  const currentSettings = useMemo<SavedRoomSettings>(
+    () => ({
+      difficulty,
+      questionCount,
+      questionDuration,
+      dynamicQuestionDisplay,
+      manualQuestionLaunch,
+      bannedThemes,
+    }),
+    [bannedThemes, difficulty, dynamicQuestionDisplay, manualQuestionLaunch, questionCount, questionDuration],
+  );
+  const hasUnsavedSettings = savedSettings !== null && !areRoomSettingsEqual(currentSettings, savedSettings);
   const orderedLobbyPlayers = useMemo(() => {
     if (!ownerPlayerId) return lobbyPlayers;
     return [...lobbyPlayers].sort((a, b) => {
@@ -488,15 +449,31 @@ export default function CreateRoomPage() {
 
         setCreatedRoomId(room.id);
         setCode(room.code ?? "");
-        if (typeof room.difficulty === "number") setDifficulty(closestDifficulty(room.difficulty));
-        if (typeof room.questionCount === "number") setQuestionCount(room.questionCount);
-        if (typeof room.roundMs === "number") setQuestionDuration(Math.max(1, Math.round(room.roundMs / 1000)));
-        if (Array.isArray(room.bannedThemes)) {
-          setSelectedThemes(THEME_OPTIONS.filter((theme) => !room.bannedThemes?.includes(theme.key)).map((theme) => theme.key));
-        }
-        if (typeof room.dynamicQuestionDisplay === "boolean") {
-          setDynamicQuestionDisplay(room.dynamicQuestionDisplay);
-        }
+        const loadedDifficulty = typeof room.difficulty === "number" ? closestDifficulty(room.difficulty) : 45;
+        const loadedQuestionCount = typeof room.questionCount === "number" ? room.questionCount : 10;
+        const loadedQuestionDuration = typeof room.roundMs === "number" ? Math.max(1, Math.round(room.roundMs / 1000)) : 20;
+        const loadedBannedThemes = Array.isArray(room.bannedThemes)
+          ? THEME_OPTIONS.filter((theme) => room.bannedThemes?.includes(theme.key)).map((theme) => theme.key)
+          : [];
+        const loadedDynamicQuestionDisplay =
+          typeof room.dynamicQuestionDisplay === "boolean" ? room.dynamicQuestionDisplay : true;
+        const loadedManualQuestionLaunch =
+          typeof room.manualQuestionLaunch === "boolean" ? room.manualQuestionLaunch : false;
+
+        setDifficulty(loadedDifficulty);
+        setQuestionCount(loadedQuestionCount);
+        setQuestionDuration(loadedQuestionDuration);
+        setSelectedThemes(THEME_OPTIONS.filter((theme) => !loadedBannedThemes.includes(theme.key)).map((theme) => theme.key));
+        setDynamicQuestionDisplay(loadedDynamicQuestionDisplay);
+        setManualQuestionLaunch(loadedManualQuestionLaunch);
+        setSavedSettings({
+          difficulty: loadedDifficulty,
+          questionCount: loadedQuestionCount,
+          questionDuration: loadedQuestionDuration,
+          dynamicQuestionDisplay: loadedDynamicQuestionDisplay,
+          manualQuestionLaunch: loadedManualQuestionLaunch,
+          bannedThemes: loadedBannedThemes,
+        });
         setActivePanel("lobby");
       })
       .catch((e: unknown) => {
@@ -579,6 +556,7 @@ export default function CreateRoomPage() {
           roundSeconds: questionDuration,
           maxPlayers,
           dynamicQuestionDisplay,
+          manualQuestionLaunch,
           bannedThemes,
         }),
       })) as CreateRoomResponse;
@@ -590,6 +568,7 @@ export default function CreateRoomPage() {
 
       if (finalCode && finalCode !== code) setCode(finalCode);
       setCreatedRoomId(id);
+      setSavedSettings(currentSettings);
       setActivePanel("lobby");
     } catch (e: unknown) {
       const apiError = e as ApiError;
@@ -618,9 +597,11 @@ export default function CreateRoomPage() {
           questionCount,
           roundSeconds: questionDuration,
           dynamicQuestionDisplay,
+          manualQuestionLaunch,
           bannedThemes,
         }),
       });
+      setSavedSettings(currentSettings);
       setSaveStatus("Paramètres sauvegardés.");
     } catch (e: unknown) {
       const apiError = e as ApiError;
@@ -661,14 +642,14 @@ export default function CreateRoomPage() {
           -webkit-appearance: none;
           appearance: none;
           width: 100%;
-          height: 18px;
+          height: 20px;
           background: transparent;
           cursor: pointer;
           outline: none;
         }
 
         input[type="range"].create-room-range::-webkit-slider-runnable-track {
-          height: 6px;
+          height: 7px;
           border-radius: 999px;
           background: linear-gradient(#7C5CFF 0 0) 0 / var(--p) 100% no-repeat, #1c2748;
         }
@@ -676,30 +657,30 @@ export default function CreateRoomPage() {
         input[type="range"].create-room-range::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          width: 16px;
-          height: 16px;
+          width: 17px;
+          height: 17px;
           margin-top: -5px;
           border-radius: 999px;
           border: 2px solid #ffffff;
           background: #7C5CFF;
-          box-shadow: 0 0 0 4px rgba(124,92,255,0.18);
+          box-shadow: none;
         }
 
         input[type="range"].create-room-range::-moz-range-track {
-          height: 6px;
+          height: 7px;
           border-radius: 999px;
           background: #1c2748;
         }
 
         input[type="range"].create-room-range::-moz-range-progress {
-          height: 6px;
+          height: 7px;
           border-radius: 999px;
           background: #7C5CFF;
         }
 
         input[type="range"].create-room-range::-moz-range-thumb {
-          width: 16px;
-          height: 16px;
+          width: 17px;
+          height: 17px;
           border-radius: 999px;
           border: 2px solid #ffffff;
           background: #7C5CFF;
@@ -747,7 +728,7 @@ export default function CreateRoomPage() {
               onClick={createdRoomId ? launchGame : createRoom}
               disabled={loading || !code || (createdRoomId !== null && !lobbySocket)}
               className={[
-                "mt-36 h-[40px] w-[250px] rounded-[7px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-6 text-center font-sans text-[15px] font-bold text-slate-50 transition hover:brightness-110 max-md:mt-8 max-md:w-full",
+                "mt-36 h-[40px] w-[250px] rounded-[7px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-6 text-center font-inter text-[13px] font-extrabold text-slate-50 transition hover:brightness-110 max-md:mt-8 max-md:w-full",
                 loading || !code ? "cursor-not-allowed opacity-50 hover:brightness-100" : "",
               ].join(" ")}
             >
@@ -764,22 +745,21 @@ export default function CreateRoomPage() {
             )}
 
             {activePanel === "settings" && (
-              <div id="create-room-panel-settings" role="tabpanel" aria-label="Paramètres" className="space-y-4">
+              <div id="create-room-panel-settings" role="tabpanel" aria-label="Paramètres" className="create-room-scroll max-h-[calc(100vh-310px)] space-y-4 overflow-y-auto pr-4">
                 <SettingRow
-                  icon={<GamepadIcon className="h-6 w-6" />}
                   label="Mode de jeu"
                   description="Choisissez le mode de jeu"
                   value="Classique"
                 >
                   <select
                     defaultValue="Classique"
-                    className="h-[24px] w-full rounded-[3px] border-0 bg-white px-3 text-[11px] font-semibold text-[#111827] outline-none"
+                    className="h-[26px] w-full rounded-[3px] border-0 bg-[#0D1429] px-3 text-[12px] font-semibold text-white/95 outline-none"
                   >
                     <option>Classique</option>
                   </select>
                 </SettingRow>
 
-                <SettingRow icon={<QuestionIcon className="h-5 w-5" />} label="Nombre de questions" description="Définissez le nombre de questions" value={`${questionCount}`}>
+                <SettingRow label="Nombre de questions" description="Définissez le nombre de questions" value={`${questionCount}`}>
                   <div className="flex items-center gap-3">
                     <input
                       id="question-count"
@@ -792,22 +772,22 @@ export default function CreateRoomPage() {
                       className="create-room-range"
                       style={rangeStyle(qcountP)}
                     />
-                    <span className="w-8 text-right font-inter text-[11px] font-semibold leading-none text-white">{questionCount}</span>
+                    <span className="w-8 text-right font-inter text-[12px] font-semibold leading-none text-white">{questionCount}</span>
                   </div>
                 </SettingRow>
 
-                <SettingRow icon={<ChartIcon className="h-6 w-6" />} label="Difficulté des questions" description="Ajustez la difficulté des questions" value={selectedDifficultyLabel}>
-                  <div className="flex h-[32px] items-center justify-center gap-2">
+                <SettingRow label="Difficulté des questions" description="Ajustez la difficulté des questions" value={selectedDifficultyLabel}>
+                  <div className="flex h-[35px] items-center justify-center gap-2">
                     <button
                       type="button"
                       onClick={() => adjustDifficulty(-1)}
                       disabled={selectedDifficultyIndex <= 0}
                       aria-label="Réduire la difficulté des questions"
-                      className="grid h-7 w-7 place-items-center rounded-[5px] bg-[#18213D] text-[15px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
+                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       −
                     </button>
-                    <div className="flex h-full min-w-[82px] flex-1 items-center justify-center rounded-[5px] bg-[#0D1429] px-4 font-inter text-[11px] font-semibold leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                    <div className="flex h-full min-w-[90px] flex-1 items-center justify-center rounded-[5px] bg-[#0D1429] px-4 font-inter text-[12px] font-semibold leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                       {selectedDifficultyLabel}
                     </div>
                     <button
@@ -815,15 +795,15 @@ export default function CreateRoomPage() {
                       onClick={() => adjustDifficulty(1)}
                       disabled={selectedDifficultyIndex >= DIFFICULTY_OPTIONS.length - 1}
                       aria-label="Augmenter la difficulté des questions"
-                      className="grid h-7 w-7 place-items-center rounded-[5px] bg-[#18213D] text-[15px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
+                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       +
                     </button>
                   </div>
                 </SettingRow>
 
-                <SettingRow icon={<TimerIcon className="h-6 w-6" />} label="Temps pour répondre" description="Temps disponible par question (secondes)" value={`${questionDuration}s`}>
-                  <div className="flex h-[32px] items-center justify-center gap-2">
+                <SettingRow label="Temps pour répondre" description="Temps disponible par question (secondes)" value={`${questionDuration}s`}>
+                  <div className="flex h-[35px] items-center justify-center gap-2">
                     <button
                       type="button"
                       onPointerDown={(event) => {
@@ -837,11 +817,11 @@ export default function CreateRoomPage() {
                       onKeyDown={(event) => handleQuestionDurationKeyDown(event, -1)}
                       disabled={questionDuration <= 3}
                       aria-label="Diminuer le temps pour répondre"
-                      className="grid h-7 w-7 place-items-center rounded-[5px] bg-[#18213D] text-[15px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
+                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       −
                     </button>
-                    <div className="flex h-full min-w-[82px] flex-1 items-center justify-center rounded-[5px] bg-[#0D1429] px-4 font-inter text-[11px] font-semibold leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                    <div className="flex h-full min-w-[90px] flex-1 items-center justify-center rounded-[5px] bg-[#0D1429] px-4 font-inter text-[12px] font-semibold leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                       {questionDuration}
                     </div>
                     <button
@@ -857,29 +837,30 @@ export default function CreateRoomPage() {
                       onKeyDown={(event) => handleQuestionDurationKeyDown(event, 1)}
                       disabled={questionDuration >= 60}
                       aria-label="Augmenter le temps pour répondre"
-                      className="grid h-7 w-7 place-items-center rounded-[5px] bg-[#18213D] text-[15px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"               >
+                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
+                    >
                       +
                     </button>
                   </div>
                 </SettingRow>
 
-                <SettingRow icon={<TilesIcon className="h-6 w-6" />} label="Thèmes des questions" description="Sélectionnez les thèmes de la partie" value={`${selectedThemeCount}/${THEME_OPTIONS.length}`}>
+                <SettingRow label="Thèmes des questions" description="Sélectionnez les thèmes de la partie" value={`${selectedThemeCount}/${THEME_OPTIONS.length}`}>
                   <button
                     type="button"
                     onClick={() => setThemesOpen(true)}
                     aria-haspopup="dialog"
                     aria-expanded={themesOpen}
-                    className="flex h-[28px] w-full items-center justify-between rounded-[3px] bg-white/90 px-3 text-left text-[11px] font-semibold text-[#111827] transition hover:bg-white"
+                    className="flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]"
                   >
                     <span>{selectedThemeCount}/{THEME_OPTIONS.length} thèmes actifs</span>
-                    <span className="inline-flex items-center justify-center text-[#111827]/70" aria-hidden="true">
+                    <span className="inline-flex items-center justify-center text-white/70" aria-hidden="true">
                       <Edit3 className="h-3 w-3" strokeWidth={2.4} />
                     </span>
                     <span className="sr-only">Modifier les thèmes</span>
                   </button>
                 </SettingRow>
 
-                <SettingRow icon={<UsersIcon className="h-6 w-6" />} label="Nombre de joueurs" description="Définissez le nombre de participants" value={`${maxPlayers}`}>
+                <SettingRow label="Nombre de joueurs" description="Définissez le nombre de participants" value={`${maxPlayers}`}>
                   <div className="flex items-center gap-3">
                     <input
                       id="max-players"
@@ -892,12 +873,11 @@ export default function CreateRoomPage() {
                       className="create-room-range"
                       style={rangeStyle(maxPlayersP)}
                     />
-                    <span className="w-8 text-right font-inter text-[11px] font-semibold leading-none text-white">{maxPlayers}</span>
+                    <span className="w-8 text-right font-inter text-[12px] font-semibold leading-none text-white">{maxPlayers}</span>
                   </div>
                 </SettingRow>
 
                 <SettingRow
-                  icon={<DynamicTextIcon className="h-6 w-6" />}
                   label="Affichage dynamique des questions"
                   description="Affiche les questions en temps réel"
                   value={dynamicQuestionDisplay ? "Activé" : "Désactivé"}
@@ -907,24 +887,52 @@ export default function CreateRoomPage() {
                     onClick={() => setDynamicQuestionDisplay((enabled) => !enabled)}
                     aria-pressed={dynamicQuestionDisplay}
                     className={[
-                      "flex h-[28px] w-full items-center justify-between rounded-[3px] px-3 text-left text-[11px] font-semibold transition",
-                      dynamicQuestionDisplay
-                        ? "bg-white/90 text-[#111827] hover:bg-white"
-                        : "bg-[#1c2748] text-white/70 hover:bg-[#243154]",
+                      "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]",
                     ].join(" ")}
                   >
                     <span>{dynamicQuestionDisplay ? "Activé" : "Désactivé"}</span>
                     <span
                       aria-hidden
                       className={[
-                        "relative h-4 w-8 rounded-full transition",
+                        "relative h-[18px] w-9 rounded-full transition",
                         dynamicQuestionDisplay ? "bg-[#7C5CFF]" : "bg-white/20",
                       ].join(" ")}
                     >
                       <span
                         className={[
-                          "absolute top-0.5 h-3 w-3 rounded-full bg-white transition",
-                          dynamicQuestionDisplay ? "left-[18px]" : "left-0.5",
+                          "absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white transition",
+                          dynamicQuestionDisplay ? "left-[20px]" : "left-0.5",
+                        ].join(" ")}
+                      />
+                    </span>
+                  </button>
+                </SettingRow>
+
+                <SettingRow
+                  label="Lancement manuel"
+                  description="Lancez chaque question suivante manuellement"
+                  value={manualQuestionLaunch ? "Activé" : "Désactivé"}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setManualQuestionLaunch((enabled) => !enabled)}
+                    aria-pressed={manualQuestionLaunch}
+                    className={[
+                      "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]",
+                    ].join(" ")}
+                  >
+                    <span>{manualQuestionLaunch ? "Activé" : "Désactivé"}</span>
+                    <span
+                      aria-hidden
+                      className={[
+                        "relative h-[18px] w-9 rounded-full transition",
+                        manualQuestionLaunch ? "bg-[#7C5CFF]" : "bg-white/20",
+                      ].join(" ")}
+                    >
+                      <span
+                        className={[
+                          "absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white transition",
+                          manualQuestionLaunch ? "left-[20px]" : "left-0.5",
                         ].join(" ")}
                       />
                     </span>
@@ -935,8 +943,8 @@ export default function CreateRoomPage() {
 
             {activePanel === "code" && (
               <div id="create-room-panel-code" role="tabpanel" aria-label="Code" className="space-y-4">
-                <div className="mx-auto w-full max-w-[420px] rounded-[8px] border border-white/[0.06] bg-[#131829] p-6 text-center">
-                  <p className="font-brandUpright text-[18px] uppercase leading-none tracking-[0.05em] text-white/80">
+                <div className="mx-auto w-full max-w-[420px] rounded-[8px] border border-white/[0.06] bg-[#131930] p-6 text-center">
+                  <p className="font-brandUpright text-[18px] uppercase leading-none tracking-[0.05em] text-white">
                     Code de la partie
                   </p>
                   <div className="mt-5 rounded-md bg-white px-6 py-4 font-mono text-4xl font-black tracking-[0.32em] text-[#0B1229]">
@@ -946,7 +954,7 @@ export default function CreateRoomPage() {
                     <button
                       type="button"
                       onClick={refreshCodeFromServer}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-white/[0.055] text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-white/10"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-[6px] bg-white/[0.055] font-inter text-[13px] font-extrabold text-white transition hover:bg-white/10"
                     >
                       <RefreshIcon className="h-4 w-4" />
                       Régénérer
@@ -955,7 +963,7 @@ export default function CreateRoomPage() {
                       type="button"
                       onClick={copyCode}
                       disabled={!code}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-white/[0.055] text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-[6px] bg-white/[0.055] font-inter text-[13px] font-extrabold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       <CopyIcon className="h-4 w-4" />
                       {copied ? "Copié !" : "Copier"}
@@ -969,7 +977,7 @@ export default function CreateRoomPage() {
               <div id="create-room-panel-lobby" role="tabpanel" aria-label="Lobby" className="space-y-4">
                 {createdRoomId ? (
                   <>
-                    <div className="rounded-[8px] border border-white/[0.06] bg-[#131829] p-4">
+                    <div className="rounded-[8px] border border-white/[0.06] bg-[#131930] p-4">
                       <div className="mb-3 flex items-center justify-between">
                         <h3 className="font-brandUpright text-[18px] uppercase leading-none text-white">
                           Joueurs ({lobbyPlayers.length}/{maxPlayers})
@@ -1024,8 +1032,8 @@ export default function CreateRoomPage() {
                 <button
                   type="button"
                   onClick={saveSettings}
-                  disabled={loading}
-                  className="h-10 w-full max-w-[220px] rounded-[6px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-5 text-[14px] font-extrabold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:brightness-100"
+                  disabled={loading || !hasUnsavedSettings}
+                  className="h-10 w-full max-w-[220px] rounded-[6px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-5 font-inter text-[13px] font-extrabold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:brightness-100"
                 >
                   Sauvegarder
                 </button>
@@ -1047,39 +1055,30 @@ export default function CreateRoomPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="themes-dialog-title"
-            className="w-full max-w-[660px] rounded-[18px] border border-white/10 bg-[#131930] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.55)] sm:p-6"
+            className="w-full max-w-[660px] rounded-xl border border-white/10 bg-[#131930] p-5 sm:p-6"
           >
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <h3 id="themes-dialog-title" className="font-brandUpright text-[28px] uppercase leading-none text-white">
-                  Thèmes des questions
-                </h3>
-                <p className="mt-2 text-[13px] font-semibold text-white/55">
-                  {selectedThemeCount}/{THEME_OPTIONS.length} thèmes actifs
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setThemesOpen(false)}
-                aria-label="Fermer la sélection des thèmes"
-                className="grid h-9 w-9 place-items-center rounded-md bg-[#0B1229] text-lg font-black text-white/70 transition hover:bg-[#1b2544] hover:text-white"
-              >
-                ×
-              </button>
+            <div className="mb-5">
+              <h3 id="themes-dialog-title" className="font-brandUpright text-[28px] uppercase leading-none text-white">
+                Thèmes des questions
+              </h3>
+              <p className="mt-2 text-[13px] font-semibold text-white/55">
+                {selectedThemeCount}/{THEME_OPTIONS.length} thèmes actifs
+              </p>
             </div>
 
-            <div className="mb-5 flex flex-wrap gap-2">
+            <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-inter text-[12px] font-semibold">
               <button
                 type="button"
                 onClick={selectAllThemes}
-                className="rounded-full bg-white px-4 py-2 text-[12px] font-black uppercase tracking-[0.06em] text-[#0B1229] transition hover:bg-white/90"
+                className="text-white/70 transition hover:text-white"
               >
                 Tout sélectionner
               </button>
+              <span className="h-3 w-px bg-white/15" aria-hidden="true" />
               <button
                 type="button"
                 onClick={selectNoThemes}
-                className="rounded-full border border-white/12 bg-[#0B1229] px-4 py-2 text-[12px] font-black uppercase tracking-[0.06em] text-white/70 transition hover:border-white/25 hover:text-white"
+                className="text-white/55 transition hover:text-white"
               >
                 Tout retirer
               </button>
@@ -1096,10 +1095,10 @@ export default function CreateRoomPage() {
                     onClick={() => toggleTheme(key)}
                     aria-pressed={active}
                     className={[
-                      "rounded-full border px-4 py-2 text-[13px] font-extrabold transition",
+                      "rounded-[5px] border px-3 py-1.5 font-inter text-[12px] font-medium transition",
                       active
-                        ? "border-[#8D72FF] bg-[#7C5CFF] text-white shadow-[0_8px_20px_rgba(124,92,255,0.24)]"
-                        : "border-white/10 bg-[#0B1229] text-white/45 hover:border-white/25 hover:text-white/80",
+                        ? "border-emerald-400/70 bg-emerald-600 text-white"
+                        : "border-white/10 bg-[#0D1429] text-white/55 hover:border-white/25 hover:text-white/80",
                     ].join(" ")}
                   >
                     {label}
@@ -1108,11 +1107,11 @@ export default function CreateRoomPage() {
               })}
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-10 flex justify-end">
               <button
                 type="button"
                 onClick={() => setThemesOpen(false)}
-                className="h-10 rounded-[6px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-8 text-[14px] font-extrabold text-white shadow-[0_10px_22px_rgba(92,54,221,0.24)] transition hover:brightness-110"
+                className="h-9 rounded-[6px] border border-transparent bg-[#6250C7] px-6 font-inter text-[13px] font-extrabold text-white transition hover:bg-[#6F5BD4]"
               >
                 Valider
               </button>

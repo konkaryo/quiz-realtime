@@ -71,6 +71,7 @@ export const notificationRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           type: true,
           message: true,
           read: true,
+          data: true,
         },
       });
 
@@ -133,10 +134,74 @@ export const notificationRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
           type: true,
           message: true,
           read: true,
+          data: true,
         },
       });
 
       return reply.code(201).send({ notification });
+    });
+
+    app.post("/:notificationId/claim", async (req, reply) => {
+      const { user, session } = await currentUser(prisma, req);
+      if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
+
+      const Params = z.object({ notificationId: z.string().min(1) });
+      const parsed = Params.safeParse(req.params);
+      if (!parsed.success) return reply.code(400).send({ error: "invalid_notification_id" });
+
+      const player = await prisma.player.findUnique({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      if (!player) return reply.code(404).send({ error: "player_not_found" });
+
+      const notification = await prisma.notification.findFirst({
+        where: { id: parsed.data.notificationId, playerId: player.id },
+        select: { id: true, type: true, data: true },
+      });
+      if (!notification) return reply.code(404).send({ error: "notification_not_found" });
+      if (notification.type !== NotificationType.REWARD) {
+        return reply.code(400).send({ error: "notification_not_claimable" });
+      }
+
+      const data = notification.data;
+      const rewardId =
+        typeof data === "object" && data !== null && !Array.isArray(data) && "rewardId" in data
+          ? String((data as { rewardId?: unknown }).rewardId ?? "")
+          : "";
+      if (!rewardId) return reply.code(400).send({ error: "invalid_reward" });
+
+      const result = await prisma.$transaction(async (tx) => {
+        const rewards = await tx.$queryRaw<Array<{ id: string; playerId: string; bits: number; claimedAt: Date | null }>>`
+          SELECT "id", "playerId", "bits", "claimedAt"
+          FROM "DailyChallengeBitReward"
+          WHERE "id" = ${rewardId} AND "playerId" = ${player.id}
+          FOR UPDATE
+        `;
+        const reward = rewards[0];
+        if (!reward) return { claimed: false as const, reason: "reward_not_found" as const };
+
+        if (reward.claimedAt) {
+          await tx.notification.update({ where: { id: notification.id }, data: { read: true } });
+          const currentPlayer = await tx.player.findUnique({ where: { id: player.id }, select: { bits: true } });
+          return { claimed: false as const, reason: "already_claimed" as const, bits: reward.bits, totalBits: currentPlayer?.bits ?? 0 };
+        }
+
+        await tx.$executeRaw`
+          UPDATE "DailyChallengeBitReward"
+          SET "claimedAt" = NOW()
+          WHERE "id" = ${reward.id}
+        `;
+        const updatedPlayer = await tx.player.update({
+          where: { id: player.id },
+          data: { bits: { increment: reward.bits } },
+          select: { bits: true },
+        });
+        await tx.notification.update({ where: { id: notification.id }, data: { read: true } });
+        return { claimed: true as const, bits: reward.bits, totalBits: updatedPlayer.bits };
+      });
+
+      return reply.send(result);
     });
 
 
@@ -178,7 +243,7 @@ export const notificationRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       await pruneExpiredNotifications(prisma, player.id);
 
       const result = await prisma.notification.updateMany({
-        where: { playerId: player.id, read: false },
+        where: { playerId: player.id, read: false, NOT: { type: NotificationType.REWARD } },
         data: { read: true },
       });
 

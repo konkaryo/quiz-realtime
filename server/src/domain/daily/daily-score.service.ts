@@ -1,5 +1,6 @@
 // server/src/domain/daily/daily-score.service.ts
-import { Prisma, PrismaClient } from "@prisma/client";
+import { NotificationType, Prisma, PrismaClient } from "@prisma/client";
+import { randomUUID } from "crypto";
 import { toProfileUrl } from "../media/media.service";
 
 export type DailyChallengeLeaderboardEntry = {
@@ -36,6 +37,110 @@ export type MonthlyDailyRankingSnapshot = DailyChallengeRankingSnapshot & {
   year: number;
   month: number;
 };
+
+const DAILY_REWARD_TOP_LIMIT = 100;
+const DAILY_REWARD_MAX_BITS = 100;
+const DAILY_REWARD_KIND = "daily_challenge_bits";
+
+function utcStartOfDay(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function dailyRewardBitsForRank(rank: number) {
+  if (!Number.isFinite(rank) || rank < 1 || rank > DAILY_REWARD_TOP_LIMIT) return 0;
+  return DAILY_REWARD_MAX_BITS - rank + 1;
+}
+
+function formatDailyRewardDate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+type InsertedDailyRewardRow = { id: string };
+
+export async function awardPendingDailyChallengeBitRewards(
+  prisma: PrismaClient,
+  now = new Date(),
+): Promise<{ challengesProcessed: number; notificationsCreated: number }> {
+  const todayStart = utcStartOfDay(now);
+  const challenges = await prisma.dailyChallenge.findMany({
+    where: { date: { lt: todayStart } },
+    orderBy: { date: "asc" },
+    select: { id: true, date: true },
+  });
+
+  let challengesProcessed = 0;
+  let notificationsCreated = 0;
+
+  for (const challenge of challenges) {
+    const existingRewards = await prisma.$queryRaw<Array<{ count: bigint }>>`
+      SELECT COUNT(*)::bigint AS "count"
+      FROM "DailyChallengeBitReward"
+      WHERE "challengeId" = ${challenge.id}
+    `;
+    if (Number(existingRewards[0]?.count ?? 0) > 0) continue;
+
+    const topScores = await prisma.dailyChallengeScore.findMany({
+      where: {
+        challengeId: challenge.id,
+        player: { isBot: false, userId: { not: null } },
+      },
+      orderBy: [{ score: "desc" }, { createdAt: "asc" }],
+      select: { playerId: true, score: true },
+      take: DAILY_REWARD_TOP_LIMIT,
+    });
+
+    if (!topScores.length) {
+      challengesProcessed += 1;
+      continue;
+    }
+
+    const challengeDateIso = formatDailyRewardDate(challenge.date);
+
+    for (const [index, score] of topScores.entries()) {
+      const rank = index + 1;
+      const bits = dailyRewardBitsForRank(rank);
+      if (bits <= 0) continue;
+
+      const rewardId = randomUUID();
+      const inserted = await prisma.$queryRaw<InsertedDailyRewardRow[]>`
+        INSERT INTO "DailyChallengeBitReward" ("id", "challengeId", "playerId", "rank", "bits")
+        VALUES (${rewardId}, ${challenge.id}, ${score.playerId}, ${rank}, ${bits})
+        ON CONFLICT ("challengeId", "playerId") DO NOTHING
+        RETURNING "id"
+      `;
+      const insertedRewardId = inserted[0]?.id;
+      if (!insertedRewardId) continue;
+
+      const notification = await prisma.notification.create({
+        data: {
+          playerId: score.playerId,
+          type: NotificationType.REWARD,
+          message: `Vous avez gagné ${bits} bit${bits > 1 ? "s" : ""} grâce au défi du jour.`,
+          data: {
+            kind: DAILY_REWARD_KIND,
+            rewardId: insertedRewardId,
+            challengeId: challenge.id,
+            date: challengeDateIso,
+            rank,
+            bits,
+          },
+        },
+        select: { id: true },
+      });
+
+      await prisma.$executeRaw`
+        UPDATE "DailyChallengeBitReward"
+        SET "notificationId" = ${notification.id}
+        WHERE "id" = ${insertedRewardId}
+      `;
+      notificationsCreated += 1;
+    }
+
+    challengesProcessed += 1;
+  }
+
+  return { challengesProcessed, notificationsCreated };
+}
 
 function isMissingDailyScoreTableError(err: unknown): boolean {
   return (

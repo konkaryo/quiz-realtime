@@ -35,6 +35,8 @@ export type GameState = {
   attemptsThisRound: Map<string, number>;
   roundMs: number;
   dynamicQuestionDisplay: boolean;
+  manualQuestionLaunch: boolean;
+  waitingForManualLaunch?: boolean;
   finished?: boolean;
   playerData: Map<
     string,

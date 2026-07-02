@@ -216,11 +216,15 @@ function DailyFinalScoreHero({
   ranking,
   results,
   totalQuestions,
+  onShowAnswers,
+  onShowRanking,
 }: {
   score: number;
   ranking: DailyRankingSnapshot | null;
   results: Result[];
   totalQuestions: number;
+  onShowAnswers: () => void;
+  onShowRanking: () => void;
 }) {
   const rankLabel = ranking?.rank ? `${ranking.rank}` : "—";
   const rankSuffix = ranking?.rank ? (ranking.rank === 1 ? "er" : "ème") : "";
@@ -246,7 +250,8 @@ function DailyFinalScoreHero({
   const progressStates = Array.from({ length: summaryTotal }, (_, index) => {
     const result = results[index];
     if (!result) return "pending";
-    return result.correct ? "correct" : "wrong";
+    if (!result.correct) return "wrong";
+    return result.mode === "choice" ? "correct-mc" : "correct";
   });
 
   useEffect(() => {
@@ -277,8 +282,8 @@ function DailyFinalScoreHero({
         Votre score
       </h1>
 
-      <div className="mt-8 grid w-full items-start gap-5 lg:grid-cols-[minmax(260px,1fr)_minmax(220px,280px)_minmax(300px,1fr)] lg:gap-20">
-        <aside className="order-2 min-h-[250px] rounded-[18px] border border-white/[0.08] bg-[#0F1427]/80 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] lg:order-1">
+      <div className="mt-8 grid w-full items-start gap-5 lg:grid-cols-[minmax(260px,1fr)_minmax(190px,240px)_minmax(300px,1fr)] lg:gap-20">
+        <aside className="order-2 min-h-[250px] rounded-xl border border-white/[0.08] bg-[#0F1427]/80 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] lg:order-1">
           <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
             Résumé
           </h2>
@@ -287,9 +292,11 @@ function DailyFinalScoreHero({
               const color =
                 state === "correct"
                   ? "bg-emerald-600"
-                  : state === "wrong"
-                    ? "bg-[#AF2D33]"
-                    : "bg-slate-700/60";
+                  : state === "correct-mc"
+                    ? "bg-[#6F5BD4]"
+                    : state === "wrong"
+                      ? "bg-[#AF2D33]"
+                      : "bg-slate-700/60";
 
               return (
                 <div
@@ -311,15 +318,22 @@ function DailyFinalScoreHero({
               <span className="text-white">{totalSecondsLabel}</span>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-400">XP gagnée</span>
-              <span className="text-white">+ {xpGained}</span>
+              <span className="text-slate-400">Expérience</span>
+              <span className="text-white">+ {xpGained} XP</span>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={onShowAnswers}
+            className="mt-7 inline-flex h-11 w-full items-center justify-center rounded-[6px] border border-white/[0.08] bg-[#1F2437] px-8 font-inter text-[13px] font-extrabold text-slate-50 transition hover:bg-[#2A3046]"
+          >
+            Voir les réponses
+          </button>
         </aside>
 
         <div className="order-1 flex justify-center lg:order-2">
           <div
-            className="grid size-[220px] place-items-center rounded-full p-[8px] sm:size-[260px]"
+            className="grid size-[190px] place-items-center rounded-full p-[7px] sm:size-[220px]"
             style={{
               background: `conic-gradient(#9B5CFF ${scoreProgress * 360}deg, rgba(255,255,255,0.08) 0deg)`,
             }}
@@ -327,16 +341,16 @@ function DailyFinalScoreHero({
           >
             <div className="grid size-full place-items-center rounded-full border border-white/[0.07] bg-[#081126] shadow-[inset_0_0_55px_rgba(155,92,255,0.12)]">
               <div className="translate-y-3 font-brand font-black italic leading-none text-white tabular-nums">
-                <div className="text-[64px] tracking-[-0.04em] sm:text-[82px]">
+                <div className="text-[52px] tracking-[-0.04em] sm:text-[68px]">
                   {formatIntegerFr(animatedScore)}
                 </div>
-                <div className="text-[30px] sm:text-[36px]">pts</div>
+                <div className="text-[24px] sm:text-[30px]">pts</div>
               </div>
             </div>
           </div>
         </div>
 
-        <aside className="order-3 rounded-[18px] border border-white/[0.08] bg-[#0F1427]/80 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+        <aside className="order-3 rounded-xl border border-white/[0.08] bg-[#0F1427]/80 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
           <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
             Classement
           </h2>
@@ -372,6 +386,13 @@ function DailyFinalScoreHero({
             </svg>
             {topLabel}
           </div>
+          <button
+            type="button"
+            onClick={onShowRanking}
+            className="mt-7 inline-flex h-11 w-full items-center justify-center rounded-[6px] border border-transparent bg-[#6250C7] px-8 font-inter text-[13px] font-extrabold text-slate-50 transition hover:bg-[#6F5BD4]"
+          >
+            Voir le classement
+          </button>
         </aside>
       </div>
     </section>
@@ -399,23 +420,14 @@ function DailyFinalResults({
   return (
     <>
       <div className="flex min-h-[calc(100vh-220px)] flex-col justify-center">
-        <DailyFinalScoreHero score={score} ranking={monthlyRanking} results={results} totalQuestions={totalQuestions} />
-        <div className="mx-auto mt-10 flex w-full max-w-[520px] flex-col gap-3 sm:flex-row sm:justify-center">
-          <button
-            type="button"
-            onClick={() => setShowAnswers(true)}
-            className="inline-flex h-11 items-center justify-center rounded-[6px] border border-white/[0.08] bg-[#1F2437] px-8 font-inter text-[15px] font-bold text-slate-50 transition hover:bg-[#2A3046]"
-          >
-            Voir les réponses
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/multi/ranking?kind=daily")}
-            className="inline-flex h-11 items-center justify-center rounded-[6px] border border-transparent bg-[#6250C7] px-8 font-inter text-[15px] font-bold text-slate-50 transition hover:bg-[#6F5BD4]"
-          >
-            Voir le classement
-          </button>
-        </div>
+        <DailyFinalScoreHero
+          score={score}
+          ranking={monthlyRanking}
+          results={results}
+          totalQuestions={totalQuestions}
+          onShowAnswers={() => setShowAnswers(true)}
+          onShowRanking={() => navigate("/multi/ranking?kind=daily")}
+        />
       </div>
 
       {showAnswers ? (

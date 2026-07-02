@@ -14,7 +14,7 @@ export type QuestionLite = {
   slotLabel: string | null;
 };
 
-export type QuestionProgress = "pending" | "correct" | "wrong";
+export type QuestionProgress = "pending" | "correct" | "correct-mc" | "wrong";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -225,6 +225,10 @@ type Props = {
   animateQuestionText?: boolean;
   questionRevealStartedAtMs?: number | null;
   correctLabelPlacement?: "above" | "below";
+  manualNextAvailable?: boolean;
+  manualNextIsOwner?: boolean;
+  manualNextPending?: boolean;
+  onManualNext?: () => void;
 };
 
 const QUESTION_REVEAL_STEP_MS = 35;
@@ -274,6 +278,10 @@ export default function DailyQuestionPanel(props: Props) {
     animateQuestionText = false,
     questionRevealStartedAtMs = null,
     correctLabelPlacement = "below",
+    manualNextAvailable = false,
+    manualNextIsOwner = false,
+    manualNextPending = false,
+    onManualNext,
   } = props;
 
   const [visibleQuestionLength, setVisibleQuestionLength] = useState(() =>
@@ -889,6 +897,8 @@ export default function DailyQuestionPanel(props: Props) {
             const color =
               state === "correct"
                 ? "bg-emerald-600"
+                : state === "correct-mc"
+                ? "bg-[#6F5BD4]"
                 : state === "wrong"
                 ? "bg-[#AF2D33]"
                 : "bg-slate-700/60";
@@ -902,6 +912,22 @@ export default function DailyQuestionPanel(props: Props) {
               </div>
             );
           })}
+        </div>
+      )}
+      {manualNextAvailable && (
+        <div className="mt-4 flex justify-center">
+          <button
+            type="button"
+            onClick={onManualNext}
+            disabled={!manualNextIsOwner || manualNextPending}
+            className="inline-flex h-10 min-w-[220px] items-center justify-center rounded-[6px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-5 font-inter text-[13px] font-extrabold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:brightness-100"
+          >
+            {manualNextIsOwner
+              ? manualNextPending
+                ? "Lancement…"
+                : "Lancer la question suivante"
+              : "En attente du propriétaire"}
+          </button>
         </div>
       )}
     </div>

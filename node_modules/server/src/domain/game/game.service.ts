@@ -15,6 +15,13 @@ import { emitPublicRoomsUpdated } from "../room/public-room-events";
 
 type Leaderboard = Awaited<ReturnType<typeof lb_service.buildLeaderboard>>;
 
+async function getManualQuestionLaunch(prisma: PrismaClient, roomId: string) {
+  const rows = await prisma.$queryRaw<Array<{ manualQuestionLaunch: boolean }>>`
+    SELECT "manualQuestionLaunch" FROM "Room" WHERE "id" = ${roomId} LIMIT 1
+  `;
+  return rows[0]?.manualQuestionLaunch ?? false;
+}
+
 const DEFAULT_DIFFICULTY_PERCENT = 50;
 const DIVERS_PROBABILITY_STEP = 0.05;
 
@@ -170,6 +177,7 @@ export async function startGameForRoom(
 
   const room = await prisma.room.findUnique({ where: { id: roomId } });
   if (!room) return;
+  const manualQuestionLaunch = await getManualQuestionLaunch(prisma, room.id);
 
   const game = await room_service.getOrCreateCurrentGame(prisma, room.id);
   let pgs = await room_service.ensurePlayerGamesForRoom(clients, game.id, io, prisma, room.id);
@@ -294,6 +302,8 @@ export async function startGameForRoom(
     attemptsThisRound: new Map<string, number>(),
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
     dynamicQuestionDisplay: room.dynamicQuestionDisplay ?? true,
+    manualQuestionLaunch,
+    waitingForManualLaunch: false,
     roundSeq: 0,
     finished: false,
     playerData,
@@ -418,6 +428,7 @@ async function startRound(
   const ROUND_MS = st.roundMs ?? Number(process.env.ROUND_MS || 10000);
   const TEXT_LIVES = Number(process.env.TEXT_LIVES || 3);
 
+  st.waitingForManualLaunch = false;
   st.answeredThisRound.clear();
   st.answeredOrderText = [];
   st.attemptsThisRound = new Map();
@@ -435,6 +446,7 @@ async function startRound(
     question: { id: q.id, text: q.text, img: q.img, theme: q.theme, difficulty: q.difficulty },
     textLives: TEXT_LIVES,
     dynamicQuestionDisplay: st.dynamicQuestionDisplay,
+    manualQuestionLaunch: st.manualQuestionLaunch,
     serverNow: Date.now()
     // optional: roundUid: myUid
   });
@@ -501,11 +513,44 @@ async function endRound(
   st.index += 1;
   const nextDelayUid = `${st.gameId}:${st.index}:gap:${Date.now()}`;
   st.roundUid = nextDelayUid; // invalide l'ancien round/timeout pendant l'attente
+  st.waitingForManualLaunch = false;
+
+  if (st.manualQuestionLaunch) {
+    st.timer = setTimeout(() => {
+      if (st.roundUid !== nextDelayUid) return;
+      st.timer = undefined;
+      st.waitingForManualLaunch = true;
+      io.to(st.roomId).emit("manual_round_ready", {
+        index: st.index,
+        total: st.questions.length,
+      });
+    }, GAP_MS);
+    return;
+  }
   st.timer = setTimeout(() => {
     // si l’UID a changé (ex: stopGame), on ne lance pas
     if (st.roundUid !== nextDelayUid) return;
     startRound(clients, gameStates, io, prisma, st).catch(err => console.error("[startRound error]", err));
   }, GAP_MS);
+}
+
+export async function launchNextManualRound(
+  clients: Map<string, Client>,
+  gameStates: Map<string, GameState>,
+  io: Server,
+  prisma: PrismaClient,
+  roomId: string,
+) {
+  const st = gameStates.get(roomId);
+  if (!st || st.finished) return { ok: false as const, reason: "no-state" as const };
+  if (!st.manualQuestionLaunch) return { ok: false as const, reason: "manual-launch-disabled" as const };
+  if (!st.waitingForManualLaunch) return { ok: false as const, reason: "not-ready" as const };
+  if (st.index < 0 || st.index >= st.questions.length) return { ok: false as const, reason: "no-question" as const };
+
+  st.waitingForManualLaunch = false;
+  if (st.timer) { clearTimeout(st.timer); st.timer = undefined; }
+  await startRound(clients, gameStates, io, prisma, st);
+  return { ok: true as const };
 }
 
 async function finalizeGameAfterReveal(

@@ -125,7 +125,7 @@ model Player {
   dailyQuestionResults DailyChallengeQuestionResult[]
   reports              QuestionReport[]
   notifications        Notification[]
-  gameHistory          PlayerGameHistory[]
+  dailyBitRewards      DailyChallengeBitReward[]
   stats                PlayerStats?
 }
 
@@ -144,27 +144,6 @@ model PlayerStats {
   updatedAt          DateTime @updatedAt
 
   @@index([lastUpdatedAt])
-}
-
-model PlayerGameHistory {
-  id              String   @id @default(cuid())
-  playerId        String
-  player          Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  gameId          String
-  playerGameId    String   @unique
-  playedAt        DateTime
-  finalRank       Int
-  totalPlayers    Int
-  finalScore      Int
-  gameDifficulty  Int
-  questionResults Json
-  xpGained        Int      @default(0)
-  bitsGained      Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@unique([playerId, gameId])
-  @@index([playerId, playedAt])
 }
 
 model Notification {
@@ -223,6 +202,7 @@ model Room {
   questionCount          Int            @default(10)
   roundMs                Int            @default(10000)
   dynamicQuestionDisplay Boolean        @default(true)
+  manualQuestionLaunch   Boolean        @default(false)
   visibility             RoomVisibility @default(PRIVATE)
   image                  String?
 
@@ -300,12 +280,29 @@ model AcceptedAnswer {
 }
 
 model DailyChallenge {
-  id        String                   @id @default(cuid())
-  date      DateTime                 @unique @db.Date
-  createdAt DateTime                 @default(now())
-  updatedAt DateTime                 @updatedAt
-  entries   DailyChallengeQuestion[]
-  scores    DailyChallengeScore[]
+  id         String                    @id @default(cuid())
+  date       DateTime                  @unique @db.Date
+  createdAt  DateTime                  @default(now())
+  updatedAt  DateTime                  @updatedAt
+  entries    DailyChallengeQuestion[]
+  scores     DailyChallengeScore[]
+  bitRewards DailyChallengeBitReward[]
+}
+
+model DailyChallengeBitReward {
+  id             String         @id @default(cuid())
+  challengeId    String
+  challenge      DailyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  playerId       String
+  player         Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  rank           Int
+  bits           Int
+  notificationId String?        @unique
+  claimedAt      DateTime?
+  createdAt      DateTime       @default(now())
+
+  @@unique([challengeId, playerId])
+  @@index([playerId, claimedAt])
 }
 
 model DailyChallengeQuestion {

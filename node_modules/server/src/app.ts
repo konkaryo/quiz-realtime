@@ -13,6 +13,7 @@ import { getCookie } from "./infra/cookies";
 import type { Client, GameState } from "./types";
 import { authRoutes } from "./routes/auth";
 import { dailyRoutes } from "./routes/daily";
+import { awardPendingDailyChallengeBitRewards } from "./domain/daily/daily-score.service";
 import { leaderboardRoutes } from "./routes/leaderboard";
 import { playerRoutes } from "./routes/players";
 import { registerSocketHandlers } from "./sockets/handlers";
@@ -28,6 +29,13 @@ import { Theme, RoomVisibility } from "@prisma/client";
 /* ---------------- runtime maps ---------------- */
 const clients = new Map<string, Client>();
 const gameStates = new Map<string, GameState>();
+
+async function getManualQuestionLaunch(roomId: string) {
+  const rows = await prisma.$queryRaw<Array<{ manualQuestionLaunch: boolean }>>`
+    SELECT "manualQuestionLaunch" FROM "Room" WHERE "id" = ${roomId} LIMIT 1
+  `;
+  return rows[0]?.manualQuestionLaunch ?? false;
+}
 
 async function main() {
   const app = fastify({ logger: true });
@@ -59,6 +67,14 @@ async function main() {
   await app.register(notificationRoutes({ prisma }), { prefix: "/notifications" });
   await app.register(adminRoutes({ prisma }), { prefix: "/admin" });
 
+  const runDailyRewardJob = () => {
+    awardPendingDailyChallengeBitRewards(prisma).catch((err) =>
+      app.log.error({ err }, "daily challenge bit reward job failed"),
+    );
+  };
+  runDailyRewardJob();
+  setInterval(runDailyRewardJob, 60 * 60 * 1000).unref();
+
   app.get("/health", async () => ({ ok: true }));
 
   // ---------- HTTP: Rooms ----------
@@ -82,6 +98,7 @@ async function main() {
         questionCount: z.number().int().min(1).max(50).optional(),
         roundSeconds:  z.number().int().min(10).max(30).optional(),
         dynamicQuestionDisplay: z.boolean().optional(),
+        manualQuestionLaunch: z.boolean().optional(),
         code:          z.string().trim().toUpperCase().optional(),
         visibility:    z.nativeEnum(RoomVisibility).optional(),
       });
@@ -93,6 +110,7 @@ async function main() {
         questionCount = 10,
         roundSeconds = 10,
         dynamicQuestionDisplay = true,
+        manualQuestionLaunch = false,
         code: requestedCodeRaw,
         visibility = RoomVisibility.PRIVATE,
       } = parsed.data;
@@ -136,6 +154,8 @@ async function main() {
           select: { id: true },
         });
 
+        await tx.$executeRaw`UPDATE "Room" SET "manualQuestionLaunch" = ${manualQuestionLaunch} WHERE "id" = ${room.id}`;
+
         await tx.game.create({ data: { roomId: room.id, state: "lobby" } });
 
         return { id: room.id };
@@ -159,6 +179,7 @@ async function main() {
         visibility: true,
         name: true,
         image: true,
+        ownerId: true,
         difficulty: true,
         questionCount: true,
         roundMs: true,
@@ -170,6 +191,8 @@ async function main() {
     if (room.status === "CLOSED") {
       return reply.code(410).send({ error: "Room closed" });
     }
+
+    const manualQuestionLaunch = await getManualQuestionLaunch(room.id);
 
     const normalizedImage = normalizeRoomImage(room.image);
     const resolvedImage =
@@ -185,7 +208,7 @@ async function main() {
       });
     }
 
-    return { room: { ...room, image: resolvedImage } };
+    return { room: { ...room, image: resolvedImage, manualQuestionLaunch } };
   });
 
   app.patch("/rooms/:id/settings", async (req, reply) => {
@@ -216,6 +239,7 @@ async function main() {
         questionCount: z.number().int().min(1).max(50).optional(),
         roundSeconds: z.number().int().min(10).max(30).optional(),
         dynamicQuestionDisplay: z.boolean().optional(),
+        manualQuestionLaunch: z.boolean().optional(),
       });
       const parsed = Body.safeParse(req.body);
       if (!parsed.success) return reply.code(400).send({ error: parsed.error.message });
@@ -235,6 +259,8 @@ async function main() {
         data.dynamicQuestionDisplay = parsed.data.dynamicQuestionDisplay;
       }
 
+      const manualQuestionLaunch = parsed.data.manualQuestionLaunch;
+
       const updated = await prisma.room.update({
         where: { id },
         data,
@@ -248,8 +274,12 @@ async function main() {
         },
       });
 
+      if (typeof manualQuestionLaunch === "boolean") {
+        await prisma.$executeRaw`UPDATE "Room" SET "manualQuestionLaunch" = ${manualQuestionLaunch} WHERE "id" = ${id}`;
+      }
+
       emitPublicRoomsUpdated(io);
-      return { room: updated };
+      return { room: { ...updated, manualQuestionLaunch: manualQuestionLaunch ?? (await getManualQuestionLaunch(id)) } };
     } catch (e) {
       req.log.error(e, "PATCH /rooms/:id/settings failed");
       return reply.code(500).send({ error: "Server error" });

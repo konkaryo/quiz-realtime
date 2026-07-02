@@ -404,7 +404,7 @@ export default function DailyChallengePage() {
                 });
               }}
               className={[
-                "mt-8 inline-flex items-center justify-center rounded-[6px] px-10 py-2.5 font-inter text-[15px] font-bold transition",
+                "mt-8 inline-flex items-center justify-center rounded-[6px] px-10 py-2.5 font-inter text-[13px] font-extrabold transition",
                 "border border-transparent bg-[#6250C7] text-slate-50 hover:bg-[#6F5BD4]",
                 !selectedChallenge ? "cursor-not-allowed opacity-40" : "",
               ].join(" ")}

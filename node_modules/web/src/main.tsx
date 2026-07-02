@@ -19,7 +19,6 @@ import RankingPage from "./pages/RankingPage";
 import DailyChallengePage from "./pages/DailyChallengePage";
 import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
-import HistoryPage from "./pages/HistoryPage";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
 import "./index.css";
@@ -188,7 +187,6 @@ const router = createBrowserRouter([
       { path: "/multi/ranking", element: <RankingPage /> },
       { path: "/me/profile", element: <ProfilePage /> },
       { path: "/players/:playerId/profile", element: <ProfilePage /> },
-      { path: "/me/history", element: <HistoryPage /> },
       { path: "/me/account", element: <AccountPage /> },
       {
         path: "/admin",

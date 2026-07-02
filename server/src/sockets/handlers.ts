@@ -13,7 +13,7 @@ import { computeSpeedBonus } from "../domain/player/scoring.service";
 import { isFuzzyMatch, norm } from "../domain/question/textmatch";
 import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
-import { startGameForRoom } from "../domain/game/game.service";
+import { launchNextManualRound, startGameForRoom } from "../domain/game/game.service";
 import { getChallengeByDate } from "../domain/daily/daily.service";
 import { getDailyChallengeRankingSnapshot, getMonthlyDailyRankingSnapshot, recordDailyQuestionResults, recordDailyScoreIfFirst, updateDailyQuestionAverageScores } from "../domain/daily/daily-score.service";
 import { ensurePlayerForUser } from "../domain/player/player.service";
@@ -870,7 +870,13 @@ socket.on(
         }
         io.to(room.id).emit("lobby_update");
         emitPublicRoomsUpdated(io);
-        socket.emit("joined", { playerGameId: pg.id, name: player.name, roomId: room.id });
+        socket.emit("joined", {
+          playerGameId: pg.id,
+          playerId: player.id,
+          name: player.name,
+          roomId: room.id,
+          isOwner: room.ownerId === user.id,
+        });
 
         const st = gameStates.get(room.id);
         if (st && st.gameId === game.id) {
@@ -885,6 +891,9 @@ socket.on(
 
             const lb = await buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
             io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb });
+            if (st.manualQuestionLaunch && st.waitingForManualLaunch) {
+              socket.emit("manual_round_ready", { index: st.index, total: st.questions.length });
+            }
         }
 
         const alreadyRunning = !!(st && !st.finished);
@@ -994,6 +1003,26 @@ socket.on(
       } catch (e) {
         console.error("[start_game error]", e);
         socket.emit("error_msg", "Server error");
+      }
+    });
+
+    /* ---------------- launch_next_question (manual mode) ---------------- */
+    socket.on("launch_next_question", async (_p: unknown, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const roomId = socket.data.roomId as string | undefined;
+      const userId = socket.data.userId as string | undefined;
+      if (!roomId) return ack?.({ ok: false, reason: "not-in-room" });
+      if (!userId) return ack?.({ ok: false, reason: "not-authenticated" });
+
+      try {
+        const room = await prisma.room.findUnique({ where: { id: roomId }, select: { ownerId: true } });
+        if (!room) return ack?.({ ok: false, reason: "room-not-found" });
+        if (room.ownerId !== userId) return ack?.({ ok: false, reason: "forbidden" });
+
+        const result = await launchNextManualRound(clients, gameStates, io, prisma, roomId);
+        return ack?.(result.ok ? { ok: true } : { ok: false, reason: result.reason });
+      } catch (error) {
+        console.error("[launch_next_question] error", error);
+        return ack?.({ ok: false, reason: "server-error" });
       }
     });
 
