@@ -61,6 +61,14 @@ type NewCodeResponse = {
   code?: string;
 };
 
+type OwnedRoomResponse = {
+  room?: { id?: string | null } | null;
+};
+
+type MeResponse = {
+  user?: { id?: string | null } | null;
+};
+
 type CreateRoomResponse = {
   result?: {
     id?: string;
@@ -76,7 +84,7 @@ type LobbyPlayer = {
 
 type LobbyStatePayload = {
   ok: boolean;
-  owner?: { playerId?: string | null };
+  owner?: { userId?: string | null; playerId?: string | null };
   players?: LobbyPlayer[];
 };
 
@@ -84,6 +92,7 @@ type RoomSettingsResponse = {
   room?: {
     id?: string;
     code?: string | null;
+    ownerId?: string | null;
     difficulty?: number;
     questionCount?: number;
     roundMs?: number;
@@ -91,6 +100,19 @@ type RoomSettingsResponse = {
     dynamicQuestionDisplay?: boolean;
     manualQuestionLaunch?: boolean;
   };
+};
+
+type RoomSettingsUpdatedPayload = {
+  room?: RoomSettingsResponse["room"];
+};
+
+type RoomCodeUpdatedPayload = {
+  roomId?: string;
+  code?: string | null;
+};
+
+type RoomClosedPayload = {
+  roomId?: string;
 };
 
 type RangeStyle = React.CSSProperties & Record<"--p", string>;
@@ -139,9 +161,10 @@ function rangeStyle(progress: string): RangeStyle {
 }
 
 async function fetchJSON(path: string, init?: RequestInit) {
+  const hasBody = init?.body !== undefined && init.body !== null;
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+    headers: { ...(hasBody ? { "Content-Type": "application/json" } : {}), ...(init?.headers || {}) },
     ...init,
   });
 
@@ -209,11 +232,13 @@ function SettingRow({ label, description, value, children }: SettingRowProps) {
   );
 }
 
-export default function CreateRoomPage() {
+export default function CreateRoomPageCorrected() {
   const nav = useNavigate();
 
   const { roomId: routeRoomId } = useParams<{ roomId?: string }>();
   const [loading, setLoading] = useState(false);
+  const [deletingRoom, setDeletingRoom] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [difficulty, setDifficulty] = useState(45);
@@ -229,6 +254,8 @@ export default function CreateRoomPage() {
   const [createdRoomId, setCreatedRoomId] = useState<string | null>(null);
   const [lobbyPlayers, setLobbyPlayers] = useState<LobbyPlayer[]>([]);
   const [ownerPlayerId, setOwnerPlayerId] = useState<string | null>(null);
+  const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+  const [createdByCurrentUser, setCreatedByCurrentUser] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [savedSettings, setSavedSettings] = useState<SavedRoomSettings | null>(null);
   const [lobbySocket, setLobbySocket] = useState<Socket | null>(null);
@@ -276,6 +303,7 @@ export default function CreateRoomPage() {
     [bannedThemes, difficulty, dynamicQuestionDisplay, manualQuestionLaunch, questionCount, questionDuration],
   );
   const hasUnsavedSettings = savedSettings !== null && !areRoomSettingsEqual(currentSettings, savedSettings);
+  const canManageRoom = !createdRoomId || createdByCurrentUser || (!!currentUserId && ownerUserId === currentUserId);
   const orderedLobbyPlayers = useMemo(() => {
     if (!ownerPlayerId) return lobbyPlayers;
     return [...lobbyPlayers].sort((a, b) => {
@@ -335,6 +363,44 @@ export default function CreateRoomPage() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+
+    fetchJSON("/auth/me")
+      .then((data) => {
+        if (cancelled) return;
+        setCurrentUserId((data as MeResponse).user?.id ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentUserId(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (routeRoomId) return;
+
+    let cancelled = false;
+
+    fetchJSON("/rooms/owned/open")
+      .then((data) => {
+        if (cancelled) return;
+        const roomId = (data as OwnedRoomResponse).room?.id;
+        if (roomId) nav(`/rooms/${roomId}/lobby`, { replace: true });
+      })
+      .catch(() => {
+        // No owned room or not authenticated: keep normal creation flow.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [nav, routeRoomId]);
+
+
+  useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
     const prevHtmlOverflow = html.style.overflow;
@@ -350,6 +416,7 @@ export default function CreateRoomPage() {
   }, []);
 
   useEffect(() => {
+    if (routeRoomId) return;
     let mounted = true;
 
     (async () => {
@@ -365,7 +432,7 @@ export default function CreateRoomPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [routeRoomId]);
 
   useEffect(() => {
     return () => {
@@ -394,6 +461,8 @@ export default function CreateRoomPage() {
     if (!createdRoomId || !code) {
       setLobbyPlayers([]);
       setOwnerPlayerId(null);
+      setOwnerUserId(null);
+      setCreatedByCurrentUser(false);
       return;
     }
 
@@ -409,6 +478,7 @@ export default function CreateRoomPage() {
         if (!res?.ok) return;
         setLobbyPlayers(res.players ?? []);
         setOwnerPlayerId(res.owner?.playerId ?? null);
+        setOwnerUserId(res.owner?.userId ?? null);
       });
     };
 
@@ -418,9 +488,57 @@ export default function CreateRoomPage() {
     });
     socket.on("joined", refreshLobby);
     socket.on("lobby_update", refreshLobby);
+    const handleSettingsUpdated = (payload: RoomSettingsUpdatedPayload) => {
+      const room = payload.room;
+      if (!room) return;
+
+      const nextDifficulty = typeof room.difficulty === "number" ? closestDifficulty(room.difficulty) : 45;
+      const nextQuestionCount = typeof room.questionCount === "number" ? room.questionCount : 10;
+      const nextQuestionDuration =
+        typeof room.roundMs === "number" ? Math.max(1, Math.round(room.roundMs / 1000)) : 20;
+      const nextBannedThemes = Array.isArray(room.bannedThemes)
+        ? THEME_OPTIONS.filter((theme) => room.bannedThemes?.includes(theme.key)).map((theme) => theme.key)
+        : [];
+      const nextDynamicQuestionDisplay =
+        typeof room.dynamicQuestionDisplay === "boolean" ? room.dynamicQuestionDisplay : true;
+      const nextManualQuestionLaunch =
+        typeof room.manualQuestionLaunch === "boolean" ? room.manualQuestionLaunch : false;
+
+      setDifficulty(nextDifficulty);
+      setQuestionCount(nextQuestionCount);
+      setQuestionDuration(nextQuestionDuration);
+      setSelectedThemes(
+        THEME_OPTIONS.filter((theme) => !nextBannedThemes.includes(theme.key)).map((theme) => theme.key),
+      );
+      setDynamicQuestionDisplay(nextDynamicQuestionDisplay);
+      setManualQuestionLaunch(nextManualQuestionLaunch);
+      setSavedSettings({
+        difficulty: nextDifficulty,
+        questionCount: nextQuestionCount,
+        questionDuration: nextQuestionDuration,
+        dynamicQuestionDisplay: nextDynamicQuestionDisplay,
+        manualQuestionLaunch: nextManualQuestionLaunch,
+        bannedThemes: nextBannedThemes,
+      });
+    };
+
+    const handleCodeUpdated = (payload: RoomCodeUpdatedPayload) => {
+      if (payload.roomId && payload.roomId !== createdRoomId) return;
+      setCode(payload.code ?? "");
+      setCopied(false);
+    };
+
+    const handleRoomClosed = (payload: RoomClosedPayload) => {
+      if (payload.roomId && payload.roomId !== createdRoomId) return;
+      nav("/");
+    };
+
     socket.on("game_started", () => {
       nav(`/room/${createdRoomId}`);
     });
+    socket.on("room_settings_updated", handleSettingsUpdated);
+    socket.on("room_code_updated", handleCodeUpdated);
+    socket.on("room_closed", handleRoomClosed);
     socket.on("error_msg", (message: string) => setErr(message));
 
     return () => {
@@ -428,6 +546,9 @@ export default function CreateRoomPage() {
       socket.off("joined", refreshLobby);
       socket.off("lobby_update", refreshLobby);
       socket.off("game_started");
+      socket.off("room_settings_updated", handleSettingsUpdated);
+      socket.off("room_code_updated", handleCodeUpdated);
+      socket.off("room_closed", handleRoomClosed);
       socket.off("error_msg");
       socket.close();
       setLobbySocket(null);
@@ -448,6 +569,8 @@ export default function CreateRoomPage() {
         if (!room?.id) throw new Error("Room introuvable");
 
         setCreatedRoomId(room.id);
+        setOwnerUserId(room.ownerId ?? null);
+        setCreatedByCurrentUser(false);
         setCode(room.code ?? "");
         const loadedDifficulty = typeof room.difficulty === "number" ? closestDifficulty(room.difficulty) : 45;
         const loadedQuestionCount = typeof room.questionCount === "number" ? room.questionCount : 10;
@@ -491,16 +614,19 @@ export default function CreateRoomPage() {
   }, [routeRoomId]);
 
   function toggleTheme(themeKey: ThemeKey) {
+    if (!canManageRoom) return;
     setSelectedThemes((prev) =>
       prev.includes(themeKey) ? prev.filter((key) => key !== themeKey) : [...prev, themeKey],
     );
   }
 
   function selectAllThemes() {
+    if (!canManageRoom) return;
     setSelectedThemes(THEME_OPTIONS.map((theme) => theme.key));
   }
 
   function selectNoThemes() {
+    if (!canManageRoom) return;
     setSelectedThemes([]);
   }
 
@@ -525,8 +651,12 @@ export default function CreateRoomPage() {
   }
 
   async function refreshCodeFromServer() {
+    if (!canManageRoom) return;
     try {
-      const data = (await fetchJSON("/rooms/new-code")) as NewCodeResponse;
+      const data = (await fetchJSON(
+        createdRoomId ? `/rooms/${createdRoomId}/code` : "/rooms/new-code",
+        createdRoomId ? { method: "PATCH" } : undefined,
+      )) as NewCodeResponse;
       const nextCode = data.code;
       setCode(nextCode ?? "");
       setCopied(false);
@@ -568,6 +698,8 @@ export default function CreateRoomPage() {
 
       if (finalCode && finalCode !== code) setCode(finalCode);
       setCreatedRoomId(id);
+      setOwnerUserId(currentUserId);
+      setCreatedByCurrentUser(true);
       setSavedSettings(currentSettings);
       setActivePanel("lobby");
     } catch (e: unknown) {
@@ -584,7 +716,7 @@ export default function CreateRoomPage() {
   }
 
   async function saveSettings() {
-    if (!createdRoomId) return;
+    if (!createdRoomId || !canManageRoom) return;
     setLoading(true);
     setErr(null);
     setSaveStatus(null);
@@ -611,7 +743,25 @@ export default function CreateRoomPage() {
     }
   }
 
+  async function deleteRoom() {
+    if (!createdRoomId || !canManageRoom || deletingRoom) return;
+
+    setDeletingRoom(true);
+    setErr(null);
+
+    try {
+      await fetchJSON(`/rooms/${createdRoomId}`, { method: "DELETE" });
+      nav("/");
+    } catch (e: unknown) {
+      const apiError = e as ApiError;
+      setErr(apiError.message || "Impossible de supprimer la partie");
+    } finally {
+      setDeletingRoom(false);
+    }
+  }
+
   function launchGame() {
+    if (!canManageRoom) return;
     if (!createdRoomId) {
       void createRoom();
       return;
@@ -726,14 +876,24 @@ export default function CreateRoomPage() {
             <button
               type="button"
               onClick={createdRoomId ? launchGame : createRoom}
-              disabled={loading || !code || (createdRoomId !== null && !lobbySocket)}
+              disabled={loading || deletingRoom || !code || !canManageRoom || (createdRoomId !== null && !lobbySocket)}
               className={[
                 "mt-36 h-[40px] w-[250px] rounded-[7px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-6 text-center font-inter text-[13px] font-extrabold text-slate-50 transition hover:brightness-110 max-md:mt-8 max-md:w-full",
-                loading || !code ? "cursor-not-allowed opacity-50 hover:brightness-100" : "",
+                loading || deletingRoom || !code || !canManageRoom ? "cursor-not-allowed opacity-50 hover:brightness-100" : "",
               ].join(" ")}
             >
               {loading ? "Création…" : createdRoomId ? "Lancer la partie" : "Créer la partie"}
             </button>
+            {createdRoomId && canManageRoom && (
+              <button
+                type="button"
+                onClick={deleteRoom}
+                disabled={deletingRoom}
+                className="mt-3 h-[40px] w-[250px] rounded-[7px] border border-rose-400/40 bg-rose-950/40 px-6 text-center font-inter text-[13px] font-extrabold text-rose-100 transition hover:bg-rose-900/55 disabled:cursor-not-allowed disabled:opacity-50 max-md:w-full"
+              >
+                {deletingRoom ? "Suppression…" : "Supprimer la partie"}
+              </button>
+            )}
           </aside>
 
           <div className="flex flex-col">
@@ -746,6 +906,7 @@ export default function CreateRoomPage() {
 
             {activePanel === "settings" && (
               <div id="create-room-panel-settings" role="tabpanel" aria-label="Paramètres" className="create-room-scroll max-h-[calc(100vh-310px)] space-y-4 overflow-y-auto pr-4">
+                <fieldset disabled={!canManageRoom} className={!canManageRoom ? "space-y-4 opacity-60" : "space-y-4"}>
                 <SettingRow
                   label="Mode de jeu"
                   description="Choisissez le mode de jeu"
@@ -753,7 +914,8 @@ export default function CreateRoomPage() {
                 >
                   <select
                     defaultValue="Classique"
-                    className="h-[26px] w-full rounded-[3px] border-0 bg-[#0D1429] px-3 text-[12px] font-semibold text-white/95 outline-none"
+                    disabled={!canManageRoom}
+                    className="h-[26px] w-full rounded-[3px] border-0 bg-[#0D1429] px-3 text-[12px] font-semibold text-white/95 outline-none disabled:cursor-not-allowed"
                   >
                     <option>Classique</option>
                   </select>
@@ -769,7 +931,8 @@ export default function CreateRoomPage() {
                       step={1}
                       value={questionCount}
                       onChange={(event) => setQuestionCount(Number(event.target.value))}
-                      className="create-room-range"
+                      disabled={!canManageRoom}
+                      className="create-room-range disabled:cursor-not-allowed"
                       style={rangeStyle(qcountP)}
                     />
                     <span className="w-8 text-right font-inter text-[12px] font-semibold leading-none text-white">{questionCount}</span>
@@ -781,7 +944,7 @@ export default function CreateRoomPage() {
                     <button
                       type="button"
                       onClick={() => adjustDifficulty(-1)}
-                      disabled={selectedDifficultyIndex <= 0}
+                      disabled={!canManageRoom || selectedDifficultyIndex <= 0}
                       aria-label="Réduire la difficulté des questions"
                       className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
                     >
@@ -793,7 +956,7 @@ export default function CreateRoomPage() {
                     <button
                       type="button"
                       onClick={() => adjustDifficulty(1)}
-                      disabled={selectedDifficultyIndex >= DIFFICULTY_OPTIONS.length - 1}
+                      disabled={!canManageRoom || selectedDifficultyIndex >= DIFFICULTY_OPTIONS.length - 1}
                       aria-label="Augmenter la difficulté des questions"
                       className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
                     >
@@ -815,7 +978,7 @@ export default function CreateRoomPage() {
                       onPointerCancel={stopQuestionDurationHold}
                       onBlur={stopQuestionDurationHold}
                       onKeyDown={(event) => handleQuestionDurationKeyDown(event, -1)}
-                      disabled={questionDuration <= 3}
+                      disabled={!canManageRoom || questionDuration <= 3}
                       aria-label="Diminuer le temps pour répondre"
                       className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
                     >
@@ -835,7 +998,7 @@ export default function CreateRoomPage() {
                       onPointerCancel={stopQuestionDurationHold}
                       onBlur={stopQuestionDurationHold}
                       onKeyDown={(event) => handleQuestionDurationKeyDown(event, 1)}
-                      disabled={questionDuration >= 60}
+                      disabled={!canManageRoom || questionDuration >= 60}
                       aria-label="Augmenter le temps pour répondre"
                       className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
                     >
@@ -847,7 +1010,10 @@ export default function CreateRoomPage() {
                 <SettingRow label="Thèmes des questions" description="Sélectionnez les thèmes de la partie" value={`${selectedThemeCount}/${THEME_OPTIONS.length}`}>
                   <button
                     type="button"
-                    onClick={() => setThemesOpen(true)}
+                    onClick={() => {
+                      if (canManageRoom) setThemesOpen(true);
+                    }}
+                    disabled={!canManageRoom}
                     aria-haspopup="dialog"
                     aria-expanded={themesOpen}
                     className="flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]"
@@ -870,7 +1036,8 @@ export default function CreateRoomPage() {
                       step={1}
                       value={maxPlayers}
                       onChange={(event) => setMaxPlayers(Number(event.target.value))}
-                      className="create-room-range"
+                      disabled={!canManageRoom}
+                      className="create-room-range disabled:cursor-not-allowed"
                       style={rangeStyle(maxPlayersP)}
                     />
                     <span className="w-8 text-right font-inter text-[12px] font-semibold leading-none text-white">{maxPlayers}</span>
@@ -885,6 +1052,7 @@ export default function CreateRoomPage() {
                   <button
                     type="button"
                     onClick={() => setDynamicQuestionDisplay((enabled) => !enabled)}
+                    disabled={!canManageRoom}
                     aria-pressed={dynamicQuestionDisplay}
                     className={[
                       "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]",
@@ -916,6 +1084,7 @@ export default function CreateRoomPage() {
                   <button
                     type="button"
                     onClick={() => setManualQuestionLaunch((enabled) => !enabled)}
+                    disabled={!canManageRoom}
                     aria-pressed={manualQuestionLaunch}
                     className={[
                       "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]",
@@ -938,6 +1107,7 @@ export default function CreateRoomPage() {
                     </span>
                   </button>
                 </SettingRow>
+                </fieldset>
               </div>
             )}
 
@@ -954,7 +1124,8 @@ export default function CreateRoomPage() {
                     <button
                       type="button"
                       onClick={refreshCodeFromServer}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-[6px] bg-white/[0.055] font-inter text-[13px] font-extrabold text-white transition hover:bg-white/10"
+                      disabled={!canManageRoom}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-[6px] bg-white/[0.055] font-inter text-[13px] font-extrabold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       <RefreshIcon className="h-4 w-4" />
                       Régénérer
@@ -1027,7 +1198,7 @@ export default function CreateRoomPage() {
               {bannedThemes.length === 0 ? "Tous les thèmes sont inclus." : `${bannedThemes.length} thème(s) exclu(s).`}
             </div>
             </section>
-            {activePanel === "settings" && createdRoomId && (
+            {activePanel === "settings" && createdRoomId && canManageRoom && (
               <div className="mt-6 flex flex-col items-end gap-2">
                 <button
                   type="button"
@@ -1070,6 +1241,7 @@ export default function CreateRoomPage() {
               <button
                 type="button"
                 onClick={selectAllThemes}
+                disabled={!canManageRoom}
                 className="text-white/70 transition hover:text-white"
               >
                 Tout sélectionner
@@ -1078,6 +1250,7 @@ export default function CreateRoomPage() {
               <button
                 type="button"
                 onClick={selectNoThemes}
+                disabled={!canManageRoom}
                 className="text-white/55 transition hover:text-white"
               >
                 Tout retirer
@@ -1093,6 +1266,7 @@ export default function CreateRoomPage() {
                     key={key}
                     type="button"
                     onClick={() => toggleTheme(key)}
+                    disabled={!canManageRoom}
                     aria-pressed={active}
                     className={[
                       "rounded-[5px] border px-3 py-1.5 font-inter text-[12px] font-medium transition",

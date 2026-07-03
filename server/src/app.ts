@@ -78,6 +78,36 @@ async function main() {
   app.get("/health", async () => ({ ok: true }));
 
   // ---------- HTTP: Rooms ----------
+  app.get("/rooms/owned/open", async (req, reply) => {
+    try {
+      const sid = (req.cookies as any)?.sid as string | undefined;
+      if (!sid) return reply.code(401).send({ error: "Unauthorized" });
+
+      const session = await prisma.session.findUnique({
+        where: { token: sid },
+        select: { userId: true, expiresAt: true },
+      });
+      if (!session || session.expiresAt.getTime() < Date.now()) {
+        return reply.code(401).send({ error: "Unauthorized" });
+      }
+
+      const room = await prisma.room.findFirst({
+        where: {
+          ownerId: session.userId,
+          status: "OPEN",
+          visibility: RoomVisibility.PRIVATE,
+        },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, code: true },
+      });
+
+      return reply.send({ room });
+    } catch (e) {
+      req.log.error(e, "GET /rooms/owned/open failed");
+      return reply.code(500).send({ error: "Server error" });
+    }
+  });
+
   app.post("/rooms", async (req, reply) => {
     try {
       // 1) Auth via cookie "sid"
@@ -127,6 +157,19 @@ async function main() {
         select: { id: true },
       });
       if (!user) return reply.code(401).send({ error: "Unauthorized" });
+
+      const existingOwnedRoom = await prisma.room.findFirst({
+        where: {
+          ownerId: session.userId,
+          status: "OPEN",
+          visibility: RoomVisibility.PRIVATE,
+        },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, code: true },
+      });
+      if (visibility === RoomVisibility.PRIVATE && existingOwnedRoom) {
+        return reply.code(200).send({ result: existingOwnedRoom, existing: true });
+      }
 
       const interfaceImages = getInterfaceImages();
       const roomImage =
@@ -278,10 +321,59 @@ async function main() {
         await prisma.$executeRaw`UPDATE "Room" SET "manualQuestionLaunch" = ${manualQuestionLaunch} WHERE "id" = ${id}`;
       }
 
+      const roomPayload = { ...updated, manualQuestionLaunch: manualQuestionLaunch ?? (await getManualQuestionLaunch(id)) };
+      io.to(id).emit("room_settings_updated", { room: roomPayload });
       emitPublicRoomsUpdated(io);
-      return { room: { ...updated, manualQuestionLaunch: manualQuestionLaunch ?? (await getManualQuestionLaunch(id)) } };
+      return { room: roomPayload };
     } catch (e) {
       req.log.error(e, "PATCH /rooms/:id/settings failed");
+      return reply.code(500).send({ error: "Server error" });
+    }
+  });
+
+  app.patch("/rooms/:id/code", async (req, reply) => {
+    try {
+      const sid = (req.cookies as any)?.sid as string | undefined;
+      if (!sid) return reply.code(401).send({ error: "Unauthorized" });
+
+      const session = await prisma.session.findUnique({
+        where: { token: sid },
+        select: { userId: true, expiresAt: true },
+      });
+      if (!session || session.expiresAt.getTime() < Date.now()) {
+        return reply.code(401).send({ error: "Unauthorized" });
+      }
+
+      const id = (req.params as any).id as string;
+      const room = await prisma.room.findUnique({
+        where: { id },
+        select: { id: true, ownerId: true, status: true },
+      });
+      if (!room) return reply.code(404).send({ error: "Room not found" });
+      if (room.status === "CLOSED") return reply.code(410).send({ error: "Room closed" });
+      if (room.ownerId !== session.userId) return reply.code(403).send({ error: "Forbidden" });
+
+      for (let i = 0; i < 8; i++) {
+        const code = genCode(4);
+        const existing = await prisma.room.findUnique({
+          where: { code },
+          select: { id: true },
+        });
+        if (existing && existing.id !== id) continue;
+
+        const updated = await prisma.room.update({
+          where: { id },
+          data: { code },
+          select: { id: true, code: true },
+        });
+        io.to(id).emit("room_code_updated", { roomId: updated.id, code: updated.code });
+        emitPublicRoomsUpdated(io);
+        return reply.send({ code: updated.code });
+      }
+
+      return reply.code(503).send({ error: "no_code_available" });
+    } catch (e) {
+      req.log.error(e, "PATCH /rooms/:id/code failed");
       return reply.code(500).send({ error: "Server error" });
     }
   });

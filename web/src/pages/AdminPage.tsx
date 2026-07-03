@@ -608,6 +608,7 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
 function GamesPanel({ emptyState }: { emptyState: string }) {
   const [games, setGames] = useState<AdminGame[]>([]);
   const [loading, setLoading] = useState(true);
+  const [closingRoomId, setClosingRoomId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -647,6 +648,47 @@ function GamesPanel({ emptyState }: { emptyState: string }) {
       controller.abort();
     };
   }, []);
+
+  async function closeRoom(room: AdminGame) {
+    if (room.status === "CLOSED" || closingRoomId) return;
+
+    const confirmed = window.confirm(`Fermer la partie « ${room.name ?? room.id} » ?`);
+    if (!confirmed) return;
+
+    setClosingRoomId(room.id);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/rooms/${encodeURIComponent(room.id)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok && res.status !== 204) {
+        throw new Error("Impossible de fermer cette partie.");
+      }
+
+      const closedAt = new Date().toISOString();
+      setGames((currentGames) =>
+        currentGames.map((currentGame) =>
+          currentGame.id === room.id
+            ? {
+                ...currentGame,
+                status: "CLOSED",
+                closedAt: currentGame.closedAt ?? closedAt,
+                latestGame: currentGame.latestGame
+                  ? { ...currentGame.latestGame, state: "closed" }
+                  : currentGame.latestGame,
+              }
+            : currentGame,
+        ),
+      );
+    } catch (closeError) {
+      setError(closeError instanceof Error ? closeError.message : "Impossible de fermer cette partie.");
+    } finally {
+      setClosingRoomId(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -688,6 +730,7 @@ function GamesPanel({ emptyState }: { emptyState: string }) {
               <th className="px-4 py-3 font-black">Configuration</th>
               <th className="px-4 py-3 font-black">Joueurs</th>
               <th className="px-4 py-3 font-black">Créée le</th>
+              <th className="px-4 py-3 font-black">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -750,6 +793,18 @@ function GamesPanel({ emptyState }: { emptyState: string }) {
                     {game.closedAt ? (
                       <div className="text-xs text-white/40">Fermée le {formatDate(game.closedAt)}</div>
                     ) : null}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void closeRoom(game);
+                      }}
+                      disabled={game.status === "CLOSED" || closingRoomId !== null}
+                      className="rounded-lg border border-rose-400/35 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-100 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      {closingRoomId === game.id ? "Fermeture…" : game.status === "CLOSED" ? "Fermée" : "Fermer"}
+                    </button>
                   </td>
                 </tr>
               );

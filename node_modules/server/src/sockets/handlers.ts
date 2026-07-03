@@ -44,6 +44,41 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
   const MAX_DELTA_ENERGY = 120;
   const MIN_DELTA_ENERGY = -40;
 
+  const handleRoomClientDeparture = async (socketId: string) => {
+    const c = clients.get(socketId);
+    if (!c) return;
+
+    const { roomId, gameId } = c;
+    clients.delete(socketId);
+    io.sockets.sockets.get(socketId)?.leave(roomId);
+    io.to(roomId).emit("lobby_update");
+    emitPublicRoomsUpdated(io);
+
+    const left = clientsInRoom(clients, roomId).length;
+    if (left === 0) {
+      const existing = pendingRoomCleanup.get(roomId);
+      if (existing) clearTimeout(existing);
+      const cleanup = setTimeout(async () => {
+        pendingRoomCleanup.delete(roomId);
+        if (clientsInRoom(clients, roomId).length > 0) return;
+
+        try {
+          await prisma.game.update({ where: { id: gameId }, data: { state: "lobby" } });
+        } catch (e) {
+          console.warn("[disconnect] can't set game state:", e);
+        }
+
+        const st = gameStates.get(roomId);
+        if (st?.timer) clearTimeout(st.timer);
+        gameStates.delete(roomId);
+
+        io.to(roomId).emit("info_msg", "Tous les joueurs ont quitté. La partie est arrêtée.");
+        emitPublicRoomsUpdated(io);
+      }, 3000);
+      pendingRoomCleanup.set(roomId, cleanup);
+    }
+  };
+
   const ensurePlayerData = (st: GameState, pgId: string, name?: string, img?: string | null) => {
     if (!st.playerData) st.playerData = new Map();
     let entry = st.playerData.get(pgId);
@@ -916,6 +951,12 @@ socket.on(
       }
     });
 
+    /* ---------------- leave_game ---------------- */
+    socket.on("leave_game", async (_p: unknown, ack?: (res: { ok: boolean }) => void) => {
+      await handleRoomClientDeparture(socket.id);
+      ack?.({ ok: true });
+    });
+
     /* ---------------- lobby_state ---------------- */
     socket.on("lobby_state", async (_p: unknown, ack?: (res: {
       ok: boolean;
@@ -988,9 +1029,17 @@ socket.on(
     /* ---------------- start_game ---------------- */
     socket.on("start_game", async () => {
       const roomId = socket.data.roomId as string | undefined;
+      const userId = socket.data.userId as string | undefined;
       if (!roomId) return socket.emit("error_msg", "Not in a room");
+      if (!userId) return socket.emit("error_msg", "Not authenticated");
 
       try {
+        const room = await prisma.room.findUnique({
+          where: { id: roomId },
+          select: { ownerId: true },
+        });
+        if (!room) return socket.emit("error_msg", "Room not found");
+        if (room.ownerId !== userId) return socket.emit("error_msg", "Only the room owner can start the game");
         const st = gameStates.get(roomId);
         if (st && !st.finished) {
           socket.emit("info_msg", "Game already running");
@@ -1219,38 +1268,8 @@ socket.on(
     });
 
     /* ---------------- disconnect ---------------- */
-    socket.on("disconnect", async () => {
-
-      const c = clients.get(socket.id);
-      if (!c) return;
-
-      const { roomId, gameId } = c;
-      clients.delete(socket.id);
-      emitPublicRoomsUpdated(io);
-
-      const left = clientsInRoom(clients, roomId).length;
-      if (left === 0) {
-        const existing = pendingRoomCleanup.get(roomId);
-        if (existing) clearTimeout(existing);
-        const cleanup = setTimeout(async () => {
-          pendingRoomCleanup.delete(roomId);
-          if (clientsInRoom(clients, roomId).length > 0) return;
-
-          try {
-            await prisma.game.update({ where: { id: gameId }, data: { state: "lobby" } });
-          } catch (e) {
-            console.warn("[disconnect] can't set game state:", e);
-          }
-
-          const st = gameStates.get(roomId);
-          if (st?.timer) clearTimeout(st.timer);
-          gameStates.delete(roomId);
-
-          io.to(roomId).emit("info_msg", "Tous les joueurs ont quitté. La partie est arrêtée.");
-          emitPublicRoomsUpdated(io);
-        }, 3000);
-        pendingRoomCleanup.set(roomId, cleanup);
-      }
+    socket.on("disconnect", () => {
+      void handleRoomClientDeparture(socket.id);
     });
   });
 }
