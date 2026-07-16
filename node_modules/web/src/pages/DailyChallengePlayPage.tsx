@@ -1,6 +1,7 @@
 // web/src/pages/DailyChallengePlayPage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { ChevronRight, Crown, List, Star, Target, Timer } from "lucide-react";
 import { getThemeMeta } from "../lib/themeMeta";
 import emptyQuestionImg from "../assets/empty_img.jpg";
 import { io, Socket } from "socket.io-client";
@@ -281,18 +282,109 @@ function DailyFinalScoreHero({
     return () => window.cancelAnimationFrame(frame);
   }, [score]);
 
+  const statRows = [
+    {
+      label: "Bonnes réponses",
+      value: `${summaryCorrect} / ${summaryTotal}`,
+      icon: Target,
+      valueClassName: "text-emerald-400",
+    },
+    {
+      label: "Temps total",
+      value: totalSecondsLabel,
+      icon: Timer,
+      valueClassName: "text-white",
+    },
+    {
+      label: "Expérience gagnée",
+      value: `+ ${xpGained} XP`,
+      icon: Star,
+      valueClassName: "text-[#A66BFF]",
+    },
+  ];
+
   return (
     <section className="mx-auto flex w-full max-w-[1280px] flex-col items-center text-center">
-      <h1 className="font-brandUpright text-[34px] uppercase leading-none tracking-[0.08em] text-white drop-shadow-[0_4px_18px_rgba(255,255,255,0.12)] sm:text-[42px]">
+      <h1 className="font-brandUpright text-[34px] uppercase leading-none tracking-[0.14em] text-white drop-shadow-[0_4px_18px_rgba(255,255,255,0.12)] sm:text-[42px]">
         Votre score
       </h1>
 
-      <div className="mt-8 grid w-full items-start gap-5 lg:grid-cols-[minmax(260px,1fr)_minmax(190px,240px)_minmax(300px,1fr)] lg:gap-20">
-        <aside className="order-2 min-h-[250px] rounded-xl border border-white/[0.08] bg-[#0F1427]/80 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] lg:order-1">
-          <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
+      <div className="mt-8 w-full rounded-xl border border-white/[0.10] bg-[#0F1427]/75 px-6 py-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:px-10 lg:grid lg:grid-cols-[1fr_1.35fr_1fr] lg:items-center lg:gap-10">
+        <div className="flex justify-center lg:border-r lg:border-white/[0.08] lg:pr-10">
+          <div
+            className="relative grid size-[210px] place-items-center rounded-full p-[8px] sm:size-[250px]"
+            style={{
+              background: `conic-gradient(#9B5CFF ${scoreProgress * 360}deg, rgba(255,255,255,0.10) 0deg)`,
+            }}
+            aria-label={`Score ${formatIntegerFr(animatedScore)} points sur 2000`}
+          >
+            <div className="absolute inset-6 rounded-full bg-[#9B5CFF]/20 blur-2xl" />
+            <div className="relative grid size-full place-items-center rounded-full border border-white/[0.07] bg-[#081126] shadow-[inset_0_0_55px_rgba(155,92,255,0.16)]">
+              <div className="translate-y-3 font-brand font-black italic leading-none text-white tabular-nums">
+                <div className="text-[58px] tracking-[-0.04em] sm:text-[72px]">
+                  {formatIntegerFr(animatedScore)}
+                </div>
+                <div className="text-[24px] text-[#A66BFF] sm:text-[30px]">
+                  pts
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-0 text-left lg:mt-0 lg:border-r lg:border-white/[0.08] lg:pr-10">
+          {statRows.map((row) => {
+            const Icon = row.icon;
+            return (
+              <div
+                key={row.label}
+                className="flex items-center justify-between gap-5 border-b border-white/[0.08] py-5 last:border-b-0"
+              >
+                <div className="flex items-center gap-4 font-inter text-[15px] font-extrabold text-slate-100 sm:text-[16px]">
+                  <Icon className="h-6 w-6 text-[#A66BFF]" aria-hidden="true" />
+                  {row.label}
+                </div>
+                <div
+                  className={`whitespace-nowrap font-inter text-[17px] font-black ${row.valueClassName}`}
+                >
+                  {row.value}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-8 flex flex-col items-center justify-center lg:mt-0">
+          <div className="flex items-center justify-center gap-7">
+            <div className="grid h-[76px] w-[76px] place-items-center rounded-[22px] border-4 border-[#8E55FF] text-white shadow-[0_0_28px_rgba(142,85,255,0.28)]">
+              <Crown className="h-9 w-9" aria-hidden="true" />
+            </div>
+            <div className="flex items-end gap-3 font-brand font-black italic leading-none tabular-nums">
+              <span className="text-[66px] text-white sm:text-[88px]">
+                {rankLabel}
+                <sup className="ml-1 align-super text-[0.32em] leading-none">
+                  {rankSuffix}
+                </sup>
+              </span>
+              <span className="pb-4 text-[26px] text-slate-600">/</span>
+              <span className="pb-4 text-[20px] text-slate-500">
+                {totalPlayersLabel}
+              </span>
+            </div>
+          </div>
+          <div className="mt-9 rounded-full border border-[#8E55FF]/60 bg-[#3B236F]/80 px-14 py-4 font-inter text-[16px] font-black uppercase text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
+            {topLabel}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 grid w-full gap-5 lg:grid-cols-[0.96fr_1.04fr]">
+        <aside className="rounded-xl border border-white/[0.10] bg-[#0F1427]/75 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-8">
+          <h2 className="flex items-center gap-4 font-brandUpright text-[25px] uppercase leading-none tracking-[0.08em] text-white">
+            <List className="h-7 w-7 text-[#A66BFF]" aria-hidden="true" />
             Résumé
           </h2>
-          <div className="mt-6 flex flex-wrap gap-1.5">
+          <div className="mt-7 flex flex-wrap gap-3">
             {progressStates.map((state, index) => {
               const color =
                 state === "correct"
@@ -306,72 +398,48 @@ function DailyFinalScoreHero({
               return (
                 <div
                   key={index}
-                  className={`flex h-[30px] w-[30px] items-center justify-center rounded-md text-[11px] font-semibold text-slate-50 ${color}`}
+                  className={`flex h-[42px] w-[42px] items-center justify-center rounded-md text-[15px] font-black text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] ${color}`}
                 >
                   {index + 1}
                 </div>
               );
             })}
           </div>
-          <div className="mt-6 space-y-3 font-inter text-[14px] font-medium text-slate-200">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-400">Bonnes réponses</span>
-              <span className="text-white">{summaryCorrect}/{summaryTotal}</span>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-400">Temps total</span>
-              <span className="text-white">{totalSecondsLabel}</span>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-400">Expérience</span>
-              <span className="text-white">+ {xpGained} XP</span>
-            </div>
+          <div className="mt-7 flex flex-wrap gap-x-8 gap-y-3 font-inter text-[13px] font-medium text-slate-400">
+            <span className="flex items-center gap-2">
+              <i className="h-3.5 w-3.5 rounded-full bg-emerald-600" />
+              Bonne réponse
+            </span>
+            <span className="flex items-center gap-2">
+              <i className="h-3.5 w-3.5 rounded-full bg-[#CE343A]" />
+              Mauvaise réponse
+            </span>
+            <span className="flex items-center gap-2">
+              <i className="h-3.5 w-3.5 rounded-full bg-[#7B4FE6]" />
+              Sans réponse
+            </span>
           </div>
           <button
             type="button"
             onClick={onShowAnswers}
-            className="mt-7 inline-flex h-11 w-full items-center justify-center rounded-[6px] border border-white/[0.08] bg-[#1F2437] px-8 font-inter text-[13px] font-extrabold text-slate-50 transition hover:bg-[#2A3046]"
+            className="mt-8 inline-flex h-14 w-full items-center justify-center rounded-[7px] border border-[#8E55FF]/70 px-8 font-inter text-[15px] font-extrabold text-[#A66BFF] transition hover:bg-[#8E55FF]/10"
           >
-            Voir les réponses
+            Voir les réponses{" "}
+            <ChevronRight className="ml-auto h-5 w-5" aria-hidden="true" />
           </button>
         </aside>
 
-        <div className="order-1 flex justify-center lg:order-2">
-          <div
-            className="grid size-[190px] place-items-center rounded-full p-[7px] sm:size-[220px]"
-            style={{
-              background: `conic-gradient(#9B5CFF ${scoreProgress * 360}deg, rgba(255,255,255,0.08) 0deg)`,
-            }}
-            aria-label={`Score ${formatIntegerFr(animatedScore)} points sur 2000`}
-          >
-            <div className="grid size-full place-items-center rounded-full border border-white/[0.07] bg-[#081126] shadow-[inset_0_0_55px_rgba(155,92,255,0.12)]">
-              <div className="translate-y-3 font-brand font-black italic leading-none text-white tabular-nums">
-                <div className="text-[52px] tracking-[-0.04em] sm:text-[68px]">
-                  {formatIntegerFr(animatedScore)}
-                </div>
-                <div className="text-[24px] sm:text-[30px]">pts</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <aside className="order-3 rounded-xl border border-white/[0.08] bg-[#0F1427]/80 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-          <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
+        <aside className="rounded-xl border border-white/[0.10] bg-[#0F1427]/75 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-8">
+          <h2 className="flex items-center gap-4 font-brandUpright text-[25px] uppercase leading-none tracking-[0.08em] text-white">
+            <Crown className="h-7 w-7 text-[#A66BFF]" aria-hidden="true" />
             Classement
           </h2>
-          <div className="mt-8 flex items-end justify-center gap-3 font-brand font-black italic leading-none tabular-nums">
-            <span className="text-[38px] text-white sm:text-[48px]">
-              {rankLabel}
-              <sup className="ml-1 align-super text-[0.45em] leading-none text-white">
-                {rankSuffix}
-              </sup>
-            </span>
-            <span className="pb-1.5 text-[22px] text-slate-600 sm:text-[28px]">/</span>
-            <span className="pb-1.5 text-[18px] text-slate-500 sm:text-[23px]">
-              {totalPlayersLabel}
-            </span>
-          </div>
-          <svg className="mt-6 h-[120px] w-full overflow-visible" viewBox="0 0 300 116" preserveAspectRatio="none" aria-hidden="true">
+          <svg
+            className="mt-8 h-[145px] w-full overflow-visible"
+            viewBox="0 0 300 116"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
             <defs>
               <linearGradient id="daily-ranking-area" x1="0" x2="0" y1="0" y2="1">
                 <stop offset="0%" stopColor="#9B5CFF" stopOpacity="0.72" />
@@ -394,9 +462,10 @@ function DailyFinalScoreHero({
           <button
             type="button"
             onClick={onShowRanking}
-            className="mt-7 inline-flex h-11 w-full items-center justify-center rounded-[6px] border border-transparent bg-[#6250C7] px-8 font-inter text-[13px] font-extrabold text-slate-50 transition hover:bg-[#6F5BD4]"
+            className="mt-8 inline-flex h-14 w-full items-center justify-center rounded-[7px] border border-transparent bg-[#6D50D5] px-8 font-inter text-[15px] font-extrabold text-white transition hover:bg-[#7A5BE6]"
           >
-            Voir le classement
+            Voir le classement{" "}
+            <ChevronRight className="ml-auto h-5 w-5" aria-hidden="true" />
           </button>
         </aside>
       </div>
@@ -702,11 +771,7 @@ export default function DailyChallengePlayPage() {
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [results, setResults] = useState<Result[]>([]);
-  const [monthlyRanking, setMonthlyRanking] =
-    useState<DailyRankingSnapshot | null>(
-      serverCompleted?.monthlyRanking ?? null,
-    );
-    const [dailyRanking, setDailyRanking] = useState<DailyRankingSnapshot | null>(
+  const [dailyRanking, setDailyRanking] = useState<DailyRankingSnapshot | null>(
     serverCompleted?.dailyRanking ?? null,
   );
   const [points, setPoints] = useState(completedInfo?.score ?? 0);
@@ -782,7 +847,6 @@ export default function DailyChallengePlayPage() {
         }
         setServerCompleted(payload.completed);
         setResults(payload.completed.results);
-        setMonthlyRanking(payload.completed.monthlyRanking ?? null);
         setDailyRanking(payload.completed.dailyRanking ?? null);
         setPoints(payload.completed.score);
         setTotalQuestions(payload.completed.questionCount);
@@ -935,7 +999,6 @@ export default function DailyChallengePlayPage() {
       setRemainingSeconds(null);
       setPoints(p.score);
       setResults(p.results);
-      setMonthlyRanking(p.monthlyRanking ?? null);
       setDailyRanking(p.dailyRanking ?? null);
     });
 
