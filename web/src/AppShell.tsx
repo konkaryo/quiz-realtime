@@ -1533,15 +1533,34 @@ export default function AppShell() {
           ) : (
             <>
               <div
+                className="group"
                 aria-label={`Niveau ${xpProgress.level} - progression ${xpProgressPercent}%`}
                 data-xp-target="nav-xp"
                 style={{
+                  position: "relative",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  height: "100%",
+                  cursor: "default",
                 }}
               >
                 <NavLevelShield level={xpProgress.level} />
+                <div className="pointer-events-none absolute right-1/2 top-[calc(100%+8px)] z-50 w-64 translate-x-1/2 rounded-lg border border-white/[.12] bg-[#161926] p-4 opacity-0 shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition duration-150 group-hover:opacity-100">
+                  <div className="mb-2 flex items-center justify-between font-inter text-[11px] font-bold uppercase tracking-[0.08em] text-slate-300">
+                    <span>Niveau {xpProgress.level}</span>
+                    <span>{xpProgressPercent}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#7c3aed] to-[#a855f7]"
+                      style={{ width: `${xpProgressPercent}%` }}
+                    />
+                  </div>
+                  <div className="mt-2 font-inter text-[11px] font-semibold text-slate-400">
+                    {xpProgress.gained} / {xpProgress.needed} XP
+                  </div>
+                </div>
               </div>
 
               <div

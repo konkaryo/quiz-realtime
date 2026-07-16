@@ -55,7 +55,27 @@ function formatDailyRewardDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+type DailyRewardScoreRow = { playerId: string; score: number };
 type InsertedDailyRewardRow = { id: string };
+
+async function getDailyChallengeRewardLeaderboard(
+  prisma: PrismaClient,
+  challengeId: string,
+): Promise<DailyRewardScoreRow[]> {
+  // Rewards are based on the final leaderboard for this specific daily
+  // challenge only. Do not use DailyChallengeMonthlyScore here: the monthly
+  // table is an aggregate used by the monthly ranking screen, not by the daily
+  // reward payout.
+  return prisma.dailyChallengeScore.findMany({
+    where: {
+      challengeId,
+      player: { isBot: false, userId: { not: null } },
+    },
+    orderBy: [{ score: "desc" }, { createdAt: "asc" }],
+    select: { playerId: true, score: true },
+    take: DAILY_REWARD_TOP_LIMIT,
+  });
+}
 
 export async function awardPendingDailyChallengeBitRewards(
   prisma: PrismaClient,
@@ -79,15 +99,7 @@ export async function awardPendingDailyChallengeBitRewards(
     `;
     if (Number(existingRewards[0]?.count ?? 0) > 0) continue;
 
-    const topScores = await prisma.dailyChallengeScore.findMany({
-      where: {
-        challengeId: challenge.id,
-        player: { isBot: false, userId: { not: null } },
-      },
-      orderBy: [{ score: "desc" }, { createdAt: "asc" }],
-      select: { playerId: true, score: true },
-      take: DAILY_REWARD_TOP_LIMIT,
-    });
+    const topScores = await getDailyChallengeRewardLeaderboard(prisma, challenge.id);
 
     if (!topScores.length) {
       challengesProcessed += 1;

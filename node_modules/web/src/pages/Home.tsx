@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import playerIcon from "../assets/player.png";
+import cardsIcon from "../assets/cards.png";
 import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
@@ -11,13 +12,20 @@ const SOCKET_URL =
   (typeof window !== "undefined" ? window.location.origin : "");
 const PUBLIC_ROOMS_UPDATED_EVENT = "public_rooms_updated";
 
-function roomDifficultyLabel(value?: number | null): string {
+function roomDifficultyLevel(value?: number | null): number {
   const difficulty = typeof value === "number" && Number.isFinite(value) ? value : 50;
 
-  if (difficulty <= 25) return "FACILE";
-  if (difficulty <= 50) return "MODÉRÉ";
-  if (difficulty <= 75) return "DIFFICILE";
-  return "EXTRÊME";
+  if (difficulty <= 25) return 1;
+  if (difficulty <= 50) return 2;
+  if (difficulty <= 75) return 3;
+  return 4;
+}
+
+function roomDifficultyLabel(level: number): string {
+  if (level === 1) return "facile";
+  if (level === 2) return "modéré";
+  if (level === 3) return "difficile";
+  return "extrême";
 }
 
 type RoomListItem = {
@@ -157,7 +165,8 @@ export default function Home() {
                 0,
                 Math.min(questionCount, Number(room.progressCount) || 0),
               );
-              const difficultyLabel = roomDifficultyLabel(room.difficulty);
+              const difficultyLevel = roomDifficultyLevel(room.difficulty);
+              const difficultyLabel = roomDifficultyLabel(difficultyLevel);
               const isRoomInProgress = progressCount > 0;
               const progressDotClass = isRoomInProgress ? "bg-emerald-400" : "bg-yellow-300";
               const badgeClass = "inline-flex items-center gap-1.5 rounded-[6px] bg-black/45 px-3 py-2 font-brand text-[18px] italic leading-none text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-sm";
@@ -200,10 +209,35 @@ export default function Home() {
                           <span>{players ?? "—"}</span>
                           <img src={playerIcon} alt="" className="h-4 w-4 object-contain" draggable={false} />
                         </div>
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                          <img
+                            src={cardsIcon}
+                            alt=""
+                            className="w-[42%] max-w-[112px] object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.45)]"
+                            draggable={false}
+                          />
+                        </div>
 
                         <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 justify-center gap-2">
-                          <span className={badgeClass}>ARÈNE</span>
-                          <span className={badgeClass}>{difficultyLabel}</span>
+                          <span
+                            className={`${badgeClass} gap-0 px-2.5 text-[16px] not-italic`}
+                            aria-label={`Difficulté ${difficultyLabel}`}
+                            title={`Difficulté ${difficultyLabel}`}
+                          >
+                            {Array.from({ length: 4 }, (_, index) => {
+                              const isActive = index < difficultyLevel;
+
+                              return (
+                                <span
+                                  key={index}
+                                  aria-hidden="true"
+                                  className={isActive ? "text-white" : "text-white/25"}
+                                >
+                                  ★
+                                </span>
+                              );
+                            })}
+                          </span>
                         </div>
                       </div>
                     </div>

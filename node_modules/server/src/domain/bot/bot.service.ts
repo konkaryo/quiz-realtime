@@ -257,12 +257,14 @@ export async function scheduleBotAnswers(
           answerMode = "text";
           const rawText = correctChoice ? correctChoice.label : "???";
           let speedBonus = 0;
-          if (!Array.isArray(st.answeredOrderText)) st.answeredOrderText = [];
-          if (!st.answeredOrderText.includes(pg.id)) {
-            st.answeredOrderText.push(pg.id);
-            const rank = st.answeredOrderText.length;
-            const totalPlayers = st.pgIds.size;
-            speedBonus = computeSpeedBonus(rank, totalPlayers);
+          if (st.speedBonusEnabled) {
+            if (!Array.isArray(st.answeredOrderText)) st.answeredOrderText = [];
+            if (!st.answeredOrderText.includes(pg.id)) {
+              st.answeredOrderText.push(pg.id);
+              const rank = st.answeredOrderText.length;
+              const totalPlayers = st.pgIds.size;
+              speedBonus = computeSpeedBonus(rank, totalPlayers);
+            }
           }
           st.answeredThisRound.add(pg.id);
           await botApplyTextScoring(prisma, st, client, { id: q.id }, rawText, true, responseMs, speedBonus);

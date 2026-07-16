@@ -128,6 +128,11 @@ function readStorage(): Record<string, CompletedInfo> {
   }
 }
 
+function progressStateFromResult(result: Result): QuestionProgress {
+  if (!result.correct) return "wrong";
+  return result.mode === "choice" ? "correct-mc" : "correct";
+}
+
 function writeStorage(date: string, info: CompletedInfo) {
   try {
     const data = readStorage();
@@ -710,6 +715,7 @@ export default function DailyChallengePlayPage() {
   const [questionProgress, setQuestionProgress] = useState<QuestionProgress[]>(completedInfo?.questionStates ?? []);
 
   const phaseRef = useRef<"idle" | "playing" | "reveal" | "finished">(shouldShowStoredResults ? "finished" : "idle");
+  const answerModeRef = useRef<"text" | "choice" | null>(null);
   const feedbackWasCorrectRef = useRef<boolean | null>(null);
   const revealTimeoutRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -721,6 +727,10 @@ export default function DailyChallengePlayPage() {
   useEffect(() => {
     feedbackWasCorrectRef.current = feedbackWasCorrect;
   }, [feedbackWasCorrect]);
+
+  useEffect(() => {
+    answerModeRef.current = answerMode;
+  }, [answerMode]);
 
   useEffect(() => {
     return () => {
@@ -776,11 +786,7 @@ export default function DailyChallengePlayPage() {
         setDailyRanking(payload.completed.dailyRanking ?? null);
         setPoints(payload.completed.score);
         setTotalQuestions(payload.completed.questionCount);
-        setQuestionProgress(
-          payload.completed.results.map((result) =>
-            result.correct ? "correct" : "wrong",
-          ),
-        );
+        setQuestionProgress(payload.completed.results.map(progressStateFromResult));
         setPhase("finished");
         phaseRef.current = "finished";
         setStatus("ready");
@@ -842,6 +848,7 @@ export default function DailyChallengePlayPage() {
       setFeedbackCorrectLabel(null);
       setFeedbackPoints(null);
       setAnswerMode(null);
+      answerModeRef.current = null;
       setChoicesRevealed(false);
       setEndsAt(p.endsAt);
       setPoints(p.score);
@@ -899,7 +906,11 @@ export default function DailyChallengePlayPage() {
         if (!prev.length) return prev;
         const next = [...prev];
         const wasCorrect = feedbackWasCorrectRef.current === true;
-        next[p.index] = wasCorrect ? "correct" : "wrong";
+        next[p.index] = wasCorrect
+          ? answerModeRef.current === "choice"
+            ? "correct-mc"
+            : "correct"
+          : "wrong";
         return next;
       });
 
@@ -974,6 +985,7 @@ export default function DailyChallengePlayPage() {
     const value = textAnswer.trim();
     if (!value) return;
     setAnswerMode("text");
+    answerModeRef.current = "text";
     socket.emit("daily_submit_answer_text", { text: value });
   };
 
@@ -981,6 +993,7 @@ export default function DailyChallengePlayPage() {
     if (!socket || phaseRef.current !== "playing" || selectedChoice) return;
     setSelectedChoice(choice.id);
     setAnswerMode("choice");
+    answerModeRef.current = "choice";
     socket.emit("daily_submit_answer", { choiceId: choice.id });
   };
 
@@ -1009,11 +1022,13 @@ export default function DailyChallengePlayPage() {
     if (!socket || phaseRef.current !== "playing" || lives <= 0 || !!feedback?.includes("Bravo"))
       return;
     setAnswerMode("text");
+    answerModeRef.current = "text";
     setChoicesRevealed(true);
     socket.emit("daily_skip_question", (res: { ok: boolean; reason?: string }) => {
       if (res?.ok) return;
       setChoicesRevealed(false);
       setAnswerMode(null);
+      answerModeRef.current = null;
       if (res?.reason === "already" || res?.reason === "too-late") return;
       setFeedback("Impossible de passer cette question.");
     });

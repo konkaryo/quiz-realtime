@@ -99,6 +99,7 @@ type RoomSettingsResponse = {
     bannedThemes?: ThemeKey[];
     dynamicQuestionDisplay?: boolean;
     manualQuestionLaunch?: boolean;
+    speedBonusEnabled?: boolean;
   };
 };
 
@@ -123,6 +124,7 @@ type SavedRoomSettings = {
   questionDuration: number;
   dynamicQuestionDisplay: boolean;
   manualQuestionLaunch: boolean;
+  speedBonusEnabled: boolean;
   bannedThemes: ThemeKey[];
 };
 
@@ -137,6 +139,7 @@ function areRoomSettingsEqual(left: SavedRoomSettings, right: SavedRoomSettings)
     left.questionDuration === right.questionDuration &&
     left.dynamicQuestionDisplay === right.dynamicQuestionDisplay &&
     left.manualQuestionLaunch === right.manualQuestionLaunch &&
+    left.speedBonusEnabled === right.speedBonusEnabled &&
     areThemeListsEqual(left.bannedThemes, right.bannedThemes)
   );
 }
@@ -247,6 +250,7 @@ export default function CreateRoomPageCorrected() {
   const [maxPlayers, setMaxPlayers] = useState(50);
   const [dynamicQuestionDisplay, setDynamicQuestionDisplay] = useState(true);
   const [manualQuestionLaunch, setManualQuestionLaunch] = useState(false);
+  const [speedBonusEnabled, setSpeedBonusEnabled] = useState(true);
   const [selectedThemes, setSelectedThemes] = useState<ThemeKey[]>(THEME_OPTIONS.map((theme) => theme.key));
   const [code, setCode] = useState("");
   const [activePanel, setActivePanel] = useState<PanelKey>("settings");
@@ -298,9 +302,10 @@ export default function CreateRoomPageCorrected() {
       questionDuration,
       dynamicQuestionDisplay,
       manualQuestionLaunch,
+      speedBonusEnabled,
       bannedThemes,
     }),
-    [bannedThemes, difficulty, dynamicQuestionDisplay, manualQuestionLaunch, questionCount, questionDuration],
+    [bannedThemes, difficulty, dynamicQuestionDisplay, manualQuestionLaunch, questionCount, questionDuration, speedBonusEnabled],
   );
   const hasUnsavedSettings = savedSettings !== null && !areRoomSettingsEqual(currentSettings, savedSettings);
   const canManageRoom = !createdRoomId || createdByCurrentUser || (!!currentUserId && ownerUserId === currentUserId);
@@ -503,6 +508,8 @@ export default function CreateRoomPageCorrected() {
         typeof room.dynamicQuestionDisplay === "boolean" ? room.dynamicQuestionDisplay : true;
       const nextManualQuestionLaunch =
         typeof room.manualQuestionLaunch === "boolean" ? room.manualQuestionLaunch : false;
+      const nextSpeedBonusEnabled =
+        typeof room.speedBonusEnabled === "boolean" ? room.speedBonusEnabled : true;
 
       setDifficulty(nextDifficulty);
       setQuestionCount(nextQuestionCount);
@@ -512,12 +519,14 @@ export default function CreateRoomPageCorrected() {
       );
       setDynamicQuestionDisplay(nextDynamicQuestionDisplay);
       setManualQuestionLaunch(nextManualQuestionLaunch);
+      setSpeedBonusEnabled(nextSpeedBonusEnabled);
       setSavedSettings({
         difficulty: nextDifficulty,
         questionCount: nextQuestionCount,
         questionDuration: nextQuestionDuration,
         dynamicQuestionDisplay: nextDynamicQuestionDisplay,
         manualQuestionLaunch: nextManualQuestionLaunch,
+        speedBonusEnabled: nextSpeedBonusEnabled,
         bannedThemes: nextBannedThemes,
       });
     };
@@ -582,6 +591,8 @@ export default function CreateRoomPageCorrected() {
           typeof room.dynamicQuestionDisplay === "boolean" ? room.dynamicQuestionDisplay : true;
         const loadedManualQuestionLaunch =
           typeof room.manualQuestionLaunch === "boolean" ? room.manualQuestionLaunch : false;
+        const loadedSpeedBonusEnabled =
+          typeof room.speedBonusEnabled === "boolean" ? room.speedBonusEnabled : true;
 
         setDifficulty(loadedDifficulty);
         setQuestionCount(loadedQuestionCount);
@@ -589,12 +600,14 @@ export default function CreateRoomPageCorrected() {
         setSelectedThemes(THEME_OPTIONS.filter((theme) => !loadedBannedThemes.includes(theme.key)).map((theme) => theme.key));
         setDynamicQuestionDisplay(loadedDynamicQuestionDisplay);
         setManualQuestionLaunch(loadedManualQuestionLaunch);
+        setSpeedBonusEnabled(loadedSpeedBonusEnabled);
         setSavedSettings({
           difficulty: loadedDifficulty,
           questionCount: loadedQuestionCount,
           questionDuration: loadedQuestionDuration,
           dynamicQuestionDisplay: loadedDynamicQuestionDisplay,
           manualQuestionLaunch: loadedManualQuestionLaunch,
+          speedBonusEnabled: loadedSpeedBonusEnabled,
           bannedThemes: loadedBannedThemes,
         });
         setActivePanel("lobby");
@@ -687,6 +700,7 @@ export default function CreateRoomPageCorrected() {
           maxPlayers,
           dynamicQuestionDisplay,
           manualQuestionLaunch,
+          speedBonusEnabled,
           bannedThemes,
         }),
       })) as CreateRoomResponse;
@@ -730,6 +744,7 @@ export default function CreateRoomPageCorrected() {
           roundSeconds: questionDuration,
           dynamicQuestionDisplay,
           manualQuestionLaunch,
+          speedBonusEnabled,
           bannedThemes,
         }),
       });
@@ -1070,6 +1085,38 @@ export default function CreateRoomPageCorrected() {
                         className={[
                           "absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white transition",
                           dynamicQuestionDisplay ? "left-[20px]" : "left-0.5",
+                        ].join(" ")}
+                      />
+                    </span>
+                  </button>
+                </SettingRow>
+
+                <SettingRow
+                  label="Bonus de rapidité"
+                  description="Récompense les réponses textuelles correctes les plus rapides"
+                  value={speedBonusEnabled ? "Activé" : "Désactivé"}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSpeedBonusEnabled((enabled) => !enabled)}
+                    disabled={!canManageRoom}
+                    aria-pressed={speedBonusEnabled}
+                    className={[
+                      "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]",
+                    ].join(" ")}
+                  >
+                    <span>{speedBonusEnabled ? "Activé" : "Désactivé"}</span>
+                    <span
+                      aria-hidden
+                      className={[
+                        "relative h-[18px] w-9 rounded-full transition",
+                        speedBonusEnabled ? "bg-[#7C5CFF]" : "bg-white/20",
+                      ].join(" ")}
+                    >
+                      <span
+                        className={[
+                          "absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white transition",
+                          speedBonusEnabled ? "left-[20px]" : "left-0.5",
                         ].join(" ")}
                       />
                     </span>

@@ -1196,7 +1196,7 @@ socket.on(
 
         // --------- BONUS DE RAPIDITÉ (texte correct uniquement) ----------
         let speedBonus = 0;
-        if (correct) {
+        if (correct && st.speedBonusEnabled) {
             // utilise le même tableau que les bots, RAZ à chaque round dans startRound()
             if (!Array.isArray(st.answeredOrderText)) st.answeredOrderText = [];
             if (!st.answeredOrderText.includes(client.playerGameId)) {

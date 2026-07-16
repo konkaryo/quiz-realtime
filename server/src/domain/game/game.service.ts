@@ -22,6 +22,13 @@ async function getManualQuestionLaunch(prisma: PrismaClient, roomId: string) {
   return rows[0]?.manualQuestionLaunch ?? false;
 }
 
+async function getSpeedBonusEnabled(prisma: PrismaClient, roomId: string) {
+  const rows = await prisma.$queryRaw<Array<{ speedBonusEnabled: boolean }>>`
+    SELECT "speedBonusEnabled" FROM "Room" WHERE "id" = ${roomId} LIMIT 1
+  `;
+  return rows[0]?.speedBonusEnabled ?? true;
+}
+
 const DEFAULT_DIFFICULTY_PERCENT = 50;
 const DIVERS_PROBABILITY_STEP = 0.05;
 
@@ -177,8 +184,10 @@ export async function startGameForRoom(
 
   const room = await prisma.room.findUnique({ where: { id: roomId } });
   if (!room) return;
-  const manualQuestionLaunch = await getManualQuestionLaunch(prisma, room.id);
-
+  const [manualQuestionLaunch, speedBonusEnabled] = await Promise.all([
+    getManualQuestionLaunch(prisma, room.id),
+    getSpeedBonusEnabled(prisma, room.id),
+  ]);
   const game = await room_service.getOrCreateCurrentGame(prisma, room.id);
   let pgs = await room_service.ensurePlayerGamesForRoom(clients, game.id, io, prisma, room.id);
 
@@ -303,6 +312,7 @@ export async function startGameForRoom(
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
     dynamicQuestionDisplay: room.dynamicQuestionDisplay ?? true,
     manualQuestionLaunch,
+    speedBonusEnabled,
     waitingForManualLaunch: false,
     roundSeq: 0,
     finished: false,
@@ -447,6 +457,7 @@ async function startRound(
     textLives: TEXT_LIVES,
     dynamicQuestionDisplay: st.dynamicQuestionDisplay,
     manualQuestionLaunch: st.manualQuestionLaunch,
+    speedBonusEnabled: st.speedBonusEnabled,
     serverNow: Date.now()
     // optional: roundUid: myUid
   });

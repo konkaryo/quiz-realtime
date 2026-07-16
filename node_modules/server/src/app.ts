@@ -37,6 +37,13 @@ async function getManualQuestionLaunch(roomId: string) {
   return rows[0]?.manualQuestionLaunch ?? false;
 }
 
+async function getSpeedBonusEnabled(roomId: string) {
+  const rows = await prisma.$queryRaw<Array<{ speedBonusEnabled: boolean }>>`
+    SELECT "speedBonusEnabled" FROM "Room" WHERE "id" = ${roomId} LIMIT 1
+  `;
+  return rows[0]?.speedBonusEnabled ?? true;
+}
+
 async function main() {
   const app = fastify({ logger: true });
 
@@ -129,6 +136,7 @@ async function main() {
         roundSeconds:  z.number().int().min(10).max(30).optional(),
         dynamicQuestionDisplay: z.boolean().optional(),
         manualQuestionLaunch: z.boolean().optional(),
+        speedBonusEnabled: z.boolean().optional(),
         code:          z.string().trim().toUpperCase().optional(),
         visibility:    z.nativeEnum(RoomVisibility).optional(),
       });
@@ -141,6 +149,7 @@ async function main() {
         roundSeconds = 10,
         dynamicQuestionDisplay = true,
         manualQuestionLaunch = false,
+        speedBonusEnabled = true,
         code: requestedCodeRaw,
         visibility = RoomVisibility.PRIVATE,
       } = parsed.data;
@@ -197,7 +206,7 @@ async function main() {
           select: { id: true },
         });
 
-        await tx.$executeRaw`UPDATE "Room" SET "manualQuestionLaunch" = ${manualQuestionLaunch} WHERE "id" = ${room.id}`;
+        await tx.$executeRaw`UPDATE "Room" SET "manualQuestionLaunch" = ${manualQuestionLaunch}, "speedBonusEnabled" = ${speedBonusEnabled} WHERE "id" = ${room.id}`;
 
         await tx.game.create({ data: { roomId: room.id, state: "lobby" } });
 
@@ -235,7 +244,10 @@ async function main() {
       return reply.code(410).send({ error: "Room closed" });
     }
 
-    const manualQuestionLaunch = await getManualQuestionLaunch(room.id);
+    const [manualQuestionLaunch, speedBonusEnabled] = await Promise.all([
+      getManualQuestionLaunch(room.id),
+      getSpeedBonusEnabled(room.id),
+    ]);
 
     const normalizedImage = normalizeRoomImage(room.image);
     const resolvedImage =
@@ -251,7 +263,7 @@ async function main() {
       });
     }
 
-    return { room: { ...room, image: resolvedImage, manualQuestionLaunch } };
+    return { room: { ...room, image: resolvedImage, manualQuestionLaunch, speedBonusEnabled } };
   });
 
   app.patch("/rooms/:id/settings", async (req, reply) => {
@@ -283,6 +295,7 @@ async function main() {
         roundSeconds: z.number().int().min(10).max(30).optional(),
         dynamicQuestionDisplay: z.boolean().optional(),
         manualQuestionLaunch: z.boolean().optional(),
+        speedBonusEnabled: z.boolean().optional(),
       });
       const parsed = Body.safeParse(req.body);
       if (!parsed.success) return reply.code(400).send({ error: parsed.error.message });
@@ -303,6 +316,7 @@ async function main() {
       }
 
       const manualQuestionLaunch = parsed.data.manualQuestionLaunch;
+      const speedBonusEnabled = parsed.data.speedBonusEnabled;
 
       const updated = await prisma.room.update({
         where: { id },
@@ -317,11 +331,17 @@ async function main() {
         },
       });
 
-      if (typeof manualQuestionLaunch === "boolean") {
-        await prisma.$executeRaw`UPDATE "Room" SET "manualQuestionLaunch" = ${manualQuestionLaunch} WHERE "id" = ${id}`;
+      if (typeof manualQuestionLaunch === "boolean" || typeof speedBonusEnabled === "boolean") {
+        const nextManualQuestionLaunch = manualQuestionLaunch ?? (await getManualQuestionLaunch(id));
+        const nextSpeedBonusEnabled = speedBonusEnabled ?? (await getSpeedBonusEnabled(id));
+        await prisma.$executeRaw`UPDATE "Room" SET "manualQuestionLaunch" = ${nextManualQuestionLaunch}, "speedBonusEnabled" = ${nextSpeedBonusEnabled} WHERE "id" = ${id}`;
       }
 
-      const roomPayload = { ...updated, manualQuestionLaunch: manualQuestionLaunch ?? (await getManualQuestionLaunch(id)) };
+      const roomPayload = {
+        ...updated,
+        manualQuestionLaunch: manualQuestionLaunch ?? (await getManualQuestionLaunch(id)),
+        speedBonusEnabled: speedBonusEnabled ?? (await getSpeedBonusEnabled(id)),
+      };
       io.to(id).emit("room_settings_updated", { room: roomPayload });
       emitPublicRoomsUpdated(io);
       return { room: roomPayload };

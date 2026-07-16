@@ -203,6 +203,7 @@ model Room {
   roundMs                Int            @default(10000)
   dynamicQuestionDisplay Boolean        @default(true)
   manualQuestionLaunch   Boolean        @default(false)
+  speedBonusEnabled      Boolean        @default(true)
   visibility             RoomVisibility @default(PRIVATE)
   image                  String?
 

@@ -19,7 +19,7 @@ import QuestionPanel, {
   QuestionProgress as QuestionPanelProgress,
 } from "../components/QuestionPanel";
 import { getLevelFromExperience } from "../utils/experience";
-import { CircleHelp, Clock3, List, LogOut, Trophy } from "lucide-react";
+import { List, LogOut } from "lucide-react";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -39,6 +39,30 @@ type QuestionLite = {
   difficulty?: number | null;
 };
 type Phase = "idle" | "countdown" | "playing" | "reveal" | "between" | "final";
+
+function CountdownLevelShield({ level }: { level: number }) {
+  return (
+    <span className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center text-white drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)]">
+      <svg
+        viewBox="0 0 72 72"
+        className="absolute inset-0 h-full w-full overflow-visible"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path
+          d="M36 3 64.6 19.5v33L36 69 7.4 52.5v-33L36 3z"
+          fill="#172033"
+          stroke="#8b5cf6"
+          strokeWidth="2"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+      <span className="relative z-10 font-inter text-[14px] font-black leading-none">{level}</span>
+    </span>
+  );
+}
+
 type LeaderRow = {
   id: string;
   playerId?: string | null;
@@ -89,7 +113,7 @@ function FinalCountdownRing({ seconds, progress }: { seconds: number; progress: 
             seconds={normalizedSeconds}
             progress={progress}
             segmentColor="#8E63FF"
-            textClassName="font-acumin text-[28px] font-bold leading-[0.9] text-white"
+            textClassName="font-acumin text-[22px] font-bold leading-[0.9] text-white"
           />
         </div>
       </div>
@@ -399,8 +423,6 @@ export default function RoomPage() {
   const shouldScrollCountdownPlayers = countdownPlayers.length > 5;
   const countdownCarouselPlayers = shouldScrollCountdownPlayers ? [...countdownPlayers, ...countdownPlayers] : countdownPlayers;
   const countdownMarqueeDuration = `${Math.max(12, countdownPlayers.length * 2.6)}s`;
-  const countdownQuestionCount = Math.max(total || finalQuestionSnapshots.length || questionStatuses.length || 10, 1);
-  const countdownSecondsPerAnswer = Math.max(1, Math.round((roundDuration ?? 15000) / 1000));
   const shouldHideLeftRail = phase === "final" || gameCountdown !== null;
   const shouldHideRightQuestionImage = phase === "final" || gameCountdown !== null;
 
@@ -1621,26 +1643,26 @@ return (
                   <div className="relative z-10 flex items-start justify-center">
                     <div className="w-full max-w-[1800px]">
                       {gameCountdown !== null ? (
-                        <div className="flex min-h-[620px] items-center justify-center px-4 py-6">
+                        <div className="flex min-h-[620px] items-start justify-center px-4 pb-6 pt-10">
                           <div className="flex w-full max-w-[880px] flex-col items-center text-center">
                             <div className="flex items-center justify-center text-[#8E63FF]">
                               <h1 className="font-brand text-[38px] italic leading-none tracking-[0.08em] text-white drop-shadow-[0_0_18px_rgba(126,92,255,0.32)] md:text-[46px]">
                                 LA PARTIE COMMENCE BIENTÔT
                               </h1>
                             </div>
-                            <div className="mt-7 flex h-[176px] items-center justify-center">
-                              <div className="scale-[1.82]">
+                            <div className="mt-7 flex h-[128px] items-center justify-center">
+                              <div className="scale-[1.50]">
                                 <OverwatchTimerBadge
                                   seconds={gameCountdownRemainingSeconds ?? gameCountdown ?? 0}
                                   progress={gameCountdownProgress}
                                   segmentColor="#8E63FF"
-                                  textClassName="font-acumin text-[28px] font-bold leading-[0.9] text-white"
+                                  textClassName="font-acumin text-[24px] font-bold leading-[0.9] text-white"
                                 />
                               </div>
                             </div>
 
                             <div
-                              className={`mt-10 flex min-h-[142px] w-full max-w-[760px] overflow-hidden ${
+                              className={`mt-20 flex min-h-[142px] w-full max-w-[760px] overflow-hidden ${
                                 shouldScrollCountdownPlayers ? "[mask-image:linear-gradient(to_right,transparent_0%,#000_10%,#000_90%,transparent_100%)]" : "justify-center"
                               }`}
                             >
@@ -1681,34 +1703,12 @@ return (
                                         />
                                       </div>
                                       <div className="mt-3 max-w-full truncate font-inter text-[14px] font-extrabold leading-none text-white">{player.name}</div>
-                                      <div className="mt-2 font-inter text-[11px] font-extrabold leading-none text-[#8E63FF]">Niveau {level}</div>
+                                      <div className="mt-2" aria-label={`Niveau ${level}`}>
+                                        <CountdownLevelShield level={level} />
+                                      </div>
                                     </div>
                                   );
                                 })}
-                              </div>
-                            </div>
-
-                            <div className="mt-8 grid w-full grid-cols-1 gap-4 md:grid-cols-3">
-                              <div className="flex items-center gap-4 rounded-[8px] bg-[#141828] px-8 py-5 text-left shadow-[0_18px_48px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.04)]">
-                                <CircleHelp className="h-9 w-9 text-[#8E63FF]" strokeWidth={2.2} />
-                                <div className="font-inter">
-                                  <div className="text-[13px] font-extrabold uppercase italic leading-none text-white">{countdownQuestionCount} questions</div>
-                                  <div className="mt-2 text-[12px] font-semibold leading-none text-white/72">{roomDisplayName}</div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-4 rounded-[8px] bg-[#141828] px-8 py-5 text-left shadow-[0_18px_48px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.04)]">
-                                <Clock3 className="h-9 w-9 text-[#8E63FF]" strokeWidth={2.2} />
-                                <div className="font-inter">
-                                  <div className="text-[13px] font-extrabold uppercase italic leading-none text-white">{countdownSecondsPerAnswer} secondes</div>
-                                  <div className="mt-2 text-[12px] font-semibold leading-none text-white/72">par réponse</div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-4 rounded-[8px] bg-[#141828] px-8 py-5 text-left shadow-[0_18px_48px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.04)]">
-                                <Trophy className="h-9 w-9 text-[#8E63FF]" strokeWidth={2.2} />
-                                <div className="font-inter">
-                                  <div className="text-[13px] font-extrabold uppercase italic leading-none text-white">Top score</div>
-                                  <div className="mt-2 text-[12px] font-semibold leading-none text-white/72">remporte la partie</div>
-                                </div>
                               </div>
                             </div>
                           </div>
