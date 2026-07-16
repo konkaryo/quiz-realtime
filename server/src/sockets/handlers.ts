@@ -957,6 +957,38 @@ socket.on(
       ack?.({ ok: true });
     });
 
+    /* ---------------- return_to_lobby ---------------- */
+    socket.on("return_to_lobby", async (_p: unknown, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const roomId = socket.data.roomId as string | undefined;
+      const gameId = socket.data.gameId as string | undefined;
+      const userId = socket.data.userId as string | undefined;
+      if (!roomId) return ack?.({ ok: false, reason: "not-in-room" });
+      if (!userId) return ack?.({ ok: false, reason: "not-authenticated" });
+
+      try {
+        const room = await prisma.room.findUnique({ where: { id: roomId }, select: { ownerId: true } });
+        if (!room) return ack?.({ ok: false, reason: "room-not-found" });
+        if (room.ownerId !== userId) return ack?.({ ok: false, reason: "forbidden" });
+
+        const st = gameStates.get(roomId);
+        if (st?.timer) clearTimeout(st.timer);
+        gameStates.delete(roomId);
+
+        if (gameId) {
+          await prisma.game.update({ where: { id: gameId }, data: { state: "lobby" } }).catch((error) => {
+            console.warn("[return_to_lobby] can't set game state:", error);
+          });
+        }
+
+        io.to(roomId).emit("return_to_lobby", { roomId });
+        emitPublicRoomsUpdated(io);
+        return ack?.({ ok: true });
+      } catch (error) {
+        console.error("[return_to_lobby] error", error);
+        return ack?.({ ok: false, reason: "server-error" });
+      }
+    });
+
     /* ---------------- lobby_state ---------------- */
     socket.on("lobby_state", async (_p: unknown, ack?: (res: {
       ok: boolean;

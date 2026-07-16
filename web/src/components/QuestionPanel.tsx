@@ -225,10 +225,6 @@ type Props = {
   animateQuestionText?: boolean;
   questionRevealStartedAtMs?: number | null;
   correctLabelPlacement?: "above" | "below";
-  manualNextAvailable?: boolean;
-  manualNextIsOwner?: boolean;
-  manualNextPending?: boolean;
-  onManualNext?: () => void;
 };
 
 const QUESTION_REVEAL_STEP_MS = 35;
@@ -278,10 +274,6 @@ export default function DailyQuestionPanel(props: Props) {
     animateQuestionText = false,
     questionRevealStartedAtMs = null,
     correctLabelPlacement = "below",
-    manualNextAvailable = false,
-    manualNextIsOwner = false,
-    manualNextPending = false,
-    onManualNext,
   } = props;
 
   const [visibleQuestionLength, setVisibleQuestionLength] = useState(() =>
@@ -499,6 +491,13 @@ export default function DailyQuestionPanel(props: Props) {
   const [thumbDownMenuPos, setThumbDownMenuPos] = useState<{ top: number; left: number } | null>(null);
   const thumbDownButtonRef = useRef<HTMLButtonElement | null>(null);
   const thumbDownMenuRef = useRef<HTMLDivElement | null>(null);
+  const thumbButtonClass = (vote: "up" | "down") =>
+    [
+      "group relative inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#232B43] transition duration-150",
+      "shadow-[0_8px_18px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)]",
+      "hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A1022]",
+      thumbVote === vote ? "brightness-125" : "opacity-80",
+    ].join(" ");
 
   useEffect(() => {
     setThumbVote(null);
@@ -629,19 +628,19 @@ export default function DailyQuestionPanel(props: Props) {
               });
               setThumbDownReason(null);
             }}
-            className="group relative p-2 transition"
+            className={thumbButtonClass("up")}
           >
             {sparkThumb === "up" ? (
               <span
                 aria-hidden
-                className="pointer-events-none absolute inset-0 m-auto h-6 w-6 animate-ping rounded-full bg-white/45"
+                className="pointer-events-none absolute inset-0 m-auto h-7 w-7 animate-ping rounded-[10px] bg-white/20"
               />
             ) : null}
             <img
               src={thumbVote === "up" ? thumbActiveIcon : thumbInactiveIcon}
               alt=""
               aria-hidden
-              className="h-[24px] w-[24px] object-contain"
+              className="h-[20px] w-[20px] object-contain opacity-75 transition group-hover:opacity-95 group-aria-pressed:opacity-100"
             />
           </button>
 
@@ -657,19 +656,19 @@ export default function DailyQuestionPanel(props: Props) {
                 return next;
               });
             }}
-            className="group relative p-2 transition"
+            className={thumbButtonClass("down")}
           >
             {sparkThumb === "down" ? (
               <span
                 aria-hidden
-                className="pointer-events-none absolute inset-0 m-auto h-6 w-6 animate-ping rounded-full bg-white/45"
+                className="pointer-events-none absolute inset-0 m-auto h-7 w-7 animate-ping rounded-[10px] bg-white/20"
               />
             ) : null}
             <img
               src={thumbVote === "down" ? thumbActiveIcon : thumbInactiveIcon}
               alt=""
               aria-hidden
-              className="h-[24px] w-[24px] rotate-180 object-contain"
+              className="h-[20px] w-[20px] rotate-180 object-contain opacity-75 transition group-hover:opacity-95 group-aria-pressed:opacity-100"
             />
           </button>
         </div>
@@ -912,22 +911,6 @@ export default function DailyQuestionPanel(props: Props) {
               </div>
             );
           })}
-        </div>
-      )}
-      {manualNextAvailable && (
-        <div className="mt-4 flex justify-center">
-          <button
-            type="button"
-            onClick={onManualNext}
-            disabled={!manualNextIsOwner || manualNextPending}
-            className="inline-flex h-10 min-w-[220px] items-center justify-center rounded-[6px] bg-gradient-to-r from-[#7E5CFF] to-[#6C3DDE] px-5 font-inter text-[13px] font-extrabold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:brightness-100"
-          >
-            {manualNextIsOwner
-              ? manualNextPending
-                ? "Lancement…"
-                : "Lancer la question suivante"
-              : "En attente du propriétaire"}
-          </button>
         </div>
       )}
     </div>

@@ -10,16 +10,13 @@ import Background from "../components/Background";
 import emptyQuestionImg from "../assets/empty_img.jpg";
 import playerIcon from "../assets/player.png";
 import crownImage from "../assets/crown.png";
-import goldMedalImage from "../assets/gold_medal.png";
-import silverMedalImage from "../assets/silver_medal.png";
-import bronzeMedalImage from "../assets/bronze_medal.png";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
   OverwatchTimerBadge,
   QuestionProgress as QuestionPanelProgress,
 } from "../components/QuestionPanel";
 import { getLevelFromExperience } from "../utils/experience";
-import { List, LogOut } from "lucide-react";
+import { List, LogOut, Play } from "lucide-react";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -537,6 +534,12 @@ export default function RoomPage() {
         alert("La room a été supprimée.");
         s.close();
         nav("/");
+      }
+    });
+
+    s.on("return_to_lobby", ({ roomId: rid }: { roomId: string }) => {
+      if (rid === roomId) {
+        nav(`/rooms/${rid}/lobby`);
       }
     });
 
@@ -1169,6 +1172,8 @@ export default function RoomPage() {
 
   const isPrivateRoom = roomMeta?.visibility === "PRIVATE";
   const isRoomOwner = !!selfId && !!roomMeta?.ownerId && roomMeta.ownerId === selfId;
+  const lobbyRoomId = roomMeta?.id ?? roomId;
+  const lobbyPath = lobbyRoomId ? `/rooms/${lobbyRoomId}/lobby` : "/";
   const roomBadgeClass = "inline-flex items-center gap-1.5 rounded-[6px] bg-black/45 px-3 py-1.5 font-brand text-[15px] italic leading-none text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-sm";
   const displayedRoomCode = isRoomCodeVisible ? roomMeta?.code ?? "—" : maskRoomCode(roomMeta?.code);
 
@@ -1431,21 +1436,32 @@ export default function RoomPage() {
             cls: "bg-[#3B3E4D] text-transparent",
           };
 
-    const medalByRank: Record<number, string> = {
-      1: goldMedalImage,
-      2: silverMedalImage,
-      3: bronzeMedalImage,
+    const premiumRankStyleByRank: Record<number, React.CSSProperties> = {
+      1: {
+        background: "linear-gradient(135deg, #FFF4A3 0%, #FFD832 42%, #D59618 100%)",
+        borderColor: "rgba(255, 244, 163, 0.95)",
+        boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.74), inset 0 -2px 5px rgba(120, 72, 0, 0.28)",
+      },
+      2: {
+        background: "linear-gradient(135deg, #FFFFFF 0%, #D6DEEA 46%, #8E9AAE 100%)",
+        borderColor: "rgba(255, 255, 255, 0.88)",
+        boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.82), inset 0 -2px 5px rgba(46, 58, 78, 0.28)",
+      },
+      3: {
+        background: "linear-gradient(135deg, #FFD2A0 0%, #F39A45 45%, #A85824 100%)",
+        borderColor: "rgba(255, 210, 160, 0.9)",
+        boxShadow: "inset 0 1px 0 rgba(255, 236, 214, 0.72), inset 0 -2px 5px rgba(93, 43, 12, 0.3)",
+      },
     };
 
     const rankNode = rank <= 3 ? (
-      <span className="relative inline-flex h-7 w-7 flex-shrink-0 items-center justify-center">
-        <img
-          src={medalByRank[rank]}
-          alt={`Rang ${rank}`}
-          className="absolute h-9 w-9 max-w-none object-contain"
-          draggable={false}
-          loading="lazy"
-        />
+      <span
+        className="relative inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] border pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-[#141827] [text-rendering:geometricPrecision] after:absolute after:inset-[2px] after:rounded-[4px] after:border after:border-white/25"
+        style={premiumRankStyleByRank[rank]}
+        title={`Rang ${rank}`}
+        aria-label={`Rang ${rank}`}
+      >
+        <span className="relative z-10 drop-shadow-[0_1px_0_rgba(255,255,255,0.45)]">{rank}</span>
       </span>
     ) : isSelf ? (
       <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] bg-white pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-black [text-rendering:geometricPrecision]">
@@ -1485,26 +1501,27 @@ return (
       <style>{`
         .lb-scroll {
           scrollbar-width: thin;
-          scrollbar-color: #4A4B56 #1E1F28;
+          scrollbar-color: #eef1ff rgba(255,255,255,0.08);
         }
-        .lb-scroll::-webkit-scrollbar { width: 12px; }
+        .lb-scroll::-webkit-scrollbar { width: 10px; }
         .lb-scroll::-webkit-scrollbar-track {
-          background: #1E1F28;
+          background: rgba(255,255,255,0.08);
           border-radius: 999px;
         }
         .lb-scroll::-webkit-scrollbar-button {
-          background-color: #4A4B56;
-          height: 12px;
+          display: none;
+          height: 0;
+          width: 0;
         }
         .lb-scroll::-webkit-scrollbar-thumb {
-          background: #4A4B56;
+          background: #eef1ff;
           border-radius: 999px;
-          border: 3px solid rgba(0,0,0,0);
+          border: 3px solid rgba(6,10,25,0.35);
           background-clip: padding-box;
         }
         .lb-scroll::-webkit-scrollbar-thumb:hover {
-          background: #4A4B56;
-          border: 3px solid rgba(0,0,0,0);
+          background: #eef1ff;
+          border: 3px solid rgba(6,10,25,0.35);
           background-clip: padding-box;
         }
 
@@ -1916,10 +1933,6 @@ return (
                                   onSelectChoice={(choice) => answerByChoice(choice.id)}
                                   questionProgress={questionProgress}
                                   correctLabelPlacement="above"
-                                  manualNextAvailable={manualQuestionLaunch && manualNextAvailable}
-                                  manualNextIsOwner={isRoomOwner}
-                                  manualNextPending={manualNextPending}
-                                  onManualNext={launchNextQuestion}
                                   animateQuestionText={dynamicQuestionDisplay}
                                   questionRevealStartedAtMs={questionRevealStartedAtMs}
                                 />
@@ -1968,8 +1981,8 @@ return (
                       <FinalCountdownRing seconds={finalRemaining} progress={finalProgress} />
                     </div>
                   ) : null}
-                  {phase === "final" ? (
-                    <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2">
+                    {phase === "final" ? (
                       <button
                         type="button"
                         onClick={() => setSelectedFinalIndex(firstFinalQuestionIndex)}
@@ -1978,16 +1991,38 @@ return (
                         <span className="leading-none">Voir le détail</span>
                         <List className="h-4 w-4 text-white/95" strokeWidth={2.3} />
                       </button>
+                    ) : null}
+                    {isRoomOwner && manualQuestionLaunch && manualNextAvailable ? (
                       <button
                         type="button"
-                        onClick={() => nav("/")}
+                        onClick={launchNextQuestion}
+                        disabled={manualNextPending}
+                        className="mx-auto flex h-11 w-[86%] items-center justify-center gap-3 rounded-[6px] bg-[#6250C7] px-4 font-inter text-[13px] font-extrabold text-white transition hover:bg-[#6F5BD4] disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-[#6250C7]"
+                      >
+                        <span className="leading-none">{manualNextPending ? "Lancement…" : "Question suivante"}</span>
+                        <Play className="h-3.5 w-3.5 fill-white/95 text-white/95" strokeWidth={1.7} />
+                      </button>
+                    ) : null}
+                    {isRoomOwner && gameCountdown === null ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!socket) {
+                            nav(lobbyPath);
+                            return;
+                          }
+
+                          socket.emit("return_to_lobby", {}, (res?: { ok?: boolean }) => {
+                            if (!res?.ok) nav(lobbyPath);
+                          });
+                        }}
                         className="mx-auto flex h-11 w-[86%] items-center justify-center gap-3 rounded-[6px] bg-[#151A30] px-4 font-inter text-[13px] font-extrabold text-white transition hover:bg-[#1b2340]"
                       >
-                        <span className="leading-none">Retour au salon</span>
+                        <span className="leading-none">Retour au lobby</span>
                         <LogOut className="h-4 w-4 text-white/95" strokeWidth={2.3} />
                       </button>
-                    </div>
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </aside>

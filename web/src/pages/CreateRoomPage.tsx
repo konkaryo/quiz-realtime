@@ -904,7 +904,7 @@ export default function CreateRoomPageCorrected() {
                 type="button"
                 onClick={deleteRoom}
                 disabled={deletingRoom}
-                className="mt-3 h-[40px] w-[250px] rounded-[7px] border border-rose-400/40 bg-rose-950/40 px-6 text-center font-inter text-[13px] font-extrabold text-rose-100 transition hover:bg-rose-900/55 disabled:cursor-not-allowed disabled:opacity-50 max-md:w-full"
+                className="mt-3 h-[40px] w-[250px] rounded-[7px] bg-gradient-to-t from-[#B91C1C] to-[#EF4444] px-6 text-center font-inter text-[13px] font-extrabold text-slate-50 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 max-md:w-full"
               >
                 {deletingRoom ? "Suppression…" : "Supprimer la partie"}
               </button>
@@ -1197,39 +1197,38 @@ export default function CreateRoomPageCorrected() {
                   <>
                     <div className="rounded-[8px] border border-white/[0.06] bg-[#131930] p-4">
                       <div className="mb-3 flex items-center justify-between">
-                        <h3 className="font-brandUpright text-[18px] uppercase leading-none text-white">
+                        <h3 className="font-brandUpright text-[20px] uppercase leading-none text-white">
                           Joueurs ({lobbyPlayers.length}/{maxPlayers})
                         </h3>
-                        <span className="text-[11px] font-semibold text-white/40">En attente de joueurs…</span>
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         {orderedLobbyPlayers.map((player) => {
                           const isOwner = player.id === ownerPlayerId;
                           return (
-                            <div key={player.id} className="grid grid-cols-[32px,1fr,auto] items-center gap-3 rounded bg-[#131930] px-3 py-2">
+                            <div key={player.id} className="grid grid-cols-[40px,1fr,auto] items-center gap-3 rounded bg-[#131930] px-3 py-2.5">
                               <img
                                 src={player.img || "/img/profiles/0.avif"}
                                 alt=""
-                                className="h-7 w-7 rounded-full object-cover"
+                                className="h-9 w-9 rounded-full object-cover"
                                 draggable={false}
                               />
                               <div className="flex min-w-0 items-center gap-2">
-                                <p className="truncate text-[13px] font-bold text-white">{player.name}</p>
+                                <p className="truncate text-[15px] font-bold text-white">{player.name}</p>
                                 {isOwner && (
                                   <img
                                     src={hostCrown}
                                     alt="Hôte"
-                                    className="h-4 w-4 shrink-0 object-contain"
+                                    className="h-[18px] w-[18px] shrink-0 object-contain"
                                     draggable={false}
                                   />
                                 )}
                               </div>
-                              <span className="text-[11px] font-bold text-emerald-300">Prêt</span>
+                              <span className="text-[12px] font-bold text-emerald-300">Prêt</span>
                             </div>
                           );
                         })}
                         {Array.from({ length: Math.max(0, Math.min(5, maxPlayers - lobbyPlayers.length)) }).map((_, index) => (
-                          <div key={`empty-${index}`} className="rounded bg-[#10172D] px-3 py-2 text-[12px] font-semibold text-white/25">
+                          <div key={`empty-${index}`} className="rounded bg-[#10172D] px-3 py-2.5 text-[13px] font-semibold text-white/25">
                             En attente d'un joueur…
                           </div>
                         ))}

@@ -14,6 +14,7 @@ import type { Client, GameState } from "./types";
 import { authRoutes } from "./routes/auth";
 import { dailyRoutes } from "./routes/daily";
 import { awardPendingDailyChallengeBitRewards } from "./domain/daily/daily-score.service";
+import { scheduleDailyChallengeBotSimulations } from "./domain/daily/daily-bot-simulation.service";
 import { leaderboardRoutes } from "./routes/leaderboard";
 import { playerRoutes } from "./routes/players";
 import { registerSocketHandlers } from "./sockets/handlers";
@@ -29,6 +30,15 @@ import { Theme, RoomVisibility } from "@prisma/client";
 /* ---------------- runtime maps ---------------- */
 const clients = new Map<string, Client>();
 const gameStates = new Map<string, GameState>();
+
+function utcDateIso(date = new Date()): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+}
+
+function msUntilNextUtcDay(): number {
+  const now = new Date();
+  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1) - now.getTime();
+}
 
 async function getManualQuestionLaunch(roomId: string) {
   const rows = await prisma.$queryRaw<Array<{ manualQuestionLaunch: boolean }>>`
@@ -81,6 +91,23 @@ async function main() {
   };
   runDailyRewardJob();
   setInterval(runDailyRewardJob, 60 * 60 * 1000).unref();
+
+  const planDailyBotSimulations = () => {
+    const dateIso = utcDateIso();
+    scheduleDailyChallengeBotSimulations(prisma, dateIso, (err, botId) =>
+      app.log.error({ err, botId, dateIso }, "daily challenge bot simulation failed"),
+    )
+      .then((schedule) => app.log.info({ dateIso, scheduled: schedule.participantCount }, "daily challenge bot simulations scheduled"))
+      .catch((err) => {
+        if (err instanceof Error && err.message === "daily_challenge_not_found") return;
+        app.log.error({ err, dateIso }, "daily challenge bot scheduling failed");
+      });
+  };
+  const planDailyBotSimulationsLoop = () => {
+    planDailyBotSimulations();
+    setTimeout(planDailyBotSimulationsLoop, msUntilNextUtcDay() + 1000).unref();
+  };
+  planDailyBotSimulationsLoop();
 
   app.get("/health", async () => ({ ok: true }));
 
