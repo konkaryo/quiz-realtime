@@ -14,6 +14,7 @@ import JoinLoadingScreen from "@/components/JoinLoadingScreen";
 import { AUTH_UPDATED_EVENT } from "@/auth/events";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
+import SideNavigation from "@/components/SideNavigation";
 
 type CurrentUser = {
   displayName?: string;
@@ -324,6 +325,7 @@ export default function AppShell() {
   const [displayExperience, setDisplayExperience] = useState(0);
   const displayExperienceRef = useRef(0);
   const isRoomRoute = location.pathname.startsWith("/room/");
+  const showSideNavigation = location.pathname === "/" || location.pathname === "/multi/public";
   const joinLoadingPending =
     showJoinLoading ||
     (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
@@ -1827,6 +1829,8 @@ export default function AppShell() {
         </div>
       </header>
 
+      {showSideNavigation && <SideNavigation />}
+
       {/* ---- Page content ---- */}
       <main
         style={{
@@ -1838,6 +1842,7 @@ export default function AppShell() {
           margin: "0 auto",
           fontFamily: "system-ui, sans-serif",
         }}
+        className={showSideNavigation ? "app-main--with-side-navigation" : undefined}
       >
         <Outlet />
       </main>

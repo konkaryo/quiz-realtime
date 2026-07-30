@@ -36,6 +36,7 @@ export type GameState = {
   roundMs: number;
   dynamicQuestionDisplay: boolean;
   manualQuestionLaunch: boolean;
+  speedBonusEnabled: boolean;
   waitingForManualLaunch?: boolean;
   finished?: boolean;
   playerData: Map<

@@ -1,23 +1,48 @@
 // web/src/pages/Home.tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
+import playerIcon from "../assets/player.png";
+import cardsIcon from "../assets/cards.png";
 import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL ??
+  (typeof window !== "undefined" ? window.location.origin : "");
+const PUBLIC_ROOMS_UPDATED_EVENT = "public_rooms_updated";
 
-type OwnerLite = { id: string; displayName: string };
+function roomDifficultyLevel(value?: number | null): number {
+  const difficulty = typeof value === "number" && Number.isFinite(value) ? value : 50;
+
+  if (difficulty <= 25) return 1;
+  if (difficulty <= 50) return 2;
+  if (difficulty <= 75) return 3;
+  return 4;
+}
+
+function roomDifficultyLabel(level: number): string {
+  if (level === 1) return "facile";
+  if (level === 2) return "modéré";
+  if (level === 3) return "difficile";
+  return "extrême";
+}
+
 type RoomListItem = {
   id: string;
-  createdAt?: string;
-  playerCount?: number;
+  name?: string | null;
+  image?: string | null;
   difficulty?: number;
-  owner?: OwnerLite | null;
-  canClose?: boolean;
+  playerCount?: number;
+  questionCount?: number;
+  progressCount?: number;
 };
+
 type RoomDetail = { id: string; code?: string | null };
 
 export default function Home() {
   const nav = useNavigate();
+
   const [rooms, setRooms] = useState<RoomListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -27,35 +52,75 @@ export default function Home() {
     const ct = res.headers.get("content-type") || "";
     const isJson = ct.includes("application/json");
     const data = isJson ? await res.json() : undefined;
-    if (!res.ok) throw new Error((data as any)?.error || (data as any)?.message || `HTTP ${res.status}`);
+
+    if (!res.ok) {
+      throw new Error((data as any)?.error || (data as any)?.message || `HTTP ${res.status}`);
+    }
     return data;
   }
 
-  async function loadRooms() {
-    setLoading(true);
+  const loadRooms = useCallback(async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     setErr(null);
     try {
       const data = await fetchJSON("/rooms");
-      setRooms(Array.isArray((data as any).rooms) ? (data as any).rooms : []);
+      const list = Array.isArray((data as any).rooms) ? ((data as any).rooms as RoomListItem[]) : [];
+      const sorted = [...list].sort((a, b) => {
+        const aDiff = typeof a.difficulty === "number" ? a.difficulty : Number.POSITIVE_INFINITY;
+        const bDiff = typeof b.difficulty === "number" ? b.difficulty : Number.POSITIVE_INFINITY;
+        if (aDiff !== bDiff) return aDiff - bDiff;
+        return a.id.localeCompare(b.id);
+      });
+      setRooms(sorted);
     } catch (e: any) {
       setErr(e?.message || "Erreur");
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    loadRooms();
-  }, []);
+    void loadRooms(true);
+  }, [loadRooms]);
+
+  useEffect(() => {
+    const socket = io(SOCKET_URL, {
+      path: "/socket.io",
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+    });
+
+    const refreshRooms = () => {
+      void loadRooms(false);
+    };
+
+    socket.on("connect", refreshRooms);
+    socket.on(PUBLIC_ROOMS_UPDATED_EVENT, refreshRooms);
+
+    return () => {
+      socket.off("connect", refreshRooms);
+      socket.off(PUBLIC_ROOMS_UPDATED_EVENT, refreshRooms);
+      socket.close();
+    };
+  }, [loadRooms]);
 
   async function openRoom(roomId: string) {
     try {
       const data = (await fetchJSON(`/rooms/${roomId}`)) as { room: RoomDetail };
       const code = (data.room?.code ?? "").trim();
-      if (!code) return nav(`/room/${roomId}`);
-      const userCode = (prompt("Cette room est privée. Entrez le code :") || "").trim().toUpperCase();
+      const goToRoom = (target: string) => {
+        sessionStorage.setItem("join-loading", "1");
+        nav(target);
+      };
+
+      if (!code) return goToRoom(`/room/${roomId}`);
+
+      const userCode = (prompt("Cette room est privée. Entrez le code :") || "")
+        .trim()
+        .toUpperCase();
+
       if (!userCode) return;
-      if (userCode === code.toUpperCase()) nav(`/room/${roomId}`);
+      if (userCode === code.toUpperCase()) goToRoom(`/room/${roomId}`);
       else alert("Code invalide.");
     } catch (e: any) {
       const msg = (e?.message || "").toLowerCase();
@@ -69,165 +134,122 @@ export default function Home() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative min-h-full overflow-hidden text-slate-50">
       <Background />
 
-      {/* ====== Contenu ====== */}
-      <div
-        style={{
-          maxWidth: 820,
-          margin: "40px auto",
-          padding: 16,
-          fontFamily: "system-ui, sans-serif",
-          position: "relative",
-          zIndex: 1,
-          color: "#fff",
-        }}
-      >
-        {/* Titre + bouton refresh à gauche (texte “Rooms” ne bouge pas) */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ width: 32, height: 32, display: "inline-flex" }}>
-            <button
-              onClick={loadRooms}
-              disabled={loading}
-              aria-label="Rafraîchir"
-              title="Rafraîchir"
-              className={`w-8 h-8 rounded-md border border-white/40 text-white flex items-center justify-center bg-transparent ${
-                loading ? "cursor-not-allowed" : "cursor-pointer"
-              }`}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                className={loading ? "animate-spin" : ""}
-                style={{ display: "block" }}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M4 4v6h6" />
-                <path d="M20 20v-6h-6" />
-                <path d="M5.5 18.5a8 8 0 1 0 .5-13" />
-              </svg>
-            </button>
-          </span>
-
-          <h1 className="font-brand" style={{ margin: 0, lineHeight: 1 }}>
-            LISTE DES SALONS PUBLICS
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-12 sm:px-8 lg:px-10">
+        <header className="text-center">
+          <h1 className="font-brandUpright text-[46px] uppercase leading-[0.9] tracking-[0.01em] text-slate-50 sm:text-[56px]">
+            PARTIES MULTIJOUEURS
           </h1>
-        </div>
+        </header>
 
-        {loading && <div style={{ marginTop: 16 }}>Chargement…</div>}
-        {err && <div style={{ marginTop: 16, color: "#fca5a5" }}>{err}</div>}
-        {!loading && !err && rooms.length === 0 && <div style={{ marginTop: 16 }}>Aucune room.</div>}
+        {loading && <div className="mt-6 text-center text-sm text-white/75">Chargement…</div>}
+        {err && <div className="mt-6 text-center text-sm text-red-300">{err}</div>}
 
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12, marginTop: 16 }}>
-          {rooms.map((r) => {
-            const ownerName = r.owner?.displayName || "—";
-            const diff = typeof r.difficulty === "number" ? r.difficulty : undefined;
-            const pc = typeof r.playerCount === "number" ? r.playerCount : undefined;
+        {!loading && !err && rooms.length === 0 && (
+          <div className="mt-16 text-center text-sm text-white/70">
+            Aucun salon public disponible.
+          </div>
+        )}
 
-            return (
-              <li key={r.id}>
-                <button
-                  onClick={() => openRoom(r.id)}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: 14,
-                    borderRadius: 12,
-                    border: "1px solid #e5e7eb",
-                    background: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 14,
-                    cursor: "pointer",
-                    color: "#111827",
-                  }}
+        {!loading && !err && rooms.length > 0 && (
+          <div className="mt-16 flex flex-wrap justify-center gap-8">
+            {rooms.map((room) => {
+              const imageUrl = room.image ? `${API_BASE}/img/interface/${room.image}.avif` : "";
+              const label = room.name?.trim() || "Salon public";
+              const players =
+                typeof room.playerCount === "number" ? room.playerCount : null;
+              const questionCount = Math.max(0, Number(room.questionCount) || 0);
+              const progressCount = Math.max(
+                0,
+                Math.min(questionCount, Number(room.progressCount) || 0),
+              );
+              const difficultyLevel = roomDifficultyLevel(room.difficulty);
+              const difficultyLabel = roomDifficultyLabel(difficultyLevel);
+              const isRoomInProgress = progressCount > 0;
+              const progressDotClass = isRoomInProgress ? "bg-emerald-400" : "bg-yellow-300";
+              const badgeClass = "inline-flex items-center gap-1.5 rounded-[6px] bg-black/45 px-3 py-2 font-brand text-[18px] italic leading-none text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-sm";
+
+              return (
+                <div
+                  key={room.id}
+                  className="group flex w-full max-w-[240px] flex-col items-center transition-transform duration-200 hover:z-10 hover:scale-[1.05]"
                 >
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        marginBottom: 4,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      Room #{r.id.slice(0, 6)}
-                    </div>
-                    <div style={{ display: "flex", gap: 12, fontSize: 12, opacity: 0.75 }}>
-                      {r.createdAt && <span>{new Date(r.createdAt).toLocaleString()}</span>}
-                      <span>•</span>
-                      <span>Créateur: {ownerName}</span>
-                      {diff !== undefined && (
-                        <>
-                          <span>•</span>
-                          <span>Difficulté: {diff}/10</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div
-                    title="Joueurs connectés"
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      padding: "4px 8px",
-                      borderRadius: 999,
-                      border: "1px solid #d1d5db",
-                      background: "#f8fafc",
-                      whiteSpace: "nowrap",
-                    }}
+                  <button
+                    type="button"
+                    onClick={() => openRoom(room.id)}
+                    aria-label={`Ouvrir ${label}`}
+                    className="relative w-full bg-transparent transition"
                   >
-                    {pc !== undefined ? `${pc} joueur${pc > 1 ? "s" : ""}` : "—"}
-                  </div>
-                </button>
-              </li>
-            );
-          })}
+                    <div className="relative aspect-[5/7] w-full overflow-hidden border-0 bg-[#0b1332] ring-0 transition duration-200 group-hover:ring-4 group-hover:ring-white/90">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={label}
+                          className="h-full w-full object-cover transition duration-500"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900" />
+                      )}
 
-          {/* CTA — pointillés plus fins, texte blanc, fond transparent */}
-          <li>
-            <button
-              onClick={() => nav("/rooms/new")}
-              title=""
-              aria-label=""
-              style={{
-                width: "100%",
-                padding: 20,
-                borderRadius: 12,
-                border: "1px dashed #d1d5db",   // ✅ plus fin (1px)
-                background: "transparent",       // ✅ fond transparent
-                color: "#ffffff",                // ✅ texte en blanc
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "transform .12s ease, box-shadow .12s ease",
-                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.04)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(0px)";
-                e.currentTarget.style.boxShadow = "0 10px 24px rgba(0,0,0,.25), inset 0 0 0 1px rgba(255,255,255,0.10)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "inset 0 0 0 1px rgba(255,255,255,0.04)";
-              }}
-            >
-              <span style={{ fontSize: 18, lineHeight: 1 }}>＋</span>
-              <span>Créer un salon privé</span>
-            </button>
-          </li>
-        </ul>
+                      <div className="absolute inset-0 flex flex-col px-3 py-4 text-white">
+                        {questionCount > 0 ? (
+                          <div className={`absolute left-3 top-3 ${badgeClass}`}>
+                            <span
+                              aria-hidden="true"
+                              className={`h-2 w-2 rounded-full ${progressDotClass}`}
+                            />
+                            <span>{progressCount}/{questionCount}</span>
+                          </div>
+                        ) : null}
+
+                        <div className={`absolute right-3 top-3 ${badgeClass}`}>
+                          <span>{players ?? "—"}</span>
+                          <img src={playerIcon} alt="" className="h-4 w-4 object-contain" draggable={false} />
+                        </div>
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                          <img
+                            src={cardsIcon}
+                            alt=""
+                            className="w-[42%] max-w-[112px] object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.45)]"
+                            draggable={false}
+                          />
+                        </div>
+
+                        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 justify-center gap-2">
+                          <span
+                            className={`${badgeClass} gap-0 px-2.5 text-[16px] not-italic`}
+                            aria-label={`Difficulté ${difficultyLabel}`}
+                            title={`Difficulté ${difficultyLabel}`}
+                          >
+                            {Array.from({ length: 4 }, (_, index) => {
+                              const isActive = index < difficultyLevel;
+
+                              return (
+                                <span
+                                  key={index}
+                                  aria-hidden="true"
+                                  className={isActive ? "text-white" : "text-white/25"}
+                                >
+                                  ★
+                                </span>
+                              );
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 border border-transparent bg-transparent px-4 py-2 text-center text-[1.35rem] font-brandUpright uppercase leading-none text-white transition-colors duration-200 group-hover:border-white/90 group-hover:bg-white group-hover:text-black">
+                      <span className="inline-block translate-y-[1px]">{label}</span>
+                    </div>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

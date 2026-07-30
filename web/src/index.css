@@ -180,6 +180,76 @@ body[data-page="campaign"] {
   background: transparent !important;
 }
 
+/* Navigation secondaire, visible uniquement sur les pages qui la demandent. */
+.side-navigation {
+  --side-navigation-highlight: rgba(255, 255, 255, 0.08);
+  position: fixed;
+  z-index: 50;
+  top: 52px;
+  bottom: 0;
+  left: 0;
+  width: 84px;
+  box-sizing: border-box;
+  padding: 18px 6px;
+  border-right: 1px solid rgba(148, 163, 184, 0.13);
+  background: #1D2031;
+  box-shadow: 12px 0 32px rgba(0, 0, 0, 0.16);
+}
+
+.side-navigation__links {
+  display: grid;
+  gap: 4px;
+}
+
+.side-navigation__link {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  min-height: 66px;
+  padding: 7px 3px;
+  border-radius: 8px;
+  color: rgba(226, 232, 240, 0.78);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.side-navigation__link:hover {
+  color: #fff;
+  background: var(--side-navigation-highlight);
+}
+
+.side-navigation__link--active {
+  color: #fff;
+  background: var(--side-navigation-highlight);
+}
+
+.side-navigation__icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.app-main--with-side-navigation {
+  padding-left: 84px;
+}
+
+@media (max-width: 767px) {
+  .side-navigation {
+    display: none;
+  }
+
+  .app-main--with-side-navigation {
+    padding-left: 0;
+  }
+}
+
 
 /* === Scrollbar du leaderboard : seulement le thumb, en blanc === */
 .lb-scroll {

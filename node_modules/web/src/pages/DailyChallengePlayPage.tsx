@@ -1,7 +1,7 @@
 // web/src/pages/DailyChallengePlayPage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ChevronRight, Crown, List, Star, Target, Timer } from "lucide-react";
+import { ChevronRight, Target, Timer, Star } from "lucide-react";
 import { getThemeMeta } from "../lib/themeMeta";
 import emptyQuestionImg from "../assets/empty_img.jpg";
 import { io, Socket } from "socket.io-client";
@@ -159,12 +159,18 @@ function formatIntegerFr(value: number): string {
   return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
+function formatChallengeDateLabel(date: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return date;
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
 function buildRankingCurvePath(distribution?: DailyRankingSnapshot["distribution"]): {
   line: string;
   area: string;
   marker: { x: number; y: number } | null;
 } {
-  const width = 300;
+  const width = 600;
   const baseline = 98;
   const values = distribution?.length
     ? distribution.map((bucket) => bucket.count)
@@ -224,6 +230,7 @@ function DailyFinalScoreHero({
   totalQuestions,
   onShowAnswers,
   onShowRanking,
+  challengeDateLabel,
 }: {
   score: number;
   ranking: DailyRankingSnapshot | null;
@@ -231,6 +238,7 @@ function DailyFinalScoreHero({
   totalQuestions: number;
   onShowAnswers: () => void;
   onShowRanking: () => void;
+  challengeDateLabel: string;
 }) {
   const rankLabel = ranking?.rank ? `${ranking.rank}` : "—";
   const rankSuffix = ranking?.rank ? (ranking.rank === 1 ? "er" : "ème") : "";
@@ -304,15 +312,15 @@ function DailyFinalScoreHero({
   ];
 
   return (
-    <section className="mx-auto flex w-full max-w-[1280px] flex-col items-center text-center">
+    <section className="mx-auto flex w-full max-w-[1120px] flex-col items-center text-center">
       <h1 className="font-brandUpright text-[34px] uppercase leading-none tracking-[0.14em] text-white drop-shadow-[0_4px_18px_rgba(255,255,255,0.12)] sm:text-[42px]">
-        Votre score
+        Résultats - {challengeDateLabel}
       </h1>
 
-      <div className="mt-8 w-full rounded-xl border border-white/[0.10] bg-[#0F1427]/75 px-6 py-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:px-10 lg:grid lg:grid-cols-[1fr_1.35fr_1fr] lg:items-center lg:gap-10">
-        <div className="flex justify-center lg:border-r lg:border-white/[0.08] lg:pr-10">
+      <div className="mt-10 w-full rounded-xl border border-white/[0.10] bg-[#0F1427]/75 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:px-6 lg:grid lg:grid-cols-[0.85fr_1.2fr_0.85fr] lg:items-center lg:gap-6">
+        <div className="flex justify-center lg:border-r lg:border-white/[0.08] lg:pr-6">
           <div
-            className="relative grid size-[210px] place-items-center rounded-full p-[8px] sm:size-[250px]"
+            className="relative grid size-[155px] place-items-center rounded-full p-[6px] sm:size-[185px]"
             style={{
               background: `conic-gradient(#9B5CFF ${scoreProgress * 360}deg, rgba(255,255,255,0.10) 0deg)`,
             }}
@@ -321,10 +329,10 @@ function DailyFinalScoreHero({
             <div className="absolute inset-6 rounded-full bg-[#9B5CFF]/20 blur-2xl" />
             <div className="relative grid size-full place-items-center rounded-full border border-white/[0.07] bg-[#081126] shadow-[inset_0_0_55px_rgba(155,92,255,0.16)]">
               <div className="translate-y-3 font-brand font-black italic leading-none text-white tabular-nums">
-                <div className="text-[58px] tracking-[-0.04em] sm:text-[72px]">
+                <div className="text-[42px] tracking-[-0.04em] sm:text-[52px]">
                   {formatIntegerFr(animatedScore)}
                 </div>
-                <div className="text-[24px] text-[#A66BFF] sm:text-[30px]">
+                <div className="text-[18px] text-[#A66BFF] sm:text-[22px]">
                   pts
                 </div>
               </div>
@@ -332,20 +340,20 @@ function DailyFinalScoreHero({
           </div>
         </div>
 
-        <div className="mt-8 space-y-0 text-left lg:mt-0 lg:border-r lg:border-white/[0.08] lg:pr-10">
+        <div className="mt-5 space-y-0 text-left lg:mt-0 lg:border-r lg:border-white/[0.08] lg:pr-6">
           {statRows.map((row) => {
             const Icon = row.icon;
             return (
               <div
                 key={row.label}
-                className="flex items-center justify-between gap-5 border-b border-white/[0.08] py-5 last:border-b-0"
+                className="flex items-center justify-between gap-3 border-b border-white/[0.08] py-3 last:border-b-0"
               >
-                <div className="flex items-center gap-4 font-inter text-[15px] font-extrabold text-slate-100 sm:text-[16px]">
-                  <Icon className="h-6 w-6 text-[#A66BFF]" aria-hidden="true" />
+                <div className="flex items-center gap-2.5 font-inter text-[12px] font-extrabold text-slate-100 sm:text-[13px]">
+                  {Icon ? <Icon className="h-4 w-4 text-white" aria-hidden="true" /> : null}
                   {row.label}
                 </div>
                 <div
-                  className={`whitespace-nowrap font-inter text-[17px] font-black ${row.valueClassName}`}
+                  className={`whitespace-nowrap font-inter text-[14px] font-black ${row.valueClassName}`}
                 >
                   {row.value}
                 </div>
@@ -354,37 +362,37 @@ function DailyFinalScoreHero({
           })}
         </div>
 
-        <div className="mt-8 flex flex-col items-center justify-center lg:mt-0">
-          <div className="flex items-center justify-center gap-7">
-            <div className="grid h-[76px] w-[76px] place-items-center rounded-[22px] border-4 border-[#8E55FF] text-white shadow-[0_0_28px_rgba(142,85,255,0.28)]">
-              <Crown className="h-9 w-9" aria-hidden="true" />
-            </div>
-            <div className="flex items-end gap-3 font-brand font-black italic leading-none tabular-nums">
-              <span className="text-[66px] text-white sm:text-[88px]">
+        <div className="mt-5 flex flex-col items-center justify-center lg:mt-0">
+          <div className="flex items-center justify-center">
+            <div className="flex items-end gap-2 font-brand font-black italic leading-none tabular-nums">
+              <span className="text-[48px] text-white sm:text-[64px]">
                 {rankLabel}
                 <sup className="ml-1 align-super text-[0.32em] leading-none">
                   {rankSuffix}
                 </sup>
               </span>
-              <span className="pb-4 text-[26px] text-slate-600">/</span>
-              <span className="pb-4 text-[20px] text-slate-500">
+              <span className="pb-2.5 text-[19px] text-slate-600">/</span>
+              <span className="pb-2.5 text-[15px] text-slate-500">
                 {totalPlayersLabel}
               </span>
             </div>
           </div>
-          <div className="mt-9 rounded-full border border-[#8E55FF]/60 bg-[#3B236F]/80 px-14 py-4 font-inter text-[16px] font-black uppercase text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
+          <div className="mt-4 flex items-center justify-center gap-2 font-inter text-[13px] font-black uppercase tracking-[0.02em] text-white">
+            <svg className="h-5 w-5 text-[#9B5CFF]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 16.5 9.6 11l3.8 3.8L20 7.8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M15 7.8h5v5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             {topLabel}
           </div>
         </div>
       </div>
 
-      <div className="mt-5 grid w-full gap-5 lg:grid-cols-[0.96fr_1.04fr]">
-        <aside className="rounded-xl border border-white/[0.10] bg-[#0F1427]/75 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-8">
-          <h2 className="flex items-center gap-4 font-brandUpright text-[25px] uppercase leading-none tracking-[0.08em] text-white">
-            <List className="h-7 w-7 text-[#A66BFF]" aria-hidden="true" />
+      <div className="mt-3 grid w-full gap-3 lg:grid-cols-[0.96fr_1.04fr]">
+        <aside className="flex flex-col rounded-xl border border-white/[0.10] bg-[#0F1427]/75 p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-5">
+          <h2 className="font-brandUpright text-[25px] uppercase leading-none tracking-[0.08em] text-white">
             Résumé
           </h2>
-          <div className="mt-7 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-wrap gap-2.5">
             {progressStates.map((state, index) => {
               const color =
                 state === "correct"
@@ -398,45 +406,32 @@ function DailyFinalScoreHero({
               return (
                 <div
                   key={index}
-                  className={`flex h-[42px] w-[42px] items-center justify-center rounded-md text-[15px] font-black text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] ${color}`}
+                  className={`flex h-[30px] w-[30px] items-center justify-center rounded-md text-[12px] font-black text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] ${color}`}
                 >
                   {index + 1}
                 </div>
               );
             })}
           </div>
-          <div className="mt-7 flex flex-wrap gap-x-8 gap-y-3 font-inter text-[13px] font-medium text-slate-400">
-            <span className="flex items-center gap-2">
-              <i className="h-3.5 w-3.5 rounded-full bg-emerald-600" />
-              Bonne réponse
-            </span>
-            <span className="flex items-center gap-2">
-              <i className="h-3.5 w-3.5 rounded-full bg-[#CE343A]" />
-              Mauvaise réponse
-            </span>
-            <span className="flex items-center gap-2">
-              <i className="h-3.5 w-3.5 rounded-full bg-[#7B4FE6]" />
-              Sans réponse
-            </span>
+          <div className="mt-auto flex justify-end pt-6">
+            <button
+              type="button"
+              onClick={onShowAnswers}
+              className="inline-flex h-10 items-center justify-center gap-3 rounded-[8px] bg-white/[0.055] px-5 font-inter text-[12px] font-extrabold text-white transition hover:bg-white/10 hover:text-white"
+            >
+              Voir les réponses
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onShowAnswers}
-            className="mt-8 inline-flex h-14 w-full items-center justify-center rounded-[7px] border border-[#8E55FF]/70 px-8 font-inter text-[15px] font-extrabold text-[#A66BFF] transition hover:bg-[#8E55FF]/10"
-          >
-            Voir les réponses{" "}
-            <ChevronRight className="ml-auto h-5 w-5" aria-hidden="true" />
-          </button>
         </aside>
 
-        <aside className="rounded-xl border border-white/[0.10] bg-[#0F1427]/75 p-6 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-8">
-          <h2 className="flex items-center gap-4 font-brandUpright text-[25px] uppercase leading-none tracking-[0.08em] text-white">
-            <Crown className="h-7 w-7 text-[#A66BFF]" aria-hidden="true" />
+        <aside className="flex flex-col rounded-xl border border-white/[0.10] bg-[#0F1427]/75 p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-5">
+          <h2 className="font-brandUpright text-[25px] uppercase leading-none tracking-[0.08em] text-white">
             Classement
           </h2>
           <svg
-            className="mt-8 h-[145px] w-full overflow-visible"
-            viewBox="0 0 300 116"
+            className="mt-4 h-[95px] w-full overflow-visible"
+            viewBox="0 0 600 116"
             preserveAspectRatio="none"
             aria-hidden="true"
           >
@@ -452,21 +447,16 @@ function DailyFinalScoreHero({
               <circle cx={curve.marker.x} cy={curve.marker.y} r="5" fill="#FFFFFF" stroke="#9B5CFF" strokeWidth="3" />
             ) : null}
           </svg>
-          <div className="mt-3 flex items-center justify-center gap-2.5 font-inter text-[15px] font-black uppercase tracking-[0.02em] text-white">
-            <svg className="h-7 w-7 text-[#9B5CFF]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M4 16.5 9.6 11l3.8 3.8L20 7.8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M15 7.8h5v5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {topLabel}
+          <div className="mt-auto flex justify-end pt-6">
+            <button
+              type="button"
+              onClick={onShowRanking}
+              className="inline-flex h-10 items-center justify-center gap-3 rounded-[8px] bg-white/[0.055] px-5 font-inter text-[12px] font-extrabold text-white transition hover:bg-white/10 hover:text-white"
+            >
+              Voir le classement
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onShowRanking}
-            className="mt-8 inline-flex h-14 w-full items-center justify-center rounded-[7px] border border-transparent bg-[#6D50D5] px-8 font-inter text-[15px] font-extrabold text-white transition hover:bg-[#7A5BE6]"
-          >
-            Voir le classement{" "}
-            <ChevronRight className="ml-auto h-5 w-5" aria-hidden="true" />
-          </button>
         </aside>
       </div>
     </section>
@@ -478,11 +468,13 @@ function DailyFinalResults({
   totalQuestions,
   monthlyRanking,
   score,
+  challengeDate,
 }: {
   results: Result[];
   totalQuestions: number;
   monthlyRanking: DailyRankingSnapshot | null;
   score: number;
+  challengeDate: string;
 }) {
   const total = Math.max(totalQuestions, results.length);
   const correctCount = results.filter((result) => result.correct).length;
@@ -490,6 +482,7 @@ function DailyFinalResults({
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const [showAnswers, setShowAnswers] = useState(false);
   const navigate = useNavigate();
+  const challengeDateLabel = formatChallengeDateLabel(challengeDate);
 
   return (
     <>
@@ -501,6 +494,7 @@ function DailyFinalResults({
           totalQuestions={totalQuestions}
           onShowAnswers={() => setShowAnswers(true)}
           onShowRanking={() => navigate("/multi/ranking?kind=daily")}
+          challengeDateLabel={challengeDateLabel}
         />
       </div>
 
@@ -1213,6 +1207,7 @@ export default function DailyChallengePlayPage() {
             totalQuestions={totalQuestions}
             monthlyRanking={dailyRanking}
             score={points}
+            challengeDate={dateParam}
           />
         )}
       </div>

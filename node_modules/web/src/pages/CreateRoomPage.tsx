@@ -319,7 +319,7 @@ export default function CreateRoomPageCorrected() {
   }, [lobbyPlayers, ownerPlayerId]);
 
   function openPanel(panel: PanelKey) {
-    if (panel === "lobby" && !createdRoomId) return;
+    if ((panel === "code" || panel === "lobby") && !createdRoomId) return;
     setActivePanel(panel);
     if (panel !== "settings") setThemesOpen(false);
   }
@@ -867,7 +867,7 @@ export default function CreateRoomPageCorrected() {
             <nav className="mt-14 w-[150px] max-md:mt-6 max-md:flex max-md:w-full" aria-label="Création de partie privée">
               {navItems.map((item) => {
                 const active = item.key === activePanel;
-                const disabled = item.key === "lobby" && !createdRoomId;
+                const disabled = (item.key === "code" || item.key === "lobby") && !createdRoomId;
 
                 return (
                   <button
