@@ -26,6 +26,7 @@ import { questionRoutes } from "./routes/questions";
 import { notificationRoutes } from "./routes/notifications";
 import { adminRoutes } from "./routes/admin";
 import { Theme, RoomVisibility } from "@prisma/client";
+import { toProfileUrl } from "./domain/media/media.service";
 
 /* ---------------- runtime maps ---------------- */
 const clients = new Map<string, Client>();
@@ -502,10 +503,26 @@ async function main() {
     // 3) Ajoute canClose selon user courant (owner ou ADMIN)
     const interfaceImages = getInterfaceImages();
     const updates: { id: string; image: string }[] = [];
+    const membersByRoom = new Map(rows.map((room) => {
+      const members = clientsInRoom(clients, room.id);
+      const uniqueMembers = Array.from(new Map(members.map((member) => [member.playerId, member])).values());
+      return [room.id, uniqueMembers] as const;
+    }));
+    const connectedPlayerIds = Array.from(new Set(
+      Array.from(membersByRoom.values()).flatMap((members) => members.map((member) => member.playerId)),
+    ));
+    const connectedPlayers = connectedPlayerIds.length > 0
+      ? await prisma.player.findMany({
+          where: { id: { in: connectedPlayerIds } },
+          select: { id: true, name: true, img: true },
+        })
+      : [];
+    const connectedPlayersById = new Map(connectedPlayers.map((player) => [player.id, player]));
     const rooms = rows.map((r) => {
       const normalizedImage = normalizeRoomImage(r.image);
       const resolvedImage = normalizedImage ?? resolveRoomImage(r.id, interfaceImages);
       const state = gameStates.get(r.id);
+      const members = membersByRoom.get(r.id) ?? [];
       const totalQuestions =
         typeof r.questionCount === "number" && Number.isFinite(r.questionCount)
           ? r.questionCount
@@ -521,7 +538,15 @@ async function main() {
       return {
         ...r,
         image: resolvedImage,
-        playerCount: clientsInRoom(clients, r.id).length,
+        playerCount: members.length,
+        players: members.slice(0, 3).map((member) => {
+          const player = connectedPlayersById.get(member.playerId);
+          return {
+            id: member.playerId,
+            name: player?.name ?? member.name,
+            img: toProfileUrl(player?.img ?? null),
+          };
+        }),
         questionCount: totalQuestions,
         progressCount,
         canClose:
