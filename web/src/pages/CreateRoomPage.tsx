@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import hostCrown from "../assets/crown.png";
-import Background from "../components/Background";
 import { Edit3 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
@@ -786,7 +785,7 @@ export default function CreateRoomPageCorrected() {
 
   return (
     <div className="relative min-h-full overflow-hidden text-slate-50">
-      <Background />
+      <div aria-hidden className="fixed inset-0 z-0 bg-[#11131f]" style={{ backgroundColor: "#11131f" }} />
 
       <style>{`
         .create-room-scroll {
@@ -853,7 +852,7 @@ export default function CreateRoomPageCorrected() {
       `}</style>
 
       <main
-        className="create-room-scroll fixed bottom-0 left-0 right-0 z-10 overflow-y-auto"
+        className="create-room-scroll fixed bottom-0 left-[84px] right-0 z-10 overflow-y-auto max-md:left-0"
         style={{ top: `${NAVBAR_HEIGHT_PX}px` }}
       >
         <div className="mx-auto grid min-h-full w-full max-w-[1240px] grid-cols-[260px,minmax(0,1fr)] items-start gap-24 xl:gap-32 px-5 py-16 max-md:grid-cols-1 max-md:gap-8 sm:px-8 lg:px-10">

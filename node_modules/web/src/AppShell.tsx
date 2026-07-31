@@ -325,7 +325,11 @@ export default function AppShell() {
   const [displayExperience, setDisplayExperience] = useState(0);
   const displayExperienceRef = useRef(0);
   const isRoomRoute = location.pathname.startsWith("/room/");
-  const showSideNavigation = location.pathname === "/" || location.pathname === "/multi/public";
+  const showSideNavigation =
+    location.pathname === "/" ||
+    location.pathname === "/multi/public" ||
+    location.pathname === "/rooms/new" ||
+    /^\/rooms\/[^/]+\/lobby$/.test(location.pathname);
   const joinLoadingPending =
     showJoinLoading ||
     (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
