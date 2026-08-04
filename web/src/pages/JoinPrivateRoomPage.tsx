@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import lockIcon from "../assets/lock.png";
-import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 const NAVBAR_HEIGHT_PX = 52;
@@ -180,7 +179,7 @@ export default function JoinPrivateRoomPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden font-inter text-white">
-      <Background />
+      <div aria-hidden className="fixed inset-0 bg-[#11131f]" />
 
       <style>{`
         @keyframes inputCaretBlink {
@@ -250,7 +249,7 @@ export default function JoinPrivateRoomPage() {
                       key={idx}
                       className={[
                         "relative flex h-[62px] w-[58px] items-center justify-center",
-                        "rounded-[8px] border bg-[#0C1222] shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]",
+                        "rounded-[8px] border bg-[#191c2c] shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]",
                         isCodeComplete ? "border-[#7C4DFF]/85" : "border-white/[0.12]",
                         "sm:h-[72px] sm:w-[66px]",
                       ].join(" ")}
@@ -337,7 +336,7 @@ export default function JoinPrivateRoomPage() {
             <button
               type="button"
               onClick={() => nav("/rooms/new")}
-              className="inline-flex w-full items-center justify-center rounded-[7px] bg-gradient-to-b from-[#111521] to-[#0E111A] px-4 py-3.5 text-[13px] font-extrabold text-slate-50 shadow-[0_12px_28px_rgba(0,0,0,0.22)] transition hover:brightness-110"
+              className="inline-flex w-full items-center justify-center rounded-lg border border-white/15 bg-white/5 px-4 py-3.5 text-[13px] font-semibold text-white backdrop-blur transition hover:bg-white/10"
             >
               Créer une partie
             </button>

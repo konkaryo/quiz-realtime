@@ -1,14 +1,12 @@
 // web/src/pages/RoomPage.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePersistentGameInputFocus } from "../hooks/usePersistentGameInputFocus";
 import type React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
 import { FinalLeaderboard } from "../components/FinalLeaderboard";
-import Background from "../components/Background";
 import emptyQuestionImg from "../assets/empty_img.jpg";
-import playerIcon from "../assets/player.png";
 import crownImage from "../assets/crown.png";
 import QuestionPanel, {
   Choice as QuestionPanelChoice,
@@ -16,7 +14,7 @@ import QuestionPanel, {
   QuestionProgress as QuestionPanelProgress,
 } from "../components/QuestionPanel";
 import { getLevelFromExperience } from "../utils/experience";
-import { List, LogOut, Play } from "lucide-react";
+import { ArrowUp, Crosshair, ChevronLeft, ChevronRight, LogOut, Play } from "lucide-react";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -101,7 +99,7 @@ function FinalCountdownRing({ seconds, progress }: { seconds: number; progress: 
   const normalizedSeconds = Math.max(0, Math.floor(seconds));
 
   return (
-    <div className="w-full rounded-[10px] bg-[#0C1222] px-4 pb-4 pt-5 shadow-[0_14px_38px_rgba(2,8,28,0.58),inset_0_1px_0_rgba(255,255,255,0.05)]">
+    <div className="w-full rounded-xl border border-white/[0.06] bg-[#131829] px-4 pb-4 pt-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_18px_42px_rgba(0,0,0,0.28)]">
       <h3 className="font-acumin text-[12px] font-semibold uppercase tracking-[0.06em] text-white">PROCHAINE PARTIE</h3>
 
       <div className="mt-5 flex justify-center">
@@ -172,13 +170,11 @@ function SectionTitle({
 
 function PlayerCell({
   row,
-  rank,
-  isSelf,
+  accentColor,
   onNameClick,
 }: {
   row: LeaderRow;
-  rank: number;
-  isSelf: boolean;
+  accentColor: string;
   onNameClick?: (row: LeaderRow) => void;
 }) {
   const canNavigate = !!onNameClick && !!row.playerId;
@@ -191,20 +187,18 @@ function PlayerCell({
     .join(" ");
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
+    <div className="relative w-full max-w-full overflow-visible">
+      <span aria-hidden className="absolute inset-0 translate-y-1 rounded-[6px]" style={{ backgroundColor: accentColor }} />
       <div
         className={[
-          "w-full min-w-0 flex items-center justify-between gap-3",
+          "relative z-10 w-full min-w-0 flex items-center justify-between gap-3",
           "rounded-[6px]",
           "py-1 pl-3 pr-4",
           "overflow-hidden",
           "text-white",
         ].join(" ")}
         style={{
-          background: "linear-gradient(to bottom, rgba(68, 74, 112, 0.5), rgba(68, 74, 112, 0.35))",
-          borderColor: isSelf ? "#FFFFFF" : "transparent",
-          borderStyle: "solid",
-          borderWidth: isSelf ? 2 : 1,
+          background: "#2A2E44",
         }}
       >
         {/* Avatar + Nom */}
@@ -221,7 +215,7 @@ function PlayerCell({
             <div className="w-7 h-7 rounded-[3px] bg-white/10 flex-shrink-0" />
           )}
 
-          <div className="min-w-0 leading-tight overflow-hidden">
+          <div className="min-w-0 -translate-y-[3px] leading-tight overflow-hidden">
             {canNavigate ? (
               <button
                 type="button"
@@ -322,6 +316,8 @@ export default function RoomPage() {
   const [displayScore, setDisplayScore] = useState(0);
   const displayScoreRef = useRef(0);
   const scoreAnimationRef = useRef<number | null>(null);
+  const leaderboardRef = useRef<HTMLOListElement | null>(null);
+  const [keepSelfCentered, setKeepSelfCentered] = useState(false);
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
   const [isRoomCodeVisible, setIsRoomCodeVisible] = useState(false);
@@ -417,10 +413,7 @@ export default function RoomPage() {
       }),
     [leaderboard]
   );
-  const shouldScrollCountdownPlayers = countdownPlayers.length > 5;
-  const countdownCarouselPlayers = shouldScrollCountdownPlayers ? [...countdownPlayers, ...countdownPlayers] : countdownPlayers;
-  const countdownMarqueeDuration = `${Math.max(12, countdownPlayers.length * 2.6)}s`;
-  const shouldHideLeftRail = phase === "final" || gameCountdown !== null;
+  const shouldHideLeftRail = phase !== "final" && gameCountdown !== null;
   const shouldHideRightQuestionImage = phase === "final" || gameCountdown !== null;
 
   const applyAvatarOverrides = (rows: LeaderRow[]) => {
@@ -1325,7 +1318,26 @@ export default function RoomPage() {
     };
   }, [selectedFinalQuestionSnapshot, finalStatsByQuestionId]);
   const isFinalLeaderboardSelected = selectedFinalIndex === 0;
-  const firstFinalQuestionIndex = finalQuestionSnapshots.length > 0 ? 1 : 0;
+
+  useEffect(() => {
+    if (phase !== "final" || finalQuestionSnapshots.length === 0) return;
+
+    const handleFinalNavigationKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.matches("input, textarea, select, [contenteditable='true']")) return;
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setSelectedFinalIndex((current) => Math.max(0, current - 1));
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        setSelectedFinalIndex((current) => Math.min(finalQuestionSnapshots.length, current + 1));
+      }
+    };
+
+    window.addEventListener("keydown", handleFinalNavigationKey);
+    return () => window.removeEventListener("keydown", handleFinalNavigationKey);
+  }, [phase, finalQuestionSnapshots.length]);
 
   const selectedFinalQuestionPanel = useMemo(() => {
     if (!selectedFinalQuestion) return null;
@@ -1360,24 +1372,6 @@ export default function RoomPage() {
   // ✅ Nom du salon affiché en gros à droite
   const roomDisplayName = roomMeta?.name?.trim() || "-";
 
-  const roomImageSrc = useMemo(() => {
-    if (!roomMeta?.image) return emptyQuestionImg;
-    if (roomMeta.image.startsWith("http") || roomMeta.image.startsWith("/")) {
-      return roomMeta.image;
-    }
-    // Même logique que Home: slug d'image -> /img/interface/{slug}.avif
-    const imageRef = roomMeta.image.trim();
-    if (!imageRef) return emptyQuestionImg;
-
-    const dotIndex = imageRef.lastIndexOf(".");
-    const imageBis =
-      dotIndex > 0
-        ? `${imageRef.slice(0, dotIndex)}_bis${imageRef.slice(dotIndex)}`
-        : `${imageRef}_bis.avif`;
-
-    return `${API_BASE}/img/interface/${imageBis}`;
-  }, [roomMeta?.image]);
-
   const rankLabel = useMemo(() => {
     if (selfIndex < 0) return null;
     const rank = selfIndex + 1;
@@ -1402,8 +1396,21 @@ export default function RoomPage() {
     } as React.CSSProperties;
   }, [rankLabel]);
 
+  useLayoutEffect(() => {
+    const list = leaderboardRef.current;
+    if (!list) return;
+    if (!keepSelfCentered) {
+      list.scrollTop = 0;
+      return;
+    }
+    const selfCell = list.querySelector<HTMLElement>('[data-self="true"]');
+    if (!selfCell) return;
+    const centeredTop = selfCell.offsetTop - (list.clientHeight - selfCell.offsetHeight) / 2;
+    list.scrollTop = Math.max(0, centeredTop);
+  }, [keepSelfCentered, leaderboard, selfIndex]);
+
   // ✅ rendu unique d'une ligne leaderboard (cellule + badge)
-  const renderLeaderboardLine = (r: LeaderRow, rank: number, isSelf: boolean) => {
+  const renderLeaderboardLine = (r: LeaderRow, rank: number, isSelf: boolean, allowProfileNavigation = true) => {
     const status = phase === "final" || phase === "countdown" || gameCountdown !== null ? null : answeredByPg[r.id];
 
     const badgeTitle =
@@ -1423,7 +1430,7 @@ export default function RoomPage() {
           }
         : status === "correct-mc"
         ? {
-            ch: "~",
+            ch: "\u26A1\uFE0E",
             cls: "bg-[#6F5BD4] text-white",
           }
         : status === "wrong"
@@ -1436,39 +1443,17 @@ export default function RoomPage() {
             cls: "bg-[#3B3E4D] text-transparent",
           };
 
-    const premiumRankStyleByRank: Record<number, React.CSSProperties> = {
-      1: {
-        background: "linear-gradient(135deg, #FFF4A3 0%, #FFD832 42%, #D59618 100%)",
-        borderColor: "rgba(255, 244, 163, 0.95)",
-        boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.74), inset 0 -2px 5px rgba(120, 72, 0, 0.28)",
-      },
-      2: {
-        background: "linear-gradient(135deg, #FFFFFF 0%, #D6DEEA 46%, #8E9AAE 100%)",
-        borderColor: "rgba(255, 255, 255, 0.88)",
-        boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.82), inset 0 -2px 5px rgba(46, 58, 78, 0.28)",
-      },
-      3: {
-        background: "linear-gradient(135deg, #FFD2A0 0%, #F39A45 45%, #A85824 100%)",
-        borderColor: "rgba(255, 210, 160, 0.9)",
-        boxShadow: "inset 0 1px 0 rgba(255, 236, 214, 0.72), inset 0 -2px 5px rgba(93, 43, 12, 0.3)",
-      },
-    };
-
-    const rankNode = rank <= 3 ? (
-      <span
-        className="relative inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] border pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-[#141827] [text-rendering:geometricPrecision] after:absolute after:inset-[2px] after:rounded-[4px] after:border after:border-white/25"
-        style={premiumRankStyleByRank[rank]}
-        title={`Rang ${rank}`}
-        aria-label={`Rang ${rank}`}
-      >
-        <span className="relative z-10 drop-shadow-[0_1px_0_rgba(255,255,255,0.45)]">{rank}</span>
-      </span>
-    ) : isSelf ? (
-      <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] bg-white pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-black [text-rendering:geometricPrecision]">
-        {rank}
-      </span>
-    ) : (
-      <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] bg-[#1F2437] pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-white [text-rendering:geometricPrecision]">
+    const rankNode = (
+      <span className={`relative inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] pt-[1px] font-brand tabular-nums text-[16px] font-bold leading-none text-white [text-rendering:geometricPrecision] ${isSelf ? "bg-[#7C5CFF]" : "bg-[#1F2437]"}`}>
+        {rank === 1 && allowProfileNavigation ? (
+          <img
+            src={crownImage}
+            alt="Couronne du premier joueur"
+            className="pointer-events-none absolute -top-6 left-1/2 z-20 h-auto w-10 -translate-x-1/2 select-none drop-shadow-[0_8px_10px_rgba(0,0,0,0.4)]"
+            draggable={false}
+            loading="lazy"
+          />
+        ) : null}
         {rank}
       </span>
     );
@@ -1478,7 +1463,7 @@ return (
     {rankNode}
 
     <div className="flex-1 min-w-0">
-      <PlayerCell row={r} rank={rank} isSelf={isSelf} onNameClick={handlePlayerProfile} />
+      <PlayerCell row={r} accentColor={isSelf ? "#7C5CFF" : "#1F2437"} onNameClick={allowProfileNavigation ? handlePlayerProfile : undefined} />
     </div>
 
     {/* ✅ Badge: carré neutre/vert/violet/rouge */}
@@ -1495,17 +1480,17 @@ return (
 
   return (
     <>
-      <Background />
+      <div aria-hidden className="fixed inset-0 bg-[#11131f]" />
 
       {/* ✅ Scrollbar style global */}
       <style>{`
         .lb-scroll {
           scrollbar-width: thin;
-          scrollbar-color: #eef1ff rgba(255,255,255,0.08);
+          scrollbar-color: #eef1ff #191c2c;
         }
         .lb-scroll::-webkit-scrollbar { width: 10px; }
         .lb-scroll::-webkit-scrollbar-track {
-          background: rgba(255,255,255,0.08);
+          background: #191c2c;
           border-radius: 999px;
         }
         .lb-scroll::-webkit-scrollbar-button {
@@ -1516,12 +1501,12 @@ return (
         .lb-scroll::-webkit-scrollbar-thumb {
           background: #eef1ff;
           border-radius: 999px;
-          border: 3px solid rgba(6,10,25,0.35);
+          border: 3px solid #191c2c;
           background-clip: padding-box;
         }
         .lb-scroll::-webkit-scrollbar-thumb:hover {
           background: #eef1ff;
-          border: 3px solid rgba(6,10,25,0.35);
+          border: 3px solid #191c2c;  
           background-clip: padding-box;
         }
 
@@ -1548,40 +1533,25 @@ return (
 >
   <div className="h-full overflow-visible bg-transparent pb-6 pr-3 pt-3 pl-3">
     <div className="h-full px-4 pb-5 flex flex-col min-h-0 overflow-visible">
-        <div className="relative mb-6 overflow-visible">
-
-          <div className="relative aspect-[5/2] w-full overflow-hidden border border-white/20">
-
-            <img
-              src={roomImageSrc}
-              alt={`Image du salon ${roomDisplayName}`}
-              className="h-full w-full object-cover"
-              draggable={false}
-              loading="lazy"
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-
-            <div className="absolute inset-0 px-3 py-4 text-white">
-              <div className={`absolute left-3 top-3 max-w-[calc(100%-5.5rem)] ${roomBadgeClass}`} title={roomDisplayName}>
-                <span className="max-w-full truncate">{roomDisplayName}</span>
-              </div>
-
-              <div className={`absolute right-3 top-3 ${roomBadgeClass}`}>
-                <span>{Math.max(leaderboard.length, 1)}</span>
-                <img src={playerIcon} alt="" className="h-4 w-4 object-contain" draggable={false} />
-              </div>
-              {isPrivateRoom && (
-                <button
-                  type="button"
-                  onClick={() => setIsRoomCodeVisible((visible) => !visible)}
-                  className={`absolute bottom-3 left-1/2 max-w-[calc(100%-1.5rem)] -translate-x-1/2 ${roomBadgeClass}`}
-                  aria-label={isRoomCodeVisible ? "Masquer le code du salon" : "Afficher le code du salon"}
-                  title={isRoomCodeVisible ? "Masquer le code" : "Afficher le code"}
-                >
-                  <span className="max-w-full truncate">{displayedRoomCode}</span>
-                </button>
-              )}
-            </div>
+        <div className="relative mb-6 border-b border-white/10 pb-4 text-white">
+          <h2 className="truncate font-brandUpright text-[22px] uppercase leading-tight" title={roomDisplayName}>
+            Salon - {roomDisplayName}
+          </h2>
+          <div className="mt-1 flex items-center justify-between gap-3">
+            <p className="font-inter text-[12px] font-semibold text-white/55">
+              {leaderboard.length} joueur{leaderboard.length > 1 ? "s" : ""}
+            </p>
+            {isPrivateRoom && (
+              <button
+                type="button"
+                onClick={() => setIsRoomCodeVisible((visible) => !visible)}
+                className={roomBadgeClass}
+                aria-label={isRoomCodeVisible ? "Masquer le code du salon" : "Afficher le code du salon"}
+                title={isRoomCodeVisible ? "Masquer le code" : "Afficher le code"}
+              >
+                <span className="max-w-full truncate">{displayedRoomCode}</span>
+              </button>
+            )}
           </div>
         </div>
         {leaderboard.length === 0 ? (
@@ -1589,9 +1559,10 @@ return (
         ) : (
           <>
             <ol
+              ref={leaderboardRef}  
               className={[
                 "lb-scroll",
-                "m-0 space-y-2",
+                "m-0 space-y-2 pt-7",
                 "overflow-y-auto overflow-x-hidden",
                 hasScrollableLeaderboard ? "pr-3" : "pr-0",
                 "flex-1 min-h-0",
@@ -1605,7 +1576,7 @@ return (
                     r.name.toLowerCase() === selfName.toLowerCase());
 
                 return (
-                  <li key={r.id} className="max-w-full overflow-x-hidden">
+                  <li key={r.id} data-self={isSelf ? "true" : undefined} className="max-w-full overflow-visible">
                     {renderLeaderboardLine(r, i + 1, isSelf)}
                   </li>
                 );
@@ -1614,8 +1585,24 @@ return (
 
             {/* ✅ self row en bas (si scroll) */}
             {hasScrollableLeaderboard && selfRow ? (
-              <div className="mt-4 pt-4 border-t border-white/10 overflow-x-hidden">
-                {renderLeaderboardLine(selfRow, selfIndex + 1, true)}
+              <div
+                className="mt-4 cursor-pointer overflow-x-hidden border-t border-white/10 pt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                role="button"
+                tabIndex={0}
+                aria-label={keepSelfCentered ? "Revenir en haut du classement" : "Garder le classement centré sur ma position"}
+                aria-pressed={keepSelfCentered}
+                onClick={() => setKeepSelfCentered((centered) => !centered)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setKeepSelfCentered((centered) => !centered);
+                  }
+                }}
+              >
+                {renderLeaderboardLine(selfRow, selfIndex + 1, true, false)}
+                <span className={`mt-1 flex justify-center ${keepSelfCentered ? "text-violet-400" : "text-white/45"}`} aria-hidden="true">
+                  {keepSelfCentered ? <ArrowUp size={14} strokeWidth={2.4} /> : <Crosshair size={14} strokeWidth={2.4} />}
+                </span>
               </div>
             ) : null}
           </>
@@ -1650,10 +1637,6 @@ return (
                     display: inline-block;
                     animation: countdownDotPulse 1.05s ease-in-out infinite;
                   }
-                  @keyframes countdownPlayersMarquee {
-                    0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
-                  }
                 `}</style>
 
                 <div className="relative px-5 py-4 md:px-10" style={{ minHeight: "100%" }}>
@@ -1678,29 +1661,13 @@ return (
                               </div>
                             </div>
 
-                            <div
-                              className={`mt-20 flex min-h-[142px] w-full max-w-[760px] overflow-hidden ${
-                                shouldScrollCountdownPlayers ? "[mask-image:linear-gradient(to_right,transparent_0%,#000_10%,#000_90%,transparent_100%)]" : "justify-center"
-                              }`}
-                            >
-                              <div
-                                className={`flex items-start gap-8 ${
-                                  shouldScrollCountdownPlayers
-                                    ? "w-max animate-[countdownPlayersMarquee_var(--countdown-marquee-duration)_linear_infinite]"
-                                    : "w-full justify-center"
-                                }`}
-                                style={
-                                  shouldScrollCountdownPlayers
-                                    ? ({ "--countdown-marquee-duration": countdownMarqueeDuration } as React.CSSProperties)
-                                    : undefined
-                                }
-                              >
-                                {countdownCarouselPlayers.map((player, playerIndex) => {
+                            <div className="mt-20 flex min-h-[142px] w-full max-w-[880px] flex-wrap items-start justify-center gap-x-8 gap-y-7">
+                                {countdownPlayers.map((player) => {
                                   const level = getLevelFromExperience(player.experience ?? 0);
                                   const isTopPlayer = countdownPlayers[0]?.id === player.id;
 
                                   return (
-                                    <div key={`${player.id}-${playerIndex}`} className="relative flex w-[108px] flex-col items-center">
+                                    <div key={player.id} className="relative flex w-[108px] flex-col items-center">
                                       {isTopPlayer ? (
                                         <img
                                           src={crownImage}
@@ -1726,14 +1693,37 @@ return (
                                     </div>
                                   );
                                 })}
-                              </div>
                             </div>
                           </div>
                         </div>
                       ) : null}
 
                       {phase === "final" ? (
-                        <div className="space-y-12">
+                        <div className="relative px-12 md:px-16">
+                          {finalQuestionSnapshots.length > 0 ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedFinalIndex((current) => Math.max(0, current - 1))}
+                                disabled={selectedFinalIndex === 0}
+                                className="absolute left-0 top-1/2 z-30 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#131829] text-white transition hover:border-white/35 hover:bg-[#1B2136] disabled:cursor-not-allowed disabled:opacity-25 md:left-[8%] xl:left-[10%]"
+                                aria-label="Afficher l’élément précédent"
+                              >
+                                <ChevronLeft className="h-6 w-6" strokeWidth={2.2} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedFinalIndex((current) => Math.min(finalQuestionSnapshots.length, current + 1))
+                                }
+                                disabled={selectedFinalIndex >= finalQuestionSnapshots.length}
+                                className="absolute right-0 top-1/2 z-30 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#131829] text-white transition hover:border-white/35 hover:bg-[#1B2136] disabled:cursor-not-allowed disabled:opacity-25 md:right-[8%] xl:right-[10%]"
+                                aria-label="Afficher l’élément suivant"
+                              >
+                                <ChevronRight className="h-6 w-6" strokeWidth={2.2} />
+                              </button>
+                            </>
+                          ) : null}
 
                           {isFinalLeaderboardSelected || !selectedFinalQuestionPanel ? (
                             <div className="mx-auto w-full max-w-[1800px]">
@@ -1742,9 +1732,9 @@ return (
                               </div>
                             </div>
                           ) : (
-                            <div className="flex flex-col items-center">
+                            <div className="flex flex-col items-center pb-8 pt-16 md:pt-20">
                               {finalTrackerItems.length > 1 ? (
-                                <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+                                <div className="order-last mt-14 flex flex-wrap items-center justify-center gap-2">
                                   {finalTrackerItems.slice(1).map((status, idx) => {
                                     const questionIndex = idx + 1;
                                     const isCurrent = questionIndex === selectedFinalIndex;
@@ -1801,6 +1791,8 @@ return (
                                 feedbackCorrectLabel={selectedFinalQuestion?.correctLabel ?? null}
                                 feedbackPoints={null}
                                 reserveFeedbackSpace
+                                thumbButtonBackgroundClass="bg-[#191c2c]"
+                                qcmChoiceBackgroundClass="bg-[#272b40] hover:bg-[#30354a] active:bg-[#373c55]"
                                 answerMode={null}
                                 choicesRevealed={false}
                                 showChoices={false}
@@ -1823,7 +1815,7 @@ return (
 
 
                               {selectedFinalStatsLayout ? (
-                                <div className="mx-auto mt-10 w-[700px] max-w-full space-y-4">
+                                <div className="mx-auto mt-10 w-[420px] max-w-full space-y-4">
                                   <div className="flex items-center gap-2">
                                     {selectedFinalStatsLayout.stats.correct > 0 ? (
                                       <div
@@ -1855,7 +1847,7 @@ return (
                                         <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
                                           {selectedFinalStatsLayout.stats.correct}
                                         </span>
-                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-emerald-600 text-[12px] font-semibold leading-none text-white">
+                                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-emerald-600 text-[12px] font-semibold leading-none text-white">
                                           ✓
                                         </span>
                                       </div>
@@ -1870,8 +1862,8 @@ return (
                                         <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
                                           {selectedFinalStatsLayout.stats.correctQcm}
                                         </span>
-                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#6F5BD4] text-[12px] font-semibold leading-none text-white">
-                                          ~
+                                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-[#6F5BD4] text-[12px] font-semibold leading-none text-white">
+                                          {"\u26A1\uFE0E"}
                                         </span>
                                       </div>
                                     ) : null}
@@ -1885,7 +1877,7 @@ return (
                                         <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
                                           {selectedFinalStatsLayout.stats.wrong}
                                         </span>
-                                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#AF2D33] text-[12px] font-semibold leading-none text-white">
+                                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-[#AF2D33] text-[12px] font-semibold leading-none text-white">
                                           ✕
                                         </span>
                                       </div>
@@ -1924,6 +1916,8 @@ return (
                                   feedbackCorrectLabel={feedbackCorrectLabel}
                                   feedbackPoints={feedbackPoints}
                                   reserveFeedbackSpace
+                                  thumbButtonBackgroundClass="bg-[#191c2c]"
+                                  qcmChoiceBackgroundClass="bg-[#272b40] hover:bg-[#30354a] active:bg-[#373c55]"
                                   answerMode={answerMode}
                                   choicesRevealed={choicesRevealed}
                                   showChoices={showChoices}
@@ -1981,17 +1975,21 @@ return (
                       <FinalCountdownRing seconds={finalRemaining} progress={finalProgress} />
                     </div>
                   ) : null}
+                  {phase === "final" && selectedFinalQuestionPanel?.img ? (
+                    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/[0.06] bg-[#131829]">
+                      <img
+                        src={selectedFinalQuestionPanel.img}
+                        alt="Illustration de la question récapitulée"
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        draggable={false}
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </div>
+                  ) : null}
                   <div className="flex flex-col gap-2">
-                    {phase === "final" ? (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedFinalIndex(firstFinalQuestionIndex)}
-                        className="mx-auto flex h-11 w-[86%] items-center justify-center gap-3 rounded-[6px] bg-[#6250C7] px-4 font-inter text-[13px] font-extrabold text-white transition hover:bg-[#6F5BD4]"
-                      >
-                        <span className="leading-none">Voir le détail</span>
-                        <List className="h-4 w-4 text-white/95" strokeWidth={2.3} />
-                      </button>
-                    ) : null}
                     {isRoomOwner && manualQuestionLaunch && manualNextAvailable ? (
                       <button
                         type="button"
@@ -2177,7 +2175,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
           <div className="flex items-center justify-center gap-2">
             <span className="tabular-nums text-[18px] font-brand italic leading-none">{stats.correctQcm}</span>
             <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#6F5BD4] text-[12px] font-semibold leading-none text-white">
-              ~
+              {"\u26A1\uFE0E"}
             </span>
           </div>
           <div className="flex items-center justify-center gap-2">

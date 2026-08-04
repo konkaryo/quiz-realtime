@@ -1,7 +1,7 @@
 // web/src/pages/Home.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronLeft, ChevronRight, Clock3, Plus } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Clock3, Hourglass, Lock, Plus, X } from "lucide-react";
 import { io } from "socket.io-client";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
@@ -11,7 +11,7 @@ const PUBLIC_ROOMS_UPDATED_EVENT = "public_rooms_updated";
 type RoomPlayer = { id: string; name: string; img: string };
 type RoomListItem = { id: string; name?: string | null; image?: string | null; difficulty?: number; playerCount?: number; questionCount?: number; progressCount?: number; players?: RoomPlayer[] };
 type RoomDetail = { id: string; code?: string | null };
-type CalendarChallenge = { date: string; completed?: boolean };
+type CalendarChallenge = { date: string; completed?: boolean | { score: number; completedAt: string } };
 type ApiPayload = Record<string, unknown>;
 
 const weekdays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -167,14 +167,14 @@ export default function Home() {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#030711] via-[#050a14]/75 to-black/5" />
                 <div className="absolute inset-x-0 bottom-0 p-4">
                   <div className="flex items-start gap-2"><h3 className="break-words font-brand text-[23px] uppercase leading-none text-white">{roomName}</h3><span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-lime-400" aria-label="Partie disponible" /></div>
-                  <p className="mt-1 font-acuminMedium text-sm italic text-white/50">Classique · {difficultyLabel}</p>
+                  <p className="mt-1 font-acuminMedium text-[12px] italic text-white/50" aria-label={`Classique, difficulté ${difficultyLabel}`}>Classique · {"★".repeat(difficultyLevel)}</p>
                   <div className="mt-4 flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center pl-1">
                       {visiblePlayers.map((player, index) => <img key={player.id} src={`${API_BASE}${player.img}`} alt={player.name} title={player.name} className={`h-7 w-7 rounded-full border-2 border-[#080c16] object-cover ${index > 0 ? "-ml-2.5" : ""}`} />)}
                       {additionalPlayers > 0 && <span className="ml-1 text-sm font-bold text-white">+{additionalPlayers}</span>}
                       {playerCount === 0 && <span className="text-xs text-white/45">Aucun joueur</span>}
                     </div>
-                    <span className="shrink-0 rounded-lg bg-cyan-700 px-3 py-1.5 text-xs font-semibold text-cyan-50 transition group-hover:bg-white group-hover:text-black">Rejoindre</span>
+                    <span className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition group-hover:bg-white group-hover:text-black">Rejoindre</span>
                   </div>
                 </div>
               </button>;
@@ -191,11 +191,43 @@ export default function Home() {
             <div className="mb-4 flex items-center justify-between">
               <button type="button" onClick={() => setWeekOffset((offset) => offset - 1)} aria-label="Semaine précédente" className="rounded-lg p-2 text-white/50 transition hover:bg-white/5 hover:text-white"><ChevronLeft size={18} /></button>
               <p className="text-sm font-semibold text-white">{weekLabel}</p>
-              <button type="button" onClick={() => setWeekOffset((offset) => offset + 1)} aria-label="Semaine suivante" className="rounded-lg p-2 text-white/50 transition hover:bg-white/5 hover:text-white"><ChevronRight size={18} /></button>
+              <button type="button" onClick={() => setWeekOffset((offset) => Math.min(0, offset + 1))} disabled={weekOffset >= 0} aria-label="Semaine suivante" className="rounded-lg p-2 text-white/50 transition hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-white/50"><ChevronRight size={18} /></button>
             </div>
             <div className="grid grid-cols-7 gap-2">{weekDates.map((date, index) => {
-              const key = isoDate(date); const item = challengeMap.get(key); const isToday = key === today;
-              return <Link key={key} to={item ? `/solo/daily/${key}` : "/solo/daily"} className={`flex aspect-square min-w-0 flex-col items-center justify-center rounded-lg border text-center transition ${isToday ? "border-violet-400 bg-violet-600 font-bold text-white" : item?.completed ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : item ? "border-cyan-400/50 bg-cyan-400/5 text-cyan-300 hover:bg-cyan-400/10" : "border-white/10 bg-white/[.02] text-white/45 hover:bg-white/5"}`} aria-label={`${weekdays[index]} ${date.getDate()}${item?.completed ? ", défi terminé" : item ? ", défi disponible" : ""}`}><span className="text-[9px] uppercase">{weekdays[index]}</span><span className="mt-0.5 text-sm">{date.getDate()}</span></Link>;
+              const key = isoDate(date);
+              const item = challengeMap.get(key);
+              const isToday = key === today;
+              const isCompleted = Boolean(item?.completed);
+              const isMissed = Boolean(item) && key < today && !isCompleted;
+              const isFuture = key > today;
+              const showCompletionStatus = Boolean(item) && key <= today;
+
+              return (
+                <div key={key} className="flex min-w-0 flex-col items-center">
+                  <span className="mb-1 text-[9px] font-semibold uppercase text-white/55">{weekdays[index]}</span>
+                  <Link
+                    to={item ? `/solo/daily/${key}` : "/solo/daily"}
+                    onClick={isFuture ? (event) => event.preventDefault() : undefined}
+                    tabIndex={isFuture ? -1 : undefined}
+                    aria-disabled={isFuture || undefined}
+                    className={`flex aspect-square w-full min-w-0 items-center justify-center rounded-lg border text-center transition ${isToday ? "border-violet-400 bg-violet-600 font-bold text-white" : isCompleted ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : isMissed ? "border-red-400/50 bg-red-400/10 text-red-300 hover:bg-red-400/15" : isFuture ? "cursor-not-allowed border-white/[0.06] bg-black/15 text-white/25 opacity-60" : item ? "border-cyan-400/50 bg-cyan-400/5 text-cyan-300 hover:bg-cyan-400/10" : "border-white/10 bg-white/[.02] text-white/45 hover:bg-white/5"}`}
+                    aria-label={`${weekdays[index]} ${date.getDate()}${isCompleted ? ", défi terminé" : isToday && item ? ", défi en attente" : isFuture ? ", défi verrouillé" : item ? ", défi non réalisé" : ""}`}
+                  >
+                    <span className="text-sm">{date.getDate()}</span>
+                  </Link>
+                  <span className="mt-1 flex h-5 items-center justify-center" aria-hidden="true">
+                    {isFuture ? (
+                      <Lock size={14} className="text-white/35" strokeWidth={2.2} />
+                    ) : isToday && item && !isCompleted ? (
+                      <Hourglass size={15} className="text-white" strokeWidth={2.4} />
+                    ) : showCompletionStatus ? (
+                      <span className={`grid h-4 w-4 place-items-center rounded-full text-white ${isCompleted ? "bg-emerald-500" : "bg-red-500"}`}>
+                        {isCompleted ? <Check size={11} strokeWidth={3} /> : <X size={11} strokeWidth={3} />}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
+              );
             })}</div>
             <Link to="/solo/daily" className="mt-6 flex w-full items-center justify-center rounded-lg bg-violet-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-500">Jouer</Link>
           </div>

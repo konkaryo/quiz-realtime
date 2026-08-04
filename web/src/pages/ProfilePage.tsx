@@ -7,7 +7,6 @@ import cardsIconUrl from "@/assets/cards.png";
 import rankingIconUrl from "@/assets/ranking.png";
 import bitIconUrl from "@/assets/bit.png";
 import { getLevelProgress } from "../utils/experience";
-import Background from "../components/Background";
 
 type CurrentUser = {
   id?: string;
@@ -16,6 +15,7 @@ type CurrentUser = {
   img?: string | null;
   experience?: number;
   bits?: number;
+  guest?: boolean;
 };
 
 const API_BASE =
@@ -131,7 +131,7 @@ function SectionCard({ title, children, className }: SectionCardProps) {
 
   return (
     <section
-      className={`flex flex-col rounded-xl border border-white/[0.06] bg-[#131829] p-4 shadow-[0_22px_55px_rgba(0,0,0,0.34)] backdrop-blur-xl ${className ?? ""}`}
+      className={`flex flex-col rounded-xl border border-white/[0.06] bg-[#191c2c] p-4 shadow-[0_22px_55px_rgba(0,0,0,0.34)] backdrop-blur-xl ${className ?? ""}`}
     >
       <h3 className="mb-4 font-brandUpright text-[18px] uppercase leading-none tracking-[0.05em] text-white/95">
         {title}
@@ -143,7 +143,7 @@ function SectionCard({ title, children, className }: SectionCardProps) {
 
 function StatCard({ icon, value, label, accent }: { icon: ReactNode; value: string; label: string; accent: string }) {
   return (
-    <div className="flex min-h-[72px] items-center gap-4 rounded-xl border border-white/[0.06] bg-[#131829] px-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_18px_42px_rgba(0,0,0,0.28)]">
+    <div className="flex min-h-[72px] items-center gap-4 rounded-xl border border-white/[0.06] bg-[#191c2c] px-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_18px_42px_rgba(0,0,0,0.28)]">
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.055]" style={{ color: accent }}>
         {icon}
       </div>
@@ -198,12 +198,19 @@ export default function ProfilePage() {
   }, [isSelfProfile, playerId]);
 
   useEffect(() => {
-    if (!isSelfProfile || !user?.playerId || typeof window === "undefined") return;
+    if (!isSelfProfile || user?.guest || !user?.playerId || typeof window === "undefined") return;
     const stored = window.localStorage.getItem(`profile-avatar:${user.playerId}`);
     if (stored) setAppliedAvatarUrl(stored);
-  }, [isSelfProfile, user?.playerId]);
+  }, [isSelfProfile, user?.guest, user?.playerId]);
 
   useEffect(() => {
+    if (isSelfProfile && user?.guest) {
+      setCategoryAccuracy(emptyCategoryAccuracy());
+      setDistinctQuestions(0);
+      setBitsRank(null);
+      setDifficultyStats({});
+      return;
+    }
     let mounted = true;
     (async () => {
       try {
@@ -242,7 +249,7 @@ export default function ProfilePage() {
       }
     })();
     return () => { mounted = false; };
-  }, [isSelfProfile, playerId]);
+  }, [isSelfProfile, playerId, user?.guest]);
 
   const favoriteThemes = useMemo(() => {
     return (Object.keys(CATEGORY_CONFIG) as CategoryKey[])
@@ -256,9 +263,10 @@ export default function ProfilePage() {
 
   const displayName = user?.displayName ?? "Utilisateur";
   const avatarUrl = appliedAvatarUrl ?? user?.img ?? fallbackAvatar;
-  const xpProgress = getLevelProgress(user?.experience ?? 0);
-  const canEditAvatar = isSelfProfile;
-  const bitsCount = user?.bits ?? 0;
+  const isGuestProfile = isSelfProfile && Boolean(user?.guest);
+  const xpProgress = getLevelProgress(isGuestProfile ? 0 : user?.experience ?? 0);
+  const canEditAvatar = isSelfProfile && !isGuestProfile;
+  const bitsCount = isGuestProfile ? 0 : user?.bits ?? 0;
   const xpMissingForNextLevel = Math.max(0, xpProgress.needed - xpProgress.gained);
   const bitsRankLabel = bitsRank ? `#${bitsRank}` : "—";
   const difficultyRows = useMemo(() => [
@@ -342,9 +350,7 @@ export default function ProfilePage() {
 
   return (
     <div className="relative h-[calc(100dvh-52px)] overflow-hidden font-inter text-slate-50">
-      <Background position="absolute" />
-
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_0%,rgba(30,64,175,0.08),transparent_30%)]" />
+      <div aria-hidden className="absolute inset-0 bg-[#11131f]" />
 
       <main className="relative z-10 mx-auto h-full max-w-[1280px] overflow-hidden px-4 pb-6 pt-9 sm:px-6 lg:px-8">
         <header className="mb-8 grid gap-7 lg:grid-cols-[380px_1fr] lg:items-center">
@@ -359,7 +365,6 @@ export default function ProfilePage() {
             <div className="min-w-0 -translate-y-2">
               <div className="flex items-center gap-2">
                 <h1 className="truncate font-brutal text-[34px] leading-tight text-white">{displayName}</h1>
-                {canEditAvatar ? <Pencil className="h-4 w-4 text-slate-400" /> : null}
               </div>
               <div className="mt-1 flex h-8 items-center gap-0.5 font-inter text-[13px] font-semibold text-white"><img src={bitIconUrl} alt="" className="-ml-2 h-8 w-8 object-contain" />{bitsCount}</div>
               <div className="mt-1 flex items-center gap-2 text-[12px] font-medium text-slate-400"><CalendarDays className="h-3.5 w-3.5" />Membre depuis mai 2026</div>
@@ -379,8 +384,8 @@ export default function ProfilePage() {
         <div className="grid gap-3 lg:grid-cols-[1.15fr_1.9fr]">
           <SectionCard title="Niveau">
             <div className="flex flex-col items-center gap-5">
-              <div className="grid h-16 w-16 place-items-center bg-[url('data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2072%2072%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M36%203L64.6%2019.5v33L36%2069%207.4%2052.5v-33L36%203z%22%20fill%3D%22%23172033%22%20stroke%3D%22%238b5cf6%22%20stroke-width%3D%222%22/%3E%3C/svg%3E')] bg-contain text-3xl font-black text-white">{xpProgress.level}</div>
-              <div className="w-full"><div className="h-2 overflow-hidden rounded-[2px] bg-slate-700/50"><div className="h-full rounded-[2px] bg-gradient-to-r from-[#7c3aed] to-[#a855f7]" style={{ width: `${xpProgress.progress * 100}%` }} /></div><p className="mt-2 text-[11px] font-semibold text-slate-400">Niveau suivant : {xpMissingForNextLevel} XP</p></div>
+              <div className="grid h-16 w-16 place-items-center bg-[url('data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2072%2072%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M36%203L64.6%2019.5v33L36%2069%207.4%2052.5v-33L36%203z%22%20fill%3D%22%23172033%22%20stroke%3D%22%238b5cf6%22%20stroke-width%3D%222%22/%3E%3C/svg%3E')] bg-contain text-3xl font-black text-white">{isGuestProfile ? "—" : xpProgress.level}</div>
+              <div className="w-full"><div className="h-2 overflow-hidden rounded-[2px] bg-slate-700/50"><div className="h-full rounded-[2px] bg-gradient-to-r from-[#7c3aed] to-[#a855f7]" style={{ width: `${isGuestProfile ? 0 : xpProgress.progress * 100}%` }} /></div><p className="mt-2 text-[11px] font-semibold text-slate-400">{isGuestProfile ? "Aucune donnée" : `Niveau suivant : ${xpMissingForNextLevel} XP`}</p></div>
             </div>
           </SectionCard>
 
@@ -392,7 +397,7 @@ export default function ProfilePage() {
         <div className="mt-3 grid gap-3 lg:grid-cols-[1.15fr_1fr_0.86fr]">
           <SectionCard title="Thèmes préférés">
             <div className="profile-themes-scroll max-h-48 overflow-y-auto pr-6">
-              {favoriteThemes.map((theme, index) => <div key={theme.key} className="grid grid-cols-[30px_minmax(92px,1fr)_minmax(110px,1.75fr)_42px] items-center gap-4 bg-[#131829] py-1.5"><div className="grid h-7 w-7 place-items-center rounded-[5px] font-inter text-[12px] font-black text-white" style={{ backgroundColor: theme.color }}>{index + 1}</div><span className="font-inter text-[11px] font-bold text-white">{theme.label}</span><div className="h-2.5 overflow-hidden rounded-[2px] bg-slate-700/45"><div className="h-full rounded-[2px]" style={{ width: `${theme.score}%`, backgroundColor: theme.color }} /></div><span className="text-right font-inter text-[11px] font-black" style={{ color: theme.color }}>{theme.score}%</span></div>)}
+              {favoriteThemes.map((theme, index) => <div key={theme.key} className="grid grid-cols-[30px_minmax(92px,1fr)_minmax(110px,1.75fr)_42px] items-center gap-4 bg-[#191c2c] py-1.5"><div className="grid h-7 w-7 place-items-center rounded-[5px] font-inter text-[12px] font-black text-white" style={{ backgroundColor: theme.color }}>{index + 1}</div><span className="font-inter text-[11px] font-bold text-white">{theme.label}</span><div className="h-2.5 overflow-hidden rounded-[2px] bg-slate-700/45"><div className="h-full rounded-[2px]" style={{ width: `${theme.score}%`, backgroundColor: theme.color }} /></div><span className="text-right font-inter text-[11px] font-black" style={{ color: theme.color }}>{theme.score}%</span></div>)}
             </div>
           </SectionCard>
 
@@ -404,7 +409,7 @@ export default function ProfilePage() {
                 role="img"
                 style={{ background: difficultyDonutGradient }}
               >
-                <div className="absolute inset-[31px] rounded-full bg-[#131829]" />
+                <div className="absolute inset-[31px] rounded-full bg-[#191c2c]" />
               </div>
               <div className="space-y-3">{difficultyRows.map((row) => <div key={row.label} className="grid grid-cols-[12px_72px_32px] items-center gap-2 font-inter text-[11px] font-bold text-slate-300"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: row.color }} />{row.label}<span className="text-right text-slate-400">{row.percent}%</span></div>)}</div>
             </div>

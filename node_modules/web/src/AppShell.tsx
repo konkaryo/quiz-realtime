@@ -327,7 +327,11 @@ export default function AppShell() {
   const isRoomRoute = location.pathname.startsWith("/room/");
   const showSideNavigation =
     location.pathname === "/" ||
+    location.pathname === "/me/profile" ||
+    /^\/players\/[^/]+\/profile$/.test(location.pathname) ||
     location.pathname === "/multi/public" ||
+    location.pathname === "/multi/ranking" ||
+    location.pathname === "/private/join" ||
     location.pathname === "/rooms/new" ||
     /^\/rooms\/[^/]+\/lobby$/.test(location.pathname);
   const joinLoadingPending =

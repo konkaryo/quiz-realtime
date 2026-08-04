@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { register } from "../auth/client";
 import logoUrl from "@/assets/synapz.png";
-import Background from "../components/Background";
 
 export default function RegisterPage() {
   const nav = useNavigate();
@@ -38,7 +37,7 @@ export default function RegisterPage() {
         fontFamily: "system-ui, sans-serif",
       }}
     >
-      <Background />
+      <div aria-hidden className="fixed inset-0 bg-[#11131f]" />
       <div
         style={{
           position: "relative",

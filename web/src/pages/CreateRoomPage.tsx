@@ -221,7 +221,7 @@ function RefreshIcon(props: { className?: string }) {
 
 function SettingRow({ label, description, value, children }: SettingRowProps) {
   return (
-    <div className="grid min-h-[71px] grid-cols-[minmax(123px,1fr),minmax(165px,253px)] items-center gap-5 rounded-[8px] border border-white/[0.06] bg-[#131930] px-4 py-3 max-sm:grid-cols-1 max-sm:gap-y-3">
+    <div className="grid min-h-[71px] grid-cols-[minmax(123px,1fr),minmax(165px,253px)] items-center gap-5 rounded-[8px] border border-white/[0.06] bg-[#191c2c] px-4 py-3 max-sm:grid-cols-1 max-sm:gap-y-3">
       <div className="translate-y-[1px]">
         <div className="font-brandUpright text-[18px] uppercase leading-none tracking-[0.05em] text-white">
           {label}
@@ -790,11 +790,11 @@ export default function CreateRoomPageCorrected() {
       <style>{`
         .create-room-scroll {
           scrollbar-width: thin;
-          scrollbar-color: #eef1ff rgba(255,255,255,0.08);
+          scrollbar-color: #eef1ff #191c2c;
         }
 
         .create-room-scroll::-webkit-scrollbar { width: 10px; }
-        .create-room-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.08); border-radius: 999px; }
+        .create-room-scroll::-webkit-scrollbar-track { background: #191c2c; border-radius: 999px; }
         .create-room-scroll::-webkit-scrollbar-thumb {
           background: #eef1ff;
           border-radius: 999px;
@@ -815,7 +815,7 @@ export default function CreateRoomPageCorrected() {
         input[type="range"].create-room-range::-webkit-slider-runnable-track {
           height: 7px;
           border-radius: 999px;
-          background: linear-gradient(#7C5CFF 0 0) 0 / var(--p) 100% no-repeat, #1c2748;
+          background: linear-gradient(#7C5CFF 0 0) 0 / var(--p) 100% no-repeat, #25293b;
         }
 
         input[type="range"].create-room-range::-webkit-slider-thumb {
@@ -833,7 +833,7 @@ export default function CreateRoomPageCorrected() {
         input[type="range"].create-room-range::-moz-range-track {
           height: 7px;
           border-radius: 999px;
-          background: #1c2748;
+          background: #25293b;
         }
 
         input[type="range"].create-room-range::-moz-range-progress {
@@ -876,9 +876,9 @@ export default function CreateRoomPageCorrected() {
                     disabled={disabled}
                     onClick={() => openPanel(item.key)}
                     className={[
-                      "block h-[44px] w-full bg-[#10172D] px-3 text-center font-brandUpright text-[21px] uppercase leading-[44px] tracking-[0.04em] text-white transition max-md:h-12 max-md:flex-1 max-md:leading-[48px]",
-                      active ? "bg-[#24304F]" : "hover:bg-[#18213D]",
-                      disabled ? "cursor-not-allowed opacity-35 hover:bg-[#10172D]" : "",
+                      "block h-[44px] w-full bg-[#191c2c] px-3 text-center font-brandUpright text-[21px] uppercase leading-[44px] tracking-[0.04em] text-white transition max-md:h-12 max-md:flex-1 max-md:leading-[48px]",
+                      active ? "bg-[#2b3044]" : "hover:bg-[#25293b]",
+                      disabled ? "cursor-not-allowed opacity-35 hover:bg-[#191c2c]" : "",
                     ].join(" ")}
                   >
                     {item.label}
@@ -929,7 +929,7 @@ export default function CreateRoomPageCorrected() {
                   <select
                     defaultValue="Classique"
                     disabled={!canManageRoom}
-                    className="h-[26px] w-full rounded-[3px] border-0 bg-[#0D1429] px-3 text-[12px] font-semibold text-white/95 outline-none disabled:cursor-not-allowed"
+                    className="h-[26px] w-full rounded-[3px] border-0 bg-[#11131f] px-3 text-[12px] font-semibold text-white/95 outline-none disabled:cursor-not-allowed"
                   >
                     <option>Classique</option>
                   </select>
@@ -960,11 +960,11 @@ export default function CreateRoomPageCorrected() {
                       onClick={() => adjustDifficulty(-1)}
                       disabled={!canManageRoom || selectedDifficultyIndex <= 0}
                       aria-label="Réduire la difficulté des questions"
-                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
+                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#25293b] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#30354a] disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       −
                     </button>
-                    <div className="flex h-full min-w-[90px] flex-1 items-center justify-center rounded-[5px] bg-[#0D1429] px-4 font-inter text-[12px] font-semibold leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                    <div className="flex h-full min-w-[90px] flex-1 items-center justify-center rounded-[5px] bg-[#11131f] px-4 font-inter text-[12px] font-semibold leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                       {selectedDifficultyLabel}
                     </div>
                     <button
@@ -972,7 +972,7 @@ export default function CreateRoomPageCorrected() {
                       onClick={() => adjustDifficulty(1)}
                       disabled={!canManageRoom || selectedDifficultyIndex >= DIFFICULTY_OPTIONS.length - 1}
                       aria-label="Augmenter la difficulté des questions"
-                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
+                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#25293b] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#30354a] disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       +
                     </button>
@@ -994,11 +994,11 @@ export default function CreateRoomPageCorrected() {
                       onKeyDown={(event) => handleQuestionDurationKeyDown(event, -1)}
                       disabled={!canManageRoom || questionDuration <= 3}
                       aria-label="Diminuer le temps pour répondre"
-                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
+                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#25293b] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#30354a] disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       −
                     </button>
-                    <div className="flex h-full min-w-[90px] flex-1 items-center justify-center rounded-[5px] bg-[#0D1429] px-4 font-inter text-[12px] font-semibold leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                    <div className="flex h-full min-w-[90px] flex-1 items-center justify-center rounded-[5px] bg-[#11131f] px-4 font-inter text-[12px] font-semibold leading-none text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                       {questionDuration}
                     </div>
                     <button
@@ -1014,7 +1014,7 @@ export default function CreateRoomPageCorrected() {
                       onKeyDown={(event) => handleQuestionDurationKeyDown(event, 1)}
                       disabled={!canManageRoom || questionDuration >= 60}
                       aria-label="Augmenter le temps pour répondre"
-                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#18213D] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#202A4A] disabled:cursor-not-allowed disabled:opacity-35"
+                      className="grid h-[30px] w-[30px] place-items-center rounded-[5px] bg-[#25293b] text-[16px] font-bold leading-none text-white/70 transition hover:bg-[#30354a] disabled:cursor-not-allowed disabled:opacity-35"
                     >
                       +
                     </button>
@@ -1030,7 +1030,7 @@ export default function CreateRoomPageCorrected() {
                     disabled={!canManageRoom}
                     aria-haspopup="dialog"
                     aria-expanded={themesOpen}
-                    className="flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]"
+                    className="flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#11131f] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#202435]"
                   >
                     <span>{selectedThemeCount}/{THEME_OPTIONS.length} thèmes actifs</span>
                     <span className="inline-flex items-center justify-center text-white/70" aria-hidden="true">
@@ -1069,7 +1069,7 @@ export default function CreateRoomPageCorrected() {
                     disabled={!canManageRoom}
                     aria-pressed={dynamicQuestionDisplay}
                     className={[
-                      "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]",
+                      "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#11131f] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#202435]",
                     ].join(" ")}
                   >
                     <span>{dynamicQuestionDisplay ? "Activé" : "Désactivé"}</span>
@@ -1101,7 +1101,7 @@ export default function CreateRoomPageCorrected() {
                     disabled={!canManageRoom}
                     aria-pressed={speedBonusEnabled}
                     className={[
-                      "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]",
+                      "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#11131f] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#202435]",
                     ].join(" ")}
                   >
                     <span>{speedBonusEnabled ? "Activé" : "Désactivé"}</span>
@@ -1133,7 +1133,7 @@ export default function CreateRoomPageCorrected() {
                     disabled={!canManageRoom}
                     aria-pressed={manualQuestionLaunch}
                     className={[
-                      "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#0D1429] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#111A33]",
+                      "flex h-[31px] w-full items-center justify-between rounded-[3px] bg-[#11131f] px-3 text-left text-[12px] font-semibold text-white/95 transition hover:bg-[#202435]",
                     ].join(" ")}
                   >
                     <span>{manualQuestionLaunch ? "Activé" : "Désactivé"}</span>
@@ -1159,7 +1159,7 @@ export default function CreateRoomPageCorrected() {
 
             {activePanel === "code" && (
               <div id="create-room-panel-code" role="tabpanel" aria-label="Code" className="space-y-4">
-                <div className="mx-auto w-full max-w-[420px] rounded-[8px] border border-white/[0.06] bg-[#131930] p-6 text-center">
+                <div className="mx-auto w-full max-w-[420px] rounded-[8px] border border-white/[0.06] bg-[#191c2c] p-6 text-center">
                   <p className="font-brandUpright text-[18px] uppercase leading-none tracking-[0.05em] text-white">
                     Code de la partie
                   </p>
@@ -1194,7 +1194,7 @@ export default function CreateRoomPageCorrected() {
               <div id="create-room-panel-lobby" role="tabpanel" aria-label="Lobby" className="space-y-4">
                 {createdRoomId ? (
                   <>
-                    <div className="rounded-[8px] border border-white/[0.06] bg-[#131930] p-4">
+                    <div className="rounded-[8px] border border-white/[0.06] bg-[#191c2c] p-4">
                       <div className="mb-3 flex items-center justify-between">
                         <h3 className="font-brandUpright text-[20px] uppercase leading-none text-white">
                           Joueurs ({lobbyPlayers.length}/{maxPlayers})
@@ -1204,7 +1204,7 @@ export default function CreateRoomPageCorrected() {
                         {orderedLobbyPlayers.map((player) => {
                           const isOwner = player.id === ownerPlayerId;
                           return (
-                            <div key={player.id} className="grid grid-cols-[40px,1fr,auto] items-center gap-3 rounded bg-[#131930] px-3 py-2.5">
+                            <div key={player.id} className="grid grid-cols-[40px,1fr,auto] items-center gap-3 rounded bg-[#11131f] px-3 py-2.5">
                               <img
                                 src={player.img || "/img/profiles/0.avif"}
                                 alt=""
@@ -1227,7 +1227,7 @@ export default function CreateRoomPageCorrected() {
                           );
                         })}
                         {Array.from({ length: Math.max(0, Math.min(5, maxPlayers - lobbyPlayers.length)) }).map((_, index) => (
-                          <div key={`empty-${index}`} className="rounded bg-[#10172D] px-3 py-2.5 text-[13px] font-semibold text-white/25">
+                          <div key={`empty-${index}`} className="rounded bg-[#11131f] px-3 py-2.5 text-[13px] font-semibold text-white/25">
                             En attente d'un joueur…
                           </div>
                         ))}
@@ -1271,7 +1271,7 @@ export default function CreateRoomPageCorrected() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="themes-dialog-title"
-            className="w-full max-w-[660px] rounded-xl border border-white/10 bg-[#131930] p-5 sm:p-6"
+            className="w-full max-w-[660px] rounded-xl border border-white/10 bg-[#191c2c] p-5 sm:p-6"
           >
             <div className="mb-5">
               <h3 id="themes-dialog-title" className="font-brandUpright text-[28px] uppercase leading-none text-white">
@@ -1317,7 +1317,7 @@ export default function CreateRoomPageCorrected() {
                       "rounded-[5px] border px-3 py-1.5 font-inter text-[12px] font-medium transition",
                       active
                         ? "border-emerald-400/70 bg-emerald-600 text-white"
-                        : "border-white/10 bg-[#0D1429] text-white/55 hover:border-white/25 hover:text-white/80",
+                        : "border-white/10 bg-[#11131f] text-white/55 hover:border-white/25 hover:text-white/80",
                     ].join(" ")}
                   >
                     {label}

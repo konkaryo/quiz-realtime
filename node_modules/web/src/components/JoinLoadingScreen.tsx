@@ -1,4 +1,3 @@
-import Background from "./Background";
 import "./JoinLoadingScreen.css";
 
 type JoinLoadingScreenProps = {
@@ -18,13 +17,6 @@ export default function JoinLoadingScreen({
       role="status"
       aria-live="polite"
     >
-      <div
-        className="join-loading-screen__background"
-        style={{ top: -offsetTop }}
-        aria-hidden
-      >
-        <Background position="absolute" />
-      </div>
       <div className="join-loading-screen__content">
         <svg
           className="microchip"

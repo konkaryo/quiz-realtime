@@ -225,6 +225,8 @@ type Props = {
   animateQuestionText?: boolean;
   questionRevealStartedAtMs?: number | null;
   correctLabelPlacement?: "above" | "below";
+  thumbButtonBackgroundClass?: string;
+  qcmChoiceBackgroundClass?: string;
 };
 
 const QUESTION_REVEAL_STEP_MS = 35;
@@ -274,6 +276,8 @@ export default function DailyQuestionPanel(props: Props) {
     animateQuestionText = false,
     questionRevealStartedAtMs = null,
     correctLabelPlacement = "below",
+    thumbButtonBackgroundClass = "bg-[#232B43]",
+    qcmChoiceBackgroundClass = "bg-[#2E324A] hover:bg-[#363B56] active:bg-[#3D4260]",
   } = props;
 
   const [visibleQuestionLength, setVisibleQuestionLength] = useState(() =>
@@ -493,7 +497,7 @@ export default function DailyQuestionPanel(props: Props) {
   const thumbDownMenuRef = useRef<HTMLDivElement | null>(null);
   const thumbButtonClass = (vote: "up" | "down") =>
     [
-      "group relative inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#232B43] transition duration-150",
+      `group relative inline-flex h-9 w-9 items-center justify-center rounded-[10px] ${thumbButtonBackgroundClass} transition duration-150`,
       "shadow-[0_8px_18px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)]",
       "hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A1022]",
       thumbVote === vote ? "brightness-125" : "opacity-80",
@@ -773,7 +777,7 @@ export default function DailyQuestionPanel(props: Props) {
                       ? "border-[#AF2D33] bg-[#AF2D33] text-slate-50"
                       : showDisabledChoiceState
                       ? "border-slate-600/50 bg-[#2E324A]/55 text-slate-400"
-                      : "border-slate-600/80 bg-[#2E324A] text-slate-50 hover:bg-[#363B56] active:bg-[#3D4260]",
+                      : `border-slate-600/80 text-slate-50 ${qcmChoiceBackgroundClass}`,
                   ].join(" ")}
                 >
                   {choice.label}
@@ -791,10 +795,10 @@ export default function DailyQuestionPanel(props: Props) {
             </div>
           ) : null}
           {/* ✅ Coeurs AU-DESSUS du panneau, horizontaux, alignés à gauche */}
-          <div className="mx-auto w-full mb-3 -mt-1 pl-2 flex items-center justify-between gap-3">
+          <div className="relative mx-auto mb-3 -mt-1 flex h-7 w-full items-center justify-between gap-3 pl-2">
             <Lives lives={lives} total={totalLives} />
             {wrongTextAnswer ? (
-              <div className="max-w-[58%] inline-flex items-center rounded-[6px] border border-red-500/70 bg-red-500/20 px-3 py-1 text-[11px] font-medium text-red-100">
+              <div className="absolute right-0 top-1/2 inline-flex max-w-[58%] -translate-y-1/2 items-center rounded-[6px] border border-red-500/70 bg-red-500/20 px-3 py-1 text-[11px] font-medium text-red-100">
                 <span className="truncate" title={wrongTextAnswer}>
                   {wrongTextAnswer}
                 </span>

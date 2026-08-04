@@ -5,7 +5,6 @@ import bitIconUrl from "@/assets/bit.png";
 import goldRankingUrl from "@/assets/gold_ranking.png";
 import silverRankingUrl from "@/assets/silver_ranking.png";
 import bronzeRankingUrl from "@/assets/bronze_ranking.png";
-import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? (typeof window !== "undefined" ? window.location.origin : "");
 
@@ -339,11 +338,11 @@ export default function RankingPage() {
 
   return (
     <div className="relative min-h-full overflow-hidden font-inter text-slate-50" spellCheck={false}>
-      <Background />
+      <div aria-hidden className="fixed inset-0 bg-[#11131f]" />
       <div className="relative z-10 mx-auto flex max-w-[1370px] flex-col px-4 py-8 sm:px-8 lg:px-10">
         <section className="grid w-full gap-8 lg:grid-cols-[245px_minmax(0,1fr)] lg:items-start">
           <aside className="flex flex-col gap-5 lg:sticky lg:top-8">
-            <div className="rounded-xl border border-white/[0.06] bg-[#131829] p-4 shadow-[0_22px_55px_rgba(0,0,0,0.34)] backdrop-blur-xl">
+            <div className="rounded-xl border border-white/[0.06] bg-[#191c2c] p-4 shadow-[0_22px_55px_rgba(0,0,0,0.34)] backdrop-blur-xl">
               <h2 className="font-brandUpright text-[21px] uppercase leading-none text-slate-200">Filtres</h2>
               <div className="mt-4 flex flex-col gap-2">
                 {FILTERS.map((option) => {
@@ -355,7 +354,7 @@ export default function RankingPage() {
             </div>
 
             {displayedSelf && (
-              <div className="rounded-xl border border-white/[0.06] bg-[#131829] p-4 shadow-[0_22px_55px_rgba(0,0,0,0.34)] backdrop-blur-xl">
+              <div className="rounded-xl border border-white/[0.06] bg-[#191c2c] p-4 shadow-[0_22px_55px_rgba(0,0,0,0.34)] backdrop-blur-xl">
                 <h2 className="font-brandUpright text-[21px] uppercase leading-none text-slate-200">Votre classement</h2>
 
                 <div className="mt-8 text-center">
@@ -391,10 +390,10 @@ export default function RankingPage() {
           <main className="min-w-0">
             <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div><h1 className="font-brandUpright text-[38px] uppercase leading-none tracking-[0.01em] text-white sm:text-[46px]">Classement</h1></div>
-              <div className="relative w-full max-w-[330px]"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" /><input value={search} onChange={(event) => { setSearch(event.target.value); setStartIndex(0); }} placeholder="Rechercher un joueur..." spellCheck={false} autoCorrect="off" autoCapitalize="off" autoComplete="off" className="h-9 w-full rounded-[5px] border border-white/[0.06] bg-[#131829] pl-10 pr-4 font-inter text-[12px] font-semibold text-white outline-none placeholder:text-slate-500 focus:border-[#6E4BFF]" /></div>
+              <div className="relative w-full max-w-[330px]"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" /><input value={search} onChange={(event) => { setSearch(event.target.value); setStartIndex(0); }} placeholder="Rechercher un joueur..." spellCheck={false} autoCorrect="off" autoCapitalize="off" autoComplete="off" className="h-9 w-full rounded-[5px] border border-white/[0.06] bg-[#191c2c] pl-10 pr-4 font-inter text-[12px] font-semibold text-white outline-none placeholder:text-slate-500 focus:border-[#6E4BFF]" /></div>
             </div>
 
-            <div className="overflow-hidden rounded-[7px] border border-white/[0.06] bg-[#131829] shadow-[0_22px_80px_rgba(0,0,0,0.34)]">
+            <div className="overflow-hidden rounded-[7px] border border-white/[0.06] bg-[#191c2c] shadow-[0_22px_80px_rgba(0,0,0,0.34)]">
               <div className="grid min-w-[650px] grid-cols-[88px_minmax(150px,1fr)_170px_110px] pl-0 pr-5 py-3 font-acuminSemiBold text-[11px] font-semibold uppercase leading-none tracking-[0.04em] text-slate-400"><div className="text-center">Rang</div><div>Joueur</div><div className="text-right">{kind === "general" ? "Bits" : "Points"}</div><div className="text-right">Parties</div></div>
               <div className="min-w-[650px] font-inter">
                 {loading && <div className="border-t border-white/[0.07] px-5 py-4 font-inter text-sm font-semibold text-slate-300">Chargement du classement…</div>}

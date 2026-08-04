@@ -4,7 +4,6 @@ import { login } from "../auth/client";
 import { useAuth } from "../auth/AuthContext";
 import { notifyAuthUpdated } from "../auth/events";
 import logoUrl from "@/assets/synapz.png";
-import Background from "../components/Background";
 
 export default function LoginPage() {
   const nav = useNavigate();
@@ -45,7 +44,7 @@ export default function LoginPage() {
         fontFamily: "system-ui, sans-serif",
       }}
     >
-      <Background />
+      <div aria-hidden className="fixed inset-0 bg-[#11131f]" />
       <div
         style={{
           position: "relative",
