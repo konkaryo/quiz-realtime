@@ -14,7 +14,7 @@ import QuestionPanel, {
   QuestionProgress as QuestionPanelProgress,
 } from "../components/QuestionPanel";
 import { getLevelFromExperience } from "../utils/experience";
-import { ArrowUp, Crosshair, ChevronLeft, ChevronRight, LogOut, Play } from "lucide-react";
+import { ArrowUp, Crosshair, ChevronLeft, ChevronRight, LogOut, Play, Users } from "lucide-react";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -318,6 +318,10 @@ export default function RoomPage() {
   const scoreAnimationRef = useRef<number | null>(null);
   const leaderboardRef = useRef<HTMLOListElement | null>(null);
   const [keepSelfCentered, setKeepSelfCentered] = useState(false);
+  const [isLeaderboardTargetingPaused, setIsLeaderboardTargetingPaused] = useState(false);
+  const leaderboardTargetingTimerRef = useRef<number | null>(null);
+  const isProgrammaticLeaderboardScrollRef = useRef(false);
+
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
   const [isRoomCodeVisible, setIsRoomCodeVisible] = useState(false);
@@ -356,6 +360,7 @@ export default function RoomPage() {
   const [gameCountdownTotal, setGameCountdownTotal] = useState<number | null>(null);
   const [gameCountdownEndsAt, setGameCountdownEndsAt] = useState<number | null>(null);
   const [gameCountdownDuration, setGameCountdownDuration] = useState<number | null>(null);
+  const [countdownPlayerPage, setCountdownPlayerPage] = useState(0);
 
 
   const remaining = useMemo(
@@ -413,6 +418,12 @@ export default function RoomPage() {
       }),
     [leaderboard]
   );
+  const countdownPlayerPageCount = Math.max(1, Math.ceil(countdownPlayers.length / 5));
+  const isGameCountdownActive = gameCountdown !== null;
+  const visibleCountdownPlayers = useMemo(
+    () => countdownPlayers.slice(countdownPlayerPage * 5, countdownPlayerPage * 5 + 5),
+    [countdownPlayerPage, countdownPlayers]
+  );
   const shouldHideLeftRail = phase !== "final" && gameCountdown !== null;
   const shouldHideRightQuestionImage = phase === "final" || gameCountdown !== null;
 
@@ -454,6 +465,34 @@ export default function RoomPage() {
     }, 1000);
     return () => clearTimeout(id);
   }, [gameCountdown]);
+
+  useEffect(() => {
+    setCountdownPlayerPage((page) =>
+      isGameCountdownActive ? Math.min(page, countdownPlayerPageCount - 1) : 0
+    );
+  }, [countdownPlayerPageCount, isGameCountdownActive]);
+
+  useEffect(() => {
+    if (!isGameCountdownActive || countdownPlayerPageCount <= 1) return;
+
+    const handleCountdownPlayersNavigation = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.matches("input, textarea, select, [contenteditable='true']")) return;
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setCountdownPlayerPage((page) =>
+          (page - 1 + countdownPlayerPageCount) % countdownPlayerPageCount
+        );
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        setCountdownPlayerPage((page) => (page + 1) % countdownPlayerPageCount);
+      }
+    };
+
+    window.addEventListener("keydown", handleCountdownPlayersNavigation);
+    return () => window.removeEventListener("keydown", handleCountdownPlayersNavigation);
+  }, [isGameCountdownActive, countdownPlayerPageCount]);
 
 
   useEffect(() => {
@@ -1359,9 +1398,11 @@ export default function RoomPage() {
   const selectedFinalStatsLayout = useMemo(() => {
     const stats = selectedFinalQuestion?.stats;
     if (!stats) return null;
-    const total = Math.max(1, stats.correct + stats.correctQcm + stats.wrong);
+    const responseCount = stats.correct + stats.correctQcm + stats.wrong;
+    const total = Math.max(1, responseCount);
     return {
       stats,
+      hasNoResponses: responseCount === 0,
       correctWidth: `${(100 * stats.correct) / total}%`,
       qcmWidth: `${(100 * stats.correctQcm) / total}%`,
       wrongWidth: `${(100 * stats.wrong) / total}%`,
@@ -1398,16 +1439,52 @@ export default function RoomPage() {
 
   useLayoutEffect(() => {
     const list = leaderboardRef.current;
-    if (!list) return;
+    if (!list || isLeaderboardTargetingPaused) return;
+    isProgrammaticLeaderboardScrollRef.current = true;
     if (!keepSelfCentered) {
       list.scrollTop = 0;
-      return;
+    } else {
+      const selfCell = list.querySelector<HTMLElement>('[data-self="true"]');
+      if (selfCell) {
+        const centeredTop = selfCell.offsetTop - (list.clientHeight - selfCell.offsetHeight) / 2;
+        list.scrollTop = Math.max(0, centeredTop);
+      }
     }
-    const selfCell = list.querySelector<HTMLElement>('[data-self="true"]');
-    if (!selfCell) return;
-    const centeredTop = selfCell.offsetTop - (list.clientHeight - selfCell.offsetHeight) / 2;
-    list.scrollTop = Math.max(0, centeredTop);
-  }, [keepSelfCentered, leaderboard, selfIndex]);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        isProgrammaticLeaderboardScrollRef.current = false;
+      });
+    });
+  }, [keepSelfCentered, isLeaderboardTargetingPaused, leaderboard, selfIndex]);
+
+  useEffect(() => {
+    return () => {
+      if (leaderboardTargetingTimerRef.current !== null) {
+        window.clearTimeout(leaderboardTargetingTimerRef.current);
+      }
+    };
+  }, []);
+
+  const pauseLeaderboardTargeting = () => {
+    if (isProgrammaticLeaderboardScrollRef.current) return;
+    setIsLeaderboardTargetingPaused(true);
+    if (leaderboardTargetingTimerRef.current !== null) {
+      window.clearTimeout(leaderboardTargetingTimerRef.current);
+    }
+    leaderboardTargetingTimerRef.current = window.setTimeout(() => {
+      setIsLeaderboardTargetingPaused(false);
+      leaderboardTargetingTimerRef.current = null;
+    }, 5000);
+  };
+
+  const toggleLeaderboardTarget = () => {
+    if (leaderboardTargetingTimerRef.current !== null) {
+      window.clearTimeout(leaderboardTargetingTimerRef.current);
+      leaderboardTargetingTimerRef.current = null;
+    }
+    setIsLeaderboardTargetingPaused(false);
+    setKeepSelfCentered((centered) => !centered);
+  };
 
   // ✅ rendu unique d'une ligne leaderboard (cellule + badge)
   const renderLeaderboardLine = (r: LeaderRow, rank: number, isSelf: boolean, allowProfileNavigation = true) => {
@@ -1559,7 +1636,8 @@ return (
         ) : (
           <>
             <ol
-              ref={leaderboardRef}  
+              ref={leaderboardRef}
+              onScroll={pauseLeaderboardTargeting}
               className={[
                 "lb-scroll",
                 "m-0 space-y-2 pt-7",
@@ -1591,17 +1669,17 @@ return (
                 tabIndex={0}
                 aria-label={keepSelfCentered ? "Revenir en haut du classement" : "Garder le classement centré sur ma position"}
                 aria-pressed={keepSelfCentered}
-                onClick={() => setKeepSelfCentered((centered) => !centered)}
+                onClick={toggleLeaderboardTarget}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    setKeepSelfCentered((centered) => !centered);
+                    toggleLeaderboardTarget();
                   }
                 }}
               >
                 {renderLeaderboardLine(selfRow, selfIndex + 1, true, false)}
-                <span className={`mt-1 flex justify-center ${keepSelfCentered ? "text-violet-400" : "text-white/45"}`} aria-hidden="true">
-                  {keepSelfCentered ? <ArrowUp size={14} strokeWidth={2.4} /> : <Crosshair size={14} strokeWidth={2.4} />}
+                <span className={`ml-9 mt-2 flex justify-start ${isLeaderboardTargetingPaused ? "text-white/30" : keepSelfCentered ? "text-violet-400" : "text-white/45"}`} aria-hidden="true">
+                  {keepSelfCentered ? <Crosshair size={14} strokeWidth={2.4} /> : <ArrowUp size={14} strokeWidth={2.4} />}
                 </span>
               </div>
             ) : null}
@@ -1637,6 +1715,15 @@ return (
                     display: inline-block;
                     animation: countdownDotPulse 1.05s ease-in-out infinite;
                   }
+
+                  @keyframes countdownPlayersEnter {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                  }
+
+                  .countdown-players-page {
+                    animation: countdownPlayersEnter 320ms ease-out;
+                  }
                 `}</style>
 
                 <div className="relative px-5 py-4 md:px-10" style={{ minHeight: "100%" }}>
@@ -1661,38 +1748,56 @@ return (
                               </div>
                             </div>
 
-                            <div className="mt-20 flex min-h-[142px] w-full max-w-[880px] flex-wrap items-start justify-center gap-x-8 gap-y-7">
-                                {countdownPlayers.map((player) => {
+                            <div
+                              key={countdownPlayerPage}
+                              className="countdown-players-page mt-14 flex min-h-[180px] w-full max-w-[760px] flex-wrap items-start justify-center gap-5"
+                            >
+                                {visibleCountdownPlayers.map((player) => {
                                   const level = getLevelFromExperience(player.experience ?? 0);
-                                  const isTopPlayer = countdownPlayers[0]?.id === player.id;
 
                                   return (
-                                    <div key={player.id} className="relative flex w-[108px] flex-col items-center">
-                                      {isTopPlayer ? (
-                                        <img
-                                          src={crownImage}
-                                          alt=""
-                                          className="pointer-events-none absolute -top-6 left-3 h-auto w-9 -rotate-12 select-none drop-shadow-[0_8px_12px_rgba(0,0,0,0.45)]"
-                                          draggable={false}
-                                          loading="lazy"
-                                        />
-                                      ) : null}
-                                      <div className="h-[74px] w-[74px] rounded-full">
-                                        <img
-                                          src={player.img ?? "/img/profiles/0.avif"}
-                                          alt=""
-                                          className="h-full w-full rounded-full object-cover"
-                                          draggable={false}
-                                          loading="lazy"
-                                        />
+                                    <article
+                                      key={player.id}
+                                      className="relative h-[176px] w-[130px] rounded-[7px] p-px text-center"
+                                      style={{ background: "linear-gradient(180deg, #7C5CFF 0%, #191C2C 42%)" }}
+                                    >
+                                      <span
+                                        className="pointer-events-none absolute inset-x-px bottom-[-4px] h-3 rounded-b-[7px] bg-[#7C5CFF]"
+                                        aria-hidden="true"
+                                      />
+                                      <div className="relative flex h-full w-full flex-col items-center rounded-[6px] bg-[linear-gradient(180deg,#292D45_0%,#181B2B_100%)] px-3 pb-4 pt-7">
+                                        <div className="h-[52px] w-[52px] overflow-hidden rounded-full border-2 border-[#8E63FF]">
+                                          <img
+                                            src={player.img ?? "/img/profiles/0.avif"}
+                                            alt=""
+                                            className="h-full w-full rounded-full object-cover"
+                                            draggable={false}
+                                            loading="lazy"
+                                          />
+                                        </div>
+                                        <div className="mt-3 w-full truncate font-inter text-[14px] font-extrabold leading-none text-white">
+                                          {player.name}
+                                        </div>
+                                        <div className="mt-auto" aria-label={`Niveau ${level}`}>
+                                          <CountdownLevelShield level={level} />
+                                        </div>
                                       </div>
-                                      <div className="mt-3 max-w-full truncate font-inter text-[14px] font-extrabold leading-none text-white">{player.name}</div>
-                                      <div className="mt-2" aria-label={`Niveau ${level}`}>
-                                        <CountdownLevelShield level={level} />
-                                      </div>
-                                    </div>
+                                    </article>
                                   );
                                 })}
+                            </div>
+                            <div className="mt-16 flex h-3 items-center justify-center gap-2" aria-label={`Page ${countdownPlayerPage + 1} sur ${countdownPlayerPageCount}`}>
+                              {Array.from({ length: countdownPlayerPageCount }, (_, page) => (
+                                <span
+                                  key={page}
+                                  className={`h-2 w-2 rounded-[2px] transition-colors ${page === countdownPlayerPage ? "bg-[#7C5CFF]" : "bg-slate-500/70"}`}
+                                  aria-hidden="true"
+                                />
+                              ))}
+                            </div>
+                            <div className="mt-12 inline-flex items-center gap-2 font-brandUpright text-[15px] font-semibold uppercase tracking-[0.06em] text-white/60">
+                              <Users className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
+                              {countdownPlayers.length} joueur{countdownPlayers.length > 1 ? "s" : ""} dans cette partie
                             </div>
                           </div>
                         </div>
@@ -1706,7 +1811,8 @@ return (
                                 type="button"
                                 onClick={() => setSelectedFinalIndex((current) => Math.max(0, current - 1))}
                                 disabled={selectedFinalIndex === 0}
-                                className="absolute left-0 top-1/2 z-30 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#131829] text-white transition hover:border-white/35 hover:bg-[#1B2136] disabled:cursor-not-allowed disabled:opacity-25 md:left-[8%] xl:left-[10%]"
+                                className="absolute left-0 z-30 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#131829] text-white transition hover:border-white/35 hover:bg-[#1B2136] disabled:cursor-not-allowed disabled:opacity-25 md:left-[8%] xl:left-[10%]"
+                                style={{ top: `calc((100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px) / 2 - 40px)` }}
                                 aria-label="Afficher l’élément précédent"
                               >
                                 <ChevronLeft className="h-6 w-6" strokeWidth={2.2} />
@@ -1717,7 +1823,8 @@ return (
                                   setSelectedFinalIndex((current) => Math.min(finalQuestionSnapshots.length, current + 1))
                                 }
                                 disabled={selectedFinalIndex >= finalQuestionSnapshots.length}
-                                className="absolute right-0 top-1/2 z-30 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#131829] text-white transition hover:border-white/35 hover:bg-[#1B2136] disabled:cursor-not-allowed disabled:opacity-25 md:right-[8%] xl:right-[10%]"
+                                className="absolute right-0 z-30 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#131829] text-white transition hover:border-white/35 hover:bg-[#1B2136] disabled:cursor-not-allowed disabled:opacity-25 md:right-[8%] xl:right-[10%]"
+                                style={{ top: `calc((100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px) / 2 - 40px)` }}
                                 aria-label="Afficher l’élément suivant"
                               >
                                 <ChevronRight className="h-6 w-6" strokeWidth={2.2} />
@@ -1732,7 +1839,10 @@ return (
                               </div>
                             </div>
                           ) : (
-                            <div className="flex flex-col items-center pb-8 pt-16 md:pt-20">
+                            <div className="flex flex-col items-center pb-8 pt-10 md:pt-12">
+                              <h2 className="font-brand text-[28px] font-black uppercase italic leading-none tracking-[0.055em] text-white md:text-[34px]">
+                                Question {selectedFinalIndex} / {finalQuestionSnapshots.length}
+                              </h2>
                               {finalTrackerItems.length > 1 ? (
                                 <div className="order-last mt-14 flex flex-wrap items-center justify-center gap-2">
                                   {finalTrackerItems.slice(1).map((status, idx) => {
@@ -1768,44 +1878,46 @@ return (
                                   })}
                                 </div>
                               ) : null}
-                              <QuestionPanel
-                                question={selectedFinalQuestionPanel}
-                                index={selectedFinalIndex - 1}
-                                totalQuestions={finalQuestionSnapshots.length}
-                                lives={0}
-                                totalLives={TEXT_LIVES}
-                                remainingSeconds={null}
-                                timerProgress={0}
-                                isReveal={false}
-                                isPlaying={false}
-                                inputRef={inputRef}
-                                textAnswer=""
-                                wrongTextAnswer={null}
-                                textLocked
-                                onChangeText={() => {}}
-                                onSubmitText={() => {}}
-                                onShowChoices={() => {}}
-                                feedback={null}
-                                feedbackResponseMs={null}
-                                feedbackWasCorrect={null}
-                                feedbackCorrectLabel={selectedFinalQuestion?.correctLabel ?? null}
-                                feedbackPoints={null}
-                                reserveFeedbackSpace
-                                thumbButtonBackgroundClass="bg-[#191c2c]"
-                                qcmChoiceBackgroundClass="bg-[#272b40] hover:bg-[#30354a] active:bg-[#373c55]"
-                                answerMode={null}
-                                choicesRevealed={false}
-                                showChoices={false}
-                                choices={null}
-                                selectedChoice={null}
-                                correctChoiceId={null}
-                                onSelectChoice={() => {}}
-                                questionProgress={[]}
-                                showTimer={false}
-                                showAnswerSection={false}
-                                showProgress={false}
-                                animateQuestionText={false}
-                              />
+                              <div className="mt-10 w-full">
+                                <QuestionPanel
+                                  question={selectedFinalQuestionPanel}
+                                  index={selectedFinalIndex - 1}
+                                  totalQuestions={finalQuestionSnapshots.length}
+                                  lives={0}
+                                  totalLives={TEXT_LIVES}
+                                  remainingSeconds={null}
+                                  timerProgress={0}
+                                  isReveal={false}
+                                  isPlaying={false}
+                                  inputRef={inputRef}
+                                  textAnswer=""
+                                  wrongTextAnswer={null}
+                                  textLocked
+                                  onChangeText={() => {}}
+                                  onSubmitText={() => {}}
+                                  onShowChoices={() => {}}
+                                  feedback={null}
+                                  feedbackResponseMs={null}
+                                  feedbackWasCorrect={null}
+                                  feedbackCorrectLabel={selectedFinalQuestion?.correctLabel ?? null}
+                                  feedbackPoints={null}
+                                  reserveFeedbackSpace
+                                  thumbButtonBackgroundClass="bg-[#191c2c]"
+                                  qcmChoiceBackgroundClass="bg-[#272b40] hover:bg-[#30354a] active:bg-[#373c55]"
+                                  answerMode={null}
+                                  choicesRevealed={false}
+                                  showChoices={false}
+                                  choices={null}
+                                  selectedChoice={null}
+                                  correctChoiceId={null}
+                                  onSelectChoice={() => {}}
+                                  questionProgress={[]}
+                                  showTimer={false}
+                                  showAnswerSection={false}
+                                  showProgress={false}
+                                  animateQuestionText={false}
+                                />
+                              </div>
 
                               {selectedFinalQuestion ? (
                                 <div className="mt-10 inline-flex items-center rounded-[6px] border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-slate-50">
@@ -1817,6 +1929,9 @@ return (
                               {selectedFinalStatsLayout ? (
                                 <div className="mx-auto mt-10 w-[420px] max-w-full space-y-4">
                                   <div className="flex items-center gap-2">
+                                    {selectedFinalStatsLayout.hasNoResponses ? (
+                                      <div className="h-[10px] w-full rounded-[3px] bg-slate-500" />
+                                    ) : null}
                                     {selectedFinalStatsLayout.stats.correct > 0 ? (
                                       <div
                                         className="h-[10px] min-w-[14px] rounded-[3px] bg-emerald-600"
@@ -1838,6 +1953,16 @@ return (
                                   </div>
 
                                   <div className="flex items-center gap-2 text-white">
+                                    {selectedFinalStatsLayout.hasNoResponses ? (
+                                      <div className="inline-flex w-full items-center justify-center gap-3" aria-label="Aucune réponse">
+                                        <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
+                                          0
+                                        </span>
+                                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-slate-500 text-[12px] font-semibold leading-none text-white">
+                                          -
+                                        </span>
+                                      </div>
+                                    ) : null}
                                     {selectedFinalStatsLayout.stats.correct > 0 ? (
                                       <div
                                         className="inline-flex items-center justify-center gap-3"

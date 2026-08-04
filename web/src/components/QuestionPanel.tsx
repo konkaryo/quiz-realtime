@@ -497,7 +497,7 @@ export default function DailyQuestionPanel(props: Props) {
   const thumbDownMenuRef = useRef<HTMLDivElement | null>(null);
   const thumbButtonClass = (vote: "up" | "down") =>
     [
-      `group relative inline-flex h-9 w-9 items-center justify-center rounded-[10px] ${thumbButtonBackgroundClass} transition duration-150`,
+      `group relative inline-flex h-8 w-8 items-center justify-center rounded-[9px] ${thumbButtonBackgroundClass} transition duration-150`,
       "shadow-[0_8px_18px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)]",
       "hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A1022]",
       thumbVote === vote ? "brightness-125" : "opacity-80",
@@ -644,7 +644,7 @@ export default function DailyQuestionPanel(props: Props) {
               src={thumbVote === "up" ? thumbActiveIcon : thumbInactiveIcon}
               alt=""
               aria-hidden
-              className="h-[20px] w-[20px] object-contain opacity-75 transition group-hover:opacity-95 group-aria-pressed:opacity-100"
+              className="h-[18px] w-[18px] object-contain opacity-75 transition group-hover:opacity-95 group-aria-pressed:opacity-100"
             />
           </button>
 
@@ -672,7 +672,7 @@ export default function DailyQuestionPanel(props: Props) {
               src={thumbVote === "down" ? thumbActiveIcon : thumbInactiveIcon}
               alt=""
               aria-hidden
-              className="h-[20px] w-[20px] rotate-180 object-contain opacity-75 transition group-hover:opacity-95 group-aria-pressed:opacity-100"
+              className="h-[18px] w-[18px] rotate-180 object-contain opacity-75 transition group-hover:opacity-95 group-aria-pressed:opacity-100"
             />
           </button>
         </div>

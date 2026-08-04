@@ -73,7 +73,7 @@ export function FinalLeaderboard({ rows }: { rows: Row[]; selfId?: string | null
           </h2>
         </header>
 
-        <div className="grid w-full grid-cols-1 place-items-center gap-6 md:max-w-[720px] md:grid-cols-3 md:items-center md:gap-2">
+        <div className="grid w-full grid-cols-1 place-items-center gap-3 md:max-w-[640px] md:grid-cols-3 md:items-center md:gap-0">
           {winnerCards.map((card) => {
             const row = rows[card.rank - 1];
             if (!row) {
