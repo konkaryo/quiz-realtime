@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Search, Star } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Search, Star, TrendingUp } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import bitIconUrl from "@/assets/bit.png";
-import goldRankingUrl from "@/assets/gold_ranking.png";
-import silverRankingUrl from "@/assets/silver_ranking.png";
-import bronzeRankingUrl from "@/assets/bronze_ranking.png";
+import { getLevelFromExperience } from "@/utils/experience";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? (typeof window !== "undefined" ? window.location.origin : "");
 
@@ -24,7 +21,7 @@ type LeaderboardEntry = {
 
 type SelfLeaderboard = { rank: number; entry: LeaderboardEntry } | null;
 
-type DailyLeaderboardEntry = { playerId: string; playerName: string; score: number; gamesPlayed?: number; img?: string | null };
+type DailyLeaderboardEntry = { playerId: string; playerName: string; score: number; gamesPlayed?: number; img?: string | null; experience?: number };
 
 const PAGE_SIZE = 10;
 
@@ -74,6 +71,7 @@ function normalizeLeaderboardEntry(row: LeaderboardEntry | DailyLeaderboardEntry
     img: row.img,
     score: row.score,
     gamesPlayed: row.gamesPlayed ?? 0,
+    experience: row.experience ?? 0,
   };
 }
 
@@ -95,30 +93,21 @@ function getEntryValue(entry: LeaderboardEntry, mode: ScoreMode) {
   return mode === "daily" ? entry.score ?? 0 : entry.bits ?? 0;
 }
 
-function ValueBadge({ mode }: { mode: ScoreMode }) {
-  const sizeClass = mode === "bits" ? "h-6 w-6" : "h-4 w-4";
-  return <img src={bitIconUrl} alt="" className={`${sizeClass} object-contain`} draggable={false} />;
+function getScoreUnit(mode: ScoreMode) {
+  return mode === "daily" ? "pts" : "bits";
 }
 
-function RankDisplay({ rank }: { rank: number }) {
-  const topRankImage = rank === 1 ? goldRankingUrl : rank === 2 ? silverRankingUrl : rank === 3 ? bronzeRankingUrl : null;
-
-  if (topRankImage) {
-    return (
-      <div className="relative flex h-[25px] items-center justify-center overflow-visible">
-        <img src={topRankImage} alt={`Rang ${rank}`} className="pointer-events-none absolute h-[32px] w-[106px] max-w-none object-contain" draggable={false} />
-      </div>
-    );
-  }
-  return <div className="text-center font-inter text-[13px] font-black leading-none text-slate-200">{rank}</div>;
+function RankDisplay({ rank, highlighted = false }: { rank: number; highlighted?: boolean }) {
+  const color = highlighted && rank > 3 ? "#8B5CF6" : rank === 1 ? "#FFD832" : rank === 2 ? "#9DB9FF" : rank === 3 ? "#FF865E" : "#505985";
+  return <div className="mx-auto grid h-7 w-7 place-items-center" style={{ backgroundColor: color, clipPath: "polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)" }}><span className="font-brutal text-[13px] leading-none text-[#11131F]">{rank}</span></div>;
 }
 
 function rankRowBackground(rank: number, highlighted = false) {
-  if (rank === 1) return "linear-gradient(90deg, rgba(255,216,50,0.18) 0%, rgba(255,216,50,0.08) 32%, rgba(255,216,50,0) 100%)";
-  if (rank === 2) return "linear-gradient(90deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.07) 32%, rgba(255,255,255,0) 100%)";
-  if (rank === 3) return "linear-gradient(90deg, rgba(243,154,69,0.18) 0%, rgba(243,154,69,0.08) 32%, rgba(243,154,69,0) 100%)";
-  if (highlighted) return "linear-gradient(90deg, rgba(110,75,255,0.22) 0%, rgba(110,75,255,0.11) 32%, rgba(110,75,255,0) 100%)";
-  return undefined;
+  if (rank === 1) return "linear-gradient(90deg, rgba(255,216,50,0.18) 0%, rgba(255,216,50,0.08) 35%, #191c2c 100%)";
+  if (rank === 2) return "linear-gradient(90deg, rgba(214,222,234,0.16) 0%, rgba(214,222,234,0.08) 35%, #191c2c 100%)";
+  if (rank === 3) return "linear-gradient(90deg, rgba(243,154,69,0.18) 0%, rgba(243,154,69,0.08) 35%, #191c2c 100%)";
+  if (highlighted) return "linear-gradient(90deg, rgba(139,92,246,0.22) 0%, rgba(139,92,246,0.1) 35%, #191c2c 100%)";
+  return "#191c2c";
 }
 
 function rankAccentColor(rank: number, highlighted = false) {
@@ -127,6 +116,69 @@ function rankAccentColor(rank: number, highlighted = false) {
   if (rank === 3) return "#F39A45";
   if (highlighted) return "#8B5CF6";
   return undefined;
+}
+
+function selfCardAccent(rank: number) {
+  if (rank === 1) return { accent: "#FFD33F", score: "#FFD33F" };
+  if (rank === 2) return { accent: "#91AFFF", score: "#AFC5FF" };
+  if (rank === 3) return { accent: "#FF865E", score: "#FF865E" };
+  return { accent: "#8B5CF6", score: "#A78BFA" };
+}
+
+function SelfPlayerCard({ self, totalPlayers, mode }: { self: NonNullable<SelfLeaderboard>; totalPlayers: number; mode: ScoreMode }) {
+  const { rank, entry } = self;
+  const colors = selfCardAccent(rank);
+  const points = getEntryValue(entry, mode);
+  const scoreUnit = getScoreUnit(mode);
+  const percentile = totalPlayers > 0 ? Math.max(1, Math.ceil((rank / totalPlayers) * 100)) : null;
+
+  return (
+    <article
+      className="relative w-[230px] rounded-[9px] p-px text-center shadow-[0_18px_46px_rgba(0,0,0,0.32)]"
+      style={{ background: `linear-gradient(180deg, ${colors.accent} 0%, #11131F 42%)` }}
+      aria-label={`${entry.name}, ${rank}${rank === 1 ? "er" : "e"} au classement`}
+    >
+      <div
+        className="absolute -top-3.5 left-1/2 z-20 grid h-8 w-8 -translate-x-1/2 place-items-center"
+        style={{ backgroundColor: colors.accent, clipPath: "polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)" }}
+      >
+        <span className="font-brutal text-[16px] leading-none text-[#11131F]">{rank}</span>
+      </div>
+      <span className="pointer-events-none absolute inset-px translate-y-1 rounded-[8px]" style={{ backgroundColor: colors.accent }} aria-hidden="true" />
+
+      <div className="relative flex min-h-[280px] flex-col items-center rounded-[8px] bg-[linear-gradient(180deg,#24273C_0%,#151723_100%)] px-3 pb-3.5 pt-8">
+        <div className="grid h-[58px] w-[58px] place-items-center rounded-full" style={{ boxShadow: `0 0 0 2px ${colors.accent}` }}>
+          {entry.img ? (
+            <span className="block h-full w-full rounded-full bg-[#D8DCE3] bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url("${entry.img}")` }} aria-hidden="true" />
+          ) : (
+            <div className="grid h-full w-full place-items-center rounded-full font-inter text-xl font-black text-white" style={{ background: avatarFallback(entry.name, rank - 1) }}>
+              {initialsFromName(entry.name)}
+            </div>
+          )}
+        </div>
+
+        <h2 className="notranslate mt-2 max-w-full truncate font-inter text-[15px] font-semibold leading-tight text-white" translate="no" lang="zxx">{entry.name}</h2>
+        <div className="mt-3.5 leading-none" style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", "Acumin Pro Extra Condensed", sans-serif', fontStyle: "italic", color: colors.score }}>
+          <span className="text-[32px]">{formatValue(points)}</span><span className="ml-1 text-[17px]">{scoreUnit}</span>
+        </div>
+
+        <div className="mt-4 grid w-[88%] grid-cols-2 gap-1.5">
+          <div className="rounded-[6px] border border-white/[0.09] bg-[#11131f]/25 px-1.5 py-1.5">
+            <div className="font-acuminSemiBold text-[9px] uppercase text-slate-400">Bits</div>
+            <div className="mt-1 flex items-center justify-center gap-1 font-inter text-[11px] font-extrabold tabular-nums text-white">
+              {entry.bits === undefined ? "—" : formatValue(entry.bits)}
+            </div>
+          </div>
+          <div className="rounded-[6px] border border-white/[0.09] bg-[#11131f]/25 px-1.5 py-1.5">
+            <div className="font-acuminSemiBold text-[9px] uppercase text-slate-400">Parties</div>
+            <div className="mt-1 font-inter text-[11px] font-extrabold tabular-nums text-white">{formatValue(entry.gamesPlayed ?? 0)}</div>
+          </div>
+        </div>
+
+        {percentile !== null && <div className="mt-auto flex items-center gap-1.5 pt-3 font-inter text-[10px] font-extrabold" style={{ color: colors.score }}><TrendingUp className="h-4 w-4" aria-hidden="true" />Top {percentile}%</div>}
+      </div>
+    </article>
+  );
 }
 
 function isEditableKeyboardTarget(target: EventTarget | null) {
@@ -151,23 +203,13 @@ function getVisiblePageButtons(currentPage: number, totalPages: number) {
   });
 }
 
-function PlayerCell({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
-  return (
-    <div className="flex min-w-0 items-center gap-3">
-      {entry.img ? (
-        <img src={entry.img} alt={entry.name} className="h-8 w-8 rounded-full object-cover" loading="lazy" draggable={false} />
-      ) : (
-        <div className="grid h-8 w-8 place-items-center rounded-full font-inter text-[10px] font-bold text-white" style={{ background: avatarFallback(entry.name, rank - 1) }}>{initialsFromName(entry.name)}</div>
-      )}
-      <span className="notranslate block truncate font-inter text-[13px] font-extrabold text-slate-100" spellCheck={false} translate="no" lang="zxx">{entry.name}</span>
-    </div>
-  );
-}
-
 function LeaderboardRow({ entry, rank, mode, highlighted = false, onClick }: { entry: LeaderboardEntry; rank: number; mode: ScoreMode; highlighted?: boolean; onClick?: (entry: LeaderboardEntry) => void }) {
   const rowBackground = rankRowBackground(rank, highlighted);
-  const accentColor = rankAccentColor(rank, highlighted);
+  const accentColor = rankAccentColor(rank, highlighted) ?? "#505985";
+  const scoreColor = rankAccentColor(rank, highlighted) ?? "#8F96C8";
+  const scoreUnit = getScoreUnit(mode);
   const isClickable = Boolean(onClick);
+  const level = getLevelFromExperience(entry.experience ?? 0);
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (!onClick || (event.key !== "Enter" && event.key !== " ")) return;
@@ -182,22 +224,23 @@ function LeaderboardRow({ entry, rank, mode, highlighted = false, onClick }: { e
       onClick={onClick ? () => onClick(entry) : undefined}
       onKeyDown={handleKeyDown}
       className={[
-        "grid grid-cols-[88px_minmax(150px,1fr)_170px_110px] items-center border-t border-white/[0.07] pl-0 pr-5 py-2 transition",
-        isClickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E4BFF] focus-visible:ring-inset" : "",
-        rowBackground ? "" : "bg-transparent hover:bg-white/[0.035]",
+        "grid min-h-[52px] grid-cols-[86px_48px_minmax(120px,1fr)_88px] items-center overflow-hidden rounded-[5px] border border-white/[0.055] pr-3 transition",
+        isClickable ? "cursor-pointer hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6E4BFF]" : "",
       ].filter(Boolean).join(" ")}
       style={{
-        ...(rowBackground ? { background: rowBackground } : {}),
-        ...(accentColor ? { boxShadow: `inset 3px 0 0 ${accentColor}` } : {}),
+        background: rowBackground,
+        boxShadow: `inset 4px 0 0 ${accentColor}`,
       }}
     >
-      <RankDisplay rank={rank} />
-      <PlayerCell entry={entry} rank={rank} />
-      <div className="flex items-center justify-end gap-1.5 font-inter tabular-nums text-[13px] font-extrabold text-slate-100">
-        {formatValue(getEntryValue(entry, mode))}
-        <ValueBadge mode={mode} />
+      <RankDisplay rank={rank} highlighted={highlighted} />
+      <div className="grid h-11 w-11 place-items-center rounded-full" style={{ boxShadow: `0 0 0 1px ${accentColor}` }}>
+        {entry.img ? <span className="block h-full w-full rounded-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url("${entry.img}")` }} aria-hidden="true" /> : <div className="grid h-full w-full place-items-center rounded-full font-inter text-xs font-black text-white" style={{ background: avatarFallback(entry.name, rank - 1) }}>{initialsFromName(entry.name)}</div>}
       </div>
-      <div className="text-right font-inter tabular-nums text-[13px] font-extrabold text-slate-100">{formatValue(entry.gamesPlayed ?? 0)}</div>
+      <div className="min-w-0 pl-2">
+        <div className="notranslate truncate font-inter text-[14px] font-extrabold leading-tight text-white" translate="no" lang="zxx">{entry.name}</div>
+        <div className="mt-0.5 font-inter text-[10px] font-semibold leading-none text-slate-300">Niveau {level}</div>
+      </div>
+      <div className="text-right leading-none" style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", "Acumin Pro Extra Condensed", sans-serif', fontStyle: "italic", color: scoreColor }}><span className="text-[25px]">{formatValue(getEntryValue(entry, mode))}</span><span className="ml-1 text-[14px]">{scoreUnit}</span></div>
     </div>
   );
 }
@@ -276,7 +319,6 @@ export default function RankingPage() {
     },
   } : null, [profileImages, self]);
   const lastUpdatedLabel = lastUpdated ? lastUpdated.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "--:--";
-  const selfValue = displayedSelf ? getEntryValue(displayedSelf.entry, scoreMode) : 0;
   const visiblePageButtons = getVisiblePageButtons(currentPage, totalPages);
 
   useEffect(() => {
@@ -324,86 +366,53 @@ export default function RankingPage() {
     navigate(`/players/${entry.id}/profile`);
   }
 
-  function showSelfRanking() {
-    if (!self) return;
-    const index = entries.findIndex((entry) => entry.id === self.entry.id);
-    if (index < 0) return;
-
-    const pageStart = Math.floor(index / PAGE_SIZE) * PAGE_SIZE;
-    const maxStartIndex = Math.max(0, entries.length - PAGE_SIZE);
-
-    setSearch("");
-    setStartIndex(Math.min(maxStartIndex, pageStart));
-  }
-
   return (
     <div className="relative min-h-full overflow-hidden font-inter text-slate-50" spellCheck={false}>
       <div aria-hidden className="fixed inset-0 bg-[#11131f]" />
-      <div className="relative z-10 mx-auto flex max-w-[1370px] flex-col px-4 py-8 sm:px-8 lg:px-10">
-        <section className="grid w-full gap-8 lg:grid-cols-[245px_minmax(0,1fr)] lg:items-start">
-          <aside className="flex flex-col gap-5 lg:sticky lg:top-8">
-            <div className="rounded-xl border border-white/[0.06] bg-[#191c2c] p-4 shadow-[0_22px_55px_rgba(0,0,0,0.34)] backdrop-blur-xl">
-              <h2 className="font-brandUpright text-[21px] uppercase leading-none text-slate-200">Filtres</h2>
-              <div className="mt-4 flex flex-col gap-2">
-                {FILTERS.map((option) => {
-                  const Icon = option.icon;
-                  return <button key={option.value} type="button" onClick={() => setKind(option.value)} className={["flex items-center gap-3 rounded-[5px] px-3 py-2.5 text-left font-inter text-[12px] font-extrabold transition", kind === option.value ? "bg-[#5F55C8] text-white" : "bg-white/[0.045] text-slate-300 hover:bg-white/10 hover:text-white"].join(" ")}><Icon className="h-4 w-4" aria-hidden="true" />{option.label}</button>;
-                })}
-              </div>
-              {kind === "daily" && <div className="mt-6"><label className="font-acuminSemiBold text-[11px] font-semibold uppercase text-slate-400">Période</label><select value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} className="mt-2 h-9 w-full rounded-[5px] border border-white/[0.06] bg-[#131829] px-3 font-inter text-[12px] font-bold text-slate-200 outline-none">{monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>}
-            </div>
-
-            {displayedSelf && (
-              <div className="rounded-xl border border-white/[0.06] bg-[#191c2c] p-4 shadow-[0_22px_55px_rgba(0,0,0,0.34)] backdrop-blur-xl">
-                <h2 className="font-brandUpright text-[21px] uppercase leading-none text-slate-200">Votre classement</h2>
-
-                <div className="mt-8 text-center">
-                  <div className="font-brandUpright text-[44px] leading-none text-white">#{formatValue(displayedSelf.rank)}</div>
-                  <div className="text-[12px] font-inter text-slate-400">Sur {formatValue(entries.length)} joueurs</div>
-                </div>
-
-                <div
-                  aria-label={`${formatValue(selfValue)} bits`}
-                  className="relative mx-auto mt-4 flex h-[45px] w-[170px] -translate-x-1 items-center justify-start font-inter font-semibold text-white"
-                >
-                  <span className="absolute left-7 right-0 h-[26px] rounded-full bg-[#10131E]" aria-hidden="true" />
-                  <img
-                    src={bitIconUrl}
-                    alt=""
-                    aria-hidden="true"
-                    className="relative z-[1] h-[55px] w-[55px] shrink-0 object-contain drop-shadow-[0_3px_7px_rgba(0,0,0,0.5)]"
-                    draggable={false}
-                  />
-                  <span className="relative z-[1] inline-flex min-w-[115px] items-center justify-center font-inter text-[13px] font-bold leading-none tabular-nums">
-                    {formatValue(selfValue)}
-                  </span>
-                </div>
-
-                <button type="button" onClick={showSelfRanking} className="mt-5 flex h-12 w-full items-center justify-center gap-4 rounded-[8px] bg-white/[0.055] font-inter text-[12px] font-extrabold text-white transition hover:bg-white/10 hover:text-white">
-                  Voir mon classement
-                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-            )}
-          </aside>
+      <div className="relative z-10 mx-auto flex max-w-[1370px] flex-col px-4 pb-8 pt-16 sm:px-8 lg:px-10 lg:pt-20">
+        <section className="grid w-full justify-center gap-10 lg:grid-cols-[minmax(500px,780px)_245px] lg:items-start lg:gap-12">
 
           <main className="min-w-0">
-            <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-              <div><h1 className="font-brandUpright text-[38px] uppercase leading-none tracking-[0.01em] text-white sm:text-[46px]">Classement</h1></div>
-              <div className="relative w-full max-w-[330px]"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" /><input value={search} onChange={(event) => { setSearch(event.target.value); setStartIndex(0); }} placeholder="Rechercher un joueur..." spellCheck={false} autoCorrect="off" autoCapitalize="off" autoComplete="off" className="h-9 w-full rounded-[5px] border border-white/[0.06] bg-[#191c2c] pl-10 pr-4 font-inter text-[12px] font-semibold text-white outline-none placeholder:text-slate-500 focus:border-[#6E4BFF]" /></div>
-            </div>
-
-            <div className="overflow-hidden rounded-[7px] border border-white/[0.06] bg-[#191c2c] shadow-[0_22px_80px_rgba(0,0,0,0.34)]">
-              <div className="grid min-w-[650px] grid-cols-[88px_minmax(150px,1fr)_170px_110px] pl-0 pr-5 py-3 font-acuminSemiBold text-[11px] font-semibold uppercase leading-none tracking-[0.04em] text-slate-400"><div className="text-center">Rang</div><div>Joueur</div><div className="text-right">{kind === "general" ? "Bits" : "Points"}</div><div className="text-right">Parties</div></div>
-              <div className="min-w-[650px] font-inter">
-                {loading && <div className="border-t border-white/[0.07] px-5 py-4 font-inter text-sm font-semibold text-slate-300">Chargement du classement…</div>}
-                {error && !loading && <div className="border-t border-white/[0.07] px-5 py-4 font-inter text-sm font-semibold text-rose-200">{error}</div>}
-                {!loading && !error && displayedEntries.length === 0 && <div className="border-t border-white/[0.07] px-5 py-3 font-inter text-[12px] font-medium text-slate-400">Aucune donnée disponible pour ce classement.</div>}
+            <div className="w-full max-w-[780px] overflow-x-auto rounded-[7px] bg-transparent p-0 shadow-[0_22px_80px_rgba(0,0,0,0.22)]">
+              <div className="min-w-[500px] space-y-1 font-inter">
+                {loading && <div className="px-5 py-4 font-inter text-sm font-semibold text-slate-300">Chargement du classement…</div>}
+                {error && !loading && <div className="px-5 py-4 font-inter text-sm font-semibold text-rose-200">{error}</div>}
+                {!loading && !error && displayedEntries.length === 0 && <div className="px-5 py-3 font-inter text-[12px] font-medium text-slate-400">Aucune donnée disponible pour ce classement.</div>}
                 {!loading && !error && displayedEntries.map((entry, index) => { const absoluteRank = entry.rank ?? clampedStartIndex + index + 1; return <LeaderboardRow key={`${entry.id}-${kind}-${absoluteRank}`} entry={entry} rank={absoluteRank} mode={scoreMode} highlighted={displayedSelf?.entry.id === entry.id} onClick={showPlayerProfile} />; })}
               </div>
-              <div className="flex min-w-[650px] items-center justify-between border-t border-white/[0.07] px-5 py-3 font-inter text-[12px] font-semibold text-slate-400"><div className="flex items-center gap-2"><Clock3 className="h-3.5 w-3.5" />Mis à jour à {lastUpdatedLabel}</div><div className="flex items-center gap-2"><button type="button" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="grid h-8 w-8 place-items-center rounded-[5px] bg-white/[0.055] text-white disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>{visiblePageButtons.map((page) => typeof page === "number" ? <button key={page} type="button" onClick={() => goToPage(page)} className={["h-8 min-w-8 rounded-[5px] px-2 font-inter font-black", currentPage === page ? "bg-[#6E4BFF] text-white" : "bg-white/[0.045] text-slate-300"].join(" ")}>{page}</button> : <span key={page} className="px-1">…</span>)}<button type="button" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="grid h-8 w-8 place-items-center rounded-[5px] bg-white/[0.055] text-white disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button></div></div>
+              <div className="mt-2 flex min-w-[500px] items-center justify-between px-1 pb-1 pt-3 font-inter text-[12px] font-semibold text-slate-400"><div className="flex items-center gap-2"><Clock3 className="h-3.5 w-3.5" />Mis à jour à {lastUpdatedLabel}</div><div className="flex items-center gap-2"><button type="button" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="grid h-8 w-8 place-items-center rounded-[5px] bg-white/[0.055] text-white disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>{visiblePageButtons.map((page) => typeof page === "number" ? <button key={page} type="button" onClick={() => goToPage(page)} className={["h-8 min-w-8 rounded-[5px] px-2 font-inter font-black", currentPage === page ? "bg-[#6E4BFF] text-white" : "bg-white/[0.045] text-slate-300"].join(" ")}>{page}</button> : <span key={page} className="px-1">…</span>)}<button type="button" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="grid h-8 w-8 place-items-center rounded-[5px] bg-white/[0.055] text-white disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button></div></div>
             </div>
           </main>
+          <aside className="relative flex min-h-[560px] flex-col lg:sticky lg:top-20">
+            <div className="flex flex-col gap-2">
+              <select
+                value={kind}
+                onChange={(event) => setKind(event.target.value as RankingKind)}
+                className="h-10 w-full rounded-[5px] border border-white/[0.06] bg-[#191c2c] px-3 font-inter text-[12px] font-bold text-slate-200 outline-none"
+                aria-label="Type de classement"
+              >
+                {FILTERS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              {kind === "daily" && (
+                <select
+                  value={selectedMonth}
+                  onChange={(event) => setSelectedMonth(event.target.value)}
+                  className="h-10 w-full rounded-[5px] border border-white/[0.06] bg-[#191c2c] px-3 font-inter text-[12px] font-bold text-slate-200 outline-none"
+                  aria-label="Mois du défi du jour"
+                >
+                  {monthOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              )}
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <input value={search} onChange={(event) => { setSearch(event.target.value); setStartIndex(0); }} placeholder="Rechercher un joueur..." spellCheck={false} autoCorrect="off" autoCapitalize="off" autoComplete="off" className="h-10 w-full rounded-[5px] border border-white/[0.06] bg-[#191c2c] pl-10 pr-3 font-inter text-[12px] font-semibold text-white outline-none placeholder:text-slate-500 focus:border-[#6E4BFF]" />
+              </div>
+            </div>
+
+            <div className="mt-20 flex justify-center lg:absolute lg:left-0 lg:right-0 lg:top-64 lg:mt-0">
+              {displayedSelf && <SelfPlayerCard self={displayedSelf} totalPlayers={entries.length} mode={scoreMode} />}
+            </div>
+          </aside>
         </section>
       </div>
     </div>

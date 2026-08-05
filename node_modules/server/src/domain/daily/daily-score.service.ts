@@ -9,6 +9,7 @@ export type DailyChallengeLeaderboardEntry = {
   score: number;
   gamesPlayed?: number;
   img?: string | null;
+  experience?: number;  
 };
 
 export type DailyChallengeSelfLeaderboard = {
@@ -412,7 +413,7 @@ export async function getMonthlyDailyLeaderboard(
       select: {
         totalScore: true,
         challengesPlayed: true,
-        player: { select: { id: true, name: true, img: true } },
+        player: { select: { id: true, name: true, img: true, experience: true } },
       },
       ...(limit === undefined ? {} : { take: limit }),
     })
@@ -421,12 +422,13 @@ export async function getMonthlyDailyLeaderboard(
       throw err;
     });
 
-  return rows.map((row: { totalScore: number; challengesPlayed: number; player: { id: string; name: string; img: string | null } }) => ({
+  return rows.map((row: { totalScore: number; challengesPlayed: number; player: { id: string; name: string; img: string | null; experience: number } }) => ({
     playerId: row.player.id,
     playerName: row.player.name,
     score: row.totalScore,
     gamesPlayed: row.challengesPlayed,
     img: includeImages ? toProfileUrl(row.player.img) : null,
+    experience: row.player.experience ?? 0,
   }));
 }
 
@@ -450,13 +452,13 @@ export async function getMonthlyDailySelfLeaderboard(
         playerId: true,
         totalScore: true,
         challengesPlayed: true,
-        player: { select: { id: true, name: true, img: true } },
+        player: { select: { id: true, name: true, img: true, experience: true } },
       },
     })
     .catch((err: unknown) => {
       if (isMissingDailyScoreTableError(err)) return [];
       throw err;
-    }) as Array<{ totalScore: number; challengesPlayed: number; playerId: string; player: { id: string; name: string; img: string | null } }>;
+    }) as Array<{ totalScore: number; challengesPlayed: number; playerId: string; player: { id: string; name: string; img: string | null; experience: number } }>;
 
   const index = rows.findIndex((row) => row.playerId === playerId);
   if (index < 0) return null;
@@ -470,6 +472,7 @@ export async function getMonthlyDailySelfLeaderboard(
       score: row.totalScore,
       gamesPlayed: row.challengesPlayed,
       img: includeImage ? toProfileUrl(row.player.img) : null,
+      experience: row.player.experience ?? 0,
     },
   };
 }

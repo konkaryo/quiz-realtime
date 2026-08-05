@@ -333,10 +333,12 @@ export async function startGameForRoom(
     const countdownUid = `${st.gameId}:pregame:${Date.now()}`;
     st.roundUid = countdownUid;
     const endsAt = Date.now() + countdownSeconds * 1000;
+    const countdownLeaderboard = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
     io.to(room.id).emit("game_countdown", {
       seconds: countdownSeconds,
       endsAt,
       serverNow: Date.now(),
+      leaderboard: countdownLeaderboard,
     });
     emitPublicRoomsUpdated(io);
     st.timer = setTimeout(() => {

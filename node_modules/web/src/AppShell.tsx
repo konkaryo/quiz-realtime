@@ -323,6 +323,7 @@ export default function AppShell() {
   const displayBitsRef = useRef(0);
   const [showJoinLoading, setShowJoinLoading] = useState(false);
   const [displayExperience, setDisplayExperience] = useState(0);
+  const [isSideNavigationOpen, setIsSideNavigationOpen] = useState(true);
   const displayExperienceRef = useRef(0);
   const isRoomRoute = location.pathname.startsWith("/room/");
   const showSideNavigation =
@@ -334,6 +335,7 @@ export default function AppShell() {
     location.pathname === "/private/join" ||
     location.pathname === "/rooms/new" ||
     /^\/rooms\/[^/]+\/lobby$/.test(location.pathname);
+  const sideNavigationVisible = showSideNavigation && isSideNavigationOpen;
   const joinLoadingPending =
     showJoinLoading ||
     (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
@@ -1116,7 +1118,33 @@ export default function AppShell() {
           borderBottom: "1px solid rgba(255,255,255,.06)",
         }}
       >
-        {/* Left: logo → renvoie à la home */}
+        {/* Left: toggle navigation verticale + logo → renvoie à la home */}
+        {showSideNavigation && (
+          <button
+            type="button"
+            onClick={() => setIsSideNavigationOpen((open) => !open)}
+            aria-label={isSideNavigationOpen ? "Masquer la navigation verticale" : "Afficher la navigation verticale"}
+            aria-pressed={isSideNavigationOpen}
+            style={{
+              display: "grid",
+              placeItems: "center",
+              width: 34,
+              height: 34,
+              border: 0,
+              borderRadius: 8,
+              background: "transparent",
+              cursor: "pointer",
+              flexShrink: 0,
+              padding: 0,
+            }}
+          >
+            <span aria-hidden style={{ display: "grid", gap: 4 }}>
+              <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
+              <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
+              <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
+            </span>
+          </button>
+        )}
         <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <img
             src={logoUrl}
@@ -1837,7 +1865,7 @@ export default function AppShell() {
         </div>
       </header>
 
-      {showSideNavigation && <SideNavigation />}
+      {sideNavigationVisible && <SideNavigation />}
 
       {/* ---- Page content ---- */}
       <main
@@ -1850,7 +1878,7 @@ export default function AppShell() {
           margin: "0 auto",
           fontFamily: "system-ui, sans-serif",
         }}
-        className={showSideNavigation ? "app-main--with-side-navigation" : undefined}
+        className={sideNavigationVisible ? "app-main--with-side-navigation" : undefined}
       >
         <Outlet />
       </main>

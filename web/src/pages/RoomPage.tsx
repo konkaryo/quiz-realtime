@@ -577,7 +577,7 @@ export default function RoomPage() {
 
     s.on(
       "game_countdown",
-      (p: { seconds?: number; endsAt?: number; serverNow?: number }) => {
+      (p: { seconds?: number; endsAt?: number; serverNow?: number; leaderboard?: LeaderRow[] }) => {
         const nextSkew =
           typeof p.serverNow === "number" ? p.serverNow - Date.now() : skew;
         if (typeof p.serverNow === "number") setSkew(nextSkew);
@@ -596,6 +596,7 @@ export default function RoomPage() {
         setGameCountdownTotal(countdownDurationSeconds);
         setGameCountdownEndsAt(countdownEndsAt);
         setGameCountdownDuration(countdownDurationSeconds * 1000);
+        if (Array.isArray(p.leaderboard)) setLeaderboard(applyAvatarOverrides(p.leaderboard));
         setQuestion(null);
         setRoundStartedAt(null);
         setMcChoices(null);
@@ -2056,13 +2057,10 @@ return (
                                   questionRevealStartedAtMs={questionRevealStartedAtMs}
                                 />
                               </div>
-                            ) : phase === "countdown" ? null : (
-                              <div className="rounded-2xl border border-white/10 bg-transparent px-4 py-10 text-center text-sm text-white/70">
-                                {phase === "between"
-                                  ? ""
-                                  : phase === "idle"
-                                  ? "En attente des joueurs…"
-                                  : "Préparation du prochain round…"}
+                            ) : phase === "countdown" || phase === "between" ? null : (
+                              <div className="flex min-h-[240px] translate-y-10 flex-col items-center justify-center gap-5 text-white">
+                                <div className="h-16 w-16 animate-spin rounded-full border-[7px] border-white/20 border-t-white" aria-hidden="true" />
+                                <p className="font-inter text-[18px] font-extrabold text-white/90">Question en cours...</p>
                               </div>
                             )}
                           </div>
