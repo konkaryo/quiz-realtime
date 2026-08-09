@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import hostCrown from "../assets/crown.png";
 import { Edit3 } from "lucide-react";
+import { getLevelFromExperience } from "../utils/experience";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -79,6 +80,7 @@ type LobbyPlayer = {
   id: string;
   name: string;
   img?: string | null;
+  experience?: number;
 };
 
 type LobbyStatePayload = {
@@ -101,6 +103,19 @@ type RoomSettingsResponse = {
     speedBonusEnabled?: boolean;
   };
 };
+
+const LOBBY_PLAYERS_PER_PAGE = 5;
+
+function LobbyLevelShield({ level }: { level: number }) {
+  return (
+    <span className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center text-white drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)]">
+      <svg viewBox="0 0 72 72" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true" focusable="false">
+        <path d="M36 3 64.6 19.5v33L36 69 7.4 52.5v-33L36 3z" fill="#172033" stroke="#8b5cf6" strokeWidth="2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      </svg>
+      <span className="relative z-10 font-inter text-[14px] font-black leading-none">{level}</span>
+    </span>
+  );
+}
 
 type RoomSettingsUpdatedPayload = {
   room?: RoomSettingsResponse["room"];
@@ -262,6 +277,7 @@ export default function CreateRoomPageCorrected() {
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [savedSettings, setSavedSettings] = useState<SavedRoomSettings | null>(null);
   const [lobbySocket, setLobbySocket] = useState<Socket | null>(null);
+  const [lobbyPlayerPage, setLobbyPlayerPage] = useState(0);
 
   const copyResetTimeoutRef = useRef<number | null>(null);
   const questionDurationHoldTimeoutRef = useRef<number | null>(null);
@@ -316,6 +332,15 @@ export default function CreateRoomPageCorrected() {
       return 0;
     });
   }, [lobbyPlayers, ownerPlayerId]);
+  const lobbyPlayerPageCount = Math.max(1, Math.ceil(orderedLobbyPlayers.length / LOBBY_PLAYERS_PER_PAGE));
+  const visibleLobbyPlayers = useMemo(
+    () => orderedLobbyPlayers.slice(lobbyPlayerPage * LOBBY_PLAYERS_PER_PAGE, (lobbyPlayerPage + 1) * LOBBY_PLAYERS_PER_PAGE),
+    [lobbyPlayerPage, orderedLobbyPlayers],
+  );
+
+  useEffect(() => {
+    setLobbyPlayerPage((page) => Math.min(page, lobbyPlayerPageCount - 1));
+  }, [lobbyPlayerPageCount]);
 
   function openPanel(panel: PanelKey) {
     if ((panel === "code" || panel === "lobby") && !createdRoomId) return;
@@ -852,7 +877,7 @@ export default function CreateRoomPageCorrected() {
       `}</style>
 
       <main
-        className="create-room-scroll fixed bottom-0 left-[84px] right-0 z-10 overflow-y-auto max-md:left-0"
+        className="create-room-scroll fixed bottom-0 left-[84px] right-0 z-10 overflow-hidden max-md:left-0 max-md:overflow-y-auto"
         style={{ top: `${NAVBAR_HEIGHT_PX}px` }}
       >
         <div className="mx-auto grid min-h-full w-full max-w-[1240px] grid-cols-[260px,minmax(0,1fr)] items-start gap-24 xl:gap-32 px-5 py-16 max-md:grid-cols-1 max-md:gap-8 sm:px-8 lg:px-10">
@@ -1191,49 +1216,33 @@ export default function CreateRoomPageCorrected() {
             )}
 
             {activePanel === "lobby" && (
-              <div id="create-room-panel-lobby" role="tabpanel" aria-label="Lobby" className="space-y-4">
+              <div id="create-room-panel-lobby" role="tabpanel" aria-label="Lobby">
                 {createdRoomId ? (
-                  <>
-                    <div className="rounded-[8px] border border-white/[0.06] bg-[#191c2c] p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="font-brandUpright text-[20px] uppercase leading-none text-white">
-                          Joueurs ({lobbyPlayers.length}/{maxPlayers})
-                        </h3>
-                      </div>
-                      <div className="space-y-2.5">
-                        {orderedLobbyPlayers.map((player) => {
-                          const isOwner = player.id === ownerPlayerId;
-                          return (
-                            <div key={player.id} className="grid grid-cols-[40px,1fr,auto] items-center gap-3 rounded bg-[#11131f] px-3 py-2.5">
-                              <img
-                                src={player.img || "/img/profiles/0.avif"}
-                                alt=""
-                                className="h-9 w-9 rounded-full object-cover"
-                                draggable={false}
-                              />
-                              <div className="flex min-w-0 items-center gap-2">
-                                <p className="truncate text-[15px] font-bold text-white">{player.name}</p>
-                                {isOwner && (
-                                  <img
-                                    src={hostCrown}
-                                    alt="Hôte"
-                                    className="h-[18px] w-[18px] shrink-0 object-contain"
-                                    draggable={false}
-                                  />
-                                )}
+                  <div className="flex min-h-[420px] flex-col items-center justify-center">
+                    <div className="flex min-h-[180px] w-full max-w-[760px] flex-wrap items-start justify-center gap-5">
+                      {visibleLobbyPlayers.map((player) => {
+                        const level = getLevelFromExperience(player.experience ?? 0);
+                        return (
+                          <article key={player.id} className="relative h-[176px] w-[130px] rounded-[7px] p-px text-center" style={{ background: "linear-gradient(180deg, #7C5CFF 0%, #191C2C 42%)" }}>
+                            <span className="pointer-events-none absolute inset-x-px bottom-[-4px] h-3 rounded-b-[7px] bg-[#7C5CFF]" aria-hidden="true" />
+                            <div className="relative flex h-full w-full flex-col items-center rounded-[6px] bg-[linear-gradient(180deg,#292D45_0%,#181B2B_100%)] px-3 pb-4 pt-7">
+                              <div className="h-[52px] w-[52px] overflow-hidden rounded-full border-2 border-[#8E63FF]">
+                                <img src={player.img || "/img/profiles/0.avif"} alt="" className="h-full w-full rounded-full object-cover" draggable={false} loading="lazy" />
                               </div>
-                              <span className="text-[12px] font-bold text-emerald-300">Prêt</span>
+                              <div className="mt-3 w-full truncate font-inter text-[14px] font-extrabold leading-none text-white">{player.name}</div>
+                              <div className="mt-auto" aria-label={`Niveau ${level}`}><LobbyLevelShield level={level} /></div>
                             </div>
-                          );
-                        })}
-                        {Array.from({ length: Math.max(0, Math.min(5, maxPlayers - lobbyPlayers.length)) }).map((_, index) => (
-                          <div key={`empty-${index}`} className="rounded bg-[#11131f] px-3 py-2.5 text-[13px] font-semibold text-white/25">
-                            En attente d'un joueur…
-                          </div>
-                        ))}
-                      </div>
+                          </article>
+                        );
+                      })}
                     </div>
-                  </>
+                    {orderedLobbyPlayers.length === 0 ? <p className="text-[13px] font-semibold text-white/40">En attente de joueurs…</p> : null}
+                    <div className="mt-16 flex h-3 items-center justify-center gap-2" aria-label={`Page ${lobbyPlayerPage + 1} sur ${lobbyPlayerPageCount}`}>
+                      {Array.from({ length: lobbyPlayerPageCount }, (_, page) => (
+                        <button key={page} type="button" onClick={() => setLobbyPlayerPage(page)} className={`h-2 w-2 rounded-[2px] transition-colors ${page === lobbyPlayerPage ? "bg-[#7C5CFF]" : "bg-slate-500/70"}`} aria-label={`Afficher la page ${page + 1}`} />
+                      ))}
+                    </div>
+                  </div>
                 ) : null}
               </div>
             )}

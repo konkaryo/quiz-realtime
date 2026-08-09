@@ -237,6 +237,7 @@ body[data-page="campaign"] {
 }
 
 .app-main--with-side-navigation {
+  --app-side-navigation-offset: 84px;
   padding-left: 84px;
 }
 
@@ -246,6 +247,7 @@ body[data-page="campaign"] {
   }
 
   .app-main--with-side-navigation {
+    --app-side-navigation-offset: 0px;
     padding-left: 0;
   }
 }

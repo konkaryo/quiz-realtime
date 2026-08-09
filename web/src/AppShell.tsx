@@ -126,6 +126,10 @@ function formatNotificationIssuedAt(issuedAt: string) {
 
 const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
 
+function isSideNavigationExpandedByDefault(pathname: string) {
+  return pathname !== "/login" && pathname !== "/register" && !pathname.startsWith("/room/");
+}
+
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
   (typeof window !== "undefined" ? window.location.origin : "");
@@ -323,25 +327,22 @@ export default function AppShell() {
   const displayBitsRef = useRef(0);
   const [showJoinLoading, setShowJoinLoading] = useState(false);
   const [displayExperience, setDisplayExperience] = useState(0);
-  const [isSideNavigationOpen, setIsSideNavigationOpen] = useState(true);
+  const [isSideNavigationOpen, setIsSideNavigationOpen] = useState(() =>
+    isSideNavigationExpandedByDefault(location.pathname),
+  );
   const displayExperienceRef = useRef(0);
   const isRoomRoute = location.pathname.startsWith("/room/");
-  const showSideNavigation =
-    location.pathname === "/" ||
-    location.pathname === "/me/profile" ||
-    /^\/players\/[^/]+\/profile$/.test(location.pathname) ||
-    location.pathname === "/multi/public" ||
-    location.pathname === "/multi/ranking" ||
-    location.pathname === "/private/join" ||
-    location.pathname === "/rooms/new" ||
-    /^\/rooms\/[^/]+\/lobby$/.test(location.pathname);
-  const sideNavigationVisible = showSideNavigation && isSideNavigationOpen;
+  const sideNavigationVisible = isSideNavigationOpen;
   const joinLoadingPending =
     showJoinLoading ||
     (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
   const shouldHideRoomContent = joinLoadingPending && isRoomRoute;
   const isGuest = !user || Boolean(user?.guest);
   const isAdmin = user?.role === "ADMIN";
+
+  useEffect(() => {
+    setIsSideNavigationOpen(isSideNavigationExpandedByDefault(location.pathname));
+  }, [location.pathname]);
 
   useEffect(() => {
    if (!isRoomRoute) {
@@ -1119,32 +1120,30 @@ export default function AppShell() {
         }}
       >
         {/* Left: toggle navigation verticale + logo → renvoie à la home */}
-        {showSideNavigation && (
-          <button
-            type="button"
-            onClick={() => setIsSideNavigationOpen((open) => !open)}
-            aria-label={isSideNavigationOpen ? "Masquer la navigation verticale" : "Afficher la navigation verticale"}
-            aria-pressed={isSideNavigationOpen}
-            style={{
-              display: "grid",
-              placeItems: "center",
-              width: 34,
-              height: 34,
-              border: 0,
-              borderRadius: 8,
-              background: "transparent",
-              cursor: "pointer",
-              flexShrink: 0,
-              padding: 0,
-            }}
-          >
-            <span aria-hidden style={{ display: "grid", gap: 4 }}>
-              <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
-              <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
-              <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
-            </span>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setIsSideNavigationOpen((open) => !open)}
+          aria-label={isSideNavigationOpen ? "Masquer la navigation verticale" : "Afficher la navigation verticale"}
+          aria-pressed={isSideNavigationOpen}
+          style={{
+            display: "grid",
+            placeItems: "center",
+            width: 34,
+            height: 34,
+            border: 0,
+            borderRadius: 8,
+            background: "transparent",
+            cursor: "pointer",
+            flexShrink: 0,
+            padding: 0,
+          }}
+        >
+          <span aria-hidden style={{ display: "grid", gap: 4 }}>
+            <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
+            <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
+            <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
+          </span>
+        </button>
         <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <img
             src={logoUrl}
@@ -1486,8 +1485,8 @@ export default function AppShell() {
                             width: 18,
                             height: 18,
                             borderRadius: 5,
-                            border: "1px solid rgba(255,255,255,.9)",
-                            background: "#FFFFFF",
+                            border: "1px solid #8E78FF",
+                            background: "#6F5BD4",
                             cursor: !canInvite || invitePendingId === player.id ? "not-allowed" : "pointer",
                             opacity: !canInvite ? 0.38 : invitePendingId === player.id ? 0.7 : 1,
                             flexShrink: 0,
@@ -1501,7 +1500,7 @@ export default function AppShell() {
                               width: 9,
                               height: 2,
                               borderRadius: 999,
-                              background: "#161926",
+                              background: "#FFFFFF",
                             }}
                           />
                           <span
@@ -1511,7 +1510,7 @@ export default function AppShell() {
                               width: 2,
                               height: 9,
                               borderRadius: 999,
-                              background: "#161926",
+                              background: "#FFFFFF",
                             }}
                           />
                         </button>
@@ -2001,7 +2000,7 @@ export default function AppShell() {
           </div>
 
           {isReward && (
-            <div style={{ marginTop: 8 }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
               <button
                 type="button"
                 onClick={(event) => {
@@ -2009,13 +2008,15 @@ export default function AppShell() {
                   void handleNotificationClaim(notif);
                 }}
                 style={{
-                  height: 30,
-                  padding: "0 12px",
-                  borderRadius: 6,
+                  height: 24,
+                  padding: "0 9px",
+                  borderRadius: 5,
                   border: "1px solid transparent",
                   background: "#6250C7",
                   color: "#ffffff",
-                  fontWeight: 800,
+                  fontFamily: '"Inter", system-ui, sans-serif',
+                  fontSize: 11,
+                  fontWeight: 600,
                   cursor: "pointer",
                 }}
               >

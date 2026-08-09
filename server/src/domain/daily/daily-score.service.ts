@@ -1,7 +1,7 @@
 // server/src/domain/daily/daily-score.service.ts
 import { NotificationType, Prisma, PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
-import { toProfileUrl } from "../media/media.service";
+import { toImgUrl, toProfileUrl } from "../media/media.service";
 
 export type DailyChallengeLeaderboardEntry = {
   playerId: string;
@@ -264,6 +264,30 @@ export async function recordDailyQuestionResults(
     })),
     skipDuplicates: true,
   });
+}
+
+export async function getDailyQuestionResponseStats(
+  prisma: PrismaClient,
+  challengeId: string,
+): Promise<Map<string, { correct: number; correctQcm: number; wrong: number }>> {
+  const rows = await (prisma as any).dailyChallengeQuestionResult.findMany({
+    where: { score: { challengeId } },
+    select: { entryId: true, correct: true, mode: true },
+  });
+
+  const statsByEntry = new Map<string, { correct: number; correctQcm: number; wrong: number }>();
+  for (const row of rows as Array<{ entryId: string; correct: boolean; mode: string | null }>) {
+    const stats = statsByEntry.get(row.entryId) ?? { correct: 0, correctQcm: 0, wrong: 0 };
+    if (!row.correct) {
+      stats.wrong += 1;
+    } else if (row.mode === "choice") {
+      stats.correctQcm += 1;
+    } else {
+      stats.correct += 1;
+    }
+    statsByEntry.set(row.entryId, stats);
+  }
+  return statsByEntry;
 }
 
 export async function updateDailyQuestionAverageScores(
@@ -650,6 +674,7 @@ export type DailyChallengeCompletedResult = {
     points: number;
     averageScore: number;
     correctRate: number;
+    stats?: { correct: number; correctQcm: number; wrong: number };
   }>;
   monthlyRanking: MonthlyDailyRankingSnapshot | null;
   dailyRanking: DailyChallengeRankingSnapshot | null;
@@ -737,7 +762,7 @@ export async function getPlayerDailyChallengeCompletedResult(
   if (!score) return { found: true, completed: null };
 
   const monthPartsValue = monthParts(challenge.date);
-  const [monthlyRanking, dailyRanking] = await Promise.all([
+  const [monthlyRanking, dailyRanking, questionStats] = await Promise.all([
     getMonthlyDailyRankingSnapshot(
       prisma,
       playerId,
@@ -745,6 +770,7 @@ export async function getPlayerDailyChallengeCompletedResult(
       monthPartsValue.month - 1,
     ),
     getDailyChallengeRankingSnapshot(prisma, challenge.id, playerId),
+    getDailyQuestionResponseStats(prisma, challenge.id),
   ]);
 
   return {
@@ -763,7 +789,7 @@ export async function getPlayerDailyChallengeCompletedResult(
           : null,
         theme: result.question.theme ?? null,
         difficulty: result.question.difficulty ?? null,
-        img: result.question.img ?? null,
+        img: toImgUrl(result.question.img),
         correct: result.correct,
         attempts: result.attempts,
         answer: result.answer ?? null,
@@ -773,6 +799,7 @@ export async function getPlayerDailyChallengeCompletedResult(
         points: result.points,
         averageScore: result.entry.averageScore,
         correctRate: result.entry.correctRate,
+        stats: questionStats.get(result.entry.id) ?? { correct: result.correct && result.mode !== "choice" ? 1 : 0, correctQcm: result.correct && result.mode === "choice" ? 1 : 0, wrong: result.correct ? 0 : 1 },
       })),
     },
   };

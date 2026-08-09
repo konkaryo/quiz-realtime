@@ -23,6 +23,7 @@ export type GameState = {
   questions: RoundQuestion[];
   index: number;
   endsAt?: number;
+  countdownEndsAt?: number;
   roundStartMs?: number;
   timer?: NodeJS.Timeout;
   answeredThisRound: Set<string>;

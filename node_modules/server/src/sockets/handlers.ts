@@ -15,7 +15,7 @@ import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
 import { launchNextManualRound, startGameForRoom } from "../domain/game/game.service";
 import { getChallengeByDate } from "../domain/daily/daily.service";
-import { getDailyChallengeRankingSnapshot, getMonthlyDailyRankingSnapshot, recordDailyQuestionResults, recordDailyScoreIfFirst, updateDailyQuestionAverageScores } from "../domain/daily/daily-score.service";
+import { getDailyChallengeRankingSnapshot, getMonthlyDailyRankingSnapshot, getDailyQuestionResponseStats, recordDailyQuestionResults, recordDailyScoreIfFirst, updateDailyQuestionAverageScores } from "../domain/daily/daily-score.service";
 import { ensurePlayerForUser } from "../domain/player/player.service";
 
 type RacePlayerState = {
@@ -273,6 +273,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       points: number;
       averageScore: number;
       correctRate: number;
+      stats?: { correct: number; correctQcm: number; wrong: number };
     }[];
   };
 
@@ -300,23 +301,52 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     }, 1600);
   };
 
+  const appendUnansweredDailyResults = (sess: DailySession) => {
+    const firstUnansweredIndex = sess.results.length;
+    const currentResponseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
+
+    sess.questions.slice(firstUnansweredIndex).forEach((q, offset) => {
+      sess.results.push({
+        entryId: q.entryId,
+        questionId: q.id,
+        questionText: q.text,
+        slotLabel: q.slotLabel,
+        theme: q.theme,
+        difficulty: q.difficulty,
+        img: q.img,
+        correct: false,
+        attempts: 0,
+        answer: null,
+        mode: "skip",
+        responseMs: offset === 0 ? currentResponseMs : 0,
+        correctLabel: q.correctLabel,
+        points: 0,
+        averageScore: q.averageScore,
+        correctRate: q.correctRate,
+      });
+    });
+  };
+
   const scheduleNext = async (socket: any) => {
     const sess = dailySessions.get(socket.id);
     if (!sess) return;
     const nextIndex = sess.index + 1;
     const nextQuestion = sess.questions[nextIndex];
     if (!nextQuestion) {
+      dailySessions.delete(socket.id);
       let monthlyRanking: Awaited<ReturnType<typeof getMonthlyDailyRankingSnapshot>> | null = null;
       let dailyRanking: Awaited<ReturnType<typeof getDailyChallengeRankingSnapshot>> | null = null;
       try {
         const record = await recordDailyScoreIfFirst(prisma, sess.challengeId, sess.playerId, sess.score);
         if (record.created && record.scoreId) {
           await recordDailyQuestionResults(prisma, record.scoreId, sess.playerId, sess.results);
-          const stats = await updateDailyQuestionAverageScores(prisma, sess.challengeId, sess.results);
+          const averages = await updateDailyQuestionAverageScores(prisma, sess.challengeId, sess.results);
+          const responseStats = await getDailyQuestionResponseStats(prisma, sess.challengeId);
           sess.results = sess.results.map((result) => ({
             ...result,
-            averageScore: stats.averageScores.get(result.entryId) ?? result.averageScore,
-            correctRate: stats.correctRates.get(result.entryId) ?? result.correctRate,
+            averageScore: averages.averageScores.get(result.entryId) ?? result.averageScore,
+            correctRate: averages.correctRates.get(result.entryId) ?? result.correctRate,
+            stats: responseStats.get(result.entryId) ?? { correct: result.correct && result.mode !== "choice" ? 1 : 0, correctQcm: result.correct && result.mode === "choice" ? 1 : 0, wrong: result.correct ? 0 : 1 },
           }));
         }
         const monthParts = parseDailyMonth(sess.date);
@@ -601,6 +631,29 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       const choices = [...q.choices].map(({ id, label }) => ({ id, label })).sort(() => Math.random() - 0.5);
       socket.emit("daily_multiple_choice", { choices });
       ack?.({ ok: true, mcUses: sess.mcUses, mcUsesLeft: Math.max(0, DAILY_MAX_MC_USES - sess.mcUses) });
+    });
+
+    socket.on("daily_abandon", async (ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const sess = dailySessions.get(socket.id);
+      if (!sess) return ack?.({ ok: false, reason: "no-session" });
+
+      stopDailyTimer(socket.id);
+      appendUnansweredDailyResults(sess);
+      sess.index = sess.questions.length - 1;
+      sess.answered = true;
+      await scheduleNext(socket);
+      ack?.({ ok: true });
+    });
+
+    socket.on("disconnect", () => {
+      const sess = dailySessions.get(socket.id);
+      if (!sess) return;
+
+      stopDailyTimer(socket.id);
+      appendUnansweredDailyResults(sess);
+      sess.index = sess.questions.length - 1;
+      sess.answered = true;
+      void scheduleNext(socket);
     });
 
     socket.on("daily_skip_question", (ack?: (res: { ok: boolean; reason?: string }) => void) => {
@@ -924,24 +977,49 @@ socket.on(
             if (Array.isArray((st as any).answeredOrderText)) { st.answeredOrderText = (st as any).answeredOrderText.filter((id: string) => id !== pg.id); }
             if (Array.isArray((st as any).answeredOrder)) { st.answeredOrder = (st as any).answeredOrder.filter((id: string) => id !== pg.id); }
 
-            const lb = await buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
-            io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb });
-            if (st.manualQuestionLaunch && st.waitingForManualLaunch) {
+            const now = Date.now();
+            if (st.countdownEndsAt && st.countdownEndsAt > now) {
+              socket.emit("game_countdown", {
+                seconds: Math.max(1, Math.ceil((st.countdownEndsAt - now) / 1000)),
+                endsAt: st.countdownEndsAt,
+                serverNow: now,
+              });
+            } else if (st.endsAt && st.endsAt > now) {
+              const q = st.questions[st.index];
+              if (q) {
+                socket.emit("round_begin", {
+                  index: st.index,
+                  total: st.questions.length,
+                  startedAt: st.roundStartMs,
+                  endsAt: st.endsAt,
+                  durationMs: st.roundMs,
+                  question: { id: q.id, text: q.text, img: q.img, theme: q.theme, difficulty: q.difficulty },
+                  dynamicQuestionDisplay: st.dynamicQuestionDisplay,
+                  manualQuestionLaunch: st.manualQuestionLaunch,
+                  speedBonusEnabled: st.speedBonusEnabled,
+                  serverNow: now,
+                });
+              }
+            } else if (st.manualQuestionLaunch && st.waitingForManualLaunch) {
               socket.emit("manual_round_ready", { index: st.index, total: st.questions.length });
             }
+            void buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st)
+              .then((leaderboard) => io.to(st.roomId).emit("leaderboard_update", { leaderboard }))
+              .catch((err) => console.error("[leaderboard join_game]", err));
         }
 
         const alreadyRunning = !!(st && !st.finished);
         const shouldAutoStart = room.visibility === "PUBLIC";
 
-        if (game.state !== "running" && !alreadyRunning && shouldAutoStart) {
+        // `Game.state` may still be "running" after a server restart even though
+        // the in-memory state (the only state that can drive rounds/timers) is
+        // gone. Public rooms must start whenever no live GameState exists.
+        if (!alreadyRunning && shouldAutoStart) {
           try {
             await startGameForRoom(clients, gameStates, io, prisma, room.id);
           } catch (e: any) {
             console.error("[auto start_game on join] error:", e?.message, "\n", e?.stack);
             socket.emit("error_msg", "Unable to auto start the game.");
-            /* console.error("[auto start_game on join] error", e);
-            socket.emit("error_msg", "Unable to auto start the game."); */
 
           }
         }
@@ -995,7 +1073,7 @@ socket.on(
       reason?: string;
       room?: { id: string; name?: string | null };
       owner?: { userId?: string | null; playerId?: string | null; name?: string | null; img?: string | null };
-      players?: { id: string; name: string; img?: string | null }[];
+      players?: { id: string; name: string; img?: string | null; experience?: number }[];
     }) => void) => {
       const roomId = socket.data.roomId as string | undefined;
       if (!roomId) return ack?.({ ok: false, reason: "not-in-room" });
@@ -1023,7 +1101,7 @@ socket.on(
         const playersMeta = playerIds.length
           ? await prisma.player.findMany({
               where: { id: { in: playerIds } },
-              select: { id: true, name: true, img: true },
+              select: { id: true, name: true, img: true, experience: true },
             })
           : [];
         const playersById = new Map(playersMeta.map((p) => [p.id, p]));
@@ -1036,6 +1114,7 @@ socket.on(
             id: playerId,
             name: meta?.name ?? fallbackName,
             img: toProfileUrl(meta?.img ?? null),
+            experience: meta?.experience ?? 0,
           };
         });
 

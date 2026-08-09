@@ -127,6 +127,8 @@ export default function Home() {
   }
 
   const challengeMap = new Map(challenges.map((challenge) => [challenge.date, challenge]));
+  const todayChallenge = challengeMap.get(today);
+  const isTodayCompleted = Boolean(todayChallenge?.completed);
   const nextDay = new Date(clock);
   nextDay.setHours(24, 0, 0, 0);
   const remainingMinutes = Math.max(0, Math.ceil((nextDay.getTime() - clock) / 60_000));
@@ -136,7 +138,7 @@ export default function Home() {
     <main className="min-h-[calc(100dvh-52px)] bg-[#11131f] px-5 pb-6 pt-10 text-white sm:px-8 lg:px-10">
       <div className="mx-auto grid max-w-[1440px] gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-10">
         <div className="min-w-0 space-y-10">
-          <section className="relative isolate min-h-[240px] overflow-hidden rounded-2xl border border-white/10 bg-[#12172a] shadow-2xl xl:w-[90%]">
+          <section className="relative isolate min-h-[240px] overflow-hidden rounded-2xl bg-[#12172a] shadow-2xl xl:w-[90%]">
             <img src={`${API_BASE}/img/interface/home_01.png`} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
             <div className="absolute inset-0 bg-gradient-to-r from-[#080b19]/95 via-[#0b1020]/75 to-transparent" />
             <div className="relative flex min-h-[240px] max-w-xl flex-col justify-center p-6 sm:px-10 sm:py-7">
@@ -144,8 +146,8 @@ export default function Home() {
               <p className="mt-1 bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-[18px] font-bold text-transparent sm:text-[24px]">Prêt à tester tes connaissances ?</p>
               <p className="mt-3 max-w-md font-inter text-white/80 text-[14px]">Rejoins tes amis avec un code d’invitation ou crée ta propre partie en quelques secondes.</p>
               <div className="mt-5 flex flex-wrap gap-3">
-                <Link to="/private/join" className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-[13px] font-semibold text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500">Rejoindre une partie <ArrowRight size={17} /></Link>
-                <Link to="/rooms/new" className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-[13px] font-semibold text-white backdrop-blur transition hover:bg-white/10">Créer une partie <Plus size={17} /></Link>
+                <Link to="/private/join" className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-[13px] font-semibold text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 hover:!text-white">Rejoindre une partie <ArrowRight size={17} /></Link>
+                <Link to="/rooms/new" className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-[13px] font-semibold text-white backdrop-blur transition hover:bg-white/10 hover:!text-white">Créer une partie <Plus size={17} /></Link>
               </div>
             </div>
           </section>
@@ -187,7 +189,7 @@ export default function Home() {
             <h2 id="daily-title" className="font-brandUpright text-[22px] uppercase leading-none tracking-[0.05em] text-white/95">Défi du jour</h2>
             <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-violet-400" aria-label={`Temps restant : ${remainingLabel}`}><Clock3 size={17} aria-hidden="true" />{remainingLabel}</span>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-[#191c2c] p-5 shadow-xl">
+          <div className="rounded-2xl bg-[#191c2c] p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <button type="button" onClick={() => setWeekOffset((offset) => offset - 1)} aria-label="Semaine précédente" className="rounded-lg p-2 text-white/50 transition hover:bg-white/5 hover:text-white"><ChevronLeft size={18} /></button>
               <p className="text-sm font-semibold text-white">{weekLabel}</p>
@@ -205,16 +207,15 @@ export default function Home() {
               return (
                 <div key={key} className="flex min-w-0 flex-col items-center">
                   <span className="mb-1 text-[9px] font-semibold uppercase text-white/55">{weekdays[index]}</span>
-                  <Link
-                    to={item ? `/solo/daily/${key}` : "/solo/daily"}
-                    onClick={isFuture ? (event) => event.preventDefault() : undefined}
-                    tabIndex={isFuture ? -1 : undefined}
-                    aria-disabled={isFuture || undefined}
-                    className={`flex aspect-square w-full min-w-0 items-center justify-center rounded-lg border text-center transition ${isToday ? "border-violet-400 bg-violet-600 font-bold text-white" : isCompleted ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300" : isMissed ? "border-red-400/50 bg-red-400/10 text-red-300 hover:bg-red-400/15" : isFuture ? "cursor-not-allowed border-white/[0.06] bg-black/15 text-white/25 opacity-60" : item ? "border-cyan-400/50 bg-cyan-400/5 text-cyan-300 hover:bg-cyan-400/10" : "border-white/10 bg-white/[.02] text-white/45 hover:bg-white/5"}`}
+                  <button
+                    type="button"
+                    onClick={() => item && !isFuture && nav(`/solo/daily/${key}`)}
+                    disabled={!item || isFuture}
+                    className={`flex aspect-square w-full min-w-0 items-center justify-center rounded-lg border text-center transition ${isCompleted ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/20" : isToday ? "border-violet-400 bg-violet-600 font-bold text-white hover:bg-violet-500" : isMissed ? "border-red-400/50 bg-red-400/10 text-red-300 hover:bg-red-400/20" : isFuture ? "cursor-not-allowed border-white/[0.06] bg-black/15 text-white/25 opacity-60" : item ? "border-cyan-400/50 bg-cyan-400/5 text-cyan-300 hover:bg-cyan-400/15" : "cursor-default border-white/10 bg-white/[.02] text-white/45"}`}
                     aria-label={`${weekdays[index]} ${date.getDate()}${isCompleted ? ", défi terminé" : isToday && item ? ", défi en attente" : isFuture ? ", défi verrouillé" : item ? ", défi non réalisé" : ""}`}
                   >
                     <span className="text-sm">{date.getDate()}</span>
-                  </Link>
+                  </button>
                   <span className="mt-1 flex h-5 items-center justify-center" aria-hidden="true">
                     {isFuture ? (
                       <Lock size={14} className="text-white/35" strokeWidth={2.2} />
@@ -229,7 +230,14 @@ export default function Home() {
                 </div>
               );
             })}</div>
-            <Link to="/solo/daily" className="mt-6 flex w-full items-center justify-center rounded-lg bg-violet-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-500">Jouer</Link>
+            <button
+              type="button"
+              onClick={() => todayChallenge && nav(`/solo/daily/${today}`)}
+              disabled={!todayChallenge || isTodayCompleted}
+              className="mt-6 flex w-full items-center justify-center rounded-lg bg-violet-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-violet-600"
+            >
+              Jouer
+            </button>
           </div>
         </aside>
       </div>

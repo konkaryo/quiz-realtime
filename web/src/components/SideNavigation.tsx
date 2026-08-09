@@ -1,10 +1,13 @@
-import { CalendarDays, House, UserRound } from "lucide-react";
+import { House, UserRound } from "lucide-react";
+import keyIconUrl from "@/assets/key_icon.png";
+import cardsIconUrl from "@/assets/cards.png";
 import rankingIconUrl from "@/assets/ranking.png";
 import { NavLink } from "react-router-dom";
 
 const items = [
   { to: "/", label: "Accueil", icon: House, end: true },
-  { to: "/solo/daily", label: "Défi du jour", icon: CalendarDays },
+  { to: "/rooms/new", label: "Créer une partie", image: cardsIconUrl },
+  { to: "/private/join", label: "Rejoindre une partie", image: keyIconUrl },
   { to: "/multi/ranking", label: "Classement", image: rankingIconUrl },
   { to: "/me/profile", label: "Profil", icon: UserRound },
 ];

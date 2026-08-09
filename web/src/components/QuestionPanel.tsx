@@ -227,6 +227,7 @@ type Props = {
   correctLabelPlacement?: "above" | "below";
   thumbButtonBackgroundClass?: string;
   qcmChoiceBackgroundClass?: string;
+  skipButtonPlacement?: "answer" | "below-progress";
 };
 
 const QUESTION_REVEAL_STEP_MS = 35;
@@ -241,7 +242,6 @@ export default function DailyQuestionPanel(props: Props) {
     question,
     lives,
     totalLives,
-    playerScore: _playerScore = 0, // (gardé pour compat, mais plus affiché ici)
     remainingSeconds,
     timerProgress,
     isReveal,
@@ -278,6 +278,7 @@ export default function DailyQuestionPanel(props: Props) {
     correctLabelPlacement = "below",
     thumbButtonBackgroundClass = "bg-[#232B43]",
     qcmChoiceBackgroundClass = "bg-[#2E324A] hover:bg-[#363B56] active:bg-[#3D4260]",
+    skipButtonPlacement = "answer",
   } = props;
 
   const [visibleQuestionLength, setVisibleQuestionLength] = useState(() =>
@@ -867,7 +868,7 @@ export default function DailyQuestionPanel(props: Props) {
                       </span>
                     ) : null}
                   </button>
-                  {onSkipQuestion ? (
+                  {onSkipQuestion && skipButtonPlacement === "answer" ? (
                     <button
                       type="button"
                       onClick={onSkipQuestion}
@@ -917,6 +918,16 @@ export default function DailyQuestionPanel(props: Props) {
           })}
         </div>
       )}
+      {showProgress && onSkipQuestion && skipButtonPlacement === "below-progress" ? (
+        <button
+          type="button"
+          onClick={onSkipQuestion}
+          disabled={textInputDisabled}
+          className="mt-10 inline-flex min-w-[92px] items-center justify-center rounded-[6px] bg-[#AF2D33] px-5 py-2 text-[12px] font-semibold text-white transition hover:bg-[#C43A41] disabled:cursor-not-allowed disabled:opacity-65"
+        >
+          Passer
+        </button>
+      ) : null}
     </div>
   );
 }

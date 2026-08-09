@@ -169,6 +169,7 @@ export default function ProfilePage() {
   const [distinctQuestions, setDistinctQuestions] = useState(0);
   const [bitsRank, setBitsRank] = useState<number | null>(null);
   const [difficultyStats, setDifficultyStats] = useState<ProfileDifficultyStats>({});
+  const [activeTab, setActiveTab] = useState<"overview" | "achievements">("overview");
 
   useEffect(() => {
     let mounted = true;
@@ -378,8 +379,12 @@ export default function ProfilePage() {
         </header>
 
         <nav className="mb-4 flex gap-7 border-b border-white/[0.06] font-inter text-[13px] font-bold text-slate-400">
-          {['Aperçu', 'Historique', 'Statistiques', 'Succès', 'Paramètres'].map((tab, index) => <button key={tab} className={`pb-1.5 ${index === 0 ? 'border-b-2 border-[#8b5cf6] text-white' : 'hover:text-white'}`}>{tab}</button>)}
+          <button type="button" onClick={() => setActiveTab("overview")} className={`pb-1.5 ${activeTab === "overview" ? "border-b-2 border-[#8b5cf6] text-white" : "hover:text-white"}`}>Aperçu</button>
+          <button type="button" onClick={() => setActiveTab("achievements")} className={`pb-1.5 ${activeTab === "achievements" ? "border-b-2 border-[#8b5cf6] text-white" : "hover:text-white"}`}>Succès</button>
         </nav>
+
+        {activeTab === "overview" ? (
+          <>
 
         <div className="grid gap-3 lg:grid-cols-[1.15fr_1.9fr]">
           <SectionCard title="Niveau">
@@ -414,11 +419,16 @@ export default function ProfilePage() {
               <div className="space-y-3">{difficultyRows.map((row) => <div key={row.label} className="grid grid-cols-[12px_72px_32px] items-center gap-2 font-inter text-[11px] font-bold text-slate-300"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: row.color }} />{row.label}<span className="text-right text-slate-400">{row.percent}%</span></div>)}</div>
             </div>
           </SectionCard>
-
           <SectionCard title="Succès récents" className="min-h-[220px]">
             <div className="flex flex-1 flex-col items-center justify-center text-center"><div className="mb-4 grid h-12 w-12 place-items-center rounded-full bg-slate-500/30 text-slate-200"><Trophy className="h-6 w-6" /></div><p className="text-[12px] font-extrabold text-slate-300">Aucun succès pour le moment.</p><p className="mt-2 max-w-[190px] text-[11px] leading-5 text-slate-400">Relève des défis pour débloquer des succès !</p></div>
           </SectionCard>
         </div>
+          </>
+        ) : (
+          <p className="py-16 text-center font-inter text-[13px] font-semibold text-slate-300">
+            Aucun succès disponible pour le moment.
+          </p>
+        )}
       </main>
 
       {isAvatarEditorOpen ? (

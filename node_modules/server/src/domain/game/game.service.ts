@@ -333,12 +333,11 @@ export async function startGameForRoom(
     const countdownUid = `${st.gameId}:pregame:${Date.now()}`;
     st.roundUid = countdownUid;
     const endsAt = Date.now() + countdownSeconds * 1000;
-    const countdownLeaderboard = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
+    st.countdownEndsAt = endsAt;
     io.to(room.id).emit("game_countdown", {
       seconds: countdownSeconds,
       endsAt,
       serverNow: Date.now(),
-      leaderboard: countdownLeaderboard,
     });
     emitPublicRoomsUpdated(io);
     st.timer = setTimeout(() => {
@@ -347,6 +346,9 @@ export async function startGameForRoom(
         console.error("[startRound error]", err)
       );
     }, countdownSeconds * 1000);
+    void lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st)
+      .then((leaderboard) => io.to(st.roomId).emit("leaderboard_update", { leaderboard }))
+      .catch((err) => console.error("[leaderboard game countdown]", err));
   } else {
     await startRound(clients, gameStates, io, prisma, st);
   }
@@ -441,6 +443,7 @@ async function startRound(
   const TEXT_LIVES = Number(process.env.TEXT_LIVES || 3);
 
   st.waitingForManualLaunch = false;
+  st.countdownEndsAt = undefined;
   st.answeredThisRound.clear();
   st.answeredOrderText = [];
   st.attemptsThisRound = new Map();
@@ -465,19 +468,21 @@ async function startRound(
   });
   emitPublicRoomsUpdated(io);
 
+  // Arm the round timeout before any asynchronous side work. Bot scheduling or
+  // leaderboard queries must never be able to leave a round without an end.
+  st.timer = setTimeout(() => {
+    if (st.roundUid !== myUid) return;
+    endRound(clients, gameStates, io, prisma, st, myUid).catch(err => console.error("[endRound error]", err));
+  }, ROUND_MS);
+
   // Planifier les bots pour CE round uniquement
-  try { await scheduleBotAnswers(prisma, io, clients, st, myUid); } catch (e) { console.error(e); }
+  void scheduleBotAnswers(prisma, io, clients, st, myUid).catch((e) => console.error(e));
 
   // Leaderboard initial
   lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st)
     .then((lb) => io.to(st.roomId).emit("leaderboard_update", { leaderboard: lb }))
     .catch((err) => console.error("[leaderboard startRound]", err));
 
-  // Timer de fin — exécuté SEULEMENT si l'UID n'a pas changé
-  st.timer = setTimeout(() => {
-    if (st.roundUid !== myUid) return;    // stale timeout, on ignore
-    endRound(clients, gameStates, io, prisma, st, myUid).catch(err => console.error("[endRound error]", err));
-  }, ROUND_MS);
 }
 /* ---------------------------------------------------------------------------------------- */
 

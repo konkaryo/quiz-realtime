@@ -1,23 +1,14 @@
 // web/src/pages/DailyChallengePlayPage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ChevronRight, Target, Timer, Star } from "lucide-react";
-import { getThemeMeta } from "../lib/themeMeta";
+import { useBlocker, useLocation, useParams } from "react-router-dom";
+import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 import emptyQuestionImg from "../assets/empty_img.jpg";
 import { io, Socket } from "socket.io-client";
-import Background from "../components/Background";
 import QuestionPanel, {
   Choice,
   QuestionLite,
   QuestionProgress,
 } from "../components/QuestionPanel";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "../components/ui/dialog";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -50,6 +41,7 @@ type Result = {
   points?: number;
   averageScore?: number;
   correctRate?: number;
+  stats?: { correct: number; correctQcm: number; wrong: number };
 };
 
 type DailyRoundBegin = {
@@ -108,6 +100,8 @@ type CompletedResultPayload = {
 
 type ChallengeMeta = { date: string; questionCount: number } | null;
 
+type SelfProfile = { playerName?: string | null; displayName?: string | null; img?: string | null } | null;
+
 type SocketStatus = "idle" | "connecting" | "connected";
 
 type CompletedInfo = {
@@ -152,7 +146,7 @@ function writeStorage(date: string, info: CompletedInfo) {
 
 function formatResultSeconds(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return "—";
-  return `${(ms / 1000).toFixed(1).replace(".", ",")} sec`;
+  return `${(ms / 1000).toFixed(1).replace(".", ",")} s`;
 }
 
 function formatIntegerFr(value: number): string {
@@ -165,301 +159,219 @@ function formatChallengeDateLabel(date: string): string {
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
-function buildRankingCurvePath(distribution?: DailyRankingSnapshot["distribution"]): {
-  line: string;
-  area: string;
-  marker: { x: number; y: number } | null;
-} {
-  const width = 600;
-  const baseline = 98;
-  const values = distribution?.length
-    ? distribution.map((bucket) => bucket.count)
-    : [2, 2, 3, 5, 7, 8, 7, 5, 6, 9, 11, 10, 7, 5, 6, 7, 6, 8, 12, 13];
-  const max = Math.max(1, ...values);
-  const points = values.map((value, index) => {
-    const x = values.length <= 1 ? 0 : (index / (values.length - 1)) * width;
-    const y = baseline - (value / max) * 54;
-    return { x, y };
-  });
-  const line = points.reduce((path, point, index) => {
-    if (index === 0) return `M${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-
-    const previous = points[index - 1];
-    const next = points[index + 1] ?? point;
-    const beforePrevious = points[index - 2] ?? previous;
-    const control1X = previous.x + (point.x - beforePrevious.x) / 6;
-    const control1Y = previous.y + (point.y - beforePrevious.y) / 6;
-    const control2X = point.x - (next.x - previous.x) / 6;
-    const control2Y = point.y - (next.y - previous.y) / 6;
-
-    return `${path} C${control1X.toFixed(1)} ${control1Y.toFixed(1)}, ${control2X.toFixed(1)} ${control2Y.toFixed(1)}, ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-  }, "");
-
-  const highlightedIndex = distribution?.findIndex((bucket) => bucket.highlighted) ?? -1;
-  const highlightedPoint = highlightedIndex >= 0 ? points[highlightedIndex] : null;
-  const area = `${line} L${width} ${baseline} L0 ${baseline} Z`;
-  return { line, area, marker: highlightedPoint };
-} 
-
-function formatAccuracy(correct: number, total: number): number {
-  if (total <= 0) return 0;
-  return Math.round((correct / total) * 100);
+function resolveQuestionImageUrl(img: string | null | undefined): string | null {
+  if (!img) return null;
+  if (/^(?:https?:|data:|blob:)/i.test(img)) return img;
+  const path = `/${img.replace(/^\.?\//, "")}`;
+  return `${API_BASE.replace(/\/$/, "")}${path}`;
 }
 
-function correctRateToAccuracy(correctRate: number | undefined, fallback: number): number {
-  if (!Number.isFinite(correctRate)) return fallback;
-  return Math.max(0, Math.min(100, Math.round(correctRate ?? 0)));
-}
-
-function difficultyStarCount(difficulty: string | null): number {
-  if (!difficulty) return 2;
-  const numeric = Number(difficulty);
-  if (Number.isFinite(numeric)) return Math.max(1, Math.min(5, Math.round(numeric)));
-
-  const normalized = difficulty.toLowerCase();
-  if (normalized.includes("facile") || normalized.includes("easy")) return 1;
-  if (normalized.includes("difficile") || normalized.includes("hard")) return 3;
-  if (normalized.includes("expert") || normalized.includes("extr")) return 4;
-  return 2;
-}
-
-function DailyFinalScoreHero({
+function DailyResultPlayerCard({
   score,
-  ranking,
   results,
   totalQuestions,
-  onShowAnswers,
-  onShowRanking,
-  challengeDateLabel,
+  ranking,
+  selfProfile,
 }: {
   score: number;
-  ranking: DailyRankingSnapshot | null;
   results: Result[];
   totalQuestions: number;
-  onShowAnswers: () => void;
-  onShowRanking: () => void;
-  challengeDateLabel: string;
+  ranking: DailyRankingSnapshot | null;
+  selfProfile: SelfProfile;
 }) {
-  const rankLabel = ranking?.rank ? `${ranking.rank}` : "—";
-  const rankSuffix = ranking?.rank ? (ranking.rank === 1 ? "er" : "ème") : "";
-  const totalPlayersLabel = ranking?.totalPlayers 
-    ? `${formatIntegerFr(ranking.totalPlayers)} joueurs`
-    : "— joueurs";
-  const topLabel = ranking?.percentile !== null && ranking?.percentile !== undefined
-    ? `TOP ${Math.max(1, Math.ceil(ranking.percentile))}%`
-    : "TOP —";
-  const [animatedScore, setAnimatedScore] = useState(0);
-  const scoreProgress = Math.max(0, Math.min(1, animatedScore / 2000));
-  const curve = buildRankingCurvePath(ranking?.distribution);
-  const summaryTotal = Math.max(totalQuestions, results.length);
-  const summaryCorrect = results.filter((result) => result.correct).length;
+  const total = Math.max(totalQuestions, results.length);
+  const correctCount = results.filter((result) => result.correct).length;
   const totalResponseMs = results.reduce((sum, result) => (Number.isFinite(result.responseMs) && result.responseMs > 0 ? sum + result.responseMs : sum), 0);
-  const totalSecondsLabel = `${(totalResponseMs / 1000).toFixed(1).replace(".", ",")} secondes`;
-  const xpGained = results.reduce((sum, result) => {
-    if (!result.correct) return sum;
-    if (result.mode === "text") return sum + 10;
-    if (result.mode === "choice") return sum + 6;
-    return sum;
-  }, 0);
-  const progressStates = Array.from({ length: summaryTotal }, (_, index) => {
-    const result = results[index];
-    if (!result) return "pending";
-    if (!result.correct) return "wrong";
-    return result.mode === "choice" ? "correct-mc" : "correct";
-  });
-
-  useEffect(() => {
-    const durationMs = 1700;
-    const startedAt = performance.now();
-    let frame = 0;
-
-    const tick = (now: number) => {
-      const elapsed = now - startedAt;
-      const progress = Math.min(1, elapsed / durationMs);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setAnimatedScore(Math.round(score * eased));
-
-      if (progress < 1) {
-        frame = window.requestAnimationFrame(tick);
-      }
-    };
-
-    setAnimatedScore(0);
-    frame = window.requestAnimationFrame(tick);
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [score]);
-
-  const statRows = [
-    {
-      label: "Bonnes réponses",
-      value: `${summaryCorrect} / ${summaryTotal}`,
-      icon: Target,
-      valueClassName: "text-emerald-400",
-    },
-    {
-      label: "Temps total",
-      value: totalSecondsLabel,
-      icon: Timer,
-      valueClassName: "text-white",
-    },
-    {
-      label: "Expérience gagnée",
-      value: `+ ${xpGained} XP`,
-      icon: Star,
-      valueClassName: "text-[#A66BFF]",
-    },
-  ];
+  const rank = ranking?.rank ?? 1;
+  const percentile = ranking?.percentile !== null && ranking?.percentile !== undefined
+    ? Math.max(1, Math.ceil(ranking.percentile))
+    : null;
+  const accent = rank === 1 ? "#FFD33F" : rank === 2 ? "#91AFFF" : rank === 3 ? "#FF865E" : "#8AA7FF";
+  const displayName = selfProfile?.playerName || selfProfile?.displayName || "Joueur";
 
   return (
-    <section className="mx-auto flex w-full max-w-[1120px] flex-col items-center text-center">
-      <h1 className="font-brandUpright text-[34px] uppercase leading-none tracking-[0.14em] text-white drop-shadow-[0_4px_18px_rgba(255,255,255,0.12)] sm:text-[42px]">
-        Résultats - {challengeDateLabel}
-      </h1>
+    <article
+      className="relative w-[254px] max-w-full rounded-[10px] p-px text-center shadow-[0_18px_46px_rgba(0,0,0,0.32)]"
+      style={{ background: `linear-gradient(180deg, ${accent} 0%, #11131F 42%)` }}
+      aria-label={`Résultat du défi quotidien : ${correctCount} bonnes réponses sur ${total}`}
+    >
+      <div
+        className="absolute -top-4 left-1/2 z-20 grid h-10 w-10 -translate-x-1/2 place-items-center"
+        style={{ backgroundColor: accent, clipPath: "polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)" }}
+      >
+        <span className="font-brutal text-[15px] leading-none text-[#11131F]">{rank}</span>
+      </div>
+      <span className="pointer-events-none absolute inset-px translate-y-1 rounded-[9px]" style={{ backgroundColor: accent }} aria-hidden="true" />
 
-      <div className="mt-10 w-full rounded-xl border border-white/[0.10] bg-[#0F1427]/75 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:px-6 lg:grid lg:grid-cols-[0.85fr_1.2fr_0.85fr] lg:items-center lg:gap-6">
-        <div className="flex justify-center lg:border-r lg:border-white/[0.08] lg:pr-6">
-          <div
-            className="relative grid size-[155px] place-items-center rounded-full p-[6px] sm:size-[185px]"
-            style={{
-              background: `conic-gradient(#9B5CFF ${scoreProgress * 360}deg, rgba(255,255,255,0.10) 0deg)`,
-            }}
-            aria-label={`Score ${formatIntegerFr(animatedScore)} points sur 2000`}
-          >
-            <div className="absolute inset-6 rounded-full bg-[#9B5CFF]/20 blur-2xl" />
-            <div className="relative grid size-full place-items-center rounded-full border border-white/[0.07] bg-[#081126] shadow-[inset_0_0_55px_rgba(155,92,255,0.16)]">
-              <div className="translate-y-3 font-brand font-black italic leading-none text-white tabular-nums">
-                <div className="text-[42px] tracking-[-0.04em] sm:text-[52px]">
-                  {formatIntegerFr(animatedScore)}
-                </div>
-                <div className="text-[18px] text-[#A66BFF] sm:text-[22px]">
-                  pts
-                </div>
-              </div>
+      <div className="relative flex min-h-[312px] flex-col items-center rounded-[9px] bg-[linear-gradient(180deg,#24273C_0%,#151723_100%)] px-5 pb-5 pt-9">
+        <div className="grid h-[58px] w-[58px] place-items-center rounded-full" style={{ boxShadow: `0 0 0 2px ${accent}` }}>
+          {selfProfile?.img ? (
+            <span className="block h-full w-full rounded-full bg-[#D8DCE3] bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url("${selfProfile.img}")` }} aria-hidden="true" />
+          ) : (
+            <div className="grid h-full w-full place-items-center rounded-full bg-[linear-gradient(135deg,#ff7b5f_0%,#7c5cff_52%,#14244a_100%)] font-inter text-xl font-black text-white">
+              {displayName.slice(0, 2).toUpperCase()}
             </div>
-          </div>
+          )}
         </div>
 
-        <div className="mt-5 space-y-0 text-left lg:mt-0 lg:border-r lg:border-white/[0.08] lg:pr-6">
-          {statRows.map((row) => {
-            const Icon = row.icon;
-            return (
-              <div
-                key={row.label}
-                className="flex items-center justify-between gap-3 border-b border-white/[0.08] py-3 last:border-b-0"
-              >
-                <div className="flex items-center gap-2.5 font-inter text-[12px] font-extrabold text-slate-100 sm:text-[13px]">
-                  {Icon ? <Icon className="h-4 w-4 text-white" aria-hidden="true" /> : null}
-                  {row.label}
-                </div>
-                <div
-                  className={`whitespace-nowrap font-inter text-[14px] font-black ${row.valueClassName}`}
-                >
-                  {row.value}
-                </div>
-              </div>
-            );
-          })}
+        <h2 className="notranslate mt-3 max-w-full truncate font-inter text-[18px] font-extrabold leading-tight text-white" translate="no" lang="zxx">{displayName}</h2>
+        <div className="mt-4 leading-none" style={{ fontFamily: '"Acumin Pro Extra Condensed Bold Italic", "Acumin Pro Extra Condensed", sans-serif', fontStyle: "italic", color: accent }}>
+          <span className="text-[34px]">{formatIntegerFr(score)}</span><span className="ml-1 text-[17px]">pts</span>
         </div>
 
-        <div className="mt-5 flex flex-col items-center justify-center lg:mt-0">
-          <div className="flex items-center justify-center">
-            <div className="flex items-end gap-2 font-brand font-black italic leading-none tabular-nums">
-              <span className="text-[48px] text-white sm:text-[64px]">
-                {rankLabel}
-                <sup className="ml-1 align-super text-[0.32em] leading-none">
-                  {rankSuffix}
-                </sup>
-              </span>
-              <span className="pb-2.5 text-[19px] text-slate-600">/</span>
-              <span className="pb-2.5 text-[15px] text-slate-500">
-                {totalPlayersLabel}
-              </span>
+        <div className="mt-4 grid w-full grid-cols-2 gap-2">
+          <div className="rounded-[7px] border border-white/[0.09] bg-[#11131f]/25 px-2 py-1.5">
+            <div className="font-acuminSemiBold text-[10px] uppercase text-slate-400">Temps</div>
+            <div className="mt-1 font-inter text-[13px] font-extrabold tabular-nums text-white">{formatResultSeconds(totalResponseMs)}</div>
+          </div>
+          <div className="rounded-[7px] border border-white/[0.09] bg-[#11131f]/25 px-2 py-1.5">
+            <div className="font-acuminSemiBold text-[10px] uppercase text-slate-400">Score</div>
+            <div className="mt-1 font-inter text-[13px] font-extrabold tabular-nums text-white">{correctCount}/{total}</div>
+          </div>
+        </div>
+        {percentile !== null ? (
+          <div className="mt-auto flex items-center gap-2 pt-4 font-inter text-[12px] font-extrabold" style={{ color: accent }}>
+            <TrendingUp className="h-5 w-5" aria-hidden="true" />Top {percentile}%
+          </div>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function DailyQuestionResultPanel({
+  result,
+  results,
+  index,
+  total,
+  onSelectIndex,
+}: {
+  result: Result;
+  results: Result[];
+  index: number;
+  total: number;
+  onSelectIndex: (index: number) => void;
+}) {
+  const ok = result.correct;
+  const pointsWon = Math.max(0, result.points ?? 0);
+  const responseStats = result.stats ?? { correct: ok && result.mode !== "choice" ? 1 : 0, correctQcm: ok && result.mode === "choice" ? 1 : 0, wrong: ok ? 0 : 1 };
+  const responseCount = responseStats.correct + responseStats.correctQcm + responseStats.wrong;
+  const segmentTotal = Math.max(1, responseCount);
+  const hasNoResponses = responseCount === 0;
+  const correctWidth = `${(100 * responseStats.correct) / segmentTotal}%`;
+  const qcmWidth = `${(100 * responseStats.correctQcm) / segmentTotal}%`;
+  const wrongWidth = `${(100 * responseStats.wrong) / segmentTotal}%`;
+  const dummyInputRef = useRef<HTMLInputElement | null>(null);
+  const questionPanel: QuestionLite = {
+    id: result.questionId,
+    text: result.questionText,
+    theme: result.theme,
+    difficulty: result.difficulty,
+    img: result.img,
+    slotLabel: result.slotLabel,
+  };
+
+  return (
+    <div className="flex h-full min-h-0 flex-col items-center pb-24 pt-10 md:pt-12">
+      <h2 className="font-brand text-[28px] font-black uppercase italic leading-none tracking-[0.055em] text-white md:text-[34px]">Question {index + 1} / {total}</h2>
+      <div className="mt-10 w-full">
+        <QuestionPanel
+          question={questionPanel}
+          index={index}
+          totalQuestions={total}
+          lives={0}
+          totalLives={TEXT_LIVES}
+          remainingSeconds={null}
+          timerProgress={0}
+          isReveal={false}
+          isPlaying={false}
+          inputRef={dummyInputRef}
+          textAnswer=""
+          wrongTextAnswer={null}
+          textLocked
+          onChangeText={() => {}}
+          onSubmitText={() => {}}
+          onShowChoices={() => {}}
+          feedback={null}
+          feedbackResponseMs={null}
+          feedbackWasCorrect={null}
+          feedbackCorrectLabel={result.correctLabel}
+          feedbackPoints={null}
+          reserveFeedbackSpace
+          thumbButtonBackgroundClass="bg-[#191c2c]"
+          qcmChoiceBackgroundClass="bg-[#272b40] hover:bg-[#30354a] active:bg-[#373c55]"
+          answerMode={null}
+          choicesRevealed={false}
+          showChoices={false}
+          choices={null}
+          selectedChoice={null}
+          correctChoiceId={null}
+          onSelectChoice={() => {}}
+          questionProgress={[]}
+          showTimer={false}
+          showAnswerSection={false}
+          showProgress={false}
+          animateQuestionText={false}
+        />
+      </div>
+
+      <div className="mt-10 grid w-full max-w-[560px] grid-cols-[1fr_auto_1fr] items-center">
+        <div className="flex items-center justify-end gap-3 pr-3">
+          <span className="text-[13px] font-semibold tabular-nums text-white/70">+{pointsWon} pts</span>
+          <span className="text-white/35" aria-hidden>|</span>
+        </div>
+        <div className="inline-flex items-center rounded-[6px] border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-slate-50">
+          {result.correctLabel ?? "—"}
+        </div>
+        <div className="flex items-center gap-3 pl-3">
+          <span className="text-white/35" aria-hidden>|</span>
+          <span className="text-[13px] font-semibold tabular-nums text-white/70">{Math.max(0, result.responseMs)} ms</span>
+        </div>
+      </div>
+      <div className="mx-auto mt-10 w-[420px] max-w-full space-y-4">
+        <div className="flex items-center gap-2">
+          {hasNoResponses ? <div className="h-[10px] w-full rounded-[3px] bg-slate-500" /> : null}
+          {responseStats.correct > 0 ? <div className="h-[10px] min-w-[14px] rounded-[3px] bg-emerald-600" style={{ width: correctWidth }} /> : null}
+          {responseStats.correctQcm > 0 ? <div className="h-[10px] min-w-[14px] rounded-[3px] bg-[#6F5BD4]" style={{ width: qcmWidth }} /> : null}
+          {responseStats.wrong > 0 ? <div className="h-[10px] min-w-[14px] rounded-[3px] bg-[#AF2D33]" style={{ width: wrongWidth }} /> : null}
+        </div>
+        <div className="flex items-center gap-2 text-white">
+          {hasNoResponses ? (
+            <div className="inline-flex w-full items-center justify-center gap-3" aria-label="Aucune réponse">
+              <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">0</span>
+              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-slate-500 text-[12px] font-semibold leading-none text-white">-</span>
             </div>
-          </div>
-          <div className="mt-4 flex items-center justify-center gap-2 font-inter text-[13px] font-black uppercase tracking-[0.02em] text-white">
-            <svg className="h-5 w-5 text-[#9B5CFF]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M4 16.5 9.6 11l3.8 3.8L20 7.8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M15 7.8h5v5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {topLabel}
-          </div>
+          ) : null}
+          {responseStats.correct > 0 ? (
+            <div className="inline-flex items-center justify-center gap-3" style={{ width: correctWidth }} aria-label="Bonnes réponses">
+              <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">{responseStats.correct}</span>
+              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-emerald-600 text-[12px] font-semibold leading-none text-white">✓</span>
+            </div>
+          ) : null}
+          {responseStats.correctQcm > 0 ? (
+            <div className="inline-flex items-center justify-center gap-3" style={{ width: qcmWidth }} aria-label="Réponses QCM">
+              <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">{responseStats.correctQcm}</span>
+              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-[#6F5BD4] text-[12px] font-semibold leading-none text-white">⚡︎</span>
+            </div>
+          ) : null}
+          {responseStats.wrong > 0 ? (
+            <div className="inline-flex items-center justify-center gap-3" style={{ width: wrongWidth }} aria-label="Mauvaises réponses">
+              <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">{responseStats.wrong}</span>
+              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-[#AF2D33] text-[12px] font-semibold leading-none text-white">✕</span>
+            </div>
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-3 grid w-full gap-3 lg:grid-cols-[0.96fr_1.04fr]">
-        <aside className="flex flex-col rounded-xl border border-white/[0.10] bg-[#0F1427]/75 p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-5">
-          <h2 className="font-brandUpright text-[25px] uppercase leading-none tracking-[0.08em] text-white">
-            Résumé
-          </h2>
-          <div className="mt-4 flex flex-wrap gap-2.5">
-            {progressStates.map((state, index) => {
-              const color =
-                state === "correct"
-                  ? "bg-emerald-600"
-                  : state === "correct-mc"
-                    ? "bg-[#6F5BD4]"
-                    : state === "wrong"
-                      ? "bg-[#AF2D33]"
-                      : "bg-slate-700/60";
-
-              return (
-                <div
-                  key={index}
-                  className={`flex h-[30px] w-[30px] items-center justify-center rounded-md text-[12px] font-black text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] ${color}`}
-                >
-                  {index + 1}
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-auto flex justify-end pt-6">
-            <button
-              type="button"
-              onClick={onShowAnswers}
-              className="inline-flex h-10 items-center justify-center gap-3 rounded-[8px] bg-white/[0.055] px-5 font-inter text-[12px] font-extrabold text-white transition hover:bg-white/10 hover:text-white"
-            >
-              Voir les réponses
-              <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
-        </aside>
-
-        <aside className="flex flex-col rounded-xl border border-white/[0.10] bg-[#0F1427]/75 p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-5">
-          <h2 className="font-brandUpright text-[25px] uppercase leading-none tracking-[0.08em] text-white">
-            Classement
-          </h2>
-          <svg
-            className="mt-4 h-[95px] w-full overflow-visible"
-            viewBox="0 0 600 116"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <defs>
-              <linearGradient id="daily-ranking-area" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#9B5CFF" stopOpacity="0.72" />
-                <stop offset="100%" stopColor="#9B5CFF" stopOpacity="0.06" />
-              </linearGradient>
-            </defs>
-            <path d={curve.area} fill="url(#daily-ranking-area)" />
-            <path d={curve.line} fill="none" stroke="#9B5CFF" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
-            {curve.marker ? (
-              <circle cx={curve.marker.x} cy={curve.marker.y} r="5" fill="#FFFFFF" stroke="#9B5CFF" strokeWidth="3" />
-            ) : null}
-          </svg>
-          <div className="mt-auto flex justify-end pt-6">
-            <button
-              type="button"
-              onClick={onShowRanking}
-              className="inline-flex h-10 items-center justify-center gap-3 rounded-[8px] bg-white/[0.055] px-5 font-inter text-[12px] font-extrabold text-white transition hover:bg-white/10 hover:text-white"
-            >
-              Voir le classement
-              <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
-        </aside>
+      <div className="order-last mt-auto flex flex-wrap items-center justify-center gap-2 pt-14">
+        {Array.from({ length: total }, (_, itemIndex) => {
+          const item = results[itemIndex];
+          const state = item?.correct ? (item.mode === "choice" ? "correct-mc" : "correct") : "wrong";
+          const colorClass = state === "correct" ? "bg-emerald-600 text-white" : state === "correct-mc" ? "bg-[#6F5BD4] text-white" : "bg-[#AF2D33] text-white";
+          return <button key={itemIndex} type="button" onClick={() => onSelectIndex(itemIndex)} className={`flex h-8 w-8 items-center justify-center rounded-[7px] text-[12px] font-semibold transition-all hover:ring-2 hover:ring-white/70 ${colorClass} ${itemIndex === index ? "ring-2 ring-white/70" : ""}`} aria-label={`Voir question ${itemIndex + 1}`}>{itemIndex + 1}</button>;
+        })}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -476,245 +388,107 @@ function DailyFinalResults({
   score: number;
   challengeDate: string;
 }) {
-  const total = Math.max(totalQuestions, results.length);
-  const correctCount = results.filter((result) => result.correct).length;
-  const accuracy = formatAccuracy(correctCount, total);
-  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
-  const [showAnswers, setShowAnswers] = useState(false);
-  const navigate = useNavigate();
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const maxIndex = results.length;
+  const selectedResult = selectedIndex > 0 ? results[selectedIndex - 1] : null;
+  const selectedResultImage = resolveQuestionImageUrl(selectedResult?.img);
   const challengeDateLabel = formatChallengeDateLabel(challengeDate);
+  const [selfProfile, setSelfProfile] = useState<SelfProfile>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/auth/me`, { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return (await res.json()) as { user?: SelfProfile };
+      })
+      .then((payload) => {
+        if (!cancelled) setSelfProfile(payload?.user ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setSelfProfile(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      setSelectedIndex((current) =>
+        event.key === "ArrowLeft"
+          ? Math.max(0, current - 1)
+          : Math.min(maxIndex, current + 1),
+      );
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [maxIndex]);
 
   return (
-    <>
-      <div className="flex min-h-[calc(100vh-220px)] flex-col justify-center">
-        <DailyFinalScoreHero
-          score={score}
-          ranking={monthlyRanking}
-          results={results}
-          totalQuestions={totalQuestions}
-          onShowAnswers={() => setShowAnswers(true)}
-          onShowRanking={() => navigate("/multi/ranking?kind=daily")}
-          challengeDateLabel={challengeDateLabel}
-        />
-      </div>
-
-      {showAnswers ? (
-        <section className="mx-auto mt-10 w-full max-w-[1280px]">
-          <div className="rounded-[14px] bg-[#131930] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.36)] sm:p-5">
-            <div className="mb-4 border-b border-white/[0.06] pb-3">
-              <h2 className="font-brandUpright text-[24px] uppercase leading-none tracking-[0.05em] text-white">
-                Récapitulatif des questions
-              </h2>
-            </div>
-
-            <div className="space-y-2 pr-1">
-              {results.map((result, i) => {
-                const ok = result.correct;
-                const meta = getThemeMeta(result.theme ?? null);
-                const accentColor = ok ? "#34D399" : "#F56471";
-                const railOverlay = ok ? "bg-[#10222C]" : "bg-[#1F182B]";
-                const statusClasses = ok
-                  ? "bg-emerald-400 text-[#07111d]"
-                  : "bg-[#F56471] text-[#160911]";
-                const ringColor = ok ? "#2EEB8E" : "#F56471";
-                const fallbackAccuracy = ok
-                  ? Math.max(accuracy, 77)
-                  : Math.min(accuracy || 45, 45);
-                const questionAccuracy = correctRateToAccuracy(
-                  result.correctRate,
-                  fallbackAccuracy,
-                );
-                const pointsWon = Math.max(0, result.points ?? 0);
-                const difficultyStars = "★".repeat(
-                  difficultyStarCount(result.difficulty),
-                );
-
-                return (
-                  <article
-                    key={`${result.questionId}:${i}`}
-                    className="group relative pl-[4px]"
-                  >
-                    <div
-                      className="pointer-events-none absolute inset-y-0 left-0 w-[32px] rounded-l-[10px]"
-                      style={{ backgroundColor: accentColor }}
-                    />
-                    <div
-                      className={[
-                        "relative overflow-hidden rounded-[10px] border border-white/[0.06] bg-[#0F1427]",
-                        "shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition-colors group-hover:border-white/12",
-                      ].join(" ")}
-                    >
-                      <div className="relative z-20 grid grid-cols-[42px_0px_minmax(0,1fr)_0px] items-center gap-3 py-3 sm:grid-cols-[42px_26px_minmax(0,1fr)_156px] sm:pl-0 sm:pr-4">
-                        <div className="relative z-10 flex items-center justify-center">
-                          <span
-                            className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${statusClasses}`}
-                          >
-                            {ok ? (
-                              <svg
-                                className="h-3.5 w-3.5"
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                aria-hidden="true"
-                              >
-                                <path
-                                  d="M3.5 8.1 6.7 11.3 12.8 4.7"
-                                  stroke="currentColor"
-                                  strokeWidth="2.2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            ) : (
-                              <svg
-                                className="h-3.5 w-3.5"
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                aria-hidden="true"
-                              >
-                                <path
-                                  d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5"
-                                  stroke="currentColor"
-                                  strokeWidth="2.4"
-                                  strokeLinecap="round"
-                                />
-                              </svg>
-                            )}
-                          </span>
-                        </div>
-                        <div
-                          className={`hidden text-center font-brandUpright text-[18px] font-black leading-none sm:block ${ok ? "text-emerald-300" : "text-rose-300"}`}
-                        >
-                          {i + 1}
-                        </div>
-
-                        <div className="min-w-0">
-                          <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[9px] font-medium uppercase tracking-[0.14em] text-slate-400">
-                            <span>{meta.label}</span>
-                            <span className="text-slate-600">|</span>
-                            <span
-                              aria-label={`${difficultyStars.length} étoile${difficultyStars.length > 1 ? "s" : ""} de difficulté`}
-                            >
-                              {difficultyStars}
-                            </span>
-                          </div>
-                          <div className="flex min-w-0 items-center gap-1.5">
-                            <h3 className="min-w-0 flex-1 truncate font-sans text-[11px] font-semibold leading-snug text-slate-50 sm:text-[12px]">
-                              {result.questionText}
-                            </h3>
-                            {result.img ? (
-                              <button
-                                type="button"
-                                className="inline-flex h-5 w-5 flex-none items-center justify-center rounded-full border border-slate-500/40 bg-slate-900/50 text-slate-300 transition hover:border-slate-300/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/70"
-                                aria-label={`Afficher l'image de la question ${i + 1}`}
-                                onClick={() =>
-                                  setPreviewImage({
-                                    src: result.img!,
-                                    alt: `Image de la question ${i + 1}`,
-                                  })
-                                }
-                              >
-                                <svg
-                                  className="h-3.5 w-3.5"
-                                  viewBox="0 0 16 16"
-                                  fill="none"
-                                  aria-hidden="true"
-                                >
-                                  <path
-                                    d="M2.5 3.5h11v9h-11v-9Z"
-                                    stroke="currentColor"
-                                    strokeWidth="1.35"
-                                    strokeLinejoin="round"
-                                  />
-                                  <path
-                                    d="m3.7 11.2 2.8-3 2 2 1.7-1.7 2.1 2.7"
-                                    stroke="currentColor"
-                                    strokeWidth="1.35"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                  <circle
-                                    cx="10.9"
-                                    cy="6"
-                                    r="1"
-                                    fill="currentColor"
-                                  />
-                                </svg>
-                              </button>
-                            ) : null}
-                          </div>
-                          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-sans text-[11px] font-medium">
-                            <span className="text-slate-400">
-                              Réponse : {result.correctLabel}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-3 sm:justify-start">
-                          <div className="hidden flex-1 flex-col items-center justify-center gap-2 sm:flex">
-                            <div
-                              className={`font-brandUpright text-[18px] font-black leading-none tabular-nums ${pointsWon > 0 ? "text-emerald-400" : "text-[#F56471]"}`}
-                            >
-                              {pointsWon > 0 ? `+ ${pointsWon} pts` : "0 pt"}
-                            </div>
-                            <div className="flex items-center gap-1.5 text-[11px] font-semibold tabular-nums text-slate-400">
-                              <span aria-hidden="true">◷</span>
-                              {formatResultSeconds(result.responseMs)}
-                            </div>
-                          </div>
-                          <div
-                            className="grid size-12 min-h-12 min-w-12 flex-none shrink-0 place-items-center rounded-full p-[5px]"
-                            style={{
-                              background: `conic-gradient(${ringColor} ${questionAccuracy * 3.6}deg, rgba(255,255,255,0.08) 0deg)`,
-                            }}
-                            aria-label={`${questionAccuracy}% de réussite`}
-                          >
-                            <div className="grid size-full place-items-center rounded-full bg-[#071023] text-[11px] font-black tabular-nums text-white">
-                              {questionAccuracy}%
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      className={`pointer-events-none absolute inset-y-0 left-[4px] z-10 w-[42px] rounded-l-[10px] sm:w-[42px] ${railOverlay}`}
-                    />
-                  </article>
-                );
-              })}
-
-              {!results.length && (
-                <div className="rounded-[12px] border border-white/[0.06] bg-white/[0.03] px-4 py-8 text-center text-sm text-slate-400">
-                  Aucune question à récapituler.
-                </div>
-              )}
+    <section className="relative h-full min-h-0 px-12 md:px-16">
+      {selectedResultImage ? (
+        <aside className="fixed bottom-0 right-0 z-20 hidden lg:block" style={{ top: FIXED_TOP, width: RIGHT_IMAGE_WIDTH }}>
+          <div className="h-full overflow-visible bg-transparent pb-3 pl-3 pr-6 pt-3">
+            <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-[#131829]">
+              <img
+                src={selectedResultImage}
+                alt="Illustration de la question récapitulée"
+                className="h-full w-full object-cover"
+                loading="lazy"
+                draggable={false}
+                onError={(event) => {
+                  event.currentTarget.src = emptyQuestionImg;
+                }}
+              />
             </div>
           </div>
-          <Dialog
-            open={!!previewImage}
-            onOpenChange={(open) => !open && setPreviewImage(null)}
-          >
-            <DialogContent className="max-w-[min(92vw,900px)] border-white/10 bg-[#0F1427] p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
-              <DialogHeader>
-                <DialogTitle className="pr-8 font-brandUpright text-[22px] uppercase leading-none tracking-[0.04em] text-white">
-                  Image de la question
-                </DialogTitle>
-                <DialogDescription className="sr-only">
-                  Aperçu de l'image associée à la question du récapitulatif.
-                </DialogDescription>
-              </DialogHeader>
-              {previewImage ? (
-                <img
-                  src={previewImage.src}
-                  alt={previewImage.alt}
-                  className="max-h-[78vh] w-full rounded-[10px] border border-white/10 bg-black/30 object-contain"
-                  draggable={false}
-                />
-              ) : null}
-            </DialogContent>
-          </Dialog>
-        </section>
+        </aside>
       ) : null}
-    </>
+      <button
+        type="button"
+        onClick={() => setSelectedIndex((current) => Math.max(0, current - 1))}
+        disabled={selectedIndex === 0}
+        className="absolute left-0 z-30 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#131829] text-white transition hover:border-white/35 hover:bg-[#1B2136] disabled:cursor-not-allowed disabled:opacity-25 md:left-[10%] xl:left-[12%]"
+        style={{ top: `calc((100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px) / 2 - 40px)` }}
+        aria-label="Afficher l’élément précédent"
+      >
+        <ChevronLeft className="h-6 w-6" strokeWidth={2.2} />
+      </button>
+      <button
+        type="button"
+        onClick={() => setSelectedIndex((current) => Math.min(maxIndex, current + 1))}
+        disabled={selectedIndex >= maxIndex}
+        className="absolute right-0 z-30 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#131829] text-white transition hover:border-white/35 hover:bg-[#1B2136] disabled:cursor-not-allowed disabled:opacity-25 md:right-[10%] xl:right-[12%]"
+        style={{ top: `calc((100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px) / 2 - 40px)` }}
+        aria-label="Afficher l’élément suivant"
+      >
+        <ChevronRight className="h-6 w-6" strokeWidth={2.2} />
+      </button>
+
+      {selectedResult ? (
+        <DailyQuestionResultPanel result={selectedResult} results={results} index={selectedIndex - 1} total={results.length} onSelectIndex={(index) => setSelectedIndex(index + 1)} />
+      ) : (
+        <div className="flex h-full min-h-0 flex-col items-center pb-24 pt-10 text-center md:pt-12">
+          <h2 className="font-brand text-[28px] font-black uppercase italic leading-none tracking-[0.055em] text-white md:text-[34px]">Résultats - {challengeDateLabel}</h2>
+          <div className="mt-16">
+            <DailyResultPlayerCard score={score} results={results} totalQuestions={totalQuestions} ranking={monthlyRanking} selfProfile={selfProfile} />
+          </div>
+          <div className="mt-auto flex flex-wrap items-center justify-center gap-2 pt-14">
+            {results.map((result, index) => {
+              const state = result.correct ? (result.mode === "choice" ? "correct-mc" : "correct") : "wrong";
+              const colorClass = state === "correct" ? "bg-emerald-600" : state === "correct-mc" ? "bg-[#6F5BD4]" : "bg-[#AF2D33]";
+              return (
+                <button key={`${result.questionId}:${index}`} type="button" onClick={() => setSelectedIndex(index + 1)} className={`flex h-8 w-8 items-center justify-center rounded-[7px] text-[12px] font-semibold text-white transition hover:ring-2 hover:ring-white/70 ${colorClass}`} aria-label={`Voir question ${index + 1}`}>{index + 1}</button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1035,6 +809,36 @@ export default function DailyChallengePlayPage() {
   }, [remainingSeconds]);
 
   const textLocked = choicesRevealed || showChoices;
+  const shouldConfirmDeparture = status === "ready" && (phase === "playing" || phase === "reveal");
+  const navigationBlocker = useBlocker(shouldConfirmDeparture);
+
+  useEffect(() => {
+    if (!shouldConfirmDeparture) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [shouldConfirmDeparture]);
+
+  useEffect(() => {
+    if (navigationBlocker.state !== "blocked") return;
+    const confirmed = window.confirm(
+      "Quitter le défi ? Les questions restantes seront considérées comme mal répondues.",
+    );
+    if (!confirmed) {
+      navigationBlocker.reset();
+      return;
+    }
+    if (!socket?.connected) {
+      navigationBlocker.proceed();
+      return;
+    }
+    socket.emit("daily_abandon", (response: { ok: boolean }) => {
+      if (response?.ok || navigationBlocker.state === "blocked") navigationBlocker.proceed();
+    });
+  }, [navigationBlocker, socket]);
 
   const submitText = () => {
     if (phaseRef.current !== "playing" || !question || !socket) return;
@@ -1120,13 +924,15 @@ export default function DailyChallengePlayPage() {
   // RENDER -------------------------------------------------------------------
 
   return (
-    <div className="relative min-h-full overflow-hidden text-slate-50">
-      <Background />
+    <div className={`relative overflow-hidden text-slate-50 ${phase === "finished" ? `h-[calc(100dvh-${NAVBAR_TOP}px)]` : "min-h-full"}`}>
+      <div aria-hidden className="fixed inset-0 bg-[#11131f]" />
 
       <div
         className={[
-          "relative z-10 mx-auto flex flex-col px-4 pb-16 pt-8 sm:px-8 lg:px-10",
-          phase === "finished" ? "w-full max-w-[1500px]" : "max-w-6xl",
+          "relative z-10 mx-auto flex flex-col px-4 sm:px-8 lg:px-10",
+          phase === "finished"
+            ? "h-full w-full max-w-[1500px] pb-8 pt-8"
+            : "max-w-6xl pb-16 pt-8",
         ].join(" ")}
       >
 
@@ -1146,7 +952,7 @@ export default function DailyChallengePlayPage() {
           >
             <div className="h-full overflow-visible bg-transparent pb-3 pl-3 pr-6 pt-3">
               <div className="flex flex-col gap-4 overflow-visible">
-                <div className="overflow-hidden rounded-[6px] border border-white/10 bg-[#121421]">
+                <div className="overflow-hidden rounded-xl bg-[#131829]">
                   <div className="relative aspect-video w-full">
                     <img
                       src={normalizedQuestion?.img || emptyQuestionImg}
@@ -1198,6 +1004,8 @@ export default function DailyChallengePlayPage() {
     questionProgress={questionProgress}
     qcmUsesLeft={Math.max(0, DAILY_MAX_MC_USES - mcUses)}
     correctLabelPlacement="above"
+    thumbButtonBackgroundClass="bg-[#191c2c]"
+    skipButtonPlacement="below-progress"
   />
 )}
 

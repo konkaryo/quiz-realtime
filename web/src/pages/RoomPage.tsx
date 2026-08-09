@@ -1606,8 +1606,8 @@ return (
 {/* LEFT */}
 {!shouldHideLeftRail ? (
 <aside
-  className="hidden lg:block fixed left-0 bottom-12 z-30 overflow-visible"
-  style={{ top: fixedTop, width: leftW }}
+  className="fixed bottom-12 z-30 hidden overflow-visible lg:block"
+  style={{ top: fixedTop, left: "var(--app-side-navigation-offset, 0px)", width: leftW }}
 >
   <div className="h-full overflow-visible bg-transparent pb-6 pr-3 pt-3 pl-3">
     <div className="h-full px-4 pb-5 flex flex-col min-h-0 overflow-visible">
