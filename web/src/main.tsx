@@ -22,6 +22,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
 import TestPage from "./pages/TestPage";
+import KoruHomePage from "./pages/KoruHomePage";
 import "./index.css";
 import { Toaster } from "./components/ui/toaster";
 
@@ -124,6 +125,8 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 // ---------------------------------------------------------------------------
 
 const router = createBrowserRouter([
+  // Landing page Koru autonome : la navigation sera ajoutée ultérieurement.
+  { path: "/koru_home", element: <KoruHomePage /> },
   // Routes sous AppShell
   {
     element: (

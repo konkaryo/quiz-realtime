@@ -1,0 +1,187 @@
+@font-face {
+  font-family: "Rama Gothic";
+  src: url("/fonts/Rama Gothic C W03 Heavy.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+.koru-home {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  overflow: hidden;
+  background-color: #f4efe3;
+  background-repeat: repeat;
+  background-size: 860px 860px;
+  color: #061934;
+}
+
+.koru-home__content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+  align-items: center;
+  width: min(1180px, calc(100% - 80px));
+  min-height: 100dvh;
+  margin: 0 auto;
+}
+
+.koru-home__copy {
+  position: relative;
+  z-index: 1;
+  padding: 64px 0;
+}
+
+.koru-home__title {
+  margin: 0;
+  color: #061934;
+  font-family: "Rama Gothic", Impact, sans-serif;
+  font-size: clamp(160px, 13vw, 230px);
+  font-weight: 900;
+  line-height: 0.82;
+  letter-spacing: 0em;
+  text-transform: uppercase;
+}
+
+.koru-home__accent {
+  width: 58px;
+  height: 6px;
+  margin: 24px 0 12px 2px;
+  background: #fd4831;
+}
+
+.koru-home__description {
+  margin: 0;
+  color: #061934;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.koru-home__actions {
+  display: flex;
+  gap: 18px;
+  margin-top: 64px;
+}
+
+.koru-home__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 292px;
+  min-height: 70px;
+  box-sizing: border-box;
+  color: #061934;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.koru-home__button:hover {
+  color: inherit;
+  transform: translateY(-2px);
+}
+
+.koru-home__button:focus-visible {
+  outline: 3px solid #1762cf;
+  outline-offset: 3px;
+}
+
+.koru-home__button--play {
+  gap: 30px;
+  border: 2px solid #fd4831;
+  background: #fd4831;
+  color: #fff;
+}
+
+.koru-home__button--play:hover {
+  background: #ef3d28;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(253, 72, 49, 0.2);
+}
+
+.koru-home__button--play svg {
+  width: 24px;
+  fill: currentColor;
+}
+
+.koru-home__button--login {
+  border: 2px solid #061934;
+  background: transparent;
+}
+
+.koru-home__button--login:hover {
+  background: rgba(6, 25, 52, 0.06);
+}
+
+.koru-home__visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.koru-home__visual img {
+  display: block;
+  width: min(600px, 49vw);
+  max-width: none;
+  height: auto;
+  transform: translate(2%, 2%);
+}
+
+@media (max-width: 900px) {
+  .koru-home__content {
+    grid-template-columns: 1fr;
+    width: min(680px, calc(100% - 40px));
+    padding-top: 34px;
+  }
+
+  .koru-home__copy {
+    padding: 42px 0 20px;
+  }
+
+  .koru-home__title {
+    font-size: clamp(76px, 20vw, 130px);
+  }
+
+  .koru-home__actions {
+    margin-top: 42px;
+  }
+
+  .koru-home__visual img {
+    width: min(560px, 88vw);
+    transform: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .koru-home__content {
+    width: calc(100% - 32px);
+  }
+
+  .koru-home__title {
+    font-size: clamp(64px, 22vw, 98px);
+  }
+
+  .koru-home__actions {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 34px;
+  }
+
+  .koru-home__button {
+    width: 100%;
+    min-height: 60px;
+  }
+
+  .koru-home__visual img {
+    width: 108vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .koru-home__button {
+    transition: none;
+  }
+}
