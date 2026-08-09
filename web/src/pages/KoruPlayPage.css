@@ -1,0 +1,187 @@
+.koru-play {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  overflow: hidden;
+  background-color: #f4efe3;
+  background-repeat: repeat;
+  background-size: 860px 860px;
+  color: #061934;
+}
+
+.koru-play__content {
+  width: min(1156px, calc(100% - 80px));
+  margin: 0 auto;
+  padding: clamp(52px, 7vh, 82px) 0 70px;
+}
+
+.koru-play__header h1,
+.koru-play h2 {
+  margin: 0;
+  font-family: "Rama Gothic", Impact, sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.koru-play__header h1 {
+  font-size: clamp(72px, 7.2vw, 108px);
+  line-height: .82;
+}
+
+.koru-play__header > span {
+  display: block;
+  width: 58px;
+  height: 6px;
+  margin: 24px 0 40px 4px;
+  background: #fd4831;
+}
+
+.koru-play__modes {
+  display: grid;
+  grid-template-columns: 1.12fr .92fr;
+  gap: 34px;
+}
+
+.koru-play__battle,
+.koru-play__mode {
+  position: relative;
+  overflow: hidden;
+  background: #091a2c;
+}
+
+.koru-play__battle {
+  min-height: 332px;
+}
+
+.koru-play__art {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: auto;
+  max-width: none;
+}
+
+.koru-play__mode .koru-play__art {
+  width: 100%;
+  object-fit: cover;
+  object-position: right center;
+}
+
+.koru-play__mode-copy {
+  position: absolute;
+  top: 24px;
+  left: 22px;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  color: #fff;
+}
+
+.koru-play__underline {
+  display: block;
+  width: 58px;
+  height: 5px;
+  margin-top: 7px;
+  background: #fd4831;
+}
+
+.koru-play__mode-list {
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.koru-play__mode,
+.koru-play__battle {
+  display: block;
+  color: #fff;
+  text-decoration: none;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.koru-play__mode {
+  min-height: 104px;
+}
+
+.koru-play__mode:hover,
+.koru-play__battle:hover {
+  color: #fff;
+  transform: translateX(-4px);
+  box-shadow: 8px 8px 0 rgba(6,25,52,.12);
+}
+
+.koru-play__mode:focus-visible { outline: 4px solid #1762cf; outline-offset: 3px; }
+
+
+.koru-play__mode-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.koru-play__mode h2 {
+  font-size: clamp(34px, 3vw, 46px);
+  line-height: .92;
+}
+
+.koru-play__battle .koru-play__mode-copy {
+  top: 28px;
+  left: 30px;
+}
+
+.koru-play__battle .koru-play__mode-icon {
+  width: 58px;
+  height: 58px;
+}
+
+.koru-play__battle h2 {
+  font-size: clamp(44px, 4vw, 58px);
+  line-height: .92;
+}
+
+.koru-play__mode .koru-play__underline {
+  width: 22px;
+  height: 3px;
+  margin-top: 6px;
+}
+
+.koru-play__progress {
+  display: flex;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.koru-play__progress-item {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  color: #fff;
+  font: 700 22px/1 Inter, sans-serif;
+}
+
+.koru-play__progress-item--done { background: #a7dc24; }
+.koru-play__progress-item--missed { background: #ed3f34; }
+.koru-play__progress-item--waiting { background: #334154; }
+
+@media (max-width: 820px) {
+  .koru-play__content { width: min(620px, calc(100% - 40px)); }
+  .koru-play__modes { grid-template-columns: 1fr; }
+  .koru-play__battle { min-height: 300px; }
+}
+
+@media (max-width: 480px) {
+  .koru-play__content { width: calc(100% - 28px); padding-top: 40px; }
+  .koru-play__header > span { margin-bottom: 28px; }
+  .koru-play__battle { min-height: 250px; }
+  .koru-play__battle h2 { font-size: 42px; }
+  .koru-play__mode-copy { top: 20px; left: 14px; }
+  .koru-play__battle .koru-play__mode-copy { top: 20px; left: 18px; }
+  .koru-play__mode-icon { width: 42px; height: 42px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .koru-play__mode,
+  .koru-play__battle { transition: none; }
+}

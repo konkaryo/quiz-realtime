@@ -24,7 +24,7 @@ export default function KoruHomePage() {
           </p>
 
           <div className="koru-home__actions">
-            <Link className="koru-home__button koru-home__button--play" to="/multi/public">
+            <Link className="koru-home__button koru-home__button--play" to="/koru_play">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M13.2 1 4.8 13.2h5.6L9.8 23l9.4-13.8h-5.7L13.2 1Z" />
               </svg>
