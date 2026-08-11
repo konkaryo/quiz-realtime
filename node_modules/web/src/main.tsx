@@ -21,9 +21,6 @@ import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
-import TestPage from "./pages/TestPage";
-import KoruHomePage from "./pages/KoruHomePage";
-import KoruPlayPage from "./pages/KoruPlayPage";
 import "./index.css";
 import { Toaster } from "./components/ui/toaster";
 
@@ -126,9 +123,6 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 // ---------------------------------------------------------------------------
 
 const router = createBrowserRouter([
-  // Landing page Koru autonome : la navigation sera ajoutée ultérieurement.
-  { path: "/koru_home", element: <KoruHomePage /> },
-  { path: "/koru_play", element: <KoruPlayPage /> },
   // Routes sous AppShell
   {
     element: (
@@ -186,7 +180,6 @@ const router = createBrowserRouter([
         ),
       },
       { path: "/", element: <Home /> },
-      { path: "/test", element: <TestPage /> },
 
       { path: "/solo/daily", element: <DailyChallengePage /> },
       { path: "/solo/daily/:date", element: <DailyChallengePlayPage /> },
