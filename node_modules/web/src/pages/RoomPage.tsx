@@ -78,7 +78,7 @@ type RoomMeta = {
   manualQuestionLaunch?: boolean;
 };
 type AnsweredStatus = "correct" | "correct-mc" | "wrong";
-type QuestionStatus = "pending" | "correct" | "correct-mc" | "wrong";
+type QuestionStatus = "pending" | "missed" | "correct" | "correct-mc" | "wrong";
 type FinalQuestionStats = { correct: number; correctQcm: number; wrong: number };
 type FinalQuestionSnapshot = {
   questionId: string;
@@ -697,7 +697,12 @@ export default function RoomPage() {
         });
         setPending(false);
         setQuestionStatuses((prev) =>
-          Array.from({ length: p.total }, (_, idx) => prev[idx] ?? "pending")
+          Array.from({ length: p.total }, (_, idx) => {
+            const existing = prev[idx];
+            if (existing && existing !== "pending") return existing;
+            if (idx < p.index) return "missed";
+            return existing ?? "pending";
+          })
         );
         initSfx();
       }
@@ -1210,9 +1215,9 @@ export default function RoomPage() {
   const roomBadgeClass = "inline-flex items-center gap-1.5 rounded-[6px] bg-black/45 px-3 py-1.5 font-brand text-[15px] italic leading-none text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-sm";
   const displayedRoomCode = isRoomCodeVisible ? roomMeta?.code ?? "—" : maskRoomCode(roomMeta?.code);
 
-  // ✅ Layout widths (LG+)
-  const leftW = 360;
-  const rightW = 300;
+  // ✅ Preserve the original full-screen widths, then shrink both rails proportionally.
+  const leftW = "min(360px, 25vw)";
+  const rightW = "min(300px, 20.833333vw)";
 
   // ✅ panneau haut
   const TOP_BAR_H = 12; // px
@@ -1231,6 +1236,8 @@ export default function RoomPage() {
       questionTrackerItems.map((status) =>
         status === "wrong"
           ? "wrong"
+          : status === "missed"
+            ? "missed"
           : status === "correct-mc"
             ? "correct-mc"
             : status === "correct"
@@ -1600,14 +1607,14 @@ return (
         }
       `}</style>
 
-      <div className="relative z-10 min-h-[calc(100dvh-64px)] text-white lg:overflow-hidden">
+      <div className={`relative z-10 min-h-[calc(100dvh-64px)] text-white ${gameCountdown === null ? "lg:overflow-hidden" : ""}`}>
         <div className="relative">
           <div className="relative grid grid-cols-1 lg:block">
 {/* LEFT */}
 {!shouldHideLeftRail ? (
 <aside
   className="fixed bottom-12 z-30 hidden overflow-visible lg:block"
-  style={{ top: fixedTop, left: "var(--app-side-navigation-offset, 0px)", width: leftW }}
+  style={{ top: fixedTop, left: 0, width: leftW }}
 >
   <div className="h-full overflow-visible bg-transparent pb-6 pr-3 pt-3 pl-3">
     <div className="h-full px-4 pb-5 flex flex-col min-h-0 overflow-visible">
@@ -1693,11 +1700,18 @@ return (
 
             {/* CENTER */}
             <div
-              className="lg:ml-[360px] lg:mr-[300px] lg:overflow-y-auto lb-scroll"
-              style={{
-                height: `calc(100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px)`,
-                marginTop: TOP_BAR_H,
-              }}
+              className={gameCountdown === null
+                ? "lg:ml-[min(360px,25vw)] lg:mr-[min(300px,20.833333vw)] lg:overflow-y-auto lb-scroll"
+                : "overflow-visible"}
+              style={gameCountdown === null
+                ? {
+                    height: `calc(100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px)`,
+                    marginTop: TOP_BAR_H,
+                  }
+                : {
+                    minHeight: `calc(100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px)`,
+                    marginTop: TOP_BAR_H,
+                  }}
             >
               <main className="relative overflow-hidden bg-transparent">
                 <style>{`
@@ -1856,6 +1870,8 @@ return (
                                         ? "bg-[#6F5BD4] text-white"
                                         : status === "wrong"
                                         ? "bg-[#AF2D33] text-white"
+                                        : status === "missed"
+                                        ? "bg-slate-900/80 text-slate-400 ring-1 ring-inset ring-slate-600/40"
                                         : "bg-white/30 text-white/70";
                                     const trackerClasses = [
                                       "flex h-8 w-8 items-center justify-center rounded-[7px] text-[12px] font-semibold",

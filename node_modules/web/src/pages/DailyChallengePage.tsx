@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import lockImg from "../assets/lock.png";
-import Background from "../components/Background";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
@@ -265,12 +264,12 @@ export default function DailyChallengePage() {
   }, [goToMonth]);
 
   return (
-    <div className="relative min-h-full overflow-hidden font-inter text-slate-50">
-      <Background />
+    <div className="relative min-h-[calc(100dvh-52px)] overflow-hidden bg-[#11131f] font-inter text-white">
+      <div aria-hidden className="fixed inset-0 bg-[#11131f]" />
 
-      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 py-12 sm:px-8 lg:px-10">
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-4 pb-12 pt-10 sm:px-8 lg:px-10">
         <header className="text-center">
-          <h1 className="font-brandUpright text-[46px] uppercase leading-[0.9] tracking-[0.01em] text-slate-50 sm:text-[56px]">
+          <h1 className="font-brandUpright text-[38px] uppercase leading-none tracking-[0.03em] text-white sm:text-[48px]">
             DÉFI DU JOUR
           </h1>
         </header>
@@ -278,18 +277,18 @@ export default function DailyChallengePage() {
           <div className="mt-6 text-center text-sm text-rose-200">{error}</div>
         )}
         {!loading && !error && (
-          <div className="mx-auto mt-12 flex w-full max-w-[760px] flex-col items-center">
+          <div className="mx-auto mt-8 flex w-full max-w-[760px] flex-col items-center">
             <div className="relative mb-4 flex w-full items-center justify-center">
               <button
                 type="button"
                 onClick={() => goToMonth(-1)}
-                className="absolute left-0 grid h-9 w-9 place-items-center rounded-full border border-white/[0.08] bg-white/[0.04] font-brandUpright text-[30px] leading-none text-white transition hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                className="absolute left-0 grid h-9 w-9 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.05] font-brandUpright text-[30px] leading-none text-white transition hover:bg-white/[0.1] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"              
               >
                 <span className="sr-only">Mois précédent</span>
                 <span aria-hidden className="translate-y-[1px]">‹</span>
               </button>
 
-              <div className="min-w-[170px] text-center font-brandUpright text-[28px] uppercase leading-none tracking-[0.01em] text-slate-100 drop-shadow-[0_2px_7px_rgba(255,255,255,0.14)]">
+              <div className="min-w-[170px] text-center font-brandUpright text-[28px] uppercase leading-none tracking-[0.01em] text-white">
                 {MONTH_NAMES[viewMonthIndex]} {viewYear}
               </div>
 
@@ -297,7 +296,7 @@ export default function DailyChallengePage() {
                 <button
                   type="button"
                   onClick={() => goToMonth(1)}
-                  className="absolute right-0 grid h-9 w-9 place-items-center rounded-full border border-white/[0.08] bg-white/[0.04] font-brandUpright text-[30px] leading-none text-white transition hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                  className="absolute right-0 grid h-9 w-9 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.05] font-brandUpright text-[30px] leading-none text-white transition hover:bg-white/[0.1] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
                 >
                   <span className="sr-only">Mois suivant</span>
                   <span aria-hidden className="translate-y-[1px]">›</span>
@@ -305,7 +304,7 @@ export default function DailyChallengePage() {
               ) : null}
             </div>
 
-            <div className="grid w-full grid-cols-7 gap-1.5 text-center font-inter text-[12px] font-semibold uppercase tracking-[0.05em] text-slate-300/80">
+            <div className="grid w-full grid-cols-7 gap-1.5 text-center font-inter text-[12px] font-semibold uppercase tracking-[0.05em] text-white/55">
               {WEEKDAY_LABELS.map((label) => (
                 <div key={label} className="py-2">
                   {label}
@@ -334,13 +333,13 @@ export default function DailyChallengePage() {
                   completedInfo?.score ?? 0,
                 );
                 const buttonClasses = [
-                  "group relative flex h-[48px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[6px] border bg-gradient-to-b from-[#1A2339] to-[#151E32] text-center transition sm:h-[54px] lg:h-[60px]",
+                  "group relative flex h-[48px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-lg border text-center transition sm:h-[54px] lg:h-[60px]",
                   isSelected
-                    ? "border-white text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]"
+                    ? "border-violet-400 bg-violet-600 text-white shadow-lg shadow-violet-950/25"
                     : isLocked
-                      ? "border-white/[0.04] text-slate-500/80 opacity-65"
-                      : "border-white/[0.06] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]",
-                  canSelect && !isSelected ? "hover:border-white/[0.12]" : "",
+                      ? "border-white/[0.04] bg-black/15 text-white/25 opacity-65"
+                      : "border-white/[0.08] bg-white/[0.035] text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]",
+                  canSelect && !isSelected ? "hover:border-violet-400/60 hover:bg-violet-400/10" : "",
                   !canSelect ? "cursor-default" : "cursor-pointer",
                 ].join(" ");
 
@@ -367,7 +366,7 @@ export default function DailyChallengePage() {
                         <span
                           className={[
                             "inline-flex min-w-[42px] items-center justify-center font-inter text-[11px] font-black leading-none",
-                            "text-emerald-500",
+                            "text-emerald-400",
                           ].join(" ")}
                         >
                           {scoreLabel}
@@ -375,14 +374,14 @@ export default function DailyChallengePage() {
                       ) : isToday ? (
                         <span
                           aria-label="Défi du jour non joué"
-                          className="inline-flex items-center justify-center font-inter text-[12px] font-black leading-none tracking-[0.08em] text-slate-400/85"
+                          className="inline-flex items-center justify-center font-inter text-[12px] font-black leading-none tracking-[0.08em] text-white/55"
                         >
                           ...
                         </span>
                       ) : (
                         <span
                           aria-label="Défi non joué"
-                          className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-slate-500/35 font-inter text-[10px] font-black leading-none text-slate-400/85"
+                          className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white/10 font-inter text-[10px] font-black leading-none text-white/45"
                         >
                           −
                         </span>
@@ -404,8 +403,8 @@ export default function DailyChallengePage() {
                 });
               }}
               className={[
-                "mt-8 inline-flex items-center justify-center rounded-[6px] px-10 py-2.5 font-inter text-[13px] font-extrabold transition",
-                "border border-transparent bg-[#6250C7] text-slate-50 hover:bg-[#6F5BD4]",
+                "mt-8 inline-flex items-center justify-center rounded-lg px-10 py-2.5 font-inter text-[13px] font-extrabold transition",
+                "border border-transparent bg-violet-600 text-white shadow-lg shadow-violet-950/30 hover:bg-violet-500",
                 !selectedChallenge ? "cursor-not-allowed opacity-40" : "",
               ].join(" ")}
             >

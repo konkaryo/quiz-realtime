@@ -14,7 +14,6 @@ import JoinLoadingScreen from "@/components/JoinLoadingScreen";
 import { AUTH_UPDATED_EVENT } from "@/auth/events";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import SideNavigation from "@/components/SideNavigation";
 
 type CurrentUser = {
   displayName?: string;
@@ -125,10 +124,6 @@ function formatNotificationIssuedAt(issuedAt: string) {
 }
 
 const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
-
-function isSideNavigationExpandedByDefault(pathname: string) {
-  return pathname !== "/login" && pathname !== "/register" && !pathname.startsWith("/room/");
-}
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ??
@@ -327,22 +322,14 @@ export default function AppShell() {
   const displayBitsRef = useRef(0);
   const [showJoinLoading, setShowJoinLoading] = useState(false);
   const [displayExperience, setDisplayExperience] = useState(0);
-  const [isSideNavigationOpen, setIsSideNavigationOpen] = useState(() =>
-    isSideNavigationExpandedByDefault(location.pathname),
-  );
   const displayExperienceRef = useRef(0);
   const isRoomRoute = location.pathname.startsWith("/room/");
-  const sideNavigationVisible = isSideNavigationOpen;
   const joinLoadingPending =
     showJoinLoading ||
     (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
   const shouldHideRoomContent = joinLoadingPending && isRoomRoute;
   const isGuest = !user || Boolean(user?.guest);
   const isAdmin = user?.role === "ADMIN";
-
-  useEffect(() => {
-    setIsSideNavigationOpen(isSideNavigationExpandedByDefault(location.pathname));
-  }, [location.pathname]);
 
   useEffect(() => {
    if (!isRoomRoute) {
@@ -1119,31 +1106,7 @@ export default function AppShell() {
           borderBottom: "1px solid rgba(255,255,255,.06)",
         }}
       >
-        {/* Left: toggle navigation verticale + logo → renvoie à la home */}
-        <button
-          type="button"
-          onClick={() => setIsSideNavigationOpen((open) => !open)}
-          aria-label={isSideNavigationOpen ? "Masquer la navigation verticale" : "Afficher la navigation verticale"}
-          aria-pressed={isSideNavigationOpen}
-          style={{
-            display: "grid",
-            placeItems: "center",
-            width: 34,
-            height: 34,
-            border: 0,
-            borderRadius: 8,
-            background: "transparent",
-            cursor: "pointer",
-            flexShrink: 0,
-            padding: 0,
-          }}
-        >
-          <span aria-hidden style={{ display: "grid", gap: 4 }}>
-            <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
-            <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
-            <span style={{ display: "block", width: 22, height: 2, borderRadius: 999, background: "#fff" }} />
-          </span>
-        </button>
+        {/* Left: logo → renvoie à la home */}
         <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <img
             src={logoUrl}
@@ -1864,8 +1827,6 @@ export default function AppShell() {
         </div>
       </header>
 
-      {sideNavigationVisible && <SideNavigation />}
-
       {/* ---- Page content ---- */}
       <main
         style={{
@@ -1877,7 +1838,6 @@ export default function AppShell() {
           margin: "0 auto",
           fontFamily: "system-ui, sans-serif",
         }}
-        className={sideNavigationVisible ? "app-main--with-side-navigation" : undefined}
       >
         <Outlet />
       </main>
@@ -1977,7 +1937,7 @@ export default function AppShell() {
           display: "flex",
           gap: 10,
           alignItems: "flex-start",
-          background: "rgba(15,23,42,.65)",
+          background: "#0b0f1d",
           border: "1px solid rgba(255,255,255,.12)",
           borderRadius: 8,
           padding: "10px 10px",

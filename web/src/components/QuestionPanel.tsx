@@ -14,7 +14,7 @@ export type QuestionLite = {
   slotLabel: string | null;
 };
 
-export type QuestionProgress = "pending" | "correct" | "correct-mc" | "wrong";
+export type QuestionProgress = "pending" | "missed" | "correct" | "correct-mc" | "wrong";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -898,19 +898,21 @@ export default function DailyQuestionPanel(props: Props) {
       {showProgress && questionProgress.length > 0 && (
         <div className="mt-4 flex flex-wrap justify-center gap-1.5">
           {questionProgress.map((state, i) => {
-            const color =
+            const appearance =
               state === "correct"
                 ? "bg-emerald-600"
                 : state === "correct-mc"
                 ? "bg-[#6F5BD4]"
                 : state === "wrong"
                 ? "bg-[#AF2D33]"
-                : "bg-slate-700/60";
+                : state === "missed"
+                ? "bg-slate-900/80 text-slate-400 ring-1 ring-inset ring-slate-600/40"
+                : "bg-slate-700/60 text-slate-50";
 
             return (
               <div
                 key={i}
-                className={`flex h-[30px] w-[30px] items-center justify-center rounded-md text-[11px] font-semibold text-slate-50 ${color}`}
+                className={`flex h-[30px] w-[30px] items-center justify-center rounded-md text-[11px] font-semibold ${appearance}`}
               >
                 {i + 1}
               </div>

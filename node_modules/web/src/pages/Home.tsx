@@ -1,7 +1,7 @@
 // web/src/pages/Home.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Check, ChevronLeft, ChevronRight, Clock3, Hourglass, Lock, Plus, X } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Clock3, Hourglass, Lock, Plus, Users, X } from "lucide-react";
 import { io } from "socket.io-client";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
@@ -139,11 +139,11 @@ export default function Home() {
       <div className="mx-auto grid max-w-[1440px] gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-10">
         <div className="min-w-0 space-y-10">
           <section className="relative isolate min-h-[240px] overflow-hidden rounded-2xl bg-[#12172a] shadow-2xl xl:w-[90%]">
-            <img src={`${API_BASE}/img/interface/home_01.png`} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
+            <img src={`${API_BASE}/img/interface/home_01.png`} alt="" className="absolute inset-0 h-full w-full object-contain object-right" />
             <div className="absolute inset-0 bg-gradient-to-r from-[#080b19]/95 via-[#0b1020]/75 to-transparent" />
             <div className="relative flex min-h-[240px] max-w-xl flex-col justify-center p-6 sm:px-10 sm:py-7">
               <h1 className="font-brutal text-[24px] leading-tight sm:text-[32px]">{isGuest ? "Bienvenue sur Synapz" : `Bonjour ${displayName} !`}</h1>
-              <p className="mt-1 bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-[18px] font-bold text-transparent sm:text-[24px]">Prêt à tester tes connaissances ?</p>
+              <p className="mt-1 text-[18px] font-bold text-violet-400 sm:text-[24px]">Prêt à tester tes connaissances ?</p>
               <p className="mt-3 max-w-md font-inter text-white/80 text-[14px]">Rejoins tes amis avec un code d’invitation ou crée ta propre partie en quelques secondes.</p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link to="/private/join" className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-[13px] font-semibold text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 hover:!text-white">Rejoindre une partie <ArrowRight size={17} /></Link>
@@ -157,17 +157,35 @@ export default function Home() {
             {loading && <div className="rounded-xl border border-white/10 bg-white/[.03] p-10 text-center text-sm text-white/60">Chargement des parties…</div>}
             {err && <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-5 text-sm text-red-300">{err}</div>}
             {!loading && !err && rooms.length === 0 && <div className="rounded-xl border border-dashed border-white/15 bg-white/[.02] p-10 text-center text-sm text-white/55">Aucune partie publique disponible pour le moment.</div>}
-            {!loading && !err && rooms.length > 0 && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{rooms.map((room) => {
+            {!loading && !err && rooms.length > 0 && <div className="grid gap-4 lg:grid-cols-3 xl:grid-cols-4">{rooms.map((room) => {
               const playerCount = Math.max(0, Number(room.playerCount) || 0);
               const visiblePlayers = room.players?.slice(0, 3) ?? [];
               const additionalPlayers = Math.max(0, playerCount - visiblePlayers.length);
               const difficultyLevel = difficulty(room.difficulty);
               const difficultyLabel = ["Facile", "Modérée", "Difficile", "Extrême"][difficultyLevel - 1];
               const roomName = room.name?.trim() || `Partie ${difficultyLabel}`;
-              return <button key={room.id} type="button" onClick={() => openRoom(room.id)} aria-label={`Rejoindre ${roomName}`} className="group relative isolate aspect-[5/6] overflow-hidden rounded-[14px] border border-white/10 bg-[#07101e] text-left shadow-lg [backface-visibility:hidden] transform-gpu transition hover:-translate-y-1 hover:ring-2 hover:ring-white hover:shadow-cyan-950/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
-                {room.image && <img src={`${API_BASE}/img/interface/${room.image}.avif`} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#030711] via-[#050a14]/75 to-black/5" />
-                <div className="absolute inset-x-0 bottom-0 p-4">
+              return <button key={room.id} type="button" onClick={() => openRoom(room.id)} aria-label={`Rejoindre ${roomName}`} className="group relative isolate h-[112px] w-full overflow-hidden rounded-[14px] border border-white/10 bg-[#171a29] text-left shadow-lg [backface-visibility:hidden] transform-gpu transition hover:-translate-y-1 hover:ring-2 hover:ring-white hover:shadow-cyan-950/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-[132px] lg:aspect-[5/6] lg:h-auto lg:bg-[#07101e]">
+                {room.image && <img src={`${API_BASE}/img/interface/${room.image}.avif`} alt="" className="absolute inset-y-0 left-0 h-full w-24 object-cover transition duration-500 group-hover:scale-105 sm:w-40 md:w-44 lg:inset-0 lg:w-full" />}
+                <div className="absolute inset-0 hidden bg-gradient-to-t from-[#030711] via-[#050a14]/75 to-black/5 lg:block" />
+
+                <div className="absolute inset-y-0 left-24 right-0 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:left-40 sm:px-5 md:left-44 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:gap-5 lg:hidden">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="truncate font-brand text-[21px] uppercase leading-none text-white sm:text-[24px]">{roomName}</h3>
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-lime-400" aria-label="Partie disponible" />
+                    </div>
+                    <p className="mt-2 truncate font-acuminMedium text-[12px] italic text-white/55 sm:text-[14px]" aria-label={`Classique, difficulté ${difficultyLabel}`}>Classique · {"★".repeat(difficultyLevel)}</p>
+                  </div>
+                  <div className="hidden min-w-[76px] items-center md:flex">
+                    {visiblePlayers.map((player, index) => <img key={player.id} src={`${API_BASE}${player.img}`} alt={player.name} title={player.name} className={`h-9 w-9 rounded-full border-2 border-[#171a29] object-cover ${index > 0 ? "-ml-2.5" : ""}`} />)}
+                    {additionalPlayers > 0 && <span className="ml-1 text-xs font-bold text-white">+{additionalPlayers}</span>}
+                    {playerCount === 0 && <span className="text-xs text-white/35">—</span>}
+                  </div>
+                  <span className="hidden items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-white/75 md:inline-flex"><Users size={18} aria-hidden="true" />{playerCount}</span>
+                  <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-violet-400"><span className="hidden sm:inline">Rejoindre</span><ChevronRight size={22} aria-hidden="true" /></span>
+                </div>
+
+                <div className="absolute inset-x-0 bottom-0 hidden p-4 lg:block">
                   <div className="flex items-start gap-2"><h3 className="break-words font-brand text-[23px] uppercase leading-none text-white">{roomName}</h3><span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-lime-400" aria-label="Partie disponible" /></div>
                   <p className="mt-1 font-acuminMedium text-[12px] italic text-white/50" aria-label={`Classique, difficulté ${difficultyLabel}`}>Classique · {"★".repeat(difficultyLevel)}</p>
                   <div className="mt-4 flex items-center justify-between gap-2">
