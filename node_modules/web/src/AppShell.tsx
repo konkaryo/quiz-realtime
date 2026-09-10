@@ -325,6 +325,7 @@ export default function AppShell() {
   const displayExperienceRef = useRef(0);
   const isRoomRoute = location.pathname.startsWith("/room/");
   const isTestRoute = location.pathname === "/test";
+  const isLandingRoute = location.pathname === "/";
   const joinLoadingPending =
     showJoinLoading ||
     (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
@@ -1092,11 +1093,11 @@ export default function AppShell() {
           setOpenMenu(null);
         }}
         style={{
+          display: isLandingRoute ? "none" : "flex",
           position: "fixed",
           insetInline: 0,
           top: 0,
           height: HEADER_H,
-          display: "flex",
           alignItems: "center",
           gap: 16,
           padding: "0 16px",
@@ -1867,8 +1868,8 @@ export default function AppShell() {
       <main
         style={{
           flex: 1,
-          paddingTop: isTestRoute ? 0 : HEADER_H,
-          minHeight: isTestRoute ? "100dvh" : `calc(100dvh - ${HEADER_H}px)`,
+          paddingTop: isTestRoute || isLandingRoute ? 0 : HEADER_H,
+          minHeight: isTestRoute || isLandingRoute ? "100dvh" : `calc(100dvh - ${HEADER_H}px)`,
           width: "100%",
           boxSizing: "border-box",
           margin: "0 auto",
