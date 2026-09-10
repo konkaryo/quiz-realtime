@@ -324,6 +324,7 @@ export default function AppShell() {
   const [displayExperience, setDisplayExperience] = useState(0);
   const displayExperienceRef = useRef(0);
   const isRoomRoute = location.pathname.startsWith("/room/");
+  const isTestRoute = location.pathname === "/test";
   const joinLoadingPending =
     showJoinLoading ||
     (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
@@ -1099,11 +1100,11 @@ export default function AppShell() {
           alignItems: "center",
           gap: 16,
           padding: "0 16px",
-          background: "#212539",
+          background: isTestRoute ? "transparent" : "#212539",
           zIndex: 60,
           color: "#e5e7eb",
-          boxShadow: "0 10px 30px rgba(0,0,0,.55)",
-          borderBottom: "1px solid rgba(255,255,255,.06)",
+          boxShadow: isTestRoute ? "none" : "0 10px 30px rgba(0,0,0,.55)",
+          borderBottom: isTestRoute ? "none" : "1px solid rgba(255,255,255,.06)",
         }}
       >
         {/* Left: logo → renvoie à la home */}
@@ -1119,6 +1120,8 @@ export default function AppShell() {
             }}
           />
         </Link>
+        {!isTestRoute && (
+          <>
 
         {/* Center: nav (sans le bouton Accueil) */}
         <nav
@@ -1825,14 +1828,47 @@ export default function AppShell() {
             </>
           )}
         </div>
+          </>
+        )}
+        {isTestRoute && (
+          <Link
+            to="/me/profile"
+            aria-label="Voir mon profil"
+            title={user?.displayName || "Profil"}
+            style={{
+              display: "block",
+              width: 32,
+              height: 32,
+              marginLeft: "auto",
+              overflow: "hidden",
+              borderRadius: 8,
+              background: "#0f172a",
+              flexShrink: 0,
+            }}
+          >
+            <img
+              src={avatarUrl}
+              alt=""
+              onError={(event) => {
+                event.currentTarget.src = "/img/profiles/0.avif";
+              }}
+              style={{
+                display: "block",
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          </Link>
+        )}
       </header>
 
       {/* ---- Page content ---- */}
       <main
         style={{
           flex: 1,
-          paddingTop: HEADER_H,
-          minHeight: `calc(100dvh - ${HEADER_H}px)`,
+          paddingTop: isTestRoute ? 0 : HEADER_H,
+          minHeight: isTestRoute ? "100dvh" : `calc(100dvh - ${HEADER_H}px)`,
           width: "100%",
           boxSizing: "border-box",
           margin: "0 auto",

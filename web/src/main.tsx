@@ -21,6 +21,7 @@ import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
+import TestPage from "./pages/TestPage";
 import "./index.css";
 import { Toaster } from "./components/ui/toaster";
 
@@ -180,6 +181,7 @@ const router = createBrowserRouter([
         ),
       },
       { path: "/", element: <Home /> },
+      { path: "/test", element: <TestPage /> },
 
       { path: "/solo/daily", element: <DailyChallengePage /> },
       { path: "/solo/daily/:date", element: <DailyChallengePlayPage /> },
