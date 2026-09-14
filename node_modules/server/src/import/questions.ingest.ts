@@ -3,6 +3,7 @@ import fs from "fs";
 import { parse } from "csv-parse";
 import { z } from "zod";
 import { PrismaClient, Prisma, Theme } from "@prisma/client";
+import { norm, normalizeExactRequirement } from "../domain/question/textmatch";
 
 const prisma = new PrismaClient();
 
@@ -17,6 +18,7 @@ const Row = z.object({
   difficulte: z.string().optional().nullable(),
   img: z.string().optional().nullable(),
   fuzzy: z.string().optional().nullable(),
+  exact: z.string().optional().nullable(),
 });
 
 type Parsed = {
@@ -28,6 +30,7 @@ type Parsed = {
   difficulty?: string | null;
   img?: string | null;
   fuzzy?: string[];
+  exact?: string[];
 };
 
 /* ----------------------- normalisation thèmes ----------------------- */
@@ -54,26 +57,6 @@ function toEnumTheme(key?: string | null): Theme | null {
   return THEME_BY_NORM[key] ?? null;
 }
 
-/* ----------------------- normalisation "fuzzy" ----------------------- */
-const linkWords = new Set([
-    "le","la","les","l","un","une","des","du","de","d","au","aux","et","&","à","en","sur","sous","dans","par","pour",
-    "the","a","an","of"
-]);
-
-function norm(s: string): string {
-  let t = (s ?? "")
-    .normalize("NFKD")
-    .toLowerCase()
-    .replace(/[\u0300-\u036f]/g, "");
-
-  t = t.replace(/['’`´]/g, "'");
-  t = t.replace(/[^a-z0-9]+/g, " ").trim();
-
-  if (!t) return "";
-
-  const tokens = t.split(/\s+/).filter(tok => tok && !linkWords.has(tok));
-  return tokens.join(" ");
-}
 
 /* ----------------------- parse CSV ----------------------- */
 async function parseCsv(filePath: string): Promise<Parsed[]> {
@@ -117,6 +100,11 @@ async function parseCsv(filePath: string): Promise<Parsed[]> {
         .split("|")
         .map(v => compact(v))
         .filter(Boolean);
+    const exactList =
+      (r.exact ?? "")
+        .split("|")
+        .map(v => compact(v))
+        .filter(Boolean);
 
     const d0 = r.difficulte ? compact(r.difficulte) : null;
     const difficulty = d0 && ["1","2","3","4"].includes(d0) ? d0 : null;
@@ -135,8 +123,25 @@ async function parseCsv(filePath: string): Promise<Parsed[]> {
       difficulty,                // 👈 "1".."4" | null
       img: r.img ? r.img.trim() : null,
       fuzzy: fuzzyList,
+      exact: exactList,
     };
   });
+}
+
+async function upsertExactAnswers(
+  tx: Prisma.TransactionClient,
+  questionId: string,
+  exact?: string[]
+) {
+  for (const value of new Set(exact ?? [])) {
+    const n = normalizeExactRequirement(value);
+    if (!n) continue;
+    await tx.exactAnswer.upsert({
+      where: { questionId_norm: { questionId, norm: n } },
+      update: { text: value },
+      create: { questionId, text: value, norm: n },
+    });
+  }
 }
 
 /* -------------- upsert des variantes acceptées pour 1 question -------------- */
@@ -194,6 +199,7 @@ export async function importQuestions(filePath: string) {
       if (existing) {
         await tx.choice.deleteMany({ where: { questionId } });
         await tx.acceptedAnswer.deleteMany({ where: { questionId } });
+        await tx.exactAnswer.deleteMany({ where: { questionId } });
         await tx.question.update({
           where: { id: questionId },
           data: {
@@ -218,6 +224,7 @@ export async function importQuestions(filePath: string) {
       }
 
       await upsertAcceptedAnswers(tx, questionId, q.correct, q.fuzzy);
+      await upsertExactAnswers(tx, questionId, q.exact);
     });
   }
 

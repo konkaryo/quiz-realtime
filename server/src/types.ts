@@ -7,6 +7,7 @@ export type RoundQuestion = {
   img: string | null;
   choices: RoundChoice[];
   acceptedNorms: string[];
+  exactNorms: string[];
   correctLabel: string;
 };
 export type StoredAnswer = {
@@ -30,6 +31,7 @@ export type GameState = {
   answeredOrderText: string[];
   answeredOrder: string[];
   mcModePgIds: Set<string>;
+  qcmUsesByPgId: Map<string, number>;
   roundSeq: number;
   roundUid?: string;
   pgIds: Set<string>;

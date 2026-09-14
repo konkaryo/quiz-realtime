@@ -12,6 +12,7 @@ import { buildPlayerSummary, buildRoomQuestionStats } from "./summary.service";
 import { awardBitsForGame } from "./bits-reward.service";
 import { awardXpForGame } from "./xp-reward.service";
 import { emitPublicRoomsUpdated } from "../room/public-room-events";
+import { CFG } from "../../config";
 
 type Leaderboard = Awaited<ReturnType<typeof lb_service.buildLeaderboard>>;
 
@@ -276,6 +277,7 @@ export async function startGameForRoom(
       id: true, text: true, theme: true, difficulty: true, img: true,
       choices: { select: { id: true, label: true, isCorrect: true } },
       acceptedAnswers: { select: { norm: true } },
+      exactAnswers: { select: { norm: true } },
     },
   });
 
@@ -289,6 +291,7 @@ export async function startGameForRoom(
       img: media_service.toImgUrl(q.img),
       choices: q.choices,
       acceptedNorms: q.acceptedAnswers.map((a) => a.norm),
+      exactNorms: q.exactAnswers.map((a) => a.norm),
       correctLabel: correct ? correct.label : "",
     };
   });
@@ -307,6 +310,7 @@ export async function startGameForRoom(
     answeredOrderText: [],
     answeredOrder: [],
     mcModePgIds: new Set<string>(),
+    qcmUsesByPgId: new Map<string, number>(),
     pgIds: new Set(pgs.map((p) => p.id)),
     attemptsThisRound: new Map<string, number>(),
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
@@ -338,6 +342,7 @@ export async function startGameForRoom(
       seconds: countdownSeconds,
       endsAt,
       serverNow: Date.now(),
+      qcmUsesLeft: CFG.ROOM_QCM_USES,
     });
     emitPublicRoomsUpdated(io);
     st.timer = setTimeout(() => {
@@ -500,6 +505,29 @@ async function endRound(
 
   const leaderboard = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
   const correct = q.choices.find(c => c.isCorrect) || null;
+  const leaderboardById = new Map(leaderboard.map((player) => [player.id, player]));
+  const speedLeaders = Array.from(st.playerData.entries())
+    .flatMap(([playerGameId, player]) => {
+      const answer = player.answers
+        .filter((item) => item.questionId === q.id && item.correct)
+        .sort((a, b) => a.responseMs - b.responseMs)[0];
+      const profile = leaderboardById.get(playerGameId);
+      return answer
+        ? [{
+            id: playerGameId,
+            playerId: profile?.playerId ?? null,
+            name: profile?.name ?? player.name ?? "Joueur",
+            img: profile?.img ?? null,
+            responseMs: answer.responseMs,
+            points: answer.points,
+            mode: answer.mode,
+          }]
+        : [];
+    })
+    .sort((a, b) => {
+      if (a.mode !== b.mode) return a.mode === "text" ? -1 : 1;
+      return a.responseMs - b.responseMs || b.points - a.points;
+    });
 
   io.to(st.roomId).emit("round_end", {
     index: st.index,
@@ -510,12 +538,28 @@ async function endRound(
   emitPublicRoomsUpdated(io);
 
   st.endsAt = undefined;
+  const feedbackMs = Math.max(0, Number(process.env.ROUND_FEEDBACK_MS || 1800));
+  const resultsMs = Math.max(0, Number(process.env.ROUND_RESULTS_MS || 5500));
+  const resultsEndsAt = Date.now() + feedbackMs + resultsMs;
+  const emitSpeedLeaders = (roundUid: string, index: number) => {
+    setTimeout(() => {
+      if (st.roundUid !== roundUid) return;
+      io.to(st.roomId).emit("round_speed", {
+        index,
+        speedLeaders,
+        endsAt: resultsEndsAt,
+        durationMs: resultsMs,
+        serverNow: Date.now(),
+      });
+    }, feedbackMs);
+  };
 
   const hasNext = st.index + 1 < st.questions.length;
   if (!hasNext) {
-    const finalGapMs = Number(process.env.FINAL_GAP_MS || process.env.GAP_MS || 3001);
+    const finalGapMs = feedbackMs + resultsMs;
     const finalGapUid = `${st.gameId}:${st.index}:finalgap:${Date.now()}`;
     st.roundUid = finalGapUid;
+    emitSpeedLeaders(finalGapUid, st.index);
 
     if (st.timer) { clearTimeout(st.timer); }
     st.timer = setTimeout(() => {
@@ -527,11 +571,12 @@ async function endRound(
     return;
   }
 
-  const GAP_MS = Number(process.env.GAP_MS || 3001);
+  const GAP_MS = feedbackMs + resultsMs;
   st.index += 1;
   const nextDelayUid = `${st.gameId}:${st.index}:gap:${Date.now()}`;
   st.roundUid = nextDelayUid; // invalide l'ancien round/timeout pendant l'attente
   st.waitingForManualLaunch = false;
+  emitSpeedLeaders(nextDelayUid, st.index - 1);
 
   if (st.manualQuestionLaunch) {
     st.timer = setTimeout(() => {

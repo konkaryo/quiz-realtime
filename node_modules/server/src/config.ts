@@ -7,6 +7,7 @@ export const CFG = {
   GAP_MS: Number(process.env.GAP_MS || 3001),
   FINAL_LB_MS: Number(process.env.FINAL_LB_MS || 10000),
   TEXT_LIVES: Number(process.env.TEXT_LIVES || 3),
+  ROOM_QCM_USES: Math.max(0, Number.isFinite(Number(process.env.ROOM_QCM_USES)) ? Number(process.env.ROOM_QCM_USES) : 3),
   MC_ANSWER_POINTS_GAIN: Number(process.env.MC_ANSWER_POINTS_GAIN || 70),
   TXT_ANSWER_POINTS_GAIN: Number(process.env.TXT_ANSWER_POINTS_GAIN || 100),
   BITS_POT_SCALE: Number(process.env.BITS_POT_SCALE || 40),

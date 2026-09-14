@@ -10,7 +10,7 @@ import calendarIconUrl from "@/assets/calendar_icon.png";
 import cardsIconUrl from "@/assets/cards.png";
 import rankingIconUrl from "@/assets/ranking.png";
 import { getLevelProgress } from "@/utils/experience";
-import JoinLoadingScreen from "@/components/JoinLoadingScreen";
+import LoadingScreen from "@/components/LoadingScreen";
 import { AUTH_UPDATED_EVENT } from "@/auth/events";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
@@ -320,41 +320,13 @@ export default function AppShell() {
   const [loading, setLoading] = useState(true);
   const [displayBits, setDisplayBits] = useState(0);
   const displayBitsRef = useRef(0);
-  const [showJoinLoading, setShowJoinLoading] = useState(false);
   const [displayExperience, setDisplayExperience] = useState(0);
   const displayExperienceRef = useRef(0);
   const isRoomRoute = location.pathname.startsWith("/room/");
   const isTestRoute = location.pathname === "/test";
   const isLandingRoute = location.pathname === "/";
-  const joinLoadingPending =
-    showJoinLoading ||
-    (typeof window !== "undefined" && sessionStorage.getItem("join-loading") === "1");
-  const shouldHideRoomContent = joinLoadingPending && isRoomRoute;
   const isGuest = !user || Boolean(user?.guest);
   const isAdmin = user?.role === "ADMIN";
-
-  useEffect(() => {
-   if (!isRoomRoute) {
-      sessionStorage.removeItem("join-loading");
-      setShowJoinLoading(false);
-      return;
-    }
-
-    const hasJoinLoading = sessionStorage.getItem("join-loading") === "1";
-    if (!hasJoinLoading && !showJoinLoading) return;
-    if (hasJoinLoading) {
-      sessionStorage.removeItem("join-loading");
-    }
-    setShowJoinLoading(true);
-
-    const hideTimer = window.setTimeout(() => {
-      setShowJoinLoading(false);
-    }, 5000);
-
-    return () => {
-      window.clearTimeout(hideTimer);
-    };
-  }, [isRoomRoute, location.key, showJoinLoading]);
 
   const animationRef = useRef<number | null>(null);
   const experienceAnimationRef = useRef<number | null>(null);
@@ -596,7 +568,6 @@ export default function AppShell() {
     setNotificationsOpen(false);
     setNotifications((prev) => prev.filter((item) => item.id !== notification.id));
     setUnreadCount((prev) => Math.max(0, prev - 1));
-    sessionStorage.setItem("join-loading", "1");
     nav(href);
   }, [nav]);
 
@@ -1093,7 +1064,7 @@ export default function AppShell() {
           setOpenMenu(null);
         }}
         style={{
-          display: isLandingRoute ? "none" : "flex",
+          display: isLandingRoute || isRoomRoute ? "none" : "flex",
           position: "fixed",
           insetInline: 0,
           top: 0,
@@ -1868,8 +1839,8 @@ export default function AppShell() {
       <main
         style={{
           flex: 1,
-          paddingTop: isTestRoute || isLandingRoute ? 0 : HEADER_H,
-          minHeight: isTestRoute || isLandingRoute ? "100dvh" : `calc(100dvh - ${HEADER_H}px)`,
+          paddingTop: isTestRoute || isLandingRoute || isRoomRoute ? 0 : HEADER_H,
+          minHeight: isTestRoute || isLandingRoute || isRoomRoute ? "100dvh" : `calc(100dvh - ${HEADER_H}px)`,
           width: "100%",
           boxSizing: "border-box",
           margin: "0 auto",
@@ -2073,7 +2044,7 @@ export default function AppShell() {
           </aside>
         </>
       )}
-      {joinLoadingPending && <JoinLoadingScreen offsetTop={HEADER_H} />}
+      {loading && !isLandingRoute && <LoadingScreen />}
     </div>
   );
 }

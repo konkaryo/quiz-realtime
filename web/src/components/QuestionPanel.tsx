@@ -182,6 +182,7 @@ export function OverwatchTimerBadge({
 /* ------------------- RESTE DU FICHIER STRICTEMENT ORIGINAL ------------------- */
 
 type Props = {
+  className?: string;
   question: QuestionLite;
   index: number;
   totalQuestions: number | null;
@@ -239,6 +240,7 @@ function getVisibleQuestionLength(textLength: number, elapsedMs: number) {
 
 export default function DailyQuestionPanel(props: Props) {
   const {
+    className = "",
     question,
     lives,
     totalLives,
@@ -591,7 +593,7 @@ export default function DailyQuestionPanel(props: Props) {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col items-center">
+    <div className={`question-panel mx-auto flex w-full max-w-6xl flex-col items-center ${className}`}>
       {/* TIMER */}
       {showTimer ? (
         <div className="w-[700px] max-w-full">
@@ -605,7 +607,7 @@ export default function DailyQuestionPanel(props: Props) {
       ) : null}
 
       {/* PANNEAU SUPÉRIEUR */}
-      <div className={`relative ${showTimer ? "mt-10" : "mt-6"} w-[430px] max-w-full aspect-[2.24/1]`}>
+      <div className={`question-panel-question relative ${showTimer ? "mt-10" : "mt-6"} w-[430px] max-w-full aspect-[2.24/1]`}>
         {/* NOM DU THÈME */}
         {question.theme && (
           <div className="absolute -top-4 left-1/2 z-30 -translate-x-1/2 text-center">
@@ -715,7 +717,7 @@ export default function DailyQuestionPanel(props: Props) {
           className="pointer-events-none absolute inset-0 translate-y-2 rounded-[14px]"
           style={{ backgroundColor: "#6F5BD4" }}
         />
-        <div className={topPanelClass} style={topPanelStyle}>
+        <div className={`question-panel-question-surface ${topPanelClass}`} style={topPanelStyle}>
           <div className="flex h-full items-center justify-center">
             <p className="relative mx-auto max-h-[8.4em] max-w-[86%] overflow-hidden text-center text-[13px] font-semibold leading-snug text-slate-50 md:text-[16px]">
               {animateQuestionText ? (
@@ -789,7 +791,7 @@ export default function DailyQuestionPanel(props: Props) {
         </div>
       ) : (
         /* MODE TEXTE : panneau inférieur original (boutons intégrés) */
-        <div className="relative mt-8 w-[580px] max-w-full">
+        <div className="question-panel-answer relative mt-8 w-[580px] max-w-full">
           {correctLabelPlacement === "above" ? (
             <div className="pointer-events-none absolute -top-12 left-1/2 z-20 w-full -translate-x-1/2">
               {renderCorrectLabelMeta()}
@@ -809,7 +811,7 @@ export default function DailyQuestionPanel(props: Props) {
 
           {/* Panneau de saisie */}
           <div className="relative mx-auto w-full">
-            <div className={bottomPanelClass} style={bottomPanelStyle}>
+            <div className={`question-panel-answer-surface ${bottomPanelClass}`} style={bottomPanelStyle}>
               <div className="flex items-center gap-3">
                 <div className="flex-1 rounded-[9px] border border-slate-700/80 bg-black/70 px-2 py-0.5 shadow-inner shadow-black/80">
                   <input

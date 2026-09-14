@@ -9,10 +9,55 @@ export function norm(s: string): string {
     if (!t) return "";
     const STOP = new Set(["le","la","les","l","un","une","des","du","de","d","au","aux","et",
         "&","à","en","sur","sous","dans","par","pour","the","a","an","of"]);
-    const tokens = t.split(/\s+/).filter(tok => tok && !STOP.has(tok));
-    return tokens.join(" ");
+    const tokens = t.split(/\s+/).filter(Boolean);
+    if (tokens.length === 1) return tokens[0];
+
+    const KEEP_UNE_AFTER = [
+        ["et"], ["dix"], ["vingt"], ["trente"], ["quarante"], ["cinquante"], ["soixante"],
+        ["soixante", "dix"], ["quatre", "vingts"], ["quatre", "vingt", "dix"],
+        ["septante"], ["nonante"], ["huitante"],
+    ];
+    const followsKeptPredecessor = (index: number): boolean => KEEP_UNE_AFTER.some(words =>
+        words.length <= index && words.every((word, offset) => tokens[index - words.length + offset] === word)
+    );
+
+    return tokens
+        .filter((tok, index) => !STOP.has(tok) || ((tok === "un" || tok === "une") && followsKeptPredecessor(index)))
+        .join(" ");
 }
 /* ---------------------------------------------------------------------------------------- */
+
+export function normalizeExactRequirement(s: string): string {
+    return (s ?? "")
+        .normalize("NFKD")
+        .toLowerCase()
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+}
+
+export function hasRequiredExactMatch(answer: string, exactNorms: string[]): boolean {
+    if (exactNorms.length === 0) return true;
+
+    const candidate = normalizeExactRequirement(answer);
+    return exactNorms.some(exactNorm => {
+        if (!exactNorm) return false;
+
+        let index = candidate.indexOf(exactNorm);
+        while (index !== -1) {
+            const beforeIsBoundary = index === 0 || candidate[index - 1] === " ";
+            const end = index + exactNorm.length;
+            const afterIsBoundary = end === candidate.length || candidate[end] === " ";
+            if (beforeIsBoundary && afterIsBoundary) return true;
+            index = candidate.indexOf(exactNorm, index + 1);
+        }
+        return false;
+    });
+}
+
+export function isTextAnswerCorrect(answer: string, acceptedNorms: string[], exactNorms: string[]): boolean {
+    return isFuzzyMatch(norm(answer), acceptedNorms) && hasRequiredExactMatch(answer, exactNorms);
+}
+
 
 /* ---------------------------------------------------------------------------------------- */
 export function isFuzzyMatch(userNorm: string, accepted: string[]): boolean {
@@ -36,11 +81,10 @@ export function isFuzzyMatch(userNorm: string, accepted: string[]): boolean {
 
 /* ---------------------------------------------------------------------------------------- */
 function maxEditsFor(refLen: number): number {
-    if (refLen <= 3)  return 0;           // "Lyon" → tolérance 0
-    if (refLen <= 6)  return 1;           // "Paris" → 1 erreur typique
-    if (refLen <= 10)  return 2;           // "Manchester" court → 2
-    if (refLen <= 15) return 3;
-    return Math.min(4, Math.floor(refLen * 0.15));
+    if (refLen <= 4) return 0;
+    if (refLen <= 8) return 1;
+    if (refLen <= 15) return 2;
+    return 3;
 }
 /* ---------------------------------------------------------------------------------------- */
 

@@ -229,6 +229,7 @@ model Question {
   img                   String?
   playerGames           PlayerGame[]
   acceptedAnswers       AcceptedAnswer[]
+  exactAnswers          ExactAnswer[]
   answers               Answer[]
   dailyEntries          DailyChallengeQuestion[]
   dailyChallengeResults DailyChallengeQuestionResult[]
@@ -271,6 +272,16 @@ model Answer {
 }
 
 model AcceptedAnswer {
+  id         String   @id @default(cuid())
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId String
+  text       String
+  norm       String
+
+  @@unique([questionId, norm])
+}
+
+model ExactAnswer {
   id         String   @id @default(cuid())
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   questionId String

@@ -72,7 +72,26 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       if (password.length < 8)   return reply.code(400).send({ error: "weak-password" });
 
       const exists = await prisma.user.findUnique({ where: { email } });
-      if (exists) return reply.code(409).send({ error: "email-taken" });
+      if (exists) {
+        if (exists.emailVerifiedAt) {
+          return reply.code(409).send({ error: "email-taken" });
+        }
+
+        // A previous provider failure may have left an unverified account in
+        // the database. Re-issuing its token lets the user retry registration
+        // without modifying the password or profile already stored.
+        const verificationToken = await emailTokenService.createEmailToken(
+          prisma,
+          exists.id,
+          EmailTokenType.EMAIL_VERIFICATION
+        );
+        await sendVerificationEmail(email, verificationToken);
+
+        return reply.code(201).send({
+          ok: true,
+          message: "verification-email-sent",
+        });
+      }
 
       const passwordHash = await hashPassword(password);
 

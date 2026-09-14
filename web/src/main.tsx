@@ -24,24 +24,7 @@ import AdminPage from "./pages/AdminPage";
 import TestPage from "./pages/TestPage";
 import "./index.css";
 import { Toaster } from "./components/ui/toaster";
-
-function FullscreenLoader() {
-  return (
-    <div
-      style={{
-        minHeight: "calc(100dvh - 52px)",
-        background: "#13141F",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        color: "rgba(248,250,252,.7)",
-      }}
-    >
-      Chargement…
-    </div>
-  );
-}
+import LoadingScreen from "./components/LoadingScreen";
 
 // pages publiques
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
@@ -90,7 +73,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (status === "pending") {
-    return <FullscreenLoader />;
+    return <LoadingScreen />;
   }
 
   return <>{children}</>;
@@ -112,7 +95,7 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (status === "pending") {
-    return <FullscreenLoader />;
+    return <LoadingScreen />;
   }
 
   if (status === "denied") {
@@ -135,7 +118,7 @@ const router = createBrowserRouter([
       {
         path: "/login",
         element: (
-          <React.Suspense fallback={<FullscreenLoader />}>
+          <React.Suspense fallback={<LoadingScreen />}>
             <LoginPage />
           </React.Suspense>
         ),
@@ -143,7 +126,7 @@ const router = createBrowserRouter([
       {
         path: "/register",
         element: (
-          <React.Suspense fallback={<FullscreenLoader />}>
+          <React.Suspense fallback={<LoadingScreen />}>
             <RegisterPage />
           </React.Suspense>
         ),
@@ -151,7 +134,7 @@ const router = createBrowserRouter([
       {
         path: "/forgot-password",
         element: (
-          <React.Suspense fallback={<FullscreenLoader />}>
+          <React.Suspense fallback={<LoadingScreen />}>
             <ForgotPasswordPage />
           </React.Suspense>
         ),
@@ -159,7 +142,7 @@ const router = createBrowserRouter([
       {
         path: "/reset-password",
         element: (
-          <React.Suspense fallback={<FullscreenLoader />}>
+          <React.Suspense fallback={<LoadingScreen />}>
             <ResetPasswordPage />
           </React.Suspense>
         ),
@@ -167,7 +150,7 @@ const router = createBrowserRouter([
       {
         path: "/verify-email",
         element: (
-          <React.Suspense fallback={<FullscreenLoader />}>
+          <React.Suspense fallback={<LoadingScreen />}>
             <VerifyEmailPage />
           </React.Suspense>
         ),
@@ -175,7 +158,7 @@ const router = createBrowserRouter([
       {
         path: "/register/confirmation",
         element: (
-          <React.Suspense fallback={<FullscreenLoader />}>
+          <React.Suspense fallback={<LoadingScreen />}>
             <RegisterConfirmationPage />
           </React.Suspense>
         ),

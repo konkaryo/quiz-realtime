@@ -5,16 +5,13 @@ import type React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
-import { FinalLeaderboard } from "../components/FinalLeaderboard";
-import emptyQuestionImg from "../assets/empty_img.jpg";
 import crownImage from "../assets/crown.png";
-import QuestionPanel, {
-  Choice as QuestionPanelChoice,
-  OverwatchTimerBadge,
-  QuestionProgress as QuestionPanelProgress,
-} from "../components/QuestionPanel";
 import { getLevelFromExperience } from "../utils/experience";
-import { ArrowUp, Crosshair, ChevronLeft, ChevronRight, LogOut, Play, Users } from "lucide-react";
+import { ArrowUp, Crosshair, ImageIcon, LogOut, Play, Settings, Trophy } from "lucide-react";
+import ShapeGrid from "../components/ShapeGrid";
+import LoadingScreen from "../components/LoadingScreen";
+import RoomQuestionPanel from "../components/RoomQuestionPanel";
+import "./RoomPage.css";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ??
@@ -33,7 +30,7 @@ type QuestionLite = {
   theme?: string | null;
   difficulty?: number | null;
 };
-type Phase = "idle" | "countdown" | "playing" | "reveal" | "between" | "final";
+type Phase = "idle" | "countdown" | "playing" | "reveal" | "speed" | "between" | "final";
 
 function CountdownLevelShield({ level }: { level: number }) {
   return (
@@ -68,6 +65,34 @@ type LeaderRow = {
   xp?: number;
   experience?: number;
 };
+type SpeedLeader = {
+  id: string;
+  playerId?: string | null;
+  name: string;
+  img?: string | null;
+  responseMs: number;
+  points: number;
+  mode: "mc" | "text";
+};
+type SpeedTiming = { endsAt: number; durationMs: number };
+
+function SpeedCountdown({ timing, label }: { timing: SpeedTiming | null; label: string }) {
+  const [, setRevision] = useState(0);
+  useEffect(() => {
+    const synchronize = () => setRevision((value) => value + 1);
+    const interval = window.setInterval(synchronize, 250);
+    window.addEventListener("focus", synchronize);
+    document.addEventListener("visibilitychange", synchronize);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", synchronize);
+      document.removeEventListener("visibilitychange", synchronize);
+    };
+  }, []);
+
+  const remainingMs = Math.max(0, (timing?.endsAt ?? 0) - Date.now());
+  return <div className="room-final-countdown room-speed-countdown">{label} <strong>{Math.ceil(remainingMs / 1000)}s</strong></div>;
+}
 type RoomMeta = {
   id: string;
   code: string | null;
@@ -88,33 +113,6 @@ type FinalQuestionSnapshot = {
   theme?: string | null;
   correctLabel?: string | null;
 };
-
-function maskRoomCode(code: string | null | undefined) {
-  const normalized = (code ?? "").trim();
-  if (!normalized) return "—";
-  return "****";
-}
-
-function FinalCountdownRing({ seconds, progress }: { seconds: number; progress: number }) {
-  const normalizedSeconds = Math.max(0, Math.floor(seconds));
-
-  return (
-    <div className="w-full rounded-xl border border-white/[0.06] bg-[#131829] px-4 pb-4 pt-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_18px_42px_rgba(0,0,0,0.28)]">
-      <h3 className="font-acumin text-[12px] font-semibold uppercase tracking-[0.06em] text-white">PROCHAINE PARTIE</h3>
-
-      <div className="mt-5 flex justify-center">
-        <div className="scale-[1.18]">
-          <OverwatchTimerBadge
-            seconds={normalizedSeconds}
-            progress={progress}
-            segmentColor="#8E63FF"
-            textClassName="font-acumin text-[22px] font-bold leading-[0.9] text-white"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* Récapitulatif final (affiché à gauche uniquement en phase 'final') */
 type RecapItem = {
@@ -259,6 +257,7 @@ export default function RoomPage() {
 
 
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [joiningGame, setJoiningGame] = useState(true);
   const [phase, setPhase] = useState<Phase>("idle");
 
   const [answeredByPg, setAnsweredByPg] = useState<
@@ -276,7 +275,7 @@ export default function RoomPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [correctId, setCorrectId] = useState<string | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
-  const [wrongTextAnswer, setWrongTextAnswer] = useState<string | null>(null);
+  const [wrongTextAnswers, setWrongTextAnswers] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackResponseMs, setFeedbackResponseMs] = useState<number | null>(
     null
@@ -290,6 +289,7 @@ export default function RoomPage() {
   const [answerMode, setAnswerMode] = useState<"text" | "choice" | null>(null);
   const [feedbackPoints, setFeedbackPoints] = useState<number | null>(null);
   const [choicesRevealed, setChoicesRevealed] = useState(false);
+  const [qcmUsesLeft, setQcmUsesLeft] = useState(0);
   const [pending, setPending] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const lastSubmittedTextRef = useRef<string>("");
@@ -304,6 +304,8 @@ export default function RoomPage() {
   const mcChoicesRef = useRef<ChoiceLite[] | null>(null);
 
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
+  const [speedLeaders, setSpeedLeaders] = useState<SpeedLeader[]>([]);
+  const [speedTiming, setSpeedTiming] = useState<SpeedTiming | null>(null);
   const [bitsByPgId, setBitsByPgId] = useState<Record<string, number>>({});
   const [xpByPgId, setXpByPgId] = useState<Record<string, number>>({});
   const [selfId, setSelfId] = useState<string | null>(null);
@@ -324,8 +326,6 @@ export default function RoomPage() {
 
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
-  const [isRoomCodeVisible, setIsRoomCodeVisible] = useState(false);
-
   /* ---- recap des questions reçu en fin de partie ---- */
   const [finalRecap, setFinalRecap] = useState<RecapItem[] | null>(null);
   const [finalQuestionSnapshots, setFinalQuestionSnapshots] = useState<FinalQuestionSnapshot[]>([]);
@@ -376,13 +376,6 @@ export default function RoomPage() {
     [finalEndsAt, nowTick, skew]
   );
 
-  const timerProgress = useMemo(() => {
-    if (!endsAt || !roundDuration) return 0;
-    const remainingMs = Math.max(0, endsAt - nowServer());
-    const progress = remainingMs / roundDuration;
-    return Math.min(1, Math.max(0, progress));
-  }, [endsAt, roundDuration, nowTick, skew]);
-
   const finalProgress = useMemo(() => {
     if (!finalEndsAt || !finalDuration) return 0;
     const remainingMs = Math.max(0, finalEndsAt - nowServer());
@@ -424,8 +417,6 @@ export default function RoomPage() {
     () => countdownPlayers.slice(countdownPlayerPage * 5, countdownPlayerPage * 5 + 5),
     [countdownPlayerPage, countdownPlayers]
   );
-  const shouldHideLeftRail = phase !== "final" && gameCountdown !== null;
-  const shouldHideRightQuestionImage = phase === "final" || gameCountdown !== null;
 
   const applyAvatarOverrides = (rows: LeaderRow[]) => {
     const overrides = avatarOverridesRef.current;
@@ -546,12 +537,31 @@ export default function RoomPage() {
   useEffect(() => {
     if (!roomId) return;
 
+    setJoiningGame(true);
+    const loadingStartedAt = Date.now();
+    let loadingTimer: number | undefined;
+    let loadingFinished = false;
+    const finishLoading = () => {
+      if (loadingFinished) return;
+      loadingFinished = true;
+      loadingTimer = window.setTimeout(
+        () => setJoiningGame(false),
+        Math.max(0, 700 - (Date.now() - loadingStartedAt)),
+      );
+    };
+
     const s = io(SOCKET_URL, {
       path: "/socket.io",
       withCredentials: true,
       transports: ["websocket", "polling"],
     });
     setSocket(s);
+    s.once("joined", (payload: { qcmUsesLeft?: number }) => {
+      if (typeof payload.qcmUsesLeft === "number") setQcmUsesLeft(Math.max(0, payload.qcmUsesLeft));
+      finishLoading();
+    });
+    s.once("connect_error", finishLoading);
+    s.once("error_msg", finishLoading);
 
     s.on("room_closed", ({ roomId: rid }: { roomId: string }) => {
       if (rid === roomId) {
@@ -577,7 +587,7 @@ export default function RoomPage() {
 
     s.on(
       "game_countdown",
-      (p: { seconds?: number; endsAt?: number; serverNow?: number; leaderboard?: LeaderRow[] }) => {
+      (p: { seconds?: number; endsAt?: number; serverNow?: number; leaderboard?: LeaderRow[]; qcmUsesLeft?: number }) => {
         const nextSkew =
           typeof p.serverNow === "number" ? p.serverNow - Date.now() : skew;
         if (typeof p.serverNow === "number") setSkew(nextSkew);
@@ -602,7 +612,7 @@ export default function RoomPage() {
         setMcChoices(null);
         setSelected(null);
         setTextAnswer("");
-        setWrongTextAnswer(null);
+        setWrongTextAnswers([]);
         lastSubmittedTextRef.current = "";
         setCorrectId(null);
         setFeedback(null);
@@ -612,6 +622,7 @@ export default function RoomPage() {
         setFeedbackPoints(null);
         setAnswerMode(null);
         setChoicesRevealed(false);
+        if (typeof p.qcmUsesLeft === "number") setQcmUsesLeft(Math.max(0, p.qcmUsesLeft));
         setFinalRecap(null);
         setFinalQuestionSnapshots([]);
         setPending(false);
@@ -640,6 +651,8 @@ export default function RoomPage() {
         setGameCountdownEndsAt(null);
         setGameCountdownDuration(null);
         setPhase("playing");
+        setSpeedLeaders([]);
+        setSpeedTiming(null);
         setIndex(p.index);
         setTotal(p.total);
         indexRef.current = p.index;
@@ -668,7 +681,7 @@ export default function RoomPage() {
           return null;
         });
         setTextAnswer("");
-        setWrongTextAnswer(null);
+        setWrongTextAnswers([]);
         lastSubmittedTextRef.current = "";
         setFeedback(null);
         setFeedbackResponseMs(null);
@@ -708,7 +721,8 @@ export default function RoomPage() {
       }
     );
 
-    s.on("multiple_choice", (p: { choices: ChoiceLite[] }) => {
+    s.on("multiple_choice", (p: { choices: ChoiceLite[]; qcmUsesLeft?: number }) => {
+      if (typeof p.qcmUsesLeft === "number") setQcmUsesLeft(Math.max(0, p.qcmUsesLeft));
       setMcChoices(() => {
         mcChoicesRef.current = p.choices;
         return p.choices;
@@ -738,17 +752,13 @@ export default function RoomPage() {
         if (mcChoicesRef.current === null) {
           if (!p.correct) {
             const attempt = lastSubmittedTextRef.current.trim();
-            setWrongTextAnswer(attempt || null);
+            if (attempt) setWrongTextAnswers((answers) => [...answers, attempt]);
           } else {
-            setWrongTextAnswer(null);
+            setWrongTextAnswers([]);
             lastSubmittedTextRef.current = "";
           }
           if (p.correct) {
-            setLives(() => {
-              livesRef.current = 0;
-              return 0;
-            });
-            nextLives = 0;
+            nextLives = livesRef.current;
           } else {
             const updatedLives = Math.max(0, livesRef.current - 1);
             setLives(updatedLives);
@@ -786,10 +796,10 @@ export default function RoomPage() {
           });
         }
 
-        if (p.correct) setFeedback("Bravo !");
+        if (p.correct) setFeedback("correct");
         else if (mcChoicesRef.current === null && (nextLives ?? 0) > 0)
-          setFeedback("Mauvaise réponse, essayez encore !");
-        else setFeedback("Mauvaise réponse !");
+          setFeedback(null);
+        else setFeedback("wrong");
 
         try {
           if (p.correct) playCorrect();
@@ -871,6 +881,26 @@ export default function RoomPage() {
       }
     );
 
+    s.on("round_speed", (p: { index?: number; speedLeaders?: SpeedLeader[]; endsAt?: number; durationMs?: number; serverNow?: number }) => {
+      if (typeof p.index === "number" && p.index !== indexRef.current) return;
+      setSpeedLeaders(
+        Array.isArray(p.speedLeaders)
+          ? p.speedLeaders.map((player) => {
+              const override = player.playerId ? avatarOverridesRef.current[player.playerId] : null;
+              return override ? { ...player, img: override } : player;
+            })
+          : []
+      );
+      const remainingMs = typeof p.endsAt === "number" && typeof p.serverNow === "number"
+        ? Math.max(0, p.endsAt - p.serverNow)
+        : Math.max(0, p.durationMs ?? 0);
+      setSpeedTiming({
+        endsAt: Date.now() + remainingMs,
+        durationMs: Math.max(0, p.durationMs ?? remainingMs),
+      });
+      setPhase("speed");
+    });
+
     s.on("manual_round_ready", (p: { index?: number; total?: number }) => {
       if (typeof p.index === "number") {
         setIndex(p.index);
@@ -899,7 +929,7 @@ export default function RoomPage() {
       setMcChoices(null);
       setSelected(null);
       setTextAnswer("");
-      setWrongTextAnswer(null);
+      setWrongTextAnswers([]);
       lastSubmittedTextRef.current = "";
       setCorrectId(null);
       setFeedback(null);
@@ -1020,13 +1050,16 @@ export default function RoomPage() {
           else s.emit("join_game", { code: room.code });
         } else {
           s.close();
+          finishLoading();
         }
       } catch {
         s.close();
+        finishLoading();
       }
     })();
 
     return () => {
+      if (loadingTimer !== undefined) window.clearTimeout(loadingTimer);
       s.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1153,11 +1186,17 @@ export default function RoomPage() {
       !socket ||
       phase !== "playing" ||
       lives <= 0 ||
-      feedbackWasCorrect === true
+      feedbackWasCorrect === true ||
+      choicesRevealed ||
+      qcmUsesLeft <= 0
     )
       return;
     setChoicesRevealed(true);
-    socket.emit("request_choices");
+    setQcmUsesLeft((uses) => Math.max(0, uses - 1));
+    socket.emit("request_choices", {}, (res: { ok: boolean; qcmUsesLeft?: number }) => {
+      if (typeof res?.qcmUsesLeft === "number") setQcmUsesLeft(Math.max(0, res.qcmUsesLeft));
+      if (!res?.ok) setChoicesRevealed(false);
+    });
   };
 
   const answerByChoice = (choiceId: string) => {
@@ -1196,33 +1235,20 @@ export default function RoomPage() {
     return null;
   }, [feedback, phase, remaining]);
 
-  const choicesForPanel = useMemo(
-    () =>
-      mcChoices
-        ? mcChoices.map<QuestionPanelChoice>((c) => ({ id: c.id, label: c.label }))
-        : null,
-    [mcChoices]
-  );
+  const choicesForPanel = mcChoices;
 
-  const isPlaying = phase === "playing" && lives > 0;
+  const isPlaying = phase === "playing" && lives > 0 && feedbackWasCorrect !== true;
+  const isTimerRunning = phase === "playing";
   const showChoices = !!mcChoices;
   const textLocked = choicesRevealed || showChoices;
 
-  const isPrivateRoom = roomMeta?.visibility === "PRIVATE";
   const isRoomOwner = !!selfId && !!roomMeta?.ownerId && roomMeta.ownerId === selfId;
   const lobbyRoomId = roomMeta?.id ?? roomId;
   const lobbyPath = lobbyRoomId ? `/rooms/${lobbyRoomId}/lobby` : "/";
-  const roomBadgeClass = "inline-flex items-center gap-1.5 rounded-[6px] bg-black/45 px-3 py-1.5 font-brand text-[15px] italic leading-none text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-sm";
-  const displayedRoomCode = isRoomCodeVisible ? roomMeta?.code ?? "—" : maskRoomCode(roomMeta?.code);
-
-  // ✅ Preserve the original full-screen widths, then shrink both rails proportionally.
-  const leftW = "min(360px, 25vw)";
-  const rightW = "min(300px, 20.833333vw)";
 
   // ✅ panneau haut
   const TOP_BAR_H = 12; // px
   const NAVBAR_TOP = 52; // px (ton offset actuel)
-  const fixedTop = NAVBAR_TOP + TOP_BAR_H;
 
   const hasScrollableLeaderboard = leaderboard.length > LB_VISIBLE;
 
@@ -1231,7 +1257,7 @@ export default function RoomPage() {
       Array.from({ length: total }, (_, idx) => questionStatuses[idx] ?? "pending"),
     [questionStatuses, total]
   );
-  const questionProgress: QuestionPanelProgress[] = useMemo(
+  const questionProgress: QuestionStatus[] = useMemo(
     () =>
       questionTrackerItems.map((status) =>
         status === "wrong"
@@ -1418,8 +1444,12 @@ export default function RoomPage() {
   }, [selectedFinalQuestion]);
 
 
-  // ✅ Nom du salon affiché en gros à droite
-  const roomDisplayName = roomMeta?.name?.trim() || "-";
+  const roomDisplayName = roomMeta?.name?.trim() || "Salon";
+  const isCurrentSpeedPlayer = (player: SpeedLeader) =>
+    (!!selfPlayerId && player.playerId === selfPlayerId) ||
+    (!!selfName && player.name.toLowerCase() === selfName.toLowerCase());
+  const currentSpeedIndex = speedLeaders.findIndex(isCurrentSpeedPlayer);
+  const currentSpeedPlayer = currentSpeedIndex >= 0 ? speedLeaders[currentSpeedIndex] : null;
 
   const rankLabel = useMemo(() => {
     if (selfIndex < 0) return null;
@@ -1563,610 +1593,110 @@ return (
 );
   };
 
-  return (
-    <>
-      <div aria-hidden className="fixed inset-0 bg-[#11131f]" />
-
-      {/* ✅ Scrollbar style global */}
-      <style>{`
-        .lb-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: #eef1ff #191c2c;
-        }
-        .lb-scroll::-webkit-scrollbar { width: 10px; }
-        .lb-scroll::-webkit-scrollbar-track {
-          background: #191c2c;
-          border-radius: 999px;
-        }
-        .lb-scroll::-webkit-scrollbar-button {
-          display: none;
-          height: 0;
-          width: 0;
-        }
-        .lb-scroll::-webkit-scrollbar-thumb {
-          background: #eef1ff;
-          border-radius: 999px;
-          border: 3px solid #191c2c;
-          background-clip: padding-box;
-        }
-        .lb-scroll::-webkit-scrollbar-thumb:hover {
-          background: #eef1ff;
-          border: 3px solid #191c2c;  
-          background-clip: padding-box;
-        }
-
-        @keyframes rankPop {
-          0% {
-            transform: translateY(var(--rank-pop-translate, 4px)) scale(var(--rank-pop-scale, 0.98));
-            opacity: var(--rank-pop-opacity, 0.6);
-          }
-          100% { transform: translateY(0) scale(1); opacity: 1; }
-        }
-        .rank-pop {
-          animation: rankPop 420ms ease-out;
-        }
-      `}</style>
-
-      <div className={`relative z-10 min-h-[calc(100dvh-64px)] text-white ${gameCountdown === null ? "lg:overflow-hidden" : ""}`}>
-        <div className="relative">
-          <div className="relative grid grid-cols-1 lg:block">
-{/* LEFT */}
-{!shouldHideLeftRail ? (
-<aside
-  className="fixed bottom-12 z-30 hidden overflow-visible lg:block"
-  style={{ top: fixedTop, left: 0, width: leftW }}
->
-  <div className="h-full overflow-visible bg-transparent pb-6 pr-3 pt-3 pl-3">
-    <div className="h-full px-4 pb-5 flex flex-col min-h-0 overflow-visible">
-        <div className="relative mb-6 border-b border-white/10 pb-4 text-white">
-          <h2 className="truncate font-brandUpright text-[22px] uppercase leading-tight" title={roomDisplayName}>
-            Salon - {roomDisplayName}
-          </h2>
-          <div className="mt-1 flex items-center justify-between gap-3">
-            <p className="font-inter text-[12px] font-semibold text-white/55">
-              {leaderboard.length} joueur{leaderboard.length > 1 ? "s" : ""}
-            </p>
-            {isPrivateRoom && (
-              <button
-                type="button"
-                onClick={() => setIsRoomCodeVisible((visible) => !visible)}
-                className={roomBadgeClass}
-                aria-label={isRoomCodeVisible ? "Masquer le code du salon" : "Afficher le code du salon"}
-                title={isRoomCodeVisible ? "Masquer le code" : "Afficher le code"}
-              >
-                <span className="max-w-full truncate">{displayedRoomCode}</span>
-              </button>
-            )}
-          </div>
-        </div>
-        {leaderboard.length === 0 ? (
-          <div className="text-white/45 text-sm">—</div>
-        ) : (
-          <>
-            <ol
-              ref={leaderboardRef}
-              onScroll={pauseLeaderboardTargeting}
-              className={[
-                "lb-scroll",
-                "m-0 space-y-2 pt-7",
-                "overflow-y-auto overflow-x-hidden",
-                hasScrollableLeaderboard ? "pr-3" : "pr-0",
-                "flex-1 min-h-0",
-              ].join(" ")}
-            >
-              {leaderboard.map((r, i) => {
-                const isSelf =
-                  (selfId && r.id === selfId) ||
-                  (!!selfName &&
-                    typeof r.name === "string" &&
-                    r.name.toLowerCase() === selfName.toLowerCase());
-
-                return (
-                  <li key={r.id} data-self={isSelf ? "true" : undefined} className="max-w-full overflow-visible">
-                    {renderLeaderboardLine(r, i + 1, isSelf)}
-                  </li>
-                );
-              })}
-            </ol>
-
-            {/* ✅ self row en bas (si scroll) */}
-            {hasScrollableLeaderboard && selfRow ? (
-              <div
-                className="mt-4 cursor-pointer overflow-x-hidden border-t border-white/10 pt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
-                role="button"
-                tabIndex={0}
-                aria-label={keepSelfCentered ? "Revenir en haut du classement" : "Garder le classement centré sur ma position"}
-                aria-pressed={keepSelfCentered}
-                onClick={toggleLeaderboardTarget}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    toggleLeaderboardTarget();
-                  }
-                }}
-              >
-                {renderLeaderboardLine(selfRow, selfIndex + 1, true, false)}
-                <span className={`ml-9 mt-2 flex justify-start ${isLeaderboardTargetingPaused ? "text-white/30" : keepSelfCentered ? "text-violet-400" : "text-white/45"}`} aria-hidden="true">
-                  {keepSelfCentered ? <Crosshair size={14} strokeWidth={2.4} /> : <ArrowUp size={14} strokeWidth={2.4} />}
-                </span>
-              </div>
-            ) : null}
-          </>
-        )}
+return (
+    <div className="room-game-shell">
+      {joiningGame && <LoadingScreen />}
+      <div className="room-game-grid" aria-hidden="true">
+        <ShapeGrid borderColor="#2f293a" hoverFillColor="#222222" shape="hexagon" direction="diagonal" squareSize={28} speed={0.1} hoverTrailAmount={0} />
       </div>
-  </div>
-</aside>
-) : null}
+      <header className="room-game-header">
+        <div className="room-game-header-main">
+          <button className="room-game-brand" type="button" onClick={() => nav("/")} aria-label="Retour à l’accueil"><img src="/landing/logo-dark.png" alt="" /><span>SYNAPZ</span></button>
+          <span className="room-game-header-divider" aria-hidden="true">/</span>
+          <div className="room-game-room"><i /><strong>{roomDisplayName}</strong></div>
+          <button className="room-game-settings" type="button" onClick={() => nav("/me/account")} aria-label="Accéder aux paramètres"><Settings size={16} /></button>
+        </div>
+        <div className="room-game-actions">
+          <button className="room-game-quit" type="button" onClick={() => nav("/")}>Quitter <LogOut size={15} /></button>
+        </div>
+      </header>
 
-            {/* CENTER */}
-            <div
-              className={gameCountdown === null
-                ? "lg:ml-[min(360px,25vw)] lg:mr-[min(300px,20.833333vw)] lg:overflow-y-auto lb-scroll"
-                : "overflow-visible"}
-              style={gameCountdown === null
-                ? {
-                    height: `calc(100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px)`,
-                    marginTop: TOP_BAR_H,
-                  }
-                : {
-                    minHeight: `calc(100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px)`,
-                    marginTop: TOP_BAR_H,
-                  }}
-            >
-              <main className="relative overflow-hidden bg-transparent">
-                <style>{`
-                  @keyframes countdownVerticalBarPulse {
-                    0%, 100% { opacity: 0.82; }
-                    50% { opacity: 1; }
-                  }
-
-                  @keyframes countdownDotPulse {
-                    0%, 20% { opacity: 0.18; transform: translateY(0); }
-                    35%, 65% { opacity: 1; transform: translateY(-1px); }
-                    80%, 100% { opacity: 0.18; transform: translateY(0); }
-                  }
-
-                  .countdown-dot {
-                    display: inline-block;
-                    animation: countdownDotPulse 1.05s ease-in-out infinite;
-                  }
-
-                  @keyframes countdownPlayersEnter {
-                    from { opacity: 0; transform: translateY(8px); }
-                    to { opacity: 1; transform: translateY(0); }
-                  }
-
-                  .countdown-players-page {
-                    animation: countdownPlayersEnter 320ms ease-out;
-                  }
-                `}</style>
-
-                <div className="relative px-5 py-4 md:px-10" style={{ minHeight: "100%" }}>
-                  <div className="relative z-10 flex items-start justify-center">
-                    <div className="w-full max-w-[1800px]">
-                      {gameCountdown !== null ? (
-                        <div className="flex min-h-[620px] items-start justify-center px-4 pb-6 pt-10">
-                          <div className="flex w-full max-w-[880px] flex-col items-center text-center">
-                            <div className="flex items-center justify-center text-[#8E63FF]">
-                              <h1 className="font-brand text-[38px] italic leading-none tracking-[0.08em] text-white drop-shadow-[0_0_18px_rgba(126,92,255,0.32)] md:text-[46px]">
-                                LA PARTIE COMMENCE BIENTÔT
-                              </h1>
-                            </div>
-                            <div className="mt-7 flex h-[128px] items-center justify-center">
-                              <div className="scale-[1.50]">
-                                <OverwatchTimerBadge
-                                  seconds={gameCountdownRemainingSeconds ?? gameCountdown ?? 0}
-                                  progress={gameCountdownProgress}
-                                  segmentColor="#8E63FF"
-                                  textClassName="font-acumin text-[24px] font-bold leading-[0.9] text-white"
-                                />
-                              </div>
-                            </div>
-
-                            <div
-                              key={countdownPlayerPage}
-                              className="countdown-players-page mt-14 flex min-h-[180px] w-full max-w-[760px] flex-wrap items-start justify-center gap-5"
-                            >
-                                {visibleCountdownPlayers.map((player) => {
-                                  const level = getLevelFromExperience(player.experience ?? 0);
-
-                                  return (
-                                    <article
-                                      key={player.id}
-                                      className="relative h-[176px] w-[130px] rounded-[7px] p-px text-center"
-                                      style={{ background: "linear-gradient(180deg, #7C5CFF 0%, #191C2C 42%)" }}
-                                    >
-                                      <span
-                                        className="pointer-events-none absolute inset-x-px bottom-[-4px] h-3 rounded-b-[7px] bg-[#7C5CFF]"
-                                        aria-hidden="true"
-                                      />
-                                      <div className="relative flex h-full w-full flex-col items-center rounded-[6px] bg-[linear-gradient(180deg,#292D45_0%,#181B2B_100%)] px-3 pb-4 pt-7">
-                                        <div className="h-[52px] w-[52px] overflow-hidden rounded-full border-2 border-[#8E63FF]">
-                                          <img
-                                            src={player.img ?? "/img/profiles/0.avif"}
-                                            alt=""
-                                            className="h-full w-full rounded-full object-cover"
-                                            draggable={false}
-                                            loading="lazy"
-                                          />
-                                        </div>
-                                        <div className="mt-3 w-full truncate font-inter text-[14px] font-extrabold leading-none text-white">
-                                          {player.name}
-                                        </div>
-                                        <div className="mt-auto" aria-label={`Niveau ${level}`}>
-                                          <CountdownLevelShield level={level} />
-                                        </div>
-                                      </div>
-                                    </article>
-                                  );
-                                })}
-                            </div>
-                            <div className="mt-16 flex h-3 items-center justify-center gap-2" aria-label={`Page ${countdownPlayerPage + 1} sur ${countdownPlayerPageCount}`}>
-                              {Array.from({ length: countdownPlayerPageCount }, (_, page) => (
-                                <span
-                                  key={page}
-                                  className={`h-2 w-2 rounded-[2px] transition-colors ${page === countdownPlayerPage ? "bg-[#7C5CFF]" : "bg-slate-500/70"}`}
-                                  aria-hidden="true"
-                                />
-                              ))}
-                            </div>
-                            <div className="mt-12 inline-flex items-center gap-2 font-brandUpright text-[15px] font-semibold uppercase tracking-[0.06em] text-white/60">
-                              <Users className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
-                              {countdownPlayers.length} joueur{countdownPlayers.length > 1 ? "s" : ""} dans cette partie
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {phase === "final" ? (
-                        <div className="relative px-12 md:px-16">
-                          {finalQuestionSnapshots.length > 0 ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedFinalIndex((current) => Math.max(0, current - 1))}
-                                disabled={selectedFinalIndex === 0}
-                                className="absolute left-0 z-30 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#131829] text-white transition hover:border-white/35 hover:bg-[#1B2136] disabled:cursor-not-allowed disabled:opacity-25 md:left-[8%] xl:left-[10%]"
-                                style={{ top: `calc((100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px) / 2 - 40px)` }}
-                                aria-label="Afficher l’élément précédent"
-                              >
-                                <ChevronLeft className="h-6 w-6" strokeWidth={2.2} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setSelectedFinalIndex((current) => Math.min(finalQuestionSnapshots.length, current + 1))
-                                }
-                                disabled={selectedFinalIndex >= finalQuestionSnapshots.length}
-                                className="absolute right-0 z-30 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#131829] text-white transition hover:border-white/35 hover:bg-[#1B2136] disabled:cursor-not-allowed disabled:opacity-25 md:right-[8%] xl:right-[10%]"
-                                style={{ top: `calc((100dvh - ${NAVBAR_TOP}px - ${TOP_BAR_H}px) / 2 - 40px)` }}
-                                aria-label="Afficher l’élément suivant"
-                              >
-                                <ChevronRight className="h-6 w-6" strokeWidth={2.2} />
-                              </button>
-                            </>
-                          ) : null}
-
-                          {isFinalLeaderboardSelected || !selectedFinalQuestionPanel ? (
-                            <div className="mx-auto w-full max-w-[1800px]">
-                              <div className="relative pt-2 md:pt-4">
-                                <FinalLeaderboard rows={finalRows} selfId={selfId} selfName={selfName} />
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center pb-8 pt-10 md:pt-12">
-                              <h2 className="font-brand text-[28px] font-black uppercase italic leading-none tracking-[0.055em] text-white md:text-[34px]">
-                                Question {selectedFinalIndex} / {finalQuestionSnapshots.length}
-                              </h2>
-                              {finalTrackerItems.length > 1 ? (
-                                <div className="order-last mt-14 flex flex-wrap items-center justify-center gap-2">
-                                  {finalTrackerItems.slice(1).map((status, idx) => {
-                                    const questionIndex = idx + 1;
-                                    const isCurrent = questionIndex === selectedFinalIndex;
-                                    const colorClass =
-                                      status === "correct"
-                                        ? "bg-emerald-600 text-white"
-                                        : status === "correct-mc"
-                                        ? "bg-[#6F5BD4] text-white"
-                                        : status === "wrong"
-                                        ? "bg-[#AF2D33] text-white"
-                                        : status === "missed"
-                                        ? "bg-slate-900/80 text-slate-400 ring-1 ring-inset ring-slate-600/40"
-                                        : "bg-white/30 text-white/70";
-                                    const trackerClasses = [
-                                      "flex h-8 w-8 items-center justify-center rounded-[7px] text-[12px] font-semibold",
-                                      "transition-all",
-                                      colorClass,
-                                      isCurrent ? "ring-2 ring-white/70" : "",
-                                    ].join(" ");
-
-                                    return (
-                                      <button
-                                        key={`final-top-q-${idx}`}
-                                        type="button"
-                                        onClick={() => setSelectedFinalIndex(questionIndex)}
-                                        className={trackerClasses}
-                                        aria-label={`Voir question ${questionIndex}`}
-                                        title={`Voir question ${questionIndex}`}
-                                      >
-                                        {questionIndex}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              ) : null}
-                              <div className="mt-10 w-full">
-                                <QuestionPanel
-                                  question={selectedFinalQuestionPanel}
-                                  index={selectedFinalIndex - 1}
-                                  totalQuestions={finalQuestionSnapshots.length}
-                                  lives={0}
-                                  totalLives={TEXT_LIVES}
-                                  remainingSeconds={null}
-                                  timerProgress={0}
-                                  isReveal={false}
-                                  isPlaying={false}
-                                  inputRef={inputRef}
-                                  textAnswer=""
-                                  wrongTextAnswer={null}
-                                  textLocked
-                                  onChangeText={() => {}}
-                                  onSubmitText={() => {}}
-                                  onShowChoices={() => {}}
-                                  feedback={null}
-                                  feedbackResponseMs={null}
-                                  feedbackWasCorrect={null}
-                                  feedbackCorrectLabel={selectedFinalQuestion?.correctLabel ?? null}
-                                  feedbackPoints={null}
-                                  reserveFeedbackSpace
-                                  thumbButtonBackgroundClass="bg-[#191c2c]"
-                                  qcmChoiceBackgroundClass="bg-[#272b40] hover:bg-[#30354a] active:bg-[#373c55]"
-                                  answerMode={null}
-                                  choicesRevealed={false}
-                                  showChoices={false}
-                                  choices={null}
-                                  selectedChoice={null}
-                                  correctChoiceId={null}
-                                  onSelectChoice={() => {}}
-                                  questionProgress={[]}
-                                  showTimer={false}
-                                  showAnswerSection={false}
-                                  showProgress={false}
-                                  animateQuestionText={false}
-                                />
-                              </div>
-
-                              {selectedFinalQuestion ? (
-                                <div className="mt-10 inline-flex items-center rounded-[6px] border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-slate-50">
-                                  {selectedFinalQuestion.correctLabel ?? "—"}
-                                </div>
-                              ) : null}
-
-
-                              {selectedFinalStatsLayout ? (
-                                <div className="mx-auto mt-10 w-[420px] max-w-full space-y-4">
-                                  <div className="flex items-center gap-2">
-                                    {selectedFinalStatsLayout.hasNoResponses ? (
-                                      <div className="h-[10px] w-full rounded-[3px] bg-slate-500" />
-                                    ) : null}
-                                    {selectedFinalStatsLayout.stats.correct > 0 ? (
-                                      <div
-                                        className="h-[10px] min-w-[14px] rounded-[3px] bg-emerald-600"
-                                        style={{ width: selectedFinalStatsLayout.correctWidth }}
-                                      />
-                                    ) : null}
-                                    {selectedFinalStatsLayout.stats.correctQcm > 0 ? (
-                                      <div
-                                        className="h-[10px] min-w-[14px] rounded-[3px] bg-[#6F5BD4]"
-                                        style={{ width: selectedFinalStatsLayout.qcmWidth }}
-                                      />
-                                    ) : null}
-                                    {selectedFinalStatsLayout.stats.wrong > 0 ? (
-                                      <div
-                                        className="h-[10px] min-w-[14px] rounded-[3px] bg-[#AF2D33]"
-                                        style={{ width: selectedFinalStatsLayout.wrongWidth }}
-                                      />
-                                    ) : null}
-                                  </div>
-
-                                  <div className="flex items-center gap-2 text-white">
-                                    {selectedFinalStatsLayout.hasNoResponses ? (
-                                      <div className="inline-flex w-full items-center justify-center gap-3" aria-label="Aucune réponse">
-                                        <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
-                                          0
-                                        </span>
-                                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-slate-500 text-[12px] font-semibold leading-none text-white">
-                                          -
-                                        </span>
-                                      </div>
-                                    ) : null}
-                                    {selectedFinalStatsLayout.stats.correct > 0 ? (
-                                      <div
-                                        className="inline-flex items-center justify-center gap-3"
-                                        style={{ width: selectedFinalStatsLayout.correctWidth }}
-                                        aria-label="Bonnes réponses"
-                                      >
-                                        <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
-                                          {selectedFinalStatsLayout.stats.correct}
-                                        </span>
-                                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-emerald-600 text-[12px] font-semibold leading-none text-white">
-                                          ✓
-                                        </span>
-                                      </div>
-                                    ) : null}
-
-                                    {selectedFinalStatsLayout.stats.correctQcm > 0 ? (
-                                      <div
-                                        className="inline-flex items-center justify-center gap-3"
-                                        style={{ width: selectedFinalStatsLayout.qcmWidth }}
-                                        aria-label="Réponses QCM"
-                                      >
-                                        <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
-                                          {selectedFinalStatsLayout.stats.correctQcm}
-                                        </span>
-                                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-[#6F5BD4] text-[12px] font-semibold leading-none text-white">
-                                          {"\u26A1\uFE0E"}
-                                        </span>
-                                      </div>
-                                    ) : null}
-
-                                    {selectedFinalStatsLayout.stats.wrong > 0 ? (
-                                      <div
-                                        className="inline-flex items-center justify-center gap-3"
-                                        style={{ width: selectedFinalStatsLayout.wrongWidth }}
-                                        aria-label="Mauvaises réponses"
-                                      >
-                                        <span className="inline-flex h-5 items-center tabular-nums text-[18px] font-brand italic leading-none">
-                                          {selectedFinalStatsLayout.stats.wrong}
-                                        </span>
-                                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-[#AF2D33] text-[12px] font-semibold leading-none text-white">
-                                          ✕
-                                        </span>
-                                      </div>
-                                    ) : null}
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="mx-auto w-full max-w-[1800px]">
-                          <div className="relative">
-                            {normalizedQuestion ? (
-                              <div>
-                                <QuestionPanel
-                                  question={normalizedQuestion}
-                                  index={index}
-                                  totalQuestions={total}
-                                  lives={lives}
-                                  totalLives={TEXT_LIVES}
-                                  remainingSeconds={remaining}
-                                  timerProgress={timerProgress}
-                                  isReveal={phase === "reveal" && (remaining ?? 0) === 0}
-                                  isPlaying={isPlaying}
-                                  inputRef={inputRef}
-                                  textAnswer={textAnswer}
-                                  wrongTextAnswer={wrongTextAnswer}
-                                  textLocked={textLocked}
-                                  onChangeText={setTextAnswer}
-                                  onSubmitText={sendText}
-                                  onShowChoices={showMultipleChoice}
-                                  feedback={feedbackText}
-                                  feedbackResponseMs={feedbackResponseMs}
-                                  feedbackWasCorrect={feedbackWasCorrect}
-                                  feedbackCorrectLabel={feedbackCorrectLabel}
-                                  feedbackPoints={feedbackPoints}
-                                  reserveFeedbackSpace
-                                  thumbButtonBackgroundClass="bg-[#191c2c]"
-                                  qcmChoiceBackgroundClass="bg-[#272b40] hover:bg-[#30354a] active:bg-[#373c55]"
-                                  answerMode={answerMode}
-                                  choicesRevealed={choicesRevealed}
-                                  showChoices={showChoices}
-                                  choices={choicesForPanel}
-                                  selectedChoice={selected}
-                                  correctChoiceId={correctId}
-                                  onSelectChoice={(choice) => answerByChoice(choice.id)}
-                                  questionProgress={questionProgress}
-                                  correctLabelPlacement="above"
-                                  animateQuestionText={dynamicQuestionDisplay}
-                                  questionRevealStartedAtMs={questionRevealStartedAtMs}
-                                />
-                              </div>
-                            ) : phase === "countdown" || phase === "between" ? null : (
-                              <div className="flex min-h-[240px] translate-y-10 flex-col items-center justify-center gap-5 text-white">
-                                <div className="h-16 w-16 animate-spin rounded-full border-[7px] border-white/20 border-t-white" aria-hidden="true" />
-                                <p className="font-inter text-[18px] font-extrabold text-white/90">Question en cours...</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </main>
+      <div className="room-game-layout">
+          <aside className="room-game-left">
+            <div className="room-question-image">
+              {normalizedQuestion?.img ? <img src={normalizedQuestion.img} alt="Illustration de la question" onError={(event) => { event.currentTarget.style.display = "none"; event.currentTarget.nextElementSibling?.removeAttribute("hidden"); }} /> : null}
+              <div className="room-image-placeholder" hidden={Boolean(normalizedQuestion?.img)}><ImageIcon size={25} /><span>Question sans image</span></div>
             </div>
+            <section className="room-live-board" aria-label="Classement en direct">
+              <ol ref={leaderboardRef} onScroll={pauseLeaderboardTargeting} className="room-live-list lb-scroll">
+                {leaderboard.map((row, playerIndex) => {
+                  const isSelf = (selfId && row.id === selfId) || (!!selfName && row.name.toLowerCase() === selfName.toLowerCase());
+                  const status = phase === "final" ? null : answeredByPg[row.id];
+                  return <li className={isSelf ? "is-self" : ""} key={row.id} data-self={isSelf ? "true" : undefined}>
+                    <span className="room-player-rank">{String(playerIndex + 1).padStart(2, "0")}</span>
+                    <button className="room-player-avatar" type="button" onClick={() => handlePlayerProfile(row)} disabled={!row.playerId}>{row.img ? <img src={row.img} alt="" /> : row.name.slice(0, 1)}</button>
+                    <span className="room-player-name">{row.name}</span><strong className="room-player-score">{row.score.toLocaleString("fr-FR")}</strong>
+                    <span className={`room-player-status ${status ?? "pending"}`} aria-label={status === "correct" ? "Bonne réponse" : status === "correct-mc" ? "Bonne réponse QCM" : status === "wrong" ? "Mauvaise réponse" : "Pas encore répondu"}>{status === "correct" ? "✓" : status === "correct-mc" ? "⚡︎" : status === "wrong" ? "✕" : ""}</span>
+                  </li>;
+                })}
+              </ol>
+            </section>
+            <nav className="room-left-progress" aria-label="Suivi des questions">
+              {questionProgress.map((status, questionIndex) => <span className={`${status} ${questionIndex === index ? "current" : ""}`} key={questionIndex}>{questionIndex + 1}</span>)}
+            </nav>
+          </aside>
 
-            {/* RIGHT */}
-            <aside
-              className="hidden lg:block fixed bottom-0 right-0 z-20"
-              style={{ top: fixedTop, width: rightW }}
-            >
-              <div className="h-full overflow-visible bg-transparent pb-3 pl-3 pr-6 pt-3">
-                <div className="flex flex-col gap-4 overflow-visible">
-                  {!shouldHideRightQuestionImage ? (
-                    <div className="relative aspect-video w-full">
-                      <img
-                        src={normalizedQuestion?.img || emptyQuestionImg}
-                        alt="Illustration de la question"
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        draggable={false}
-                        onError={(event) => {
-                          event.currentTarget.src = emptyQuestionImg;
-                        }}
-                      />
-                    </div>
-                  ) : null}
-                  {phase === "final" && finalRemaining !== null ? (
-                    <div className="flex justify-center py-1">
-                      <FinalCountdownRing seconds={finalRemaining} progress={finalProgress} />
-                    </div>
-                  ) : null}
-                  {phase === "final" && selectedFinalQuestionPanel?.img ? (
-                    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/[0.06] bg-[#131829]">
-                      <img
-                        src={selectedFinalQuestionPanel.img}
-                        alt="Illustration de la question récapitulée"
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        draggable={false}
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none";
-                        }}
-                      />
-                    </div>
-                  ) : null}
-                  <div className="flex flex-col gap-2">
-                    {isRoomOwner && manualQuestionLaunch && manualNextAvailable ? (
-                      <button
-                        type="button"
-                        onClick={launchNextQuestion}
-                        disabled={manualNextPending}
-                        className="mx-auto flex h-11 w-[86%] items-center justify-center gap-3 rounded-[6px] bg-[#6250C7] px-4 font-inter text-[13px] font-extrabold text-white transition hover:bg-[#6F5BD4] disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-[#6250C7]"
-                      >
-                        <span className="leading-none">{manualNextPending ? "Lancement…" : "Question suivante"}</span>
-                        <Play className="h-3.5 w-3.5 fill-white/95 text-white/95" strokeWidth={1.7} />
-                      </button>
-                    ) : null}
-                    {isRoomOwner && gameCountdown === null ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!socket) {
-                            nav(lobbyPath);
-                            return;
-                          }
-
-                          socket.emit("return_to_lobby", {}, (res?: { ok?: boolean }) => {
-                            if (!res?.ok) nav(lobbyPath);
-                          });
-                        }}
-                        className="mx-auto flex h-11 w-[86%] items-center justify-center gap-3 rounded-[6px] bg-[#151A30] px-4 font-inter text-[13px] font-extrabold text-white transition hover:bg-[#1b2340]"
-                      >
-                        <span className="leading-none">Retour au lobby</span>
-                        <LogOut className="h-4 w-4 text-white/95" strokeWidth={2.3} />
-                      </button>
-                    ) : null}
-                  </div>
+          <main className="room-play-area" aria-live="polite">
+            {gameCountdown !== null ? (
+              <div className="room-countdown">
+                <div className="room-countdown-heading">
+                  <p>DÉBUT DE LA PARTIE</p>
+                  <div className="room-timer" style={{ "--timer-progress": gameCountdownProgress } as React.CSSProperties}><strong>{gameCountdownRemainingSeconds ?? gameCountdown}</strong></div>
+                </div>
+                <div className="room-countdown-players">
+                  {visibleCountdownPlayers.map((player) => <div key={player.id}><img src={player.img ?? "/img/profiles/0.avif"} alt="" /><strong>{player.name}</strong><small>Niveau {getLevelFromExperience(player.experience ?? 0)}</small></div>)}
                 </div>
               </div>
-            </aside>
-          </div>
+            ) : phase === "final" ? (
+              <div className="room-final-view">
+                <div className="room-final-rank"><strong>{selfIndex >= 0 ? <>{selfIndex + 1}<sup>{selfIndex === 0 ? "er" : "ème"}</sup></> : "—"}</strong><small>/ {finalRows.length} joueurs</small></div>
+                <ol className="room-final-list">{finalRows.slice(0, 3).map((row, rowIndex) => {
+                  const isSelf = (selfId && row.id === selfId) || (!!selfName && row.name.toLowerCase() === selfName.toLowerCase());
+                  return <li className={`room-speed-row room-final-row${isSelf ? " is-self" : ""}`} key={row.id}>
+                    <span className={`room-final-trophy trophy-${rowIndex + 1}`} aria-label={`${rowIndex + 1}${rowIndex === 0 ? "er" : "ème"}`}><Trophy size={23} fill="currentColor" /></span>
+                    <span className="room-speed-avatar">{row.img ? <img src={row.img} alt="" /> : row.name.slice(0, 1)}</span>
+                    <strong>{row.name}</strong>
+                    <strong className="room-final-score">{row.score.toLocaleString("fr-FR")} pts</strong>
+                  </li>;
+                })}</ol>
+                {finalRemaining !== null && <div className="room-final-countdown room-speed-countdown">Prochaine partie dans <strong>{finalRemaining}s</strong></div>}
+              </div>
+            ) : phase === "speed" ? (
+              <section className="room-speed-interlude" aria-labelledby="room-speed-title">
+                <h1 className="sr-only" id="room-speed-title">Classement de vitesse</h1>
+                <div className="room-speed-list" aria-label="Classement de vitesse">
+                  {speedLeaders.slice(0, 3).map((player, playerIndex) => (
+                    <div className={`room-speed-row ${isCurrentSpeedPlayer(player) ? "is-self" : ""}`} key={player.id}>
+                      <span className="room-speed-medal" role="img" aria-label={`${playerIndex + 1}${playerIndex === 0 ? "er" : "e"}`}>{["🥇", "🥈", "🥉"][playerIndex]}</span>
+                      <span className="room-speed-avatar">{player.img ? <img src={player.img} alt="" /> : player.name.slice(0, 1)}</span>
+                      <strong>{player.name}</strong>
+                      <strong className="room-speed-time">{(player.responseMs / 1000).toFixed(2)} s</strong>
+                      <strong className="room-speed-score">+{player.points} pts</strong>
+                    </div>
+                  ))}
+                  {currentSpeedPlayer && currentSpeedIndex >= 3 && (
+                    <div className="room-speed-row is-self separated">
+                      <span className="room-speed-outside-rank">{String(currentSpeedIndex + 1).padStart(2, "0")}</span>
+                      <span className="room-speed-avatar">{currentSpeedPlayer.img ? <img src={currentSpeedPlayer.img} alt="" /> : currentSpeedPlayer.name.slice(0, 1)}</span>
+                      <strong>{currentSpeedPlayer.name}</strong>
+                      <strong className="room-speed-time">{(currentSpeedPlayer.responseMs / 1000).toFixed(2)} s</strong>
+                      <strong className="room-speed-score">+{currentSpeedPlayer.points} pts</strong>
+                    </div>
+                  )}
+                  {!speedLeaders.length && <p className="room-speed-empty">Aucune bonne réponse sur cette question.</p>}
+                </div>
+                {manualQuestionLaunch && index + 1 < total
+                  ? <div className="room-final-countdown room-speed-countdown">En attente de l’hôte</div>
+                  : <SpeedCountdown timing={speedTiming} label={index + 1 >= total ? "Résultats de la partie dans" : "Prochaine question dans"} />}
+              </section>
+            ) : normalizedQuestion ? (
+              <RoomQuestionPanel questionIndex={index} questionTotal={total} remainingSeconds={remaining ?? 0} timerDurationMs={roundDuration ?? 0} theme={normalizedQuestion.theme} questionText={normalizedQuestion.text} lives={lives} totalLives={TEXT_LIVES} choices={showChoices ? choicesForPanel : null} selectedChoiceId={selected} correctChoiceId={correctId} isPlaying={isPlaying} isTimerRunning={isTimerRunning} inputRef={inputRef} textAnswer={textAnswer} textLocked={textLocked} animateQuestionText={dynamicQuestionDisplay} questionRevealStartedAtMs={questionRevealStartedAtMs} qcmUsesLeft={qcmUsesLeft} onTextChange={setTextAnswer} onSubmitText={sendText} onShowChoices={showMultipleChoice} onSelectChoice={answerByChoice} feedback={feedbackText} feedbackWasCorrect={feedbackWasCorrect} feedbackCorrectLabel={feedbackCorrectLabel} feedbackPoints={feedbackPoints} feedbackResponseMs={feedbackResponseMs} wrongTextAnswers={wrongTextAnswers} />
+            ) : <div className="room-question-loading">Question en cours…</div>}
+            {isRoomOwner && manualQuestionLaunch && manualNextAvailable && <button className="room-owner-action" type="button" onClick={launchNextQuestion} disabled={manualNextPending}>{manualNextPending ? "Lancement…" : "Question suivante"}<Play size={15} /></button>}
+            {isRoomOwner && <button className="room-owner-secondary" type="button" onClick={() => socket?.emit("return_to_lobby", {}, () => undefined)}>Retour au lobby</button>}
+          </main>
         </div>
-      </div>
-    </>
+    </div>
   );
 }
 
@@ -2245,7 +1775,7 @@ function FinalQuestionRecapClean({ items }: { items: RecapItem[] }) {
 
   const selected = ordered[Math.min(selectedIdx, ordered.length - 1)];
 
-  const questionState = (q: Agg): QuestionPanelProgress =>
+  const questionState = (q: Agg): QuestionStatus =>
     q.attempts.length === 0 ? "pending" : q.attempts.some((a) => a.correct) ? "correct" : "wrong";
 
   const toggleSave = (qId: string) =>

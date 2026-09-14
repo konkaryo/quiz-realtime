@@ -123,6 +123,7 @@ export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
             select: { id: true, label: true, isCorrect: true },
           },
           acceptedAnswers: { select: { id: true, text: true } },
+          exactAnswers: { select: { id: true, text: true } },
           _count: { select: { answers: true, dailyEntries: true, reports: true } },
         },
       });
@@ -140,6 +141,10 @@ export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
             isCorrect: choice.isCorrect,
           })),
           acceptedAnswers: question.acceptedAnswers.map((answer) => ({
+            id: answer.id,
+            text: answer.text,
+          })),
+          exactAnswers: question.exactAnswers.map((answer) => ({
             id: answer.id,
             text: answer.text,
           })),
@@ -173,6 +178,12 @@ export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
               text: true,
             },
           },
+          exactAnswers: {
+            select: {
+              id: true,
+              text: true,
+            },
+          },
           _count: {
             select: {
               answers: true,
@@ -196,6 +207,10 @@ export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
             isCorrect: choice.isCorrect,
           })),
           acceptedAnswers: question.acceptedAnswers.map((answer) => ({
+            id: answer.id,
+            text: answer.text,
+          })),
+          exactAnswers: question.exactAnswers.map((answer) => ({
             id: answer.id,
             text: answer.text,
           })),

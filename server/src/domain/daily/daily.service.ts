@@ -36,6 +36,7 @@ type ChallengeDetailRow = {
       img: string | null;
       choices: { id: string; label: string; isCorrect: boolean }[];
       acceptedAnswers: { norm: string }[];
+      exactAnswers: { norm: string }[];
     } | null;
   }[];
 };
@@ -58,6 +59,7 @@ export type DailyChallengeQuestionDto = {
   img: string | null;
   choices: { id: string; label: string; isCorrect: boolean }[];
   acceptedNorms: string[];
+  exactNorms: string[];
   correctLabel: string;
   slotLabel: string | null;
   position: number;
@@ -193,6 +195,7 @@ export async function getChallengeByDate(
               img: true,
               choices: { select: { id: true, label: true, isCorrect: true } },
               acceptedAnswers: { select: { norm: true } },
+              exactAnswers: { select: { norm: true } },
             },
           },
         },
@@ -220,6 +223,7 @@ export async function getChallengeByDate(
           isCorrect: choice.isCorrect,
         })),
         acceptedNorms: q.acceptedAnswers.map((ans) => ans.norm),
+        exactNorms: q.exactAnswers.map((ans) => ans.norm),
         correctLabel: correct?.label ?? "",
         slotLabel: entry.slotLabel ?? null,
         position: entry.position,

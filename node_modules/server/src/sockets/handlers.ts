@@ -10,7 +10,7 @@ import { getOrCreateCurrentGame, clientsInRoom } from "../domain/room/room.servi
 import { emitPublicRoomsUpdated } from "../domain/room/public-room-events";
 import { toProfileUrl } from "../domain/media/media.service";
 import { computeSpeedBonus } from "../domain/player/scoring.service";
-import { isFuzzyMatch, norm } from "../domain/question/textmatch";
+import { isTextAnswerCorrect, norm } from "../domain/question/textmatch";
 import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
 import { launchNextManualRound, startGameForRoom } from "../domain/game/game.service";
@@ -245,6 +245,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       correctRate: number;
       choices: { id: string; label: string; isCorrect: boolean }[];
       acceptedNorms: string[];
+      exactNorms: string[];
       correctLabel: string;
     }[];
     index: number;
@@ -818,7 +819,7 @@ socket.on(
     const userNorm = norm(raw);
     if (!userNorm) return ack?.({ ok: false, reason: "empty" });
 
-    const correct = isFuzzyMatch(userNorm, q.acceptedNorms);
+    const correct = isTextAnswerCorrect(raw, q.acceptedNorms, q.exactNorms);
     const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
 
     // --- Gestion des tentatives / vies ---
@@ -958,15 +959,20 @@ socket.on(
         }
         io.to(room.id).emit("lobby_update");
         emitPublicRoomsUpdated(io);
+        const st = gameStates.get(room.id);
+        const qcmUsesLeft = Math.max(
+          0,
+          CFG.ROOM_QCM_USES - (st?.qcmUsesByPgId.get(pg.id) ?? 0),
+        );
         socket.emit("joined", {
           playerGameId: pg.id,
           playerId: player.id,
           name: player.name,
           roomId: room.id,
           isOwner: room.ownerId === user.id,
+          qcmUsesLeft,
         });
 
-        const st = gameStates.get(room.id);
         if (st && st.gameId === game.id) {
             st.pgIds.add(pg.id);
             ensurePlayerData(st, pg.id, player.name);
@@ -983,6 +989,7 @@ socket.on(
                 seconds: Math.max(1, Math.ceil((st.countdownEndsAt - now) / 1000)),
                 endsAt: st.countdownEndsAt,
                 serverNow: now,
+                qcmUsesLeft,
               });
             } else if (st.endsAt && st.endsAt > now) {
               const q = st.questions[st.index];
@@ -1204,6 +1211,9 @@ socket.on(
         if (st.answeredThisRound.has(client.playerGameId)) {
           return ack?.({ ok: false, reason: "already-answered" });
         }
+        if (!st.mcModePgIds.has(client.playerGameId)) {
+          return ack?.({ ok: false, reason: "mc-mode-not-enabled" });
+        }
 
         const q = st.questions[st.index];
         if (!q) return ack?.({ ok: false, reason: "no-question" });
@@ -1292,7 +1302,7 @@ socket.on(
         const userNorm = norm(raw);
         if (!userNorm) return ack?.({ ok: false, reason: "empty" });
 
-        const correct = isFuzzyMatch(userNorm, q.acceptedNorms);
+        const correct = isTextAnswerCorrect(raw, q.acceptedNorms, q.exactNorms);
 
         // Gestion des tentatives
         let attempts = prevAttempts + 1;
@@ -1362,20 +1372,35 @@ socket.on(
     );
 
     /* ---------------- request_choices ---------------- */
-    socket.on("request_choices", async () => {
+    socket.on("request_choices", async (_p: unknown, ack?: (res: { ok: boolean; reason?: string; qcmUsesLeft: number }) => void) => {
       const roomId = socket.data.roomId as string | undefined;
-      if (!roomId) return;
+      if (!roomId) return ack?.({ ok: false, reason: "not-in-room", qcmUsesLeft: 0 });
 
       const st = gameStates.get(roomId);
-      if (!st || !st.endsAt || Date.now() > st.endsAt) return;
+      if (!st || !st.endsAt || Date.now() > st.endsAt) {
+        return ack?.({ ok: false, reason: "round-inactive", qcmUsesLeft: 0 });
+      }
 
       const client = clients.get(socket.id);
-      if (!client) return;
+      if (!client) return ack?.({ ok: false, reason: "no-client", qcmUsesLeft: 0 });
+
+      const used = st.qcmUsesByPgId.get(client.playerGameId) ?? 0;
+      const usesLeft = Math.max(0, CFG.ROOM_QCM_USES - used);
+      if (usesLeft <= 0) {
+        return ack?.({ ok: false, reason: "qcm-limit", qcmUsesLeft: 0 });
+      }
+
+      const alreadyInQcmMode = st.mcModePgIds.has(client.playerGameId);
+      const nextUsesLeft = alreadyInQcmMode ? usesLeft : usesLeft - 1;
+      if (!alreadyInQcmMode) {
+        st.qcmUsesByPgId.set(client.playerGameId, used + 1);
+      }
 
       st.mcModePgIds.add(client.playerGameId);
 
       const choices = getShuffledChoicesForSocket(st, socket.id);
-      socket.emit("multiple_choice", { choices });
+      socket.emit("multiple_choice", { choices, qcmUsesLeft: nextUsesLeft });
+      return ack?.({ ok: true, qcmUsesLeft: nextUsesLeft });
     });
 
     /* ---------------- disconnect ---------------- */

@@ -15,12 +15,20 @@ export async function sendEmail(
   subject: string,
   html: string
 ) {
-  return getResendClient().emails.send({
+  const { data, error } = await getResendClient().emails.send({
     from: "Synapz <auth@synapz.online>",
     to,
     subject,
     html,
   });
+  // The Resend SDK resolves API failures as { data: null, error } instead of
+  // rejecting the promise. Propagate that failure so callers cannot report a
+  // successful registration when the provider rejected the email.
+  if (error) {
+    throw new Error(`Resend rejected the email: ${error.name}: ${error.message}`);
+  }
+
+  return data;
 }
 
 export async function sendVerificationEmail(email: string, token: string) {
