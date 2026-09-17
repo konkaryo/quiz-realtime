@@ -35,7 +35,7 @@ type RoomQuestionPanelProps = {
   feedbackCorrectLabel: string | null;
   feedbackPoints: number | null;
   feedbackResponseMs: number | null;
-  wrongTextAnswers: string[];
+  wrongTextAnswers: Array<{ answer: string; result: "close" | "wrong" }>;
 };
 
 export default function RoomQuestionPanel({
@@ -195,7 +195,7 @@ export default function RoomQuestionPanel({
             <strong>{feedbackCorrectLabel || textAnswer || "Temps écoulé"}</strong>
           </div>
         ) : canRetry ? (
-          <div className="annex-failed-attempts">{wrongTextAnswers.map((answer, answerIndex) => <span title={answer} key={`${answer}-${answerIndex}`}>{answer}</span>)}</div>
+          <div className="annex-failed-attempts">{wrongTextAnswers.map(({ answer, result }, answerIndex) => <span className={result} title={answer} key={`${answer}-${answerIndex}`}>{answer}</span>)}</div>
         ) : choices ? null : (
           <div className="annex-keyboard-hint"><span><kbd>ENTRÉE</kbd> pour valider</span><span><kbd>TAB</kbd> pour le QCM</span></div>
         )}

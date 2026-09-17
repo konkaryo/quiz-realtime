@@ -58,6 +58,30 @@ export function isTextAnswerCorrect(answer: string, acceptedNorms: string[], exa
     return isFuzzyMatch(norm(answer), acceptedNorms) && hasRequiredExactMatch(answer, exactNorms);
 }
 
+export type TextAnswerResult = "correct" | "close" | "wrong";
+
+/**
+ * Classifies a text answer without making a close answer valid. A close answer is
+ * exactly one edit beyond the tolerance of at least one accepted spelling.
+ */
+export function classifyTextAnswer(answer: string, acceptedNorms: string[], exactNorms: string[]): TextAnswerResult {
+    const userNorm = norm(answer);
+    if (!userNorm) return "wrong";
+
+    const fuzzyMatch = isFuzzyMatch(userNorm, acceptedNorms);
+    if (fuzzyMatch && hasRequiredExactMatch(answer, exactNorms)) return "correct";
+    if (fuzzyMatch) return "wrong";
+
+    for (const accepted of acceptedNorms) {
+        if (!accepted) continue;
+        const closeLimit = maxEditsFor(accepted.length) + 1;
+        if (Math.abs(userNorm.length - accepted.length) > closeLimit) continue;
+        if (damerauLevenshteinWithCutoff(userNorm, accepted, closeLimit) <= closeLimit) return "close";
+    }
+
+    return "wrong";
+}
+
 
 /* ---------------------------------------------------------------------------------------- */
 export function isFuzzyMatch(userNorm: string, accepted: string[]): boolean {

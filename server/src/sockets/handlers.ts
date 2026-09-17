@@ -10,7 +10,7 @@ import { getOrCreateCurrentGame, clientsInRoom } from "../domain/room/room.servi
 import { emitPublicRoomsUpdated } from "../domain/room/public-room-events";
 import { toProfileUrl } from "../domain/media/media.service";
 import { computeSpeedBonus } from "../domain/player/scoring.service";
-import { isTextAnswerCorrect, norm } from "../domain/question/textmatch";
+import { classifyTextAnswer, norm } from "../domain/question/textmatch";
 import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
 import { launchNextManualRound, startGameForRoom } from "../domain/game/game.service";
@@ -819,7 +819,8 @@ socket.on(
     const userNorm = norm(raw);
     if (!userNorm) return ack?.({ ok: false, reason: "empty" });
 
-    const correct = isTextAnswerCorrect(raw, q.acceptedNorms, q.exactNorms);
+    const result = classifyTextAnswer(raw, q.acceptedNorms, q.exactNorms);
+    const correct = result === "correct";
     const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
 
     // --- Gestion des tentatives / vies ---
@@ -864,6 +865,7 @@ socket.on(
 
       const baseFeedback = {
         correct,
+        result,
         correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
         correctLabel: q.correctLabel,
         responseMs,
@@ -890,6 +892,7 @@ socket.on(
       // Mauvaise réponse mais il reste encore des vies
       socket.emit("daily_answer_feedback", {
         correct: false,
+        result,
         livesLeft: remainingLives,
         points: 0,
       });
@@ -1302,7 +1305,8 @@ socket.on(
         const userNorm = norm(raw);
         if (!userNorm) return ack?.({ ok: false, reason: "empty" });
 
-        const correct = isTextAnswerCorrect(raw, q.acceptedNorms, q.exactNorms);
+        const result = classifyTextAnswer(raw, q.acceptedNorms, q.exactNorms);
+        const correct = result === "correct";
 
         // Gestion des tentatives
         let attempts = prevAttempts + 1;
@@ -1351,13 +1355,14 @@ socket.on(
           const corr = q.choices.find((c) => c.isCorrect) || null;
           socket.emit("answer_feedback", {
             correct,
+            result,
             correctChoiceId: corr ? corr.id : null,
             correctLabel: corr ? corr.label : null,
             responseMs,
             points: gained,
           });
         } else {
-          socket.emit("answer_feedback", { correct: false, points: 0 });
+          socket.emit("answer_feedback", { correct: false, result, points: 0 });
         }
 
         //io.to(client.roomId).emit("answer_received");

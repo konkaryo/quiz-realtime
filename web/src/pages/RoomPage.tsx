@@ -7,7 +7,7 @@ import { io, Socket } from "socket.io-client";
 import { initSfx, playCorrect } from "../sfx";
 import crownImage from "../assets/crown.png";
 import { getLevelFromExperience } from "../utils/experience";
-import { ArrowUp, Crosshair, ImageIcon, LogOut, Play, Settings, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUp, Clock3, Crosshair, Flag, ImageIcon, LogOut, Play, Settings, Trophy, Zap } from "lucide-react";
 import ShapeGrid from "../components/ShapeGrid";
 import LoadingScreen from "../components/LoadingScreen";
 import RoomQuestionPanel from "../components/RoomQuestionPanel";
@@ -123,6 +123,7 @@ type RecapItem = {
   theme?: string | null;
   correctLabel?: string | null;
   yourAnswer?: string | null;
+  mode?: "text" | "mc";
   correct: boolean;
   responseMs: number;
   points: number;
@@ -275,7 +276,7 @@ export default function RoomPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [correctId, setCorrectId] = useState<string | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
-  const [wrongTextAnswers, setWrongTextAnswers] = useState<string[]>([]);
+  const [wrongTextAnswers, setWrongTextAnswers] = useState<Array<{ answer: string; result: "close" | "wrong" }>>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackResponseMs, setFeedbackResponseMs] = useState<number | null>(
     null
@@ -330,6 +331,8 @@ export default function RoomPage() {
   const [finalRecap, setFinalRecap] = useState<RecapItem[] | null>(null);
   const [finalQuestionSnapshots, setFinalQuestionSnapshots] = useState<FinalQuestionSnapshot[]>([]);
   const [selectedFinalIndex, setSelectedFinalIndex] = useState(0);
+  const [hoveredTrackerIndex, setHoveredTrackerIndex] = useState<number | null>(null);
+  const [reportedFinalQuestionIds, setReportedFinalQuestionIds] = useState<Set<string>>(new Set());
 
   // ✅ Top 10 visibles (le reste accessible via scroll)
   const LB_VISIBLE = 10;
@@ -734,6 +737,7 @@ export default function RoomPage() {
       "answer_feedback",
       (p: {
         correct: boolean;
+        result?: "correct" | "close" | "wrong";
         correctChoiceId: string | null;
         correctLabel: string | null;
         responseMs?: number;
@@ -752,7 +756,7 @@ export default function RoomPage() {
         if (mcChoicesRef.current === null) {
           if (!p.correct) {
             const attempt = lastSubmittedTextRef.current.trim();
-            if (attempt) setWrongTextAnswers((answers) => [...answers, attempt]);
+            if (attempt) setWrongTextAnswers((answers) => [...answers, { answer: attempt, result: p.result === "close" ? "close" : "wrong" }]);
           } else {
             setWrongTextAnswers([]);
             lastSubmittedTextRef.current = "";
@@ -1297,7 +1301,7 @@ export default function RoomPage() {
       theme?: string | null;
       correctLabel?: string | null;
       stats?: FinalQuestionStats;
-      attempts: { correct: boolean }[];
+      attempts: { answer?: string | null; correct: boolean; mode?: "text" | "mc"; responseMs: number; points: number }[];
       status: QuestionStatus;
     };
 
@@ -1351,31 +1355,24 @@ export default function RoomPage() {
 
       if (item.correctLabel) agg.correctLabel = item.correctLabel;
       if (item.theme && !agg.theme) agg.theme = item.theme;
-      agg.attempts.push({ correct: !!item.correct });
+      agg.attempts.push({ answer: item.yourAnswer, correct: !!item.correct, mode: item.mode, responseMs: item.responseMs, points: item.points });
     }
 
     return ordered.map((agg) => {
-      const isCorrect = agg.attempts.some((attempt) => attempt.correct);
+      const correctAttempt = agg.attempts.find((attempt) => attempt.correct);
       return {
         ...agg,
         status:
-          agg.attempts.length === 0 ? "pending" : isCorrect ? "correct" : "wrong",
+          (agg.attempts.length === 0 ? "pending" : correctAttempt ? correctAttempt.mode === "mc" ? "correct-mc" : "correct" : "wrong") as QuestionStatus,
       };
     });
   }, [finalRecap]);
 
-  const finalTrackerItems = useMemo(
-    () =>
-      phase === "final"
-        ? (["pending" as QuestionStatus, ...questionTrackerItems])
-        : questionTrackerItems,
-    [phase, questionTrackerItems]
-  );
-
-  const finalStatsByQuestionId = useMemo(() => {
-    const map = new Map<string, FinalQuestionStats>();
+  const finalDetailsByQuestionId = useMemo(() => {
+    const map = new Map<string, { answer?: string | null; stats?: FinalQuestionStats; status: QuestionStatus; correctLabel?: string | null; responseMs?: number; points?: number }>();
     finalQuestions.forEach((q) => {
-      if (q.stats) map.set(q.questionId, q.stats);
+      const playerAttempt = q.attempts.find((attempt) => attempt.correct) ?? q.attempts.at(-1);
+      map.set(q.questionId, { answer: playerAttempt?.answer, stats: q.stats, status: q.status, correctLabel: q.correctLabel, responseMs: playerAttempt?.responseMs, points: playerAttempt?.points });
     });
     return map;
   }, [finalQuestions]);
@@ -1385,11 +1382,17 @@ export default function RoomPage() {
 
   const selectedFinalQuestion = useMemo(() => {
     if (!selectedFinalQuestionSnapshot) return null;
+    const details = finalDetailsByQuestionId.get(selectedFinalQuestionSnapshot.questionId);
     return {
       ...selectedFinalQuestionSnapshot,
-      stats: finalStatsByQuestionId.get(selectedFinalQuestionSnapshot.questionId),
+      stats: details?.stats,
+      status: details?.status ?? "pending",
+      correctLabel: details?.correctLabel ?? selectedFinalQuestionSnapshot.correctLabel,
+      responseMs: details?.responseMs,
+      points: details?.points,
+      answer: details?.answer,
     };
-  }, [selectedFinalQuestionSnapshot, finalStatsByQuestionId]);
+  }, [selectedFinalQuestionSnapshot, finalDetailsByQuestionId]);
   const isFinalLeaderboardSelected = selectedFinalIndex === 0;
 
   useEffect(() => {
@@ -1401,10 +1404,12 @@ export default function RoomPage() {
 
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-        setSelectedFinalIndex((current) => Math.max(0, current - 1));
+        setHoveredTrackerIndex(null);
+        setSelectedFinalIndex((current) => current === 0 ? finalQuestionSnapshots.length : Math.max(1, current - 1));
       } else if (event.key === "ArrowRight") {
         event.preventDefault();
-        setSelectedFinalIndex((current) => Math.min(finalQuestionSnapshots.length, current + 1));
+        setHoveredTrackerIndex(null);
+        setSelectedFinalIndex((current) => current === 0 ? 1 : Math.min(finalQuestionSnapshots.length, current + 1));
       }
     };
 
@@ -1434,14 +1439,47 @@ export default function RoomPage() {
     if (!stats) return null;
     const responseCount = stats.correct + stats.correctQcm + stats.wrong;
     const total = Math.max(1, responseCount);
+    const correctPercent = 100 * stats.correct / total;
+    const correctAndQcmPercent = 100 * (stats.correct + stats.correctQcm) / total;
     return {
       stats,
-      hasNoResponses: responseCount === 0,
-      correctWidth: `${(100 * stats.correct) / total}%`,
-      qcmWidth: `${(100 * stats.correctQcm) / total}%`,
-      wrongWidth: `${(100 * stats.wrong) / total}%`,
+      pieBackground: responseCount === 0
+        ? "#30313a"
+        : `conic-gradient(#16a34a 0 ${correctPercent}%, #6f5bd4 ${correctPercent}% ${correctAndQcmPercent}%, #af2d33 ${correctAndQcmPercent}% 100%)`,
     };
   }, [selectedFinalQuestion]);
+
+  const reportFinalQuestion = async () => {
+    const questionId = selectedFinalQuestion?.questionId;
+    if (!questionId || reportedFinalQuestionIds.has(questionId)) return;
+    try {
+      const response = await fetch(`${API_BASE}/questions/${encodeURIComponent(questionId)}/reports`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "OTHER" }),
+      });
+      if (!response.ok) return;
+      setReportedFinalQuestionIds((current) => new Set(current).add(questionId));
+    } catch {
+      // Le bouton reste disponible afin que le joueur puisse réessayer.
+    }
+  };
+
+  const correctAnswerByIndex = useMemo(() => {
+    const answers = new Map<number, string>();
+    finalQuestionSnapshots.forEach((snapshot, snapshotIndex) => {
+      const correctAnswer = (
+        finalDetailsByQuestionId.get(snapshot.questionId)?.correctLabel ?? snapshot.correctLabel
+      )?.trim();
+      answers.set(snapshotIndex, correctAnswer || "Réponse non renseignée");
+    });
+    return answers;
+  }, [finalDetailsByQuestionId, finalQuestionSnapshots]);
+
+  const displayedQuestion = phase === "final" && selectedFinalQuestionPanel
+    ? selectedFinalQuestionPanel
+    : normalizedQuestion;
 
 
   const roomDisplayName = roomMeta?.name?.trim() || "Salon";
@@ -1614,8 +1652,8 @@ return (
       <div className="room-game-layout">
           <aside className="room-game-left">
             <div className="room-question-image">
-              {normalizedQuestion?.img ? <img src={normalizedQuestion.img} alt="Illustration de la question" onError={(event) => { event.currentTarget.style.display = "none"; event.currentTarget.nextElementSibling?.removeAttribute("hidden"); }} /> : null}
-              <div className="room-image-placeholder" hidden={Boolean(normalizedQuestion?.img)}><ImageIcon size={25} /><span>Question sans image</span></div>
+              {displayedQuestion?.img ? <img key={displayedQuestion.img} src={displayedQuestion.img} alt="Illustration de la question" onError={(event) => { event.currentTarget.style.display = "none"; event.currentTarget.nextElementSibling?.removeAttribute("hidden"); }} /> : null}
+              <div className="room-image-placeholder" hidden={Boolean(displayedQuestion?.img)}><ImageIcon size={25} /><span>Question sans image</span></div>
             </div>
             <section className="room-live-board" aria-label="Classement en direct">
               <ol ref={leaderboardRef} onScroll={pauseLeaderboardTargeting} className="room-live-list lb-scroll">
@@ -1632,7 +1670,11 @@ return (
               </ol>
             </section>
             <nav className="room-left-progress" aria-label="Suivi des questions">
-              {questionProgress.map((status, questionIndex) => <span className={`${status} ${questionIndex === index ? "current" : ""}`} key={questionIndex}>{questionIndex + 1}</span>)}
+              {questionProgress.map((status, questionIndex) => phase === "final" ? (
+                <button type="button" className={`${status} ${selectedFinalIndex === questionIndex + 1 ? "current" : ""} ${hoveredTrackerIndex === questionIndex ? "is-hovered" : ""}`} data-answer={correctAnswerByIndex.get(questionIndex) ?? "Réponse non renseignée"} onMouseEnter={() => setHoveredTrackerIndex(questionIndex)} onMouseLeave={() => setHoveredTrackerIndex(null)} onClick={() => setSelectedFinalIndex(questionIndex + 1)} aria-pressed={selectedFinalIndex === questionIndex + 1} aria-label={`Afficher la question ${questionIndex + 1}`} key={questionIndex}>{questionIndex + 1}</button>
+              ) : questionIndex < index ? (
+                <button type="button" tabIndex={-1} className={`${status} ${hoveredTrackerIndex === questionIndex ? "is-hovered" : ""}`} data-answer={correctAnswerByIndex.get(questionIndex) ?? "Réponse non renseignée"} onMouseEnter={() => setHoveredTrackerIndex(questionIndex)} onMouseLeave={() => setHoveredTrackerIndex(null)} aria-label={`Question ${questionIndex + 1} : ${correctAnswerByIndex.get(questionIndex) ?? "réponse non renseignée"}`} key={questionIndex}>{questionIndex + 1}</button>
+              ) : <span className={`${status} ${questionIndex === index ? "current" : ""}`} key={questionIndex}>{questionIndex + 1}</span>)}
             </nav>
           </aside>
 
@@ -1647,7 +1689,7 @@ return (
                   {visibleCountdownPlayers.map((player) => <div key={player.id}><img src={player.img ?? "/img/profiles/0.avif"} alt="" /><strong>{player.name}</strong><small>Niveau {getLevelFromExperience(player.experience ?? 0)}</small></div>)}
                 </div>
               </div>
-            ) : phase === "final" ? (
+            ) : phase === "final" && isFinalLeaderboardSelected ? (
               <div className="room-final-view">
                 <div className="room-final-rank"><strong>{selfIndex >= 0 ? <>{selfIndex + 1}<sup>{selfIndex === 0 ? "er" : "ème"}</sup></> : "—"}</strong><small>/ {finalRows.length} joueurs</small></div>
                 <ol className="room-final-list">{finalRows.slice(0, 3).map((row, rowIndex) => {
@@ -1661,6 +1703,40 @@ return (
                 })}</ol>
                 {finalRemaining !== null && <div className="room-final-countdown room-speed-countdown">Prochaine partie dans <strong>{finalRemaining}s</strong></div>}
               </div>
+            ) : phase === "final" && selectedFinalQuestionPanel ? (
+              <section className="room-final-question" aria-labelledby="room-final-question-title">
+                <div className="room-final-question-overview">
+                  <p>QUESTION {String(selectedFinalIndex).padStart(2, "0")} <span>/ {String(finalQuestionSnapshots.length).padStart(2, "0")}</span></p>
+                  {selectedFinalStatsLayout ? <div className="room-final-pie-summary" aria-label="Statistiques des réponses">
+                    <div className="room-final-pie" style={{ background: selectedFinalStatsLayout.pieBackground }} />
+                    <div className="room-final-pie-legend">
+                      <span className="correct"><i />{selectedFinalStatsLayout.stats.correct} <b>✓</b></span>
+                      <span className="correct-mc"><i />{selectedFinalStatsLayout.stats.correctQcm} <b>⚡︎</b></span>
+                      <span className="wrong"><i />{selectedFinalStatsLayout.stats.wrong} <b>✕</b></span>
+                    </div>
+                  </div> : <p className="room-final-no-stats">Aucune statistique disponible.</p>}
+                  <div className="room-final-question-nav" aria-label="Navigation entre les questions">
+                    <button type="button" onClick={() => setSelectedFinalIndex((current) => Math.max(1, current - 1))} disabled={selectedFinalIndex <= 1} aria-label="Question précédente"><ArrowLeft size={17} /></button>
+                    <button type="button" onClick={() => setSelectedFinalIndex((current) => Math.min(finalQuestionSnapshots.length, current + 1))} disabled={selectedFinalIndex >= finalQuestionSnapshots.length} aria-label="Question suivante"><ArrowRight size={17} /></button>
+                  </div>
+                </div>
+                <article className="annex-question-card room-final-question-card">
+                  <p>{selectedFinalQuestionPanel.theme?.replaceAll("_", " ") || "QUESTION"}</p>
+                  <h1 id="room-final-question-title">{selectedFinalQuestionPanel.text}</h1>
+                </article>
+                <div className={`annex-feedback room-final-answer-feedback ${selectedFinalQuestion?.status === "correct" || selectedFinalQuestion?.status === "correct-mc" ? "correct" : "wrong"}`}>
+                  <span className="annex-feedback-icon" aria-hidden="true">{selectedFinalQuestion?.status === "correct" || selectedFinalQuestion?.status === "correct-mc" ? "✓" : "✕"}</span>
+                  <strong>{selectedFinalQuestion?.correctLabel || "Réponse non renseignée"}</strong>
+                </div>
+                <div className="room-final-question-footer">
+                  <button className="room-final-report" type="button" onClick={reportFinalQuestion} disabled={reportedFinalQuestionIds.has(selectedFinalQuestionPanel.id)}><Flag size={15} />{reportedFinalQuestionIds.has(selectedFinalQuestionPanel.id) ? "Question signalée" : "Signaler la question"}</button>
+                  <div className="annex-answer-meta room-final-answer-meta">
+                    {typeof selectedFinalQuestion?.responseMs === "number" && <span><Clock3 size={17} /><small>TEMPS</small><strong>{(Math.max(0, selectedFinalQuestion.responseMs) / 1000).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} s</strong></span>}
+                    {typeof selectedFinalQuestion?.points === "number" && <span><Zap size={17} /><small>SCORE</small><strong>+{Math.max(0, selectedFinalQuestion.points)} pts</strong></span>}
+                  </div>
+                </div>
+                {finalRemaining !== null && <div className="room-final-countdown room-final-question-countdown">Prochaine partie dans <strong>{finalRemaining}s</strong></div>}
+              </section>
             ) : phase === "speed" ? (
               <section className="room-speed-interlude" aria-labelledby="room-speed-title">
                 <h1 className="sr-only" id="room-speed-title">Classement de vitesse</h1>

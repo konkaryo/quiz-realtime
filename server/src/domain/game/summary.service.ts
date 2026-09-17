@@ -13,6 +13,7 @@ export type QuestionRecap = {
   img?: string | null;
   correctLabel?: string | null;   // libellé de la bonne réponse si QCM
   yourAnswer?: string | null;     // texte/choix envoyé par le joueur
+  mode?: Mode;
   correct: boolean;
   responseMs: number;             // -1 si inconnu
   points: number;                 // points gagnés sur cette question
@@ -65,6 +66,7 @@ export async function buildPlayerSummary(
       id: true,
       text: true,
       correct: true,
+      mode: true,
       responseMs: true,
       points: true,
       question: {
@@ -163,6 +165,7 @@ export async function buildPlayerSummary(
       img: meta.img,
       correctLabel: meta.correctLabel ?? fallbackLabel,
       yourAnswer: a.text,
+      mode: a.mode === "mc" ? "mc" : "text",
       correct: a.correct,
       responseMs: a.responseMs ?? -1,
       points: gained
