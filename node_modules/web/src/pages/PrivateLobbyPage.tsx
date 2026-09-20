@@ -45,20 +45,16 @@ type LobbyStatePayload = {
 };
 
 const THEME_OPTIONS = [
-  { key: "AUDIOVISUEL", label: "Audiovisuel" },
-  { key: "ARTS", label: "Arts" },
-  { key: "CROYANCES", label: "Croyances" },
-  { key: "DIVERS", label: "Divers" },
+  { key: "CULTURE_CLASSIQUE", label: "Culture classique" },
+  { key: "CULTURE_GENERALE", label: "Culture générale" },
+  { key: "CULTURE_MODERNE", label: "Culture moderne" },
   { key: "GEOGRAPHIE", label: "Géographie" },
   { key: "HISTOIRE", label: "Histoire" },
-  { key: "LITTERATURE", label: "Littérature" },
   { key: "MUSIQUE", label: "Musique" },
   { key: "NATURE", label: "Nature" },
-  { key: "POP_CULTURE", label: "Pop culture" },
   { key: "SCIENCE", label: "Science" },
-  { key: "SOCIETE", label: "Société" },
   { key: "SPORT", label: "Sport" },
-  { key: "TRADITIONS", label: "Traditions" },
+  { key: "TRADITION", label: "Tradition" },
 ] as const;
 
 type RightTab = "JOUEURS" | "PARAMETRES";

@@ -32,20 +32,16 @@ enum NotificationType {
 }
 
 enum Theme {
-  ARTS
-  AUDIOVISUEL
-  CROYANCES
-  DIVERS
+  CULTURE_CLASSIQUE
+  CULTURE_MODERNE
+  CULTURE_GENERALE
+  TRADITION
   GEOGRAPHIE
   HISTOIRE
-  LITTERATURE
   MUSIQUE
-  NATURE
-  POP_CULTURE
   SCIENCE
-  SOCIETE
+  NATURE
   SPORT
-  TRADITIONS
 }
 
 enum RoomVisibility {
@@ -63,6 +59,7 @@ enum QuestionReportReason {
 
 enum EmailTokenType {
   EMAIL_VERIFICATION
+  EMAIL_CHANGE
   PASSWORD_RESET
 }
 
@@ -83,14 +80,15 @@ model User {
 }
 
 model EmailToken {
-  id        String         @id @default(cuid())
-  userId    String
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      EmailTokenType
-  tokenHash String         @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime       @default(now())
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         EmailTokenType
+  tokenHash    String         @unique
+  pendingEmail String?
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime       @default(now())
 
   @@index([userId, type])
   @@index([expiresAt])

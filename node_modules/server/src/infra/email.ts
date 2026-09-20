@@ -21,9 +21,6 @@ export async function sendEmail(
     subject,
     html,
   });
-  // The Resend SDK resolves API failures as { data: null, error } instead of
-  // rejecting the promise. Propagate that failure so callers cannot report a
-  // successful registration when the provider rejected the email.
   if (error) {
     throw new Error(`Resend rejected the email: ${error.name}: ${error.message}`);
   }
@@ -43,6 +40,22 @@ export async function sendVerificationEmail(email: string, token: string) {
       <p>Confirmez votre adresse email pour activer votre compte.</p>
       <p><a href="${verifyUrl.toString()}">Vérifier mon email</a></p>
       <p>Ce lien expire dans 24 heures.</p>
+    `
+  );
+}
+
+export async function sendEmailChangeVerificationEmail(email: string, token: string) {
+  const verifyUrl = new URL("/verify-email", APP_BASE_URL);
+  verifyUrl.searchParams.set("token", token);
+
+  return sendEmail(
+    email,
+    "Confirmez votre nouvelle adresse email",
+    `
+      <h2>Modification de votre adresse email</h2>
+      <p>Confirmez cette nouvelle adresse pour l'associer à votre compte Synapz.</p>
+      <p><a href="${verifyUrl.toString()}">Confirmer mon adresse email</a></p>
+      <p>Ce lien expire dans 24 heures. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
     `
   );
 }

@@ -31,7 +31,6 @@ async function getSpeedBonusEnabled(prisma: PrismaClient, roomId: string) {
 }
 
 const DEFAULT_DIFFICULTY_PERCENT = 50;
-const DIVERS_PROBABILITY_STEP = 0.05;
 
 const shuffle = <T,>(values: T[]): T[] => {
   const items = [...values];
@@ -42,30 +41,15 @@ const shuffle = <T,>(values: T[]): T[] => {
   return items;
 };
 
-const diversProbability = (count: number) => Math.min(count * DIVERS_PROBABILITY_STEP, 1);
-
-const replaceWithDivers = (block: Theme[], diversAllowed: boolean) => {
-  if (!diversAllowed || block.length === 0) return block;
-  const idx = Math.floor(Math.random() * block.length);
-  const updated = [...block];
-  updated[idx] = Theme.DIVERS;
-  return updated;
-};
-
-const buildThemeSequence = (total: number, themes: Theme[], diversAllowed: boolean): Theme[] => {
+const buildThemeSequence = (total: number, themes: Theme[]): Theme[] => {
   if (total <= 0) return [];
   if (themes.length === 0) {
-    if (diversAllowed) return Array.from({ length: total }, () => Theme.DIVERS);
     throw new Error("No themes available for selection.");
   }
 
   const T = themes.length;
   if (total <= T) {
-    const picked = shuffle(themes).slice(0, total);
-    if (diversAllowed && Math.random() < diversProbability(T)) {
-      return replaceWithDivers(picked, true);
-    }
-    return picked;
+    return shuffle(themes).slice(0, total);
   }
 
   const Q = Math.floor(total / T);
@@ -73,17 +57,11 @@ const buildThemeSequence = (total: number, themes: Theme[], diversAllowed: boole
   const blocks: Theme[] = [];
 
   for (let i = 0; i < Q; i += 1) {
-    const block = [...themes];
-    const withDivers =
-      diversAllowed && Math.random() < diversProbability(T) ? replaceWithDivers(block, true) : block;
-    blocks.push(...withDivers);
+    blocks.push(...shuffle(themes));
   }
 
   if (R > 0) {
-    const remainder = shuffle(themes).slice(0, R);
-    const withDivers =
-      diversAllowed && Math.random() < diversProbability(R) ? replaceWithDivers(remainder, true) : remainder;
-    blocks.push(...withDivers);
+    blocks.push(...shuffle(themes).slice(0, R));
   }
 
   return blocks;
@@ -221,13 +199,11 @@ export async function startGameForRoom(
       : DEFAULT_DIFFICULTY_PERCENT;
 
   const banned = (room.bannedThemes ?? []) as Theme[];
-  const baseThemes = Object.values(Theme).filter((theme) => theme !== Theme.DIVERS && !banned.includes(theme));
-  const diversAllowed = !banned.includes(Theme.DIVERS);
-  const selectableThemes = diversAllowed ? [...baseThemes, Theme.DIVERS] : [...baseThemes];
+  const selectableThemes = Object.values(Theme).filter((theme) => !banned.includes(theme));
 
   let themeSequence: Theme[] = [];
   try {
-    themeSequence = buildThemeSequence(QUESTION_COUNT, baseThemes, diversAllowed);
+    themeSequence = buildThemeSequence(QUESTION_COUNT, selectableThemes);
   } catch (error) {
     io.to(room.id).emit("error_msg", "pool insuffisant");
     return;

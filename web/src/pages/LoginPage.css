@@ -1,0 +1,179 @@
+.login-page {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  color: #f5f5f7;
+  background: #101116;
+}
+
+.login-shape-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: .78;
+}
+
+.login-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(16,17,22,.12), rgba(16,17,22,.58));
+}
+
+.login-page .site-header { position: absolute; }
+.login-page .site-header-inner {
+  max-width: 1680px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.login-page .brand img { object-fit: contain; }
+
+.login-main {
+  position: relative;
+  z-index: 2;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 96px 20px;
+}
+
+.login-panel {
+  width: min(100%, 390px);
+  padding: 28px;
+  border: 1px solid #30323a;
+  border-radius: 20px;
+  background: rgba(25,26,32,.94);
+  box-shadow: 0 30px 90px rgba(0,0,0,.42);
+  backdrop-filter: blur(20px);
+}
+
+.login-panel-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  margin: 0 auto 23px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: .01em;
+}
+.login-panel-brand img {
+  width: 38px;
+  height: 38px;
+  display: block;
+  border-radius: 9px;
+  object-fit: contain;
+}
+.login-panel-brand span { text-transform: lowercase; }
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.login-form label > span:first-child {
+  display: block;
+  margin: 0 0 7px;
+  color: #c7c7ce;
+  font-size: 11px;
+  font-weight: 650;
+}
+.login-form input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #393b45;
+  border-radius: 11px;
+  outline: 0;
+  color: #fff;
+  background: #202127;
+  font-size: 13px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.login-form input::placeholder { color: #71727c; }
+.login-form input:focus {
+  border-color: #8178f4;
+  box-shadow: 0 0 0 3px rgba(98,87,245,.16);
+}
+
+.login-password-field { position: relative; display: block; }
+.login-password-field input { padding-right: 48px; }
+.login-password-field button {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: #898a94;
+  background: transparent;
+  cursor: pointer;
+}
+.login-password-field button:hover { color: #fff; background: #2a2b32; }
+
+.login-form-meta { display: flex; justify-content: flex-end; margin-top: -3px; }
+.login-form-meta a,
+.login-signup a { color: #8c82ff; font-size: 11px; font-weight: 650; }
+.login-form-meta a:hover,
+.login-signup a:hover { color: #aaa3ff; text-decoration: underline; }
+
+.login-page .login-submit {
+  width: 160px;
+  height: 38px;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 22px;
+  padding: 0 16px;
+  border: 1px solid #756cff;
+  border-radius: 11px;
+  color: #fff;
+  background: #6257f5;
+  box-shadow: none;
+  font: 650 11px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif;
+  cursor: pointer;
+  transition: transform .2s, background .2s, box-shadow .2s;
+}
+.login-page .login-submit:hover:not(:disabled) {
+  border-color: #8c84ff;
+  color: #fff;
+  background: #7168f7;
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+.login-page .login-submit:disabled {
+  color: #777984;
+  border-color: #30313a;
+  background: #24252b;
+  box-shadow: none;
+  cursor: wait;
+}
+
+.login-signup {
+  margin: 20px 0 0;
+  padding-top: 17px;
+  border-top: 1px solid #30323a;
+  color: #858690;
+  font-size: 11px;
+  text-align: center;
+}
+
+@media (max-width: 680px) {
+  .login-page .site-nav,
+  .login-page .nav-divider { display: none; }
+  .login-page .site-header { padding-inline: 12px; }
+  .login-page .site-header-inner { padding-left: 12px; }
+  .login-main { padding: 88px 16px; }
+  .login-panel { padding: 24px 18px; }
+  .login-page .login-submit { width: 152px; margin-top: 20px; }
+}

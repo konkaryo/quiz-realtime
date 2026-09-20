@@ -323,6 +323,8 @@ export default function AppShell() {
   const [displayExperience, setDisplayExperience] = useState(0);
   const displayExperienceRef = useRef(0);
   const isRoomRoute = location.pathname.startsWith("/room/");
+  const isCreateRoomRoute = location.pathname === "/rooms/new" || /^\/rooms\/[^/]+\/lobby$/.test(location.pathname);
+  const isAccountRoute = location.pathname === "/me/account";
   const isTestRoute = location.pathname === "/test";
   const isLandingRoute = location.pathname === "/";
   const isGuest = !user || Boolean(user?.guest);
@@ -1064,7 +1066,7 @@ export default function AppShell() {
           setOpenMenu(null);
         }}
         style={{
-          display: isLandingRoute || isRoomRoute ? "none" : "flex",
+          display: isLandingRoute || isRoomRoute || isCreateRoomRoute || isAccountRoute ? "none" : "flex",
           position: "fixed",
           insetInline: 0,
           top: 0,
@@ -1804,9 +1806,9 @@ export default function AppShell() {
         )}
         {isTestRoute && (
           <Link
-            to="/me/profile"
-            aria-label="Voir mon profil"
-            title={user?.displayName || "Profil"}
+            to="/me/account"
+            aria-label="Ouvrir les paramètres du compte"
+            title={user?.displayName || "Compte"}
             style={{
               display: "block",
               width: 32,
@@ -1839,8 +1841,8 @@ export default function AppShell() {
       <main
         style={{
           flex: 1,
-          paddingTop: isTestRoute || isLandingRoute || isRoomRoute ? 0 : HEADER_H,
-          minHeight: isTestRoute || isLandingRoute || isRoomRoute ? "100dvh" : `calc(100dvh - ${HEADER_H}px)`,
+          paddingTop: isTestRoute || isLandingRoute || isRoomRoute || isCreateRoomRoute || isAccountRoute ? 0 : HEADER_H,
+          minHeight: isTestRoute || isLandingRoute || isRoomRoute || isCreateRoomRoute || isAccountRoute ? "100dvh" : `calc(100dvh - ${HEADER_H}px)`,
           width: "100%",
           boxSizing: "border-box",
           margin: "0 auto",

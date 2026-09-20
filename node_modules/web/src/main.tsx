@@ -5,6 +5,7 @@ import {
   createBrowserRouter,
   RouterProvider,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 
 import AppShell from "./AppShell";
@@ -79,6 +80,26 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RequireRegisteredUser({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const [status, setStatus] = useState<"pending" | "authed" | "guest">("pending");
+
+  useEffect(() => {
+    let mounted = true;
+    fetchMe().then(({ user }) => {
+      if (!mounted) return;
+      setStatus(user && !user.guest ? "authed" : "guest");
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (status === "pending") return <LoadingScreen />;
+  if (status === "guest") return <Navigate to="/login" replace state={{ from: location }} />;
+  return <>{children}</>;
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 function RequireAdmin({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"pending" | "admin" | "denied">("pending");
@@ -107,6 +128,30 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 // ---------------------------------------------------------------------------
 
 const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: (
+      <React.Suspense fallback={<LoadingScreen />}>
+        <LoginPage />
+      </React.Suspense>
+    ),
+  },
+  {
+    path: "/register",
+    element: (
+      <React.Suspense fallback={<LoadingScreen />}>
+        <RegisterPage />
+      </React.Suspense>
+    ),
+  },
+  {
+    path: "/forgot-password",
+    element: (
+      <React.Suspense fallback={<LoadingScreen />}>
+        <ForgotPasswordPage />
+      </React.Suspense>
+    ),
+  },
   // Routes sous AppShell
   {
     element: (
@@ -115,30 +160,6 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      {
-        path: "/login",
-        element: (
-          <React.Suspense fallback={<LoadingScreen />}>
-            <LoginPage />
-          </React.Suspense>
-        ),
-      },
-      {
-        path: "/register",
-        element: (
-          <React.Suspense fallback={<LoadingScreen />}>
-            <RegisterPage />
-          </React.Suspense>
-        ),
-      },
-      {
-        path: "/forgot-password",
-        element: (
-          <React.Suspense fallback={<LoadingScreen />}>
-            <ForgotPasswordPage />
-          </React.Suspense>
-        ),
-      },
       {
         path: "/reset-password",
         element: (
@@ -172,7 +193,14 @@ const router = createBrowserRouter([
       { path: "/multi/ranking", element: <RankingPage /> },
       { path: "/me/profile", element: <ProfilePage /> },
       { path: "/players/:playerId/profile", element: <ProfilePage /> },
-      { path: "/me/account", element: <AccountPage /> },
+      {
+        path: "/me/account",
+        element: (
+          <RequireRegisteredUser>
+            <AccountPage />
+          </RequireRegisteredUser>
+        ),
+      },
       {
         path: "/admin",
         element: (

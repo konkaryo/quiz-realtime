@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient, Theme } from "@prisma/client";
 import { CFG } from "../../config";
 import { HOURLY_TRAFFIC } from "../bot/traffic";
 import {
@@ -9,7 +9,7 @@ import {
 } from "./daily-score.service";
 import { getChallengeByDate } from "./daily.service";
 
-const THEME_FALLBACK = "DIVERS" as const;
+const THEME_FALLBACK = "CULTURE_GENERALE" as Theme;
 const DAILY_ROUND_MS = Number(process.env.DAILY_ROUND_MS || 20000);
 
 type DifficultyParams = { pMin: number; pMax: number; t: number; s: number; k: number };
@@ -148,7 +148,7 @@ async function simulateDailyChallengeForBot(
     } else {
       mode = "choice";
       if (Math.random() < computeSuccessProbability(skill, MC_SUCCESS_PARAMS[diff])) {
-        points = 60 + dailyTimeBonus(responseMs);
+        points = CFG.MC_ANSWER_POINTS_GAIN + dailyTimeBonus(responseMs);
       } else {
         answer = null;
       }

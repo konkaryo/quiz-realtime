@@ -2,6 +2,7 @@
 import { RefObject, KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import thumbActiveIcon from "../assets/thumb_active.png";
 import thumbInactiveIcon from "../assets/thumb_inactive.png";
+import { getThemeMeta } from "../lib/themeMeta";
 
 export type Choice = { id: string; label: string };
 
@@ -20,20 +21,7 @@ const API_BASE =
   import.meta.env.VITE_API_BASE ??
   (typeof window !== "undefined" ? window.location.origin : "");
 
-const formatThemeLabel = (theme: string): string => {
-  switch (theme) {
-    case "GEOGRAPHIE":
-      return "GÉOGRAPHIE";
-    case "LITTERATURE":
-      return "LITTÉRATURE";
-    case "POP_CULTURE":
-      return "POP CULTURE";
-    case "SOCIETE":
-      return "SOCIÉTÉ";
-    default:
-      return theme.replaceAll("_", " ");
-  }
-};
+const formatThemeLabel = (theme: string): string => getThemeMeta(theme).label.toLocaleUpperCase("fr-FR");
 
 function Lives({ lives, total }: { lives: number; total: number }) {
   const full = Array.from({ length: lives }).map((_, i) => (

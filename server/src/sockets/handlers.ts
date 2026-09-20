@@ -9,7 +9,7 @@ import { randomUUID } from "crypto";
 import { getOrCreateCurrentGame, clientsInRoom } from "../domain/room/room.service";
 import { emitPublicRoomsUpdated } from "../domain/room/public-room-events";
 import { toProfileUrl } from "../domain/media/media.service";
-import { computeSpeedBonus } from "../domain/player/scoring.service";
+import { computeSpeedBonus, computeTextAnswerPoints } from "../domain/player/scoring.service";
 import { classifyTextAnswer, norm } from "../domain/question/textmatch";
 import { getShuffledChoicesForSocket } from "../domain/question/shuffle";
 import { buildLeaderboard } from "../domain/game/leaderboard.service";
@@ -738,7 +738,7 @@ socket.on(
       const remainingMs = Math.max(0, (sess.endsAt ?? Date.now()) - Date.now());
       const secsLeft = Math.floor(remainingMs / 1000);
       const bonus = Math.floor(secsLeft / 2) * 5;
-      gained = 60 + bonus; // MOVED TO SERVER
+      gained = CFG.MC_ANSWER_POINTS_GAIN + bonus;
     }
     sess.score += gained;
 
@@ -1332,7 +1332,7 @@ socket.on(
             }
         }
 
-        const gained = correct ? CFG.TXT_ANSWER_POINTS_GAIN + speedBonus : 0;
+        const gained = correct ? computeTextAnswerPoints(st.speedBonusEnabled, speedBonus) : 0;
         recordAnswer(
           st,
           client.playerGameId,

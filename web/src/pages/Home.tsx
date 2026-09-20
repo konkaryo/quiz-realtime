@@ -18,9 +18,9 @@ type ApiPayload = Record<string, unknown>;
 const demoQuestions = [
   { category: "Sciences", prompt: "Quel élément chimique porte le symbole W ?", answers: ["tungstène", "tungsten"], label: "le tungstène" },
   { category: "Géographie", prompt: "Quelle est la capitale de l’Australie ?", answers: ["Canberra"], label: "Canberra" },
-  { category: "Littérature", prompt: "Quel écrivain a créé le personnage de Meursault ?", answers: ["Albert Camus", "Camus"], label: "Albert Camus" },
+  { category: "Culture classique", prompt: "Quel écrivain a créé le personnage de Meursault ?", answers: ["Albert Camus", "Camus"], label: "Albert Camus" },
   { category: "Histoire", prompt: "Quelle ville est tombée aux mains des Ottomans en 1453 ?", answers: ["Constantinople", "Istanbul"], label: "Constantinople" },
-  { category: "Arts", prompt: "Qui a peint La Nuit étoilée ?", answers: ["Vincent van Gogh", "Van Gogh"], label: "Vincent van Gogh" },
+  { category: "Culture classique", prompt: "Qui a peint La Nuit étoilée ?", answers: ["Vincent van Gogh", "Van Gogh"], label: "Vincent van Gogh" },
 ];
 
 const roomDescriptions = [
@@ -232,7 +232,7 @@ export default function Home() {
                 <nav className="site-nav" aria-label="Navigation principale"><a href="#salons">Jouer</a><Link to="/multi/ranking">Classement</Link></nav>
               </div>
               <div className="header-actions">
-                {isGuest ? <Link className="login-button" to="/login">Se connecter</Link> : <Link className="profile-avatar-button" to="/me/profile" aria-label="Ouvrir le profil"><img src={profileImage ? `${API_BASE}${profileImage}` : "/img/profiles/0.avif"} alt="" /></Link>}
+                {isGuest ? <Link className="login-button" to="/login">Se connecter</Link> : <Link className="profile-avatar-button" to="/me/account" aria-label="Ouvrir les paramètres du compte"><img src={profileImage ? `${API_BASE}${profileImage}` : "/img/profiles/0.avif"} alt="" /></Link>}
                 <button className="mobile-menu-button" type="button" aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"} onClick={() => setMobileMenuOpen((open) => !open)}>{mobileMenuOpen ? <X size={17} /> : <Menu size={17} />}</button>
               </div>
               {mobileMenuOpen && <nav className="mobile-nav" aria-label="Navigation mobile"><a href="#salons" onClick={() => setMobileMenuOpen(false)}>Jouer <ArrowUpRight size={15} /></a><Link to="/multi/ranking">Classement <ArrowUpRight size={15} /></Link></nav>}

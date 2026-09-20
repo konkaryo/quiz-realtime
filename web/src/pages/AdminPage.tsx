@@ -1,5 +1,6 @@
 import { type DragEvent, useEffect, useMemo, useState } from "react";
 import Background from "../components/Background";
+import { getThemeMeta } from "../lib/themeMeta";
 
 type AdminToolId = "users" | "questions" | "games" | "dailyChallenges";
 
@@ -479,7 +480,7 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
             >
               <option value="all">Tous les thèmes</option>
               {themeOptions.map((theme) => (
-                <option key={theme} value={theme}>{theme}</option>
+                <option key={theme} value={theme}>{getThemeMeta(theme).label}</option>
               ))}
             </select>
           </label>
@@ -561,7 +562,7 @@ function QuestionsPanel({ emptyState }: { emptyState: string }) {
                     </div>
                   </td>
                   <td className="px-4 py-3 font-semibold text-white/80">
-                    {question.theme ?? "—"}
+                    {question.theme ? getThemeMeta(question.theme).label : "—"}
                   </td>
                   <td className="px-4 py-3 text-white/70">{question.difficulty ?? "—"}</td>
                   <td className="px-4 py-3">

@@ -1,288 +1,247 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Camera, Eye, EyeOff, LockKeyhole, Mail, Save, UserRound } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { notifyAuthUpdated } from "@/auth/events";
-import { API_BASE, updateAccount, updatePassword } from "@/auth/client";
-import Background from "../components/Background";
+import { API_BASE, logout, updateAccount, updatePassword } from "@/auth/client";
+import ShapeGrid from "../components/ShapeGrid";
+import { useToast } from "../hooks/use-toast";
+import "./Home.css";
+import "./CreateRoomPage.css";
+import "./AccountPage.css";
+
+const PROFILE_AVATAR_UPDATED_EVENT = "profile-avatar-updated";
+const FALLBACK_AVATAR = "/img/profiles/0.avif";
 
 type MeUser = {
   email?: string | null;
+  playerId?: string | null;
   playerName?: string | null;
   displayName?: string | null;
+  img?: string | null;
   guest?: boolean;
 };
 
+function withCacheBust(url: string) {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}v=${Date.now()}`;
+}
+
 export default function AccountPage() {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [guest, setGuest] = useState(false);
-
+  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState(FALLBACK_AVATAR);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [email, setEmail] = useState("");
   const [playerName, setPlayerName] = useState("");
-  const [accountMessage, setAccountMessage] = useState<string | null>(null);
-
+  const [initialEmail, setInitialEmail] = useState("");
+  const [initialPlayerName, setInitialPlayerName] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    const loadMe = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/me`, {
-          method: "GET",
-          credentials: "include",
-        });
-        if (!res.ok) {
-          throw new Error("Impossible de charger le compte.");
-        }
-
-        const data = (await res.json()) as { user?: MeUser };
+    void fetch(`${API_BASE}/auth/me`, { method: "GET", credentials: "include" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Impossible de charger le compte.");
+        return response.json() as Promise<{ user?: MeUser }>;
+      })
+      .then(({ user = {} }) => {
         if (!mounted) return;
-
-        const user = data.user ?? {};
         setGuest(Boolean(user.guest));
-        setEmail(String(user.email ?? ""));
-        setPlayerName(String(user.playerName ?? user.displayName ?? ""));
-      } catch (err) {
+        setPlayerId(user.playerId ?? null);
+        const loadedEmail = String(user.email ?? "");
+        const loadedPlayerName = String(user.playerName ?? user.displayName ?? "");
+        setEmail(loadedEmail);
+        setPlayerName(loadedPlayerName);
+        setInitialEmail(loadedEmail);
+        setInitialPlayerName(loadedPlayerName);
+        setAvatar(user.img || FALLBACK_AVATAR);
+      })
+      .catch((error: unknown) => {
         if (!mounted) return;
-        setAccountMessage(
-          err instanceof Error ? err.message : "Impossible de charger le compte."
-        );
-      } finally {
+        toast({
+          title: "Compte indisponible",
+          description: error instanceof Error ? error.message : "Impossible de charger le compte.",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
         if (mounted) setLoading(false);
-      }
-    };
-
-    void loadMe();
+      });
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [toast]);
 
-  async function handleAccountSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setAccountMessage(null);
+  useEffect(() => () => {
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+  }, [avatarPreview]);
 
-    try {
-      await updateAccount(email.trim(), playerName.trim());
-      notifyAuthUpdated();
-      setAccountMessage("Informations du compte mises à jour.");
-    } catch (err) {
-      setAccountMessage(
-        err instanceof Error ? err.message : "Erreur lors de la mise à jour du compte."
-      );
-    }
-  }
-
-  async function handlePasswordSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setPasswordMessage(null);
-
-    if (newPassword !== confirmPassword) {
-      setPasswordMessage("Les mots de passe ne correspondent pas.");
+  function selectAvatar(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Format non pris en charge", description: "Sélectionnez une image JPEG, PNG ou WebP.", variant: "destructive" });
       return;
     }
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  }
 
+  async function uploadAvatar(file: File) {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? ""));
+        reader.onerror = () => reject(new Error("Impossible de lire cette image."));
+        reader.readAsDataURL(file);
+      });
+      const response = await fetch(`${API_BASE}/auth/me/avatar`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dataUrl, filename: file.name }),
+      });
+      if (!response.ok) throw new Error("L’image de profil n’a pas pu être enregistrée.");
+      const payload = (await response.json()) as { img?: string | null };
+      const nextAvatar = withCacheBust(payload.img || avatar);
+      setAvatar(nextAvatar);
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      if (playerId) window.localStorage.setItem(`profile-avatar:${playerId}`, nextAvatar);
+      window.dispatchEvent(new CustomEvent(PROFILE_AVATAR_UPDATED_EVENT, { detail: { img: nextAvatar, playerId } }));
+  }
+
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const changesPassword = Boolean(currentPassword || newPassword || confirmPassword);
+    if (changesPassword && (!currentPassword || !newPassword || !confirmPassword)) {
+      toast({ title: "Informations manquantes", description: "Complétez les trois champs du mot de passe.", variant: "destructive" });
+      return;
+    }
+    if (changesPassword && newPassword !== confirmPassword) {
+      toast({ title: "Mots de passe différents", description: "La confirmation doit être identique au nouveau mot de passe.", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
     try {
-      await updatePassword(currentPassword, newPassword);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setPasswordMessage("Mot de passe mis à jour.");
-    } catch (err) {
-      setPasswordMessage(
-        err instanceof Error ? err.message : "Erreur lors du changement de mot de passe."
-      );
+      const accountUpdate = await updateAccount(email.trim(), playerName.trim());
+      if (avatarFile) await uploadAvatar(avatarFile);
+      if (changesPassword) {
+        await updatePassword(currentPassword, newPassword);
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+      notifyAuthUpdated();
+      const savedEmail = String(accountUpdate.user?.email ?? initialEmail);
+      setEmail(savedEmail);
+      setInitialEmail(savedEmail);
+      setInitialPlayerName(playerName.trim());
+      toast(accountUpdate.emailVerificationSent
+        ? { title: "Vérification envoyée", description: `Confirmez votre nouvelle adresse depuis l’e-mail envoyé à ${accountUpdate.pendingEmail}.` }
+        : { title: "Compte enregistré", description: "Vos modifications ont bien été prises en compte." });
+    } catch (error: unknown) {
+      toast({ title: "Enregistrement impossible", description: error instanceof Error ? error.message : "Réessayez dans quelques instants.", variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   }
 
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await logout();
+      notifyAuthUpdated();
+      navigate("/login", { replace: true });
+    } catch {
+      toast({
+        title: "Déconnexion impossible",
+        description: "Réessayez dans quelques instants.",
+        variant: "destructive",
+      });
+      setLoggingOut(false);
+    }
+  }
+
+  const hasChanges = Boolean(
+    avatarFile
+    || email.trim() !== initialEmail
+    || playerName.trim() !== initialPlayerName
+    || currentPassword
+    || newPassword
+    || confirmPassword
+  );
+
   return (
-    <div style={{ position: "relative", minHeight: "100%", color: "#f8fafc" }}>
-      <Background />
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 760, margin: "0 auto", padding: "24px 16px 32px" }}>
-        <h1 style={{ margin: 0, color: "#ffffff", fontSize: 34, fontWeight: 800, lineHeight: 1 }}>Compte</h1>
-        <p style={{ marginTop: 8, marginBottom: 20, color: "rgba(248,250,252,.72)", fontSize: 16 }}>
-          Gérez votre adresse email, votre nom de joueur et votre mot de passe.
-        </p>
-
-        {loading ? (
-          <div style={{ color: "#cbd5e1" }}>Chargement…</div>
-        ) : guest ? (
-          <div
-            style={{
-              border: "1px solid rgba(248,113,113,.42)",
-              borderRadius: 10,
-              background: "rgba(127,29,29,.25)",
-              color: "#fecaca",
-              padding: 14,
-            }}
-          >
-            Les comptes invités ne peuvent pas modifier ces informations.
+    <div className="synapz-landing account-page">
+      <ShapeGrid className="account-shape-grid" borderColor="#2f293a" hoverFillColor="#222222" shape="hexagon" direction="diagonal" squareSize={28} speed={0.1} hoverTrailAmount={0} />
+      <header className="site-header account-header">
+        <div className="site-header-inner">
+          <div className="site-header-left">
+            <Link className="brand" to="/"><img src="/landing/loader-mark-white.png" alt="" /><span>SYNAPZ</span></Link>
+            <span className="nav-divider" aria-hidden="true">/</span>
+            <nav className="site-nav" aria-label="Navigation principale"><Link to="/">Accueil</Link><Link to="/#salons">Jouer</Link><Link to="/multi/ranking">Classement</Link></nav>
           </div>
+          <div className="header-actions"><button className="login-button account-logout" type="button" onClick={handleLogout} disabled={loggingOut}>{loggingOut ? "Déconnexion…" : "Déconnexion"}</button></div>
+        </div>
+      </header>
+
+      <main className="account-main">
+        {loading ? (
+          <div className="account-loading">Chargement du compte…</div>
+        ) : guest ? (
+          <section className="account-guest"><LockKeyhole size={20} /><div><strong>Compte invité</strong><p>Créez un compte pour personnaliser votre profil et sécuriser vos accès.</p></div><Link to="/register">Créer un compte</Link></section>
         ) : (
-          <>
-            <section
-              style={{
-                border: "1px solid rgba(255,255,255,.1)",
-                borderRadius: 12,
-                padding: 18,
-                background: "#1E2030",
-                boxShadow: "0 12px 28px rgba(0,0,0,.3)",
-              }}
-            >
-              <h2 style={{ marginTop: 0, marginBottom: 14, color: "#e2e8f0", fontSize: 30, fontWeight: 700 }}>Informations du compte</h2>
-              <form onSubmit={handleAccountSubmit} style={{ display: "grid", gap: 12 }}>
-                <label style={{ display: "grid", gap: 6, color: "rgba(248,250,252,.82)", fontWeight: 600 }}>
-                  Adresse email
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    style={{
-                      background: "#2A2C3E",
-                      border: "1px solid rgba(255,255,255,.12)",
-                      borderRadius: 8,
-                      padding: "12px 14px",
-                      color: "#f8fafc",
-                      fontSize: 16,
-                    }}
-                  />
-                </label>
-
-                <label style={{ display: "grid", gap: 6, color: "rgba(248,250,252,.82)", fontWeight: 600 }}>
-                  Nom du joueur
-                  <input
-                    type="text"
-                    value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value)}
-                    minLength={1}
-                    maxLength={64}
-                    required
-                    style={{
-                      background: "#2A2C3E",
-                      border: "1px solid rgba(255,255,255,.12)",
-                      borderRadius: 8,
-                      padding: "12px 14px",
-                      color: "#f8fafc",
-                      fontSize: 16,
-                    }}
-                  />
-                </label>
-
-                <div>
-                  <button
-                    type="submit"
-                    style={{
-                      border: "none",
-                      borderRadius: 8,
-                      background: "#6F5BD4",
-                      color: "white",
-                      fontWeight: 700,
-                      fontSize: 15,
-                      padding: "12px 16px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Enregistrer
-                  </button>
-                </div>
-              </form>
-              {accountMessage && <p style={{ color: "rgba(248,250,252,.8)", marginBottom: 0 }}>{accountMessage}</p>}
+          <form className="account-settings-form" onSubmit={handleSave}>
+          <div className="account-grid">
+            <section className="account-card account-profile-card">
+              <div className="account-avatar-editor">
+                <button className="account-avatar" type="button" onClick={() => fileInputRef.current?.click()} aria-label="Choisir une nouvelle image de profil">
+                  <img src={avatarPreview || avatar} alt="Aperçu de l’image de profil" onError={(event) => { event.currentTarget.src = FALLBACK_AVATAR; }} />
+                  <span><Camera size={16} /></span>
+                </button>
+                <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={selectAvatar} hidden />
+                <button type="button" onClick={() => fileInputRef.current?.click()}>Modifier la photo</button>
+              </div>
+              <div className="account-profile-divider" />
+              <div className="account-card-title"><UserRound size={17} /><h2>Profil</h2></div>
+              <div className="account-form account-profile-form">
+                <label><span>Nom du joueur</span><span className="account-input"><input type="text" value={playerName} onChange={(event) => setPlayerName(event.target.value)} minLength={1} maxLength={64} autoComplete="nickname" spellCheck={false} required /></span></label>
+              </div>
             </section>
 
-            <section
-              style={{
-                marginTop: 16,
-                border: "1px solid rgba(255,255,255,.1)",
-                borderRadius: 12,
-                padding: 18,
-                background: "#1E2030",
-                boxShadow: "0 12px 28px rgba(0,0,0,.3)",
-              }}
-            >
-              <h2 style={{ marginTop: 0, marginBottom: 14, color: "#e2e8f0", fontSize: 30, fontWeight: 700 }}>Modifier le mot de passe</h2>
-              <form onSubmit={handlePasswordSubmit} style={{ display: "grid", gap: 12 }}>
-                <label style={{ display: "grid", gap: 6, color: "rgba(248,250,252,.82)", fontWeight: 600 }}>
-                  Mot de passe actuel
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                    style={{
-                      background: "#2A2C3E",
-                      border: "1px solid rgba(255,255,255,.12)",
-                      borderRadius: 8,
-                      padding: "12px 14px",
-                      color: "#f8fafc",
-                      fontSize: 16,
-                    }}
-                  />
-                </label>
-
-                <label style={{ display: "grid", gap: 6, color: "rgba(248,250,252,.82)", fontWeight: 600 }}>
-                  Nouveau mot de passe
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    minLength={8}
-                    required
-                    style={{
-                      background: "#2A2C3E",
-                      border: "1px solid rgba(255,255,255,.12)",
-                      borderRadius: 8,
-                      padding: "12px 14px",
-                      color: "#f8fafc",
-                      fontSize: 16,
-                    }}
-                  />
-                </label>
-
-                <label style={{ display: "grid", gap: 6, color: "rgba(248,250,252,.82)", fontWeight: 600 }}>
-                  Confirmer le nouveau mot de passe
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    minLength={8}
-                    required
-                    style={{
-                      background: "#2A2C3E",
-                      border: "1px solid rgba(255,255,255,.12)",
-                      borderRadius: 8,
-                      padding: "12px 14px",
-                      color: "#f8fafc",
-                      fontSize: 16,
-                    }}
-                  />
-                </label>
-
-                <div>
-                  <button
-                    type="submit"
-                    style={{
-                      border: "none",
-                      borderRadius: 8,
-                      background: "#6F5BD4",
-                      color: "white",
-                      fontWeight: 700,
-                      fontSize: 15,
-                      padding: "12px 16px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Changer le mot de passe
-                  </button>
-                </div>
-              </form>
-              {passwordMessage && <p style={{ color: "rgba(248,250,252,.8)", marginBottom: 0 }}>{passwordMessage}</p>}
+            <section className="account-card account-email-card">
+              <div className="account-card-title"><Mail size={17} /><h2>Adresse e-mail</h2></div>
+              <div className="account-form account-email-form">
+                <label><span>Adresse e-mail</span><span className="account-input"><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" spellCheck={false} required /></span></label>
+              </div>
             </section>
-          </>
+
+            <section className="account-card account-password-card">
+              <div className="account-card-title"><LockKeyhole size={17} /><h2>Mot de passe</h2></div>
+              <div className="account-form account-password-form">
+                <label><span>Mot de passe actuel</span><span className="account-input"><input type={showPasswords ? "text" : "password"} value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" spellCheck={false} /><button type="button" onClick={() => setShowPasswords((shown) => !shown)} aria-label={showPasswords ? "Masquer les mots de passe" : "Afficher les mots de passe"}>{showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}</button></span></label>
+                <label><span>Nouveau mot de passe</span><span className="account-input"><input type={showPasswords ? "text" : "password"} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} autoComplete="new-password" spellCheck={false} /></span></label>
+                <label><span>Confirmer le mot de passe</span><span className="account-input"><input type={showPasswords ? "text" : "password"} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} autoComplete="new-password" spellCheck={false} /></span></label>
+              </div>
+            </section>
+          </div>
+          <div className="account-save-area"><button className="create-room-save-action" type="submit" disabled={saving || !hasChanges}><Save size={15} /> {saving ? "Enregistrement…" : "Enregistrer"}</button></div>
+          </form>
         )}
-      </div>
+      </main>
     </div>
   );
 }

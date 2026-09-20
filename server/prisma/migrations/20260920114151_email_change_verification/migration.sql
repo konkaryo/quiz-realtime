@@ -1,0 +1,4 @@
+ALTER TYPE "EmailTokenType" ADD VALUE 'EMAIL_CHANGE';
+
+ALTER TABLE "EmailToken"
+ADD COLUMN "pendingEmail" TEXT;

@@ -34,21 +34,17 @@ const fallbackAvatar = "/img/profiles/0.avif";
 /* ---------------------- CATÉGORIES + COULEURS ---------------------- */
 
 const CATEGORY_CONFIG = {
-AUDIOVISUEL: {
-  label: "Audiovisuel",
-  color: "#42B8A7",
-},
-ARTS: {
-  label: "Arts",
+CULTURE_CLASSIQUE: {
+  label: "Culture classique",
   color: "#B889F0",
 },
-CROYANCES: {
-  label: "Croyances",
-  color: "#8E8FE8",
+CULTURE_GENERALE: {
+  label: "Culture générale",
+  color: "#6D86E8",
 },
-DIVERS: {
-  label: "Divers",
-  color: "#9EA8BF",
+CULTURE_MODERNE: {
+  label: "Culture moderne",
+  color: "#A970FF",
 },
 GEOGRAPHIE: {
   label: "Géographie",
@@ -58,10 +54,6 @@ HISTOIRE: {
   label: "Histoire",
   color: "#BEC7DA",
 },
-LITTERATURE: {
-  label: "Littérature",
-  color: "#B65ACB",
-},
 MUSIQUE: {
   label: "Musique",
   color: "#D066B8",
@@ -70,24 +62,16 @@ NATURE: {
   label: "Nature",
   color: "#69C8A5",
 },
-POP_CULTURE: {
-  label: "Pop culture",
-  color: "#A970FF",
-},
 SCIENCE: {
   label: "Science",
   color: "#D87AA8",
-},
-SOCIETE: {
-  label: "Société",
-  color: "#6D86E8",
 },
 SPORT: {
   label: "Sport",
   color: "#7CC4D8",
 },
-TRADITIONS: {
-  label: "Traditions",
+TRADITION: {
+  label: "Tradition",
   color: "#C47ACB",
 },
 } as const;

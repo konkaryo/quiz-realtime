@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import { Clock3, Heart, ListChecks, Send, Zap } from "lucide-react";
+import { getThemeMeta } from "../lib/themeMeta";
 
 export type RoomQuestionChoice = {
   id: string;
@@ -159,7 +160,7 @@ export default function RoomQuestionPanel({
         } as CSSProperties : { transform: "scaleX(0)" }}
       /></div>
       <article className="annex-question-card">
-        <p>{theme?.replaceAll("_", " ")}</p>
+        <p>{theme ? getThemeMeta(theme).label : ""}</p>
         <h1 aria-label={questionText}>{questionText.slice(0, visibleQuestionLength)}</h1>
         <span>{String(questionIndex + 1).padStart(2, "0")}</span>
       </article>

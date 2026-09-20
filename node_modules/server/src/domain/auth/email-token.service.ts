@@ -17,7 +17,7 @@ export function hashEmailToken(rawToken: string) {
 }
 
 function getTtlByType(type: EmailTokenType) {
-  return type === EmailTokenType.EMAIL_VERIFICATION
+  return type === EmailTokenType.EMAIL_VERIFICATION || type === EmailTokenType.EMAIL_CHANGE
     ? EMAIL_VERIFICATION_TTL_MS
     : PASSWORD_RESET_TTL_MS;
 }
@@ -49,6 +49,38 @@ export async function createEmailToken(
       type,
       tokenHash,
       expiresAt: addMs(now, getTtlByType(type)),
+    },
+  });
+
+  return rawToken;
+}
+
+export async function createEmailChangeToken(
+  prisma: DbClient,
+  userId: string,
+  pendingEmail: string
+) {
+  const rawToken = generateRawToken();
+  const tokenHash = hashEmailToken(rawToken);
+  const now = new Date();
+
+  await prisma.emailToken.updateMany({
+    where: {
+      userId,
+      type: EmailTokenType.EMAIL_CHANGE,
+      usedAt: null,
+      expiresAt: { gt: now },
+    },
+    data: { usedAt: now },
+  });
+
+  await prisma.emailToken.create({
+    data: {
+      userId,
+      type: EmailTokenType.EMAIL_CHANGE,
+      tokenHash,
+      pendingEmail,
+      expiresAt: addMs(now, getTtlByType(EmailTokenType.EMAIL_CHANGE)),
     },
   });
 
@@ -87,7 +119,7 @@ export async function findEmailToken(
     },
     include: {
       user: {
-        select: { id: true, emailVerifiedAt: true },
+        select: { id: true, email: true, emailVerifiedAt: true },
       },
     },
   });
@@ -121,6 +153,7 @@ export default {
   generateRawToken,
   hashEmailToken,
   createEmailToken,
+  createEmailChangeToken,
   findValidEmailToken,
   findEmailToken,
   markEmailTokenUsed,

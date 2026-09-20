@@ -59,7 +59,8 @@ export async function register(displayName: string, email: string, password: str
 }
 
 export async function logout() {
-  await fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" });
+  const res = await fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" });
+  if (!res.ok) throw new Error(await extractErrorMessage(res, "Logout failed"));
 }
 
 export async function updateAccount(email: string, playerName: string) {
@@ -70,7 +71,12 @@ export async function updateAccount(email: string, playerName: string) {
     body: JSON.stringify({ email, playerName }),
   });
   if (!res.ok) throw new Error(await extractErrorMessage(res, "Update account failed"));
-  return res.json();
+  return res.json() as Promise<{
+    ok: boolean;
+    emailVerificationSent?: boolean;
+    pendingEmail?: string | null;
+    user?: { email?: string | null; playerName?: string | null };
+  }>;
 }
 
 export async function updatePassword(currentPassword: string, newPassword: string) {

@@ -36,21 +36,16 @@ type Parsed = {
 /* ----------------------- normalisation thèmes ----------------------- */
 const THEME_BY_NORM: Record<string, Theme> = {
 
-  "Arts":                   Theme.ARTS,
-  "Audiovisuel":            Theme.AUDIOVISUEL,
-  "Croyances":              Theme.CROYANCES,
-  "Divers":                 Theme.DIVERS,
+  "Culture classique":      "CULTURE_CLASSIQUE" as Theme,
+  "Culture générale":       "CULTURE_GENERALE" as Theme,
+  "Culture moderne":        "CULTURE_MODERNE" as Theme,
   "Géographie":             Theme.GEOGRAPHIE,
   "Histoire":               Theme.HISTOIRE,
-  "Littérature":            Theme.LITTERATURE,
   "Musique":                Theme.MUSIQUE,
   "Nature":                 Theme.NATURE,
-  "Pop culture":            Theme.POP_CULTURE,
   "Science":                Theme.SCIENCE,
-  "Société":                Theme.SOCIETE,
   "Sport":                  Theme.SPORT,
-  "Traditions":             Theme.TRADITIONS
-};
+  "Tradition":              "TRADITION" as Theme,};
 
 function toEnumTheme(key?: string | null): Theme | null {
   if (!key) return null;

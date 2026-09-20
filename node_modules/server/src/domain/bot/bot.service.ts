@@ -1,13 +1,13 @@
 // server/src/domain/bot/bot.service.ts
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type Theme } from "@prisma/client";
 import type { Server } from "socket.io";
 import { emitPublicRoomsUpdated } from "../room/public-room-events";
 import type { Client, GameState, StoredAnswer } from "../../types";
 import { CFG } from "../../config";
 import * as lb_service from "../game/leaderboard.service";
-import { computeSpeedBonus } from "../player/scoring.service";
+import { computeSpeedBonus, computeTextAnswerPoints } from "../player/scoring.service";
 
-const THEME_FALLBACK = "DIVERS" as const;
+const THEME_FALLBACK = "CULTURE_GENERALE" as Theme;
 
 /* -------------------------------------------------------------------------- */
 /* Utils                                                                       */
@@ -342,7 +342,7 @@ async function botApplyTextScoring(
   speedBonus = 0
 ) {
 
-  const gained = correct ? CFG.TXT_ANSWER_POINTS_GAIN + speedBonus : 0;
+  const gained = correct ? computeTextAnswerPoints(st.speedBonusEnabled, speedBonus) : 0;
   recordAnswer(
     st,
     client.playerGameId,

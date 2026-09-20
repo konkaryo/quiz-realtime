@@ -11,6 +11,7 @@ import { ArrowLeft, ArrowRight, ArrowUp, Clock3, Crosshair, Flag, ImageIcon, Log
 import ShapeGrid from "../components/ShapeGrid";
 import LoadingScreen from "../components/LoadingScreen";
 import RoomQuestionPanel from "../components/RoomQuestionPanel";
+import { getThemeMeta } from "../lib/themeMeta";
 import "./RoomPage.css";
 
 const API_BASE =
@@ -1645,6 +1646,11 @@ return (
           <button className="room-game-settings" type="button" onClick={() => nav("/me/account")} aria-label="Accéder aux paramètres"><Settings size={16} /></button>
         </div>
         <div className="room-game-actions">
+          {isRoomOwner && (
+            <button className="room-game-lobby-return" type="button" onClick={() => socket?.emit("return_to_lobby", {}, () => undefined)}>
+              <ArrowLeft size={15} /> Retour au lobby
+            </button>
+          )}
           <button className="room-game-quit" type="button" onClick={() => nav("/")}>Quitter <LogOut size={15} /></button>
         </div>
       </header>
@@ -1721,7 +1727,7 @@ return (
                   </div>
                 </div>
                 <article className="annex-question-card room-final-question-card">
-                  <p>{selectedFinalQuestionPanel.theme?.replaceAll("_", " ") || "QUESTION"}</p>
+                  <p>{selectedFinalQuestionPanel.theme ? getThemeMeta(selectedFinalQuestionPanel.theme).label : "QUESTION"}</p>
                   <h1 id="room-final-question-title">{selectedFinalQuestionPanel.text}</h1>
                 </article>
                 <div className={`annex-feedback room-final-answer-feedback ${selectedFinalQuestion?.status === "correct" || selectedFinalQuestion?.status === "correct-mc" ? "correct" : "wrong"}`}>
@@ -1769,7 +1775,6 @@ return (
               <RoomQuestionPanel questionIndex={index} questionTotal={total} remainingSeconds={remaining ?? 0} timerDurationMs={roundDuration ?? 0} theme={normalizedQuestion.theme} questionText={normalizedQuestion.text} lives={lives} totalLives={TEXT_LIVES} choices={showChoices ? choicesForPanel : null} selectedChoiceId={selected} correctChoiceId={correctId} isPlaying={isPlaying} isTimerRunning={isTimerRunning} inputRef={inputRef} textAnswer={textAnswer} textLocked={textLocked} animateQuestionText={dynamicQuestionDisplay} questionRevealStartedAtMs={questionRevealStartedAtMs} qcmUsesLeft={qcmUsesLeft} onTextChange={setTextAnswer} onSubmitText={sendText} onShowChoices={showMultipleChoice} onSelectChoice={answerByChoice} feedback={feedbackText} feedbackWasCorrect={feedbackWasCorrect} feedbackCorrectLabel={feedbackCorrectLabel} feedbackPoints={feedbackPoints} feedbackResponseMs={feedbackResponseMs} wrongTextAnswers={wrongTextAnswers} />
             ) : <div className="room-question-loading">Question en cours…</div>}
             {isRoomOwner && manualQuestionLaunch && manualNextAvailable && <button className="room-owner-action" type="button" onClick={launchNextQuestion} disabled={manualNextPending}>{manualNextPending ? "Lancement…" : "Question suivante"}<Play size={15} /></button>}
-            {isRoomOwner && <button className="room-owner-secondary" type="button" onClick={() => socket?.emit("return_to_lobby", {}, () => undefined)}>Retour au lobby</button>}
           </main>
         </div>
     </div>

@@ -1,6 +1,6 @@
 // src/routes/auth.ts
 import type { FastifyPluginAsync } from "fastify";
-import { EmailTokenType, NotificationType, type PrismaClient } from "@prisma/client";
+import { EmailTokenType, NotificationType, Prisma, type PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import path from "path";
 import { promises as fs } from "fs";
@@ -17,7 +17,7 @@ import {
 } from "../auth";
 import { toProfileUrl } from "../domain/media/media.service";
 import { CFG } from "../config";
-import { sendResetPasswordEmail, sendVerificationEmail } from "../infra/email";
+import { sendEmailChangeVerificationEmail, sendResetPasswordEmail, sendVerificationEmail } from "../infra/email";
 import emailTokenService from "../domain/auth/email-token.service";
 import { refreshPlayerStats } from "../domain/player/player-stats.service";
 
@@ -135,7 +135,8 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       const token = String((req.query as { token?: string } | undefined)?.token ?? "").trim();
       if (!token) return reply.code(400).send({ error: "invalid-token" });
 
-      const emailToken = await emailTokenService.findEmailToken(prisma, token, EmailTokenType.EMAIL_VERIFICATION);
+      const emailToken = await emailTokenService.findEmailToken(prisma, token, EmailTokenType.EMAIL_VERIFICATION)
+        ?? await emailTokenService.findEmailToken(prisma, token, EmailTokenType.EMAIL_CHANGE);
       if (!emailToken) return reply.code(400).send({ error: "invalid-token" });
 
       const now = new Date();
@@ -146,18 +147,41 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
         return reply.code(400).send({ error: "invalid-token" });
       }
 
-      if (!isUnused && !emailToken.user.emailVerifiedAt) {
+      const isEmailChange = emailToken.type === EmailTokenType.EMAIL_CHANGE;
+
+      // Confirmation links are idempotent once this exact address has been
+      // applied. This also tolerates duplicate requests from a page reload or
+      // React Strict Mode without accepting tokens invalidated by a newer request.
+      const isCompletedEmailChange = isEmailChange
+        && !isUnused
+        && Boolean(emailToken.pendingEmail)
+        && normEmail(emailToken.user.email ?? "") === normEmail(emailToken.pendingEmail ?? "");
+
+      if (!isUnused && !isCompletedEmailChange && (isEmailChange || !emailToken.user.emailVerifiedAt)) {
         return reply.code(400).send({ error: "invalid-token" });
       }
 
       if (isUnused) {
-        await prisma.$transaction(async (tx) => {
-          await tx.user.update({
-            where: { id: emailToken.userId },
-            data: { emailVerifiedAt: now },
+        if (isEmailChange && !emailToken.pendingEmail) {
+          return reply.code(400).send({ error: "invalid-token" });
+        }
+
+        try {
+          await prisma.$transaction(async (tx) => {
+            await tx.user.update({
+              where: { id: emailToken.userId },
+              data: isEmailChange
+                ? { email: emailToken.pendingEmail, emailVerifiedAt: now }
+                : { emailVerifiedAt: now },
+            });
+            await emailTokenService.markEmailTokenUsed(tx, emailToken.id);
           });
-          await emailTokenService.markEmailTokenUsed(tx, emailToken.id);
-        });
+        } catch (error) {
+          if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            return reply.code(409).send({ error: "email-taken" });
+          }
+          throw error;
+        }
       }
 
       const { token: sessionToken, session } = await createSession(prisma, emailToken.userId);
@@ -344,6 +368,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     app.post("/me/avatar", async (req, reply) => {
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
+      if (user.guest) return reply.code(403).send({ error: "guest-account" });
 
       const Body = z.object({
         dataUrl: z.string().min(1),
@@ -402,20 +427,30 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
       const email = normEmail(parsed.data.email);
       const playerName = cleanName(parsed.data.playerName);
+      const emailChanged = email !== normEmail(user.email ?? "");
 
-      const existing = await prisma.user.findUnique({
-        where: { email },
-        select: { id: true },
-      });
-      if (existing && existing.id !== user.id) {
-        return reply.code(409).send({ error: "email-taken" });
+      if (emailChanged) {
+        const existing = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+        if (existing && existing.id !== user.id) {
+          return reply.code(409).send({ error: "email-taken" });
+        }
+
+        const verificationToken = await emailTokenService.createEmailChangeToken(prisma, user.id, email);
+        try {
+          await sendEmailChangeVerificationEmail(email, verificationToken);
+        } catch (error) {
+          req.log.error({ err: error }, "Unable to send email-change verification email");
+          return reply.code(503).send({ error: "verification-email-unavailable" });
+        }
       }
 
       const updated = await prisma.$transaction(async (tx) => {
         const updatedUser = await tx.user.update({
           where: { id: user.id },
           data: {
-            email,
             displayName: playerName,
           },
           select: {
@@ -438,6 +473,8 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
       return reply.send({
         ok: true,
+        emailVerificationSent: emailChanged,
+        pendingEmail: emailChanged ? email : null,
         user: {
           id: updated.updatedUser.id,
           email: updated.updatedUser.email,
