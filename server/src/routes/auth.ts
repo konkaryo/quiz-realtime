@@ -23,6 +23,7 @@ import emailTokenService from "../domain/auth/email-token.service";
 import { refreshPlayerStats } from "../domain/player/player-stats.service";
 import { revokeAllUserSessions, revokeOtherUserSessions } from "../domain/auth/session-security.service";
 import { moderateProfileImage } from "../domain/media/avatar-moderation.service";
+import { enforceRateLimit, HTTP_LIMITS, normalizeEmail, opaqueSessionKey, rateLimitPreHandler, requestIpKey } from "../security/rate-limit";
 
 type Opts = { prisma: PrismaClient };
 
@@ -83,7 +84,10 @@ async function normalizeAvatar(buffer: Buffer, declaredMime: string) {
 export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
   async (app) => {
     // POST /auth/register
-    app.post("/register", async (req, reply) => {
+    app.post("/register", { preHandler: rateLimitPreHandler([
+      { rule: HTTP_LIMITS.registerIp, key: requestIpKey },
+      { rule: HTTP_LIMITS.registerEmail, key: (req) => normalizeEmail((req.body as any)?.email) },
+    ]) }, async (req, reply) => {
       const body = (req.body ?? {}) as {
         email?: string;
         password?: string;
@@ -160,7 +164,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     });
 
     // GET /auth/verify-email?token=...
-    app.get("/verify-email", async (req, reply) => {
+    app.get("/verify-email", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.verifyIp, key: requestIpKey }]) }, async (req, reply) => {
       const token = String((req.query as { token?: string } | undefined)?.token ?? "").trim();
       if (!token) return reply.code(400).send({ error: "invalid-token" });
 
@@ -224,7 +228,10 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     });
 
     // POST /auth/forgot-password
-    app.post("/forgot-password", async (req, reply) => {
+    app.post("/forgot-password", { preHandler: rateLimitPreHandler([
+      { rule: HTTP_LIMITS.forgotIp, key: requestIpKey },
+      { rule: HTTP_LIMITS.forgotEmail, key: (req) => normalizeEmail((req.body as any)?.email) },
+    ]) }, async (req, reply) => {
       const Body = z.object({ email: z.string().email() });
       const parsed = Body.safeParse(req.body ?? {});
       if (!parsed.success) {
@@ -256,7 +263,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     });
 
     // POST /auth/reset-password
-    app.post("/reset-password", async (req, reply) => {
+    app.post("/reset-password", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.resetIp, key: requestIpKey }]) }, async (req, reply) => {
       const Body = z.object({
         token: z.string().min(1),
         newPassword: z.string().min(8),
@@ -286,7 +293,11 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     });
 
     // POST /auth/login
-    app.post("/login", async (req, reply) => {
+    app.post("/login", { preHandler: rateLimitPreHandler([
+      { rule: HTTP_LIMITS.loginIp, key: requestIpKey },
+      { rule: HTTP_LIMITS.loginIpEmail, key: (req) => `${requestIpKey(req)}:${normalizeEmail((req.body as any)?.email)}` },
+      { rule: HTTP_LIMITS.loginEmail, key: (req) => normalizeEmail((req.body as any)?.email) },
+    ]) }, async (req, reply) => {
       const body = (req.body ?? {}) as { email?: string; password?: string };
       const email = normEmail(body.email || "");
       const password = (body.password || "").trim();
@@ -336,6 +347,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     app.get("/me", async (req, reply) => {
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) {
+        if (!(await enforceRateLimit(req, reply, HTTP_LIMITS.guestCreateIp, requestIpKey(req)))) return;
         const displayName = genGuestDisplayName();
         const guestUser = await prisma.user.create({
           data: {
@@ -395,7 +407,10 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     });
 
     // POST /auth/me/avatar
-    app.post("/me/avatar", { bodyLimit: AVATAR_REQUEST_MAX_BYTES }, async (req, reply) => {
+    app.post("/me/avatar", {
+      bodyLimit: AVATAR_REQUEST_MAX_BYTES,
+      preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.avatarSession, key: opaqueSessionKey }]),
+    }, async (req, reply) => {
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
       if (user.guest) return reply.code(403).send({ error: "guest-account" });
@@ -465,7 +480,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     });
 
     // PATCH /auth/me/account
-    app.patch("/me/account", async (req, reply) => {
+    app.patch("/me/account", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.accountSession, key: opaqueSessionKey }]) }, async (req, reply) => {
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
       if (user.guest) return reply.code(403).send({ error: "guest-account" });
@@ -555,7 +570,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     });
 
     // POST /auth/me/password
-    app.post("/me/password", async (req, reply) => {
+    app.post("/me/password", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.passwordSession, key: opaqueSessionKey }]) }, async (req, reply) => {
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
       if (user.guest) return reply.code(403).send({ error: "guest-account" });

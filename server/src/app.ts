@@ -28,6 +28,7 @@ import { Theme, RoomVisibility } from "@prisma/client";
 import { toProfileUrl } from "./domain/media/media.service";
 import { startPublicBotTraffic } from "./domain/bot/traffic";
 import { startGameForRoom } from "./domain/game/game.service";
+import { HTTP_LIMITS, installSocketRateLimits, opaqueSessionKey, rateLimiter, rateLimitPreHandler, requestIpKey } from "./security/rate-limit";
 
 /* ---------------- runtime maps ---------------- */
 const clients = new Map<string, Client>();
@@ -57,7 +58,25 @@ async function getSpeedBonusEnabled(roomId: string) {
 }
 
 async function main() {
-  const app = fastify({ logger: true });
+  const app = fastify({
+    logger: true,
+    // Caddy is expected on the same host/container network namespace. Only a
+    // direct loopback peer may supply forwarding headers; public peers cannot.
+    trustProxy: (address) => address === "127.0.0.1" || address === "::1",
+  });
+
+  setInterval(() => rateLimiter.sweep(), 60_000).unref();
+  app.addHook("onRequest", async (req, reply) => {
+    if (req.url === "/health" || req.url.startsWith("/img/") || req.url.startsWith("/socket.io/")) return;
+    const result = rateLimiter.consume(HTTP_LIMITS.global, requestIpKey(req));
+    reply.header("RateLimit-Limit", HTTP_LIMITS.global.max)
+      .header("RateLimit-Remaining", result.remaining)
+      .header("RateLimit-Reset", Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000)));
+    if (result.allowed) return;
+    const retryAfter = Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000));
+    req.log.warn({ rateLimit: HTTP_LIMITS.global.name, ip: requestIpKey(req) }, "HTTP global rate limit exceeded");
+    return reply.header("Retry-After", retryAfter).code(429).send({ error: "too-many-requests" });
+  });
 
   // CORS / Static / Cookies / Routes
   await app.register(cors, {
@@ -143,7 +162,7 @@ async function main() {
     }
   });
 
-  app.post("/rooms", async (req, reply) => {
+  app.post("/rooms", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.roomCreateSession, key: opaqueSessionKey }]) }, async (req, reply) => {
     try {
       // 1) Auth via cookie "sid"
       const sid = (req.cookies as any)?.sid as string | undefined;
@@ -302,7 +321,7 @@ async function main() {
     return { room: { ...room, image: resolvedImage, manualQuestionLaunch, speedBonusEnabled } };
   });
 
-  app.patch("/rooms/:id/settings", async (req, reply) => {
+  app.patch("/rooms/:id/settings", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.roomMutationSession, key: opaqueSessionKey }]) }, async (req, reply) => {
     try {
       const sid = (req.cookies as any)?.sid as string | undefined;
       if (!sid) return reply.code(401).send({ error: "Unauthorized" });
@@ -399,7 +418,7 @@ async function main() {
     }
   });
 
-  app.patch("/rooms/:id/code", async (req, reply) => {
+  app.patch("/rooms/:id/code", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.roomMutationSession, key: opaqueSessionKey }]) }, async (req, reply) => {
     try {
       const sid = (req.cookies as any)?.sid as string | undefined;
       if (!sid) return reply.code(401).send({ error: "Unauthorized" });
@@ -446,7 +465,7 @@ async function main() {
     }
   });
 
-  app.get("/rooms/new-code", async (_req, reply) => {
+  app.get("/rooms/new-code", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.roomLookupIp, key: requestIpKey }]) }, async (_req, reply) => {
     try {
       // On tente quelques fois pour éviter un code déjà pris (unicité DB)
       for (let i = 0; i < 8; i++) {
@@ -458,7 +477,7 @@ async function main() {
     } catch (e) { return reply.code(500).send({ error: "Server error" }); }
   });
 
-  app.post("/rooms/resolve", async (req, reply) => {
+  app.post("/rooms/resolve", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.roomLookupIp, key: requestIpKey }]) }, async (req, reply) => {
     try {
       const Body = z.object({ code: z.string().trim().toUpperCase().length(4) });
       const parsed = Body.safeParse(req.body);
@@ -584,7 +603,7 @@ async function main() {
     reply.send({ rooms });
   });
 
-  app.delete("/rooms/:id", async (req, reply) => {
+  app.delete("/rooms/:id", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.roomMutationSession, key: opaqueSessionKey }]) }, async (req, reply) => {
     try {
       const sid = (req.cookies as any)?.sid as string | undefined;
       if (!sid) return reply.code(401).send({ error: "Unauthorized" });
@@ -669,6 +688,8 @@ async function main() {
       next(new Error("unauthorized"));
     }
   });
+
+  io.on("connection", installSocketRateLimits);
 
   // Register all socket handlers
   registerSocketHandlers(io, clients, gameStates);

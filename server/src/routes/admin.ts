@@ -5,6 +5,7 @@ import { currentUser } from "../auth";
 import { toImgUrl, toProfileUrl } from "../domain/media/media.service";
 import { getChallengeByDate, listChallengesForMonth } from "../domain/daily/daily.service";
 import { simulateDailyChallengeForBots } from "../domain/daily/daily-bot-simulation.service";
+import { HTTP_LIMITS, opaqueSessionKey, rateLimitPreHandler } from "../security/rate-limit";
 
 type Opts = { prisma: PrismaClient };
 
@@ -60,6 +61,9 @@ function requireAdmin(prisma: PrismaClient) {
 
 export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
   async (app) => {
+    app.addHook("preHandler", rateLimitPreHandler([
+      { rule: HTTP_LIMITS.adminMutationSession, key: opaqueSessionKey },
+    ]));
     app.get("/users", { preHandler: requireAdmin(prisma) }, async () => {
       const users = await prisma.user.findMany({
         orderBy: { createdAt: "desc" },

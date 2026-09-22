@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { HTTP_LIMITS, opaqueSessionKey, rateLimitPreHandler } from "../security/rate-limit";
 import type { PrismaClient } from "@prisma/client";
 import { QuestionReportReason } from "@prisma/client";
 import { z } from "zod";
@@ -8,7 +9,7 @@ type Opts = { prisma: PrismaClient };
 
 export const questionRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
   async (app) => {
-    app.post("/:questionId/reports", async (req, reply) => {
+    app.post("/:questionId/reports", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.reportSession, key: opaqueSessionKey }]) }, async (req, reply) => {
       const { user } = await currentUser(prisma, req);
       if (!user) return reply.code(401).send({ error: "unauthorized" });
 

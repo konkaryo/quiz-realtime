@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { HTTP_LIMITS, opaqueSessionKey, rateLimitPreHandler } from "../security/rate-limit";
 import { NotificationType, type PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { currentUser } from "../auth";
@@ -29,6 +30,9 @@ async function pruneExpiredNotifications(prisma: PrismaClient, playerId?: string
 
 export const notificationRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
   async (app) => {
+    app.addHook("preHandler", rateLimitPreHandler([
+      { rule: HTTP_LIMITS.notificationSession, key: opaqueSessionKey },
+    ]));
     app.get("/unread-count", async (req, reply) => {
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
@@ -78,7 +82,7 @@ export const notificationRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       return reply.send({ notifications });
     });
 
-    app.post("/invite", async (req, reply) => {
+    app.post("/invite", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.inviteSession, key: opaqueSessionKey }]) }, async (req, reply) => {
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
 
