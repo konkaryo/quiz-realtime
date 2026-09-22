@@ -4,6 +4,7 @@ import { parse } from "csv-parse";
 import { z } from "zod";
 import { PrismaClient, Prisma, Theme } from "@prisma/client";
 import { norm, normalizeExactRequirement } from "../domain/question/textmatch";
+import { questionCharacterMetrics } from "../domain/question/question-metrics";
 
 const prisma = new PrismaClient();
 
@@ -175,6 +176,7 @@ export async function importQuestions(filePath: string) {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const baseData = {
         text: q.text,
+        ...questionCharacterMetrics(q.text, q.correct, q.fuzzy ?? []),
         theme: q.theme ?? null,
         difficulty: q.difficulty ?? null,
         img: q.img ?? null,

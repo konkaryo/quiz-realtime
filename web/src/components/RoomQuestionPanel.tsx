@@ -70,7 +70,7 @@ export default function RoomQuestionPanel({
   feedbackResponseMs,
   wrongTextAnswers,
 }: RoomQuestionPanelProps) {
-  const revealStepMs = 35;
+  const revealStepMs = 35 / 1.5;
   const [visibleQuestionLength, setVisibleQuestionLength] = useState(() => animateQuestionText ? 0 : questionText.length);
   const [timerSyncRevision, setTimerSyncRevision] = useState(0);
   const canRetry = !choices && wrongTextAnswers.length > 0 && lives > 0 && feedbackWasCorrect === false;

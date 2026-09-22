@@ -1287,7 +1287,9 @@ socket.on(
 
         st.answeredThisRound.add(client.playerGameId);
         st.attemptedThisRound.add(client.playerGameId);
-        markPlayerActive(st.roomId, client.playerId);
+        if (markPlayerActive(st.roomId, client.playerId)) {
+          io.to(st.roomId).emit("player_active", { pgId: client.playerGameId });
+        }
         st.answeredOrder.push(client.playerGameId);
 
         const gained = choice.isCorrect ? CFG.MC_ANSWER_POINTS_GAIN : 0;
@@ -1366,7 +1368,9 @@ socket.on(
         if (!userNorm) return ack?.({ ok: false, reason: "empty" });
 
         st.attemptedThisRound.add(client.playerGameId);
-        markPlayerActive(st.roomId, client.playerId);
+        if (markPlayerActive(st.roomId, client.playerId)) {
+          io.to(st.roomId).emit("player_active", { pgId: client.playerGameId });
+        }
 
         const result = classifyTextAnswer(raw, q.acceptedNorms, q.exactNorms);
         const correct = result === "correct";

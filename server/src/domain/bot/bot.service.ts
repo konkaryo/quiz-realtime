@@ -6,6 +6,11 @@ import type { Client, GameState, StoredAnswer } from "../../types";
 import { CFG } from "../../config";
 import * as lb_service from "../game/leaderboard.service";
 import { computeSpeedBonus, computeTextAnswerPoints } from "../player/scoring.service";
+import { clearBotRandomPause, markBotRandomPause, markPlayerActive } from "../game/player-activity.service";
+import {
+  calculateBotCorrectTextDelayMs,
+  correctAnswerFitsAvailableTime,
+} from "./bot-delay";
 
 const THEME_FALLBACK = "CULTURE_GENERALE" as Theme;
 const botInactivityByRoom = new Map<string, number>();
@@ -275,14 +280,19 @@ export async function scheduleBotAnswers(
     const inactivityKey = `${st.roomId}:${pg.playerId}`;
     const inactiveRoundsRemaining = botInactivityByRoom.get(inactivityKey) ?? 0;
     if (inactiveRoundsRemaining > 0) {
-      if (inactiveRoundsRemaining === 1) botInactivityByRoom.delete(inactivityKey);
-      else botInactivityByRoom.set(inactivityKey, inactiveRoundsRemaining - 1);
+      botInactivityByRoom.set(inactivityKey, inactiveRoundsRemaining - 1);
       continue;
+    }
+    if (botInactivityByRoom.delete(inactivityKey) && clearBotRandomPause(st.roomId, pg.playerId)) {
+      io.to(st.roomId).emit("player_active", { pgId: pg.id });
     }
     // De rares pauses de 4 à 15 questions reproduisent une absence temporaire,
     // indépendamment de la capacité du bot à trouver la bonne réponse.
     if (Math.random() < 0.035) {
       botInactivityByRoom.set(inactivityKey, 3 + Math.floor(Math.random() * 12));
+      if (markBotRandomPause(st.roomId, pg.playerId)) {
+        io.to(st.roomId).emit("player_inactive", { pgId: pg.id });
+      }
       continue;
     }
 
@@ -319,16 +329,49 @@ export async function scheduleBotAnswers(
     const now = Date.now();
     const remainingMs = Math.max(0, (st.endsAt ?? now) - now);
     const totalRoundMs = st.roundMs ?? Number(process.env.ROUND_MS || 10000);
-    const plannedMode = outcome.startsWith("mc-") ? "mc" : "text";
-    const delay = delayFromSpeed(
-      speed,
-      totalRoundMs,
-      remainingMs,
-      plannedMode,
-      st.dynamicQuestionDisplay,
-      q.text.length,
-      Boolean(q.img),
-    );
+    const maxResponseDelayMs = Math.max(120, remainingMs - 150);
+    let delay: number;
+    if (outcome === "text-correct") {
+      delay = calculateBotCorrectTextDelayMs(
+        {
+          questionCharCount: q.questionCharCount,
+          defaultAnswerCharCount: q.defaultAnswerCharCount,
+          shortestAnswerCharCount: q.shortestAnswerCharCount,
+          difficulty: q.difficulty,
+          hasImage: Boolean(q.img),
+          progressiveDisplay: st.dynamicQuestionDisplay,
+        },
+        speed,
+        skill,
+        maxResponseDelayMs,
+      );
+
+      // A known answer that cannot be typed before the deadline is an ordinary
+      // incorrect text answer; the protocol intentionally has no timeout state.
+      if (!correctAnswerFitsAvailableTime(delay, remainingMs)) {
+        outcome = "text-wrong";
+        delay = delayFromSpeed(
+          speed,
+          totalRoundMs,
+          remainingMs,
+          "text",
+          st.dynamicQuestionDisplay,
+          q.text.length,
+          Boolean(q.img),
+        );
+      }
+    } else {
+      const plannedMode = outcome.startsWith("mc-") ? "mc" : "text";
+      delay = delayFromSpeed(
+        speed,
+        totalRoundMs,
+        remainingMs,
+        plannedMode,
+        st.dynamicQuestionDisplay,
+        q.text.length,
+        Boolean(q.img),
+      );
+    }
 
     setTimeout(async () => {
       try {
@@ -350,6 +393,11 @@ export async function scheduleBotAnswers(
           };
           clients.set(fakeSocketId, client);
         }
+
+        if (markPlayerActive(st.roomId, pg.playerId)) {
+          io.to(st.roomId).emit("player_active", { pgId: pg.id });
+        }
+
 
         const responseMs = Math.max(0, Date.now() - (st.roundStartMs ?? Date.now()));
 

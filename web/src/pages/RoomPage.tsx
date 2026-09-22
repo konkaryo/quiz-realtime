@@ -839,6 +839,20 @@ export default function RoomPage() {
       }
     );
 
+    s.on("player_active", (p: { pgId?: string }) => {
+      if (!p?.pgId) return;
+      setLeaderboard((rows) =>
+        rows.map((row) => (row.id === p.pgId ? { ...row, inactive: false } : row))
+      );
+    });
+
+    s.on("player_inactive", (p: { pgId?: string }) => {
+      if (!p?.pgId) return;
+      setLeaderboard((rows) =>
+        rows.map((row) => (row.id === p.pgId ? { ...row, inactive: true } : row))
+      );
+    });
+
     s.on(
       "round_end",
       (p: {

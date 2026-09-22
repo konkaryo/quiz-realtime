@@ -221,19 +221,22 @@ model Game {
 }
 
 model Question {
-  id                    String                         @id @default(cuid())
-  text                  String
-  choices               Choice[]
-  theme                 Theme?
-  difficulty            String?
-  img                   String?
-  playerGames           PlayerGame[]
-  acceptedAnswers       AcceptedAnswer[]
-  exactAnswers          ExactAnswer[]
-  answers               Answer[]
-  dailyEntries          DailyChallengeQuestion[]
-  dailyChallengeResults DailyChallengeQuestionResult[]
-  reports               QuestionReport[]
+  id                      String                         @id @default(cuid())
+  text                    String
+  questionCharCount       Int
+  defaultAnswerCharCount  Int
+  shortestAnswerCharCount Int
+  choices                 Choice[]
+  theme                   Theme?
+  difficulty              String?
+  img                     String?
+  playerGames             PlayerGame[]
+  acceptedAnswers         AcceptedAnswer[]
+  exactAnswers            ExactAnswer[]
+  answers                 Answer[]
+  dailyEntries            DailyChallengeQuestion[]
+  dailyChallengeResults   DailyChallengeQuestionResult[]
+  reports                 QuestionReport[]
 }
 
 model PlayerGame {

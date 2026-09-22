@@ -2,6 +2,9 @@ export type RoundChoice = { id: string; label: string; isCorrect: boolean };
 export type RoundQuestion = {
   id: string;
   text: string;
+  questionCharCount: number;
+  defaultAnswerCharCount: number;
+  shortestAnswerCharCount: number;
   theme: string | null;
   difficulty: string | null;
   img: string | null;

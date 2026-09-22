@@ -256,7 +256,8 @@ export async function startGameForRoom(
   const raw = await prisma.question.findMany({
     where: { id: { in: qIds } },
     select: {
-      id: true, text: true, theme: true, difficulty: true, img: true,
+      id: true, text: true, questionCharCount: true, defaultAnswerCharCount: true,
+      shortestAnswerCharCount: true, theme: true, difficulty: true, img: true,
       choices: { select: { id: true, label: true, isCorrect: true } },
       acceptedAnswers: { select: { norm: true } },
       exactAnswers: { select: { norm: true } },
@@ -268,6 +269,9 @@ export async function startGameForRoom(
     return {
       id: q.id,
       text: q.text,
+      questionCharCount: q.questionCharCount,
+      defaultAnswerCharCount: q.defaultAnswerCharCount,
+      shortestAnswerCharCount: q.shortestAnswerCharCount,
       theme: q.theme ?? null,
       difficulty: q.difficulty ?? null,
       img: media_service.toImgUrl(q.img),
@@ -497,7 +501,12 @@ async function endRound(
     Array.from(st.attemptedThisRound, (playerGameId) => playerIdByPgId.get(playerGameId)).filter(Boolean) as string[],
   );
   const playerIds = leaderboard.map((player) => player.playerId).filter(Boolean);
-  completeQuestionForPlayers(st.roomId, playerIds, attemptedPlayerIds);
+  const botPlayerIds = new Set(
+    Array.from(clients.entries())
+      .filter(([socketId, client]) => socketId.startsWith("bot:") && client.roomId === st.roomId)
+      .map(([, client]) => client.playerId),
+  );
+  completeQuestionForPlayers(st.roomId, playerIds, attemptedPlayerIds, botPlayerIds);
   leaderboard.forEach((player) => {
     player.inactive = isPlayerInactive(st.roomId, player.playerId);
   });
