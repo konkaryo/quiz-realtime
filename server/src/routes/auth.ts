@@ -5,6 +5,7 @@ import { z } from "zod";
 import path from "path";
 import { promises as fs } from "fs";
 import crypto from "crypto";
+import sharp from "sharp";
 import {
   hashPassword,
   verifyPassword,
@@ -20,6 +21,7 @@ import { CFG } from "../config";
 import { sendEmailChangeVerificationEmail, sendResetPasswordEmail, sendVerificationEmail } from "../infra/email";
 import emailTokenService from "../domain/auth/email-token.service";
 import { refreshPlayerStats } from "../domain/player/player-stats.service";
+import { moderateProfileImage } from "../domain/media/avatar-moderation.service";
 
 type Opts = { prisma: PrismaClient };
 
@@ -43,12 +45,38 @@ const AVATAR_MIME_TO_EXT: Record<string, string> = {
   "image/jpg": "jpg",
 };
 
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+const AVATAR_DATA_URL_MAX_LENGTH = Math.ceil(AVATAR_MAX_BYTES * 4 / 3) + 128;
+const AVATAR_REQUEST_MAX_BYTES = AVATAR_DATA_URL_MAX_LENGTH + 1024;
+const AVATAR_SIZE_PX = 512;
+
 function parseAvatarDataUrl(dataUrl: string) {
   const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
   if (!match) return null;
   const mime = match[1].toLowerCase();
   const base64 = match[2];
   return { mime, buffer: Buffer.from(base64, "base64") };
+}
+
+async function normalizeAvatar(buffer: Buffer, declaredMime: string) {
+  if (buffer.length === 0 || buffer.length > AVATAR_MAX_BYTES) return null;
+
+  const image = sharp(buffer, {
+    failOn: "error",
+    limitInputPixels: 40_000_000,
+  });
+  const metadata = await image.metadata();
+  const decodedMime = metadata.format === "jpg" ? "image/jpeg" : `image/${metadata.format}`;
+  const normalizedDeclaredMime = declaredMime === "image/jpg" ? "image/jpeg" : declaredMime;
+
+  if (!metadata.width || !metadata.height || !(decodedMime in AVATAR_MIME_TO_EXT)) return null;
+  if (decodedMime !== normalizedDeclaredMime) return null;
+
+  return image
+    .rotate()
+    .resize(AVATAR_SIZE_PX, AVATAR_SIZE_PX, { fit: "cover", position: "centre" })
+    .webp({ quality: 85 })
+    .toBuffer();
 }
 
 export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
@@ -365,14 +393,14 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
     });
 
     // POST /auth/me/avatar
-    app.post("/me/avatar", async (req, reply) => {
+    app.post("/me/avatar", { bodyLimit: AVATAR_REQUEST_MAX_BYTES }, async (req, reply) => {
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
       if (user.guest) return reply.code(403).send({ error: "guest-account" });
 
       const Body = z.object({
-        dataUrl: z.string().min(1),
-        filename: z.string().optional(),
+        dataUrl: z.string().min(1).max(AVATAR_DATA_URL_MAX_LENGTH),
+        filename: z.string().max(255).optional(),
       });
       const parsed = Body.safeParse(req.body);
       if (!parsed.success) return reply.code(400).send({ error: "invalid_payload" });
@@ -380,8 +408,9 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       const parsedData = parseAvatarDataUrl(parsed.data.dataUrl);
       if (!parsedData) return reply.code(400).send({ error: "invalid_image" });
 
-      const ext = AVATAR_MIME_TO_EXT[parsedData.mime];
-      if (!ext) return reply.code(400).send({ error: "unsupported_image_type" });
+      if (!AVATAR_MIME_TO_EXT[parsedData.mime]) {
+        return reply.code(400).send({ error: "unsupported_image_type" });
+      }
 
       const player = await prisma.player.findUnique({
         where: { userId: user.id },
@@ -389,12 +418,33 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       });
       if (!player) return reply.code(404).send({ error: "player_not_found" });
 
+      let normalizedImage: Buffer;
+      try {
+        const normalized = await normalizeAvatar(parsedData.buffer, parsedData.mime);
+        if (!normalized) return reply.code(400).send({ error: "invalid_image" });
+        normalizedImage = normalized;
+      } catch {
+        return reply.code(400).send({ error: "invalid_image" });
+      }
+
+      try {
+        const flagged = await moderateProfileImage(normalizedImage, "image/webp");
+        if (flagged) {
+          req.log.info({ userId: user.id }, "Profile image moderation rejected an image");
+          return reply.code(422).send({ error: "avatar_moderation_rejected" });
+        }
+        req.log.info({ userId: user.id }, "Profile image moderation succeeded");
+      } catch {
+        req.log.error({ userId: user.id }, "Profile image moderation failed");
+        return reply.code(503).send({ error: "avatar_moderation_unavailable" });
+      }
+
       const profilesDir = path.resolve(CFG.IMG_DIR, "profiles");
       await fs.mkdir(profilesDir, { recursive: true });
 
-      const fileName = `${player.id}.${ext}`;
+      const fileName = `${player.id}.webp`;
       const filePath = path.join(profilesDir, fileName);
-      await fs.writeFile(filePath, parsedData.buffer);
+      await fs.writeFile(filePath, normalizedImage);
 
       let updatedImg = player.img ?? null;
       if (player.img !== fileName) {

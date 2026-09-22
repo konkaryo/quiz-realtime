@@ -26,6 +26,16 @@ function withCacheBust(url: string) {
   return `${url}${separator}v=${Date.now()}`;
 }
 
+function avatarUploadError(error?: string) {
+  if (error === "avatar_moderation_rejected") {
+    return "Cette image ne peut pas être utilisée comme photo de profil.";
+  }
+  if (error === "avatar_moderation_unavailable") {
+    return "Impossible de vérifier cette image pour le moment. Réessayez dans quelques instants.";
+  }
+  return "L’image de profil n’a pas pu être enregistrée.";
+}
+
 export default function AccountPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -113,7 +123,10 @@ export default function AccountPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dataUrl, filename: file.name }),
       });
-      if (!response.ok) throw new Error("L’image de profil n’a pas pu être enregistrée.");
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(avatarUploadError(errorPayload?.error));
+      }
       const payload = (await response.json()) as { img?: string | null };
       const nextAvatar = withCacheBust(payload.img || avatar);
       setAvatar(nextAvatar);
