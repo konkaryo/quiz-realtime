@@ -370,7 +370,7 @@ export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
         return reply.code(400).send({ error: "invalid_date" });
       }
 
-      const Body = z.object({ questionId: z.string().min(1) });
+      const Body = z.strictObject({ questionId: z.string().min(1) });
       const parsed = Body.safeParse(req.body ?? {});
       if (!parsed.success) {
         return reply.code(400).send({ error: "invalid_payload" });
@@ -442,7 +442,7 @@ export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
         return reply.code(400).send({ error: "invalid_date" });
       }
 
-      const Body = z.object({
+      const Body = z.strictObject({
         botCount: z.coerce.number().int().min(1).max(100).default(5),
       });
       const parsed = Body.safeParse(req.body ?? {});
@@ -491,7 +491,7 @@ export const adminRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
         return reply.code(400).send({ error: "invalid_date" });
       }
 
-      const Body = z.object({ entryIds: z.array(z.string().min(1)).min(1) });
+      const Body = z.strictObject({ entryIds: z.array(z.string().min(1)).min(1) });
       const parsed = Body.safeParse(req.body ?? {});
       if (!parsed.success) {
         return reply.code(400).send({ error: "invalid_payload" });

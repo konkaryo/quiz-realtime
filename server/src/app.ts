@@ -29,6 +29,7 @@ import { toProfileUrl } from "./domain/media/media.service";
 import { startPublicBotTraffic } from "./domain/bot/traffic";
 import { startGameForRoom } from "./domain/game/game.service";
 import { HTTP_LIMITS, installSocketRateLimits, opaqueSessionKey, rateLimiter, rateLimitPreHandler, requestIpKey } from "./security/rate-limit";
+import { identifierSchema, roomCodeSchema } from "./security/input-validation";
 
 /* ---------------- runtime maps ---------------- */
 const clients = new Map<string, Client>();
@@ -60,6 +61,7 @@ async function getSpeedBonusEnabled(roomId: string) {
 async function main() {
   const app = fastify({
     logger: true,
+    bodyLimit: 1024 * 1024,
     // Caddy is expected on the same host/container network namespace. Only a
     // direct loopback peer may supply forwarding headers; public peers cannot.
     trustProxy: (address) => address === "127.0.0.1" || address === "::1",
@@ -176,7 +178,7 @@ async function main() {
         return reply.code(401).send({ error: "Unauthorized" });
       }
 
-      const Body = z.object({
+      const Body = z.strictObject({
         difficulty:    z.number().int().min(0).max(100).optional(),
         bannedThemes:  z.array(z.nativeEnum(Theme)).optional(),
         questionCount: z.number().int().min(1).max(50).optional(),
@@ -186,7 +188,7 @@ async function main() {
         dynamicQuestionDisplay: z.boolean().optional(),
         manualQuestionLaunch: z.boolean().optional(),
         speedBonusEnabled: z.boolean().optional(),
-        code:          z.string().trim().toUpperCase().optional(),
+        code:          roomCodeSchema.optional(),
         visibility:    z.nativeEnum(RoomVisibility).optional(),
       });
       const parsed = Body.safeParse(req.body);
@@ -207,9 +209,7 @@ async function main() {
 
       const roundMs = roundSeconds * 1000;
 
-      const requestedCode = (requestedCodeRaw || "").toUpperCase().trim();
-      const useRequested = requestedCode && isCodeValid(requestedCode);
-      const code = useRequested ? requestedCode : "AAAA";
+      const code = requestedCodeRaw ?? "AAAA";
       const roomId = genRoomId();
 
       const user = await prisma.user.findUnique({
@@ -274,7 +274,9 @@ async function main() {
   });
 
   app.get("/rooms/:id", async (req, reply) => {
-    const id = (req.params as any).id as string;
+    const parsedParams = z.strictObject({ id: identifierSchema }).safeParse(req.params);
+    if (!parsedParams.success) return reply.code(400).send({ error: "invalid_room_id" });
+    const id = parsedParams.data.id;
     const room = await prisma.room.findUnique({
       where: { id },
       select: {
@@ -334,7 +336,9 @@ async function main() {
         return reply.code(401).send({ error: "Unauthorized" });
       }
 
-      const id = (req.params as any).id as string;
+      const parsedParams = z.strictObject({ id: identifierSchema }).safeParse(req.params);
+      if (!parsedParams.success) return reply.code(400).send({ error: "invalid_room_id" });
+      const id = parsedParams.data.id;
       const room = await prisma.room.findUnique({
         where: { id },
         select: { id: true, ownerId: true, status: true, questionCount: true, qcmUses: true },
@@ -343,7 +347,7 @@ async function main() {
       if (room.status === "CLOSED") return reply.code(410).send({ error: "Room closed" });
       if (room.ownerId !== session.userId) return reply.code(403).send({ error: "Forbidden" });
 
-      const Body = z.object({
+      const Body = z.strictObject({
         difficulty: z.number().int().min(0).max(100).optional(),
         bannedThemes: z.array(z.nativeEnum(Theme)).optional(),
         questionCount: z.number().int().min(1).max(50).optional(),
@@ -431,7 +435,9 @@ async function main() {
         return reply.code(401).send({ error: "Unauthorized" });
       }
 
-      const id = (req.params as any).id as string;
+      const parsedParams = z.strictObject({ id: identifierSchema }).safeParse(req.params);
+      if (!parsedParams.success) return reply.code(400).send({ error: "invalid_room_id" });
+      const id = parsedParams.data.id;
       const room = await prisma.room.findUnique({
         where: { id },
         select: { id: true, ownerId: true, status: true },
@@ -479,7 +485,7 @@ async function main() {
 
   app.post("/rooms/resolve", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.roomLookupIp, key: requestIpKey }]) }, async (req, reply) => {
     try {
-      const Body = z.object({ code: z.string().trim().toUpperCase().length(4) });
+      const Body = z.strictObject({ code: roomCodeSchema });
       const parsed = Body.safeParse(req.body);
       if (!parsed.success) return reply.code(400).send({ error: "Bad code" });
 
@@ -622,7 +628,9 @@ async function main() {
       });
       if (!user) return reply.code(401).send({ error: "Unauthorized" });
 
-      const id = (req.params as any).id as string;
+      const parsedParams = z.strictObject({ id: identifierSchema }).safeParse(req.params);
+      if (!parsedParams.success) return reply.code(400).send({ error: "invalid_room_id" });
+      const id = parsedParams.data.id;
       const room = await prisma.room.findUnique({
         where: { id },
         select: { id: true, ownerId: true, status: true },
@@ -665,6 +673,7 @@ async function main() {
   // ---------- Socket.IO ----------
   const io = new Server(app.server, {
     path: "/socket.io",
+    maxHttpBufferSize: 64 * 1024,
     cors: { origin: CFG.CLIENT_URL, methods: ["GET", "POST"], credentials: true },
   });
 

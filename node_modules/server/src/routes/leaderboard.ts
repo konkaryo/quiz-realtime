@@ -7,7 +7,7 @@ import { toProfileUrl } from "../domain/media/media.service";
 
 export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
   async function getLimit(query: unknown, reply: any) {
-    const Query = z.object({
+    const Query = z.strictObject({
       limit: z.coerce.number().int().min(1).max(100).optional(),
       all: z.coerce.boolean().optional(),
     });
@@ -80,7 +80,7 @@ export function leaderboardRoutes({ prisma }: { prisma: PrismaClient }) {
 
   return async function register(app: FastifyInstance) {
     app.get("/profile-images", async (req, reply) => {
-      const Query = z.object({
+      const Query = z.strictObject({
         ids: z.string().min(1),
       });
       const parsed = Query.safeParse(req.query);

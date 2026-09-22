@@ -17,6 +17,7 @@ import { getChallengeByDate } from "../domain/daily/daily.service";
 import { getDailyChallengeRankingSnapshot, getMonthlyDailyRankingSnapshot, getDailyQuestionResponseStats, recordDailyQuestionResults, recordDailyScoreIfFirst, updateDailyQuestionAverageScores } from "../domain/daily/daily-score.service";
 import { ensurePlayerForUser } from "../domain/player/player.service";
 import { markPlayerActive } from "../domain/game/player-activity.service";
+import { answerTextPayloadSchema, choicePayloadSchema, gameChoicePayloadSchema, identifierSchema, isoDateSchema, joinGamePayloadSchema } from "../security/input-validation";
 
 /**
  * Enregistre tous les handlers Socket.IO.
@@ -298,10 +299,12 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     socket.emit("welcome", { id: socket.id });
   
     /* ---------------- DAILY CHALLENGE (solo) ---------------- */
-    socket.on("join_daily", async (p: { date: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
-      const date = (p?.date || "").trim();
-      const valid = /^\d{4}-\d{2}-\d{2}$/.test(date);
-      if (!valid) return ack?.({ ok: false, reason: "invalid-date" });
+    socket.on("join_daily", async (p: unknown, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const parsed = isoDateSchema.safeParse((p as { date?: unknown } | null)?.date);
+      if (!parsed.success || typeof p !== "object" || p === null || Array.isArray(p) || Object.keys(p).some((key) => key !== "date")) {
+        return ack?.({ ok: false, reason: "invalid-payload" });
+      }
+      const date = parsed.data;
       try {
         const userId = socket.data.userId as string | undefined;
         if (!userId) return ack?.({ ok: false, reason: "unauthorized" });
@@ -432,7 +435,9 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
 socket.on(
   "daily_submit_answer",
-  (p: { choiceId: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+  (p: unknown, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+    const parsed = choicePayloadSchema.safeParse(p);
+    if (!parsed.success) return ack?.({ ok: false, reason: "invalid-payload" });
     const sess = dailySessions.get(socket.id);
     if (!sess) return ack?.({ ok: false, reason: "no-session" });
     if (sess.answered) return ack?.({ ok: false, reason: "already" });
@@ -441,7 +446,7 @@ socket.on(
     const q = sess.questions[sess.index];
     if (!q) return ack?.({ ok: false, reason: "no-question" });
 
-    const choice = q.choices.find((c) => c.id === p.choiceId);
+    const choice = q.choices.find((c) => c.id === parsed.data.choiceId);
     if (!choice) return ack?.({ ok: false, reason: "bad-choice" });
 
     const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
@@ -521,7 +526,9 @@ socket.on(
 
 socket.on(
   "daily_submit_answer_text",
-  (p: { text: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+  (p: unknown, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+    const parsed = answerTextPayloadSchema.safeParse(p);
+    if (!parsed.success) return ack?.({ ok: false, reason: "invalid-payload" });
     const sess = dailySessions.get(socket.id);
     if (!sess) return ack?.({ ok: false, reason: "no-session" });
     if (sess.answered) return ack?.({ ok: false, reason: "already" });
@@ -532,7 +539,7 @@ socket.on(
 
     if (sess.mcMode) return ack?.({ ok: false, reason: "mc-mode" });
 
-    const raw = (p?.text || "").trim();
+    const raw = parsed.data.text;
     const userNorm = norm(raw);
     if (!userNorm) return ack?.({ ok: false, reason: "empty" });
 
@@ -620,19 +627,21 @@ socket.on(
 );
 
     /* ---------------- join_game ---------------- */
-    socket.on("join_game", async (p: { code?: string; roomId?: string }) => {
+    socket.on("join_game", async (p: unknown) => {
       try {
+        const parsed = joinGamePayloadSchema.safeParse(p);
+        if (!parsed.success) return socket.emit("error_msg", "Invalid room payload.");
         const userId = socket.data.userId as string | undefined;
         if (!userId) return socket.emit("error_msg", "Not authenticated");
 
         let room = null;
 
-        if (p?.code) {
-            room = await prisma.room.findUnique({ where: { code: p.code } });
+        if (parsed.data.code) {
+            room = await prisma.room.findUnique({ where: { code: parsed.data.code } });
             if (!room) return socket.emit("error_msg", "Room not found.");
         }      
-        else if (p?.roomId) {
-            room = await prisma.room.findUnique({ where: { id: p.roomId } });
+        else if (parsed.data.roomId) {
+            room = await prisma.room.findUnique({ where: { id: parsed.data.roomId } });
             if (!room) return socket.emit("error_msg", "Room not found.");
             if (room.visibility !== "PUBLIC") { return socket.emit("error_msg", "This room requires a code."); }
         }
@@ -775,10 +784,13 @@ socket.on(
     });
 
     /* ---------------- remove_lobby_player ---------------- */
-    socket.on("remove_lobby_player", async (p: { playerId?: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+    socket.on("remove_lobby_player", async (p: unknown, ack?: (res: { ok: boolean; reason?: string }) => void) => {
       const roomId = socket.data.roomId as string | undefined;
       const userId = socket.data.userId as string | undefined;
-      const playerId = p?.playerId;
+      const payload = (typeof p === "object" && p !== null && !Array.isArray(p) && Object.keys(p).length === 1)
+        ? identifierSchema.safeParse((p as { playerId?: unknown }).playerId)
+        : null;
+      const playerId = payload?.success ? payload.data : undefined;
       if (!roomId || !userId) return ack?.({ ok: false, reason: "not-in-room" });
       if (!playerId) return ack?.({ ok: false, reason: "missing-player" });
 
@@ -971,9 +983,11 @@ socket.on(
     socket.on(
       "submit_answer",
       async (
-        p: { code: string; choiceId: string },
+        p: unknown,
         ack?: (res: { ok: boolean; reason?: string }) => void
       ) => {
+        const parsed = gameChoicePayloadSchema.safeParse(p);
+        if (!parsed.success) return ack?.({ ok: false, reason: "invalid-payload" });
         const client = clients.get(socket.id);
         if (!client) return ack?.({ ok: false, reason: "no-client" });
 
@@ -992,7 +1006,7 @@ socket.on(
         const q = st.questions[st.index];
         if (!q) return ack?.({ ok: false, reason: "no-question" });
 
-        const choice = q.choices.find((c) => c.id === p.choiceId);
+        const choice = q.choices.find((c) => c.id === parsed.data.choiceId);
         if (!choice) return ack?.({ ok: false, reason: "bad-choice" });
 
         const start = st.roundStartMs ?? Date.now();
@@ -1046,9 +1060,11 @@ socket.on(
     socket.on(
       "submit_answer_text",
       async (
-        p: { text: string },
+        p: unknown,
         ack?: (res: { ok: boolean; reason?: string }) => void
       ) => {
+        const parsed = answerTextPayloadSchema.safeParse(p);
+        if (!parsed.success) return ack?.({ ok: false, reason: "invalid-payload" });
         const client = clients.get(socket.id);
         if (!client) return ack?.({ ok: false, reason: "no-client" });
 
@@ -1076,7 +1092,7 @@ socket.on(
           return ack?.({ ok: false, reason: "no-lives" });
         }
 
-        const raw = (p.text || "").trim();
+        const raw = parsed.data.text;
         const userNorm = norm(raw);
         if (!userNorm) return ack?.({ ok: false, reason: "empty" });
 

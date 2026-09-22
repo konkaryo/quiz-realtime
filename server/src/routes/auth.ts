@@ -24,6 +24,7 @@ import { refreshPlayerStats } from "../domain/player/player-stats.service";
 import { revokeAllUserSessions, revokeOtherUserSessions } from "../domain/auth/session-security.service";
 import { moderateProfileImage } from "../domain/media/avatar-moderation.service";
 import { enforceRateLimit, HTTP_LIMITS, normalizeEmail, opaqueSessionKey, rateLimitPreHandler, requestIpKey } from "../security/rate-limit";
+import { displayNameSchema, emailSchema, loginBodySchema, MAX_PASSWORD_LENGTH, passwordSchema, registerBodySchema } from "../security/input-validation";
 
 type Opts = { prisma: PrismaClient };
 
@@ -88,21 +89,16 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       { rule: HTTP_LIMITS.registerIp, key: requestIpKey },
       { rule: HTTP_LIMITS.registerEmail, key: (req) => normalizeEmail((req.body as any)?.email) },
     ]) }, async (req, reply) => {
-      const body = (req.body ?? {}) as {
-        email?: string;
-        password?: string;
-        displayName?: string;
-        name?: string;
-        username?: string;
-      };
-      const email = normEmail(body.email || "");
-      const password = (body.password || "").trim();
-      const displayName = cleanName(
-        body.displayName || body.name || body.username || email.split("@")[0]
+      const parsed = registerBodySchema.safeParse(req.body ?? {});
+      if (!parsed.success) return reply.code(400).send({ error: "invalid_payload" });
+      const { email, password } = parsed.data;
+      const fallbackName = email.split("@")[0].slice(0, 64);
+      const displayNameResult = displayNameSchema.safeParse(
+        parsed.data.displayName ?? parsed.data.name ?? parsed.data.username ?? fallbackName,
       );
 
-      if (!email || !password) return reply.code(400).send({ error: "missing-fields" });
-      if (password.length < 8)   return reply.code(400).send({ error: "weak-password" });
+      if (!displayNameResult.success) return reply.code(400).send({ error: "invalid_display_name" });
+      const displayName = displayNameResult.data;
 
       const exists = await prisma.user.findUnique({ where: { email } });
       if (exists) {
@@ -165,8 +161,10 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
     // GET /auth/verify-email?token=...
     app.get("/verify-email", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.verifyIp, key: requestIpKey }]) }, async (req, reply) => {
-      const token = String((req.query as { token?: string } | undefined)?.token ?? "").trim();
-      if (!token) return reply.code(400).send({ error: "invalid-token" });
+      const Query = z.strictObject({ token: z.string().trim().min(1).max(256) });
+      const parsedQuery = Query.safeParse(req.query);
+      if (!parsedQuery.success) return reply.code(400).send({ error: "invalid-token" });
+      const token = parsedQuery.data.token;
 
       const emailToken = await emailTokenService.findEmailToken(prisma, token, EmailTokenType.EMAIL_VERIFICATION)
         ?? await emailTokenService.findEmailToken(prisma, token, EmailTokenType.EMAIL_CHANGE);
@@ -232,7 +230,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       { rule: HTTP_LIMITS.forgotIp, key: requestIpKey },
       { rule: HTTP_LIMITS.forgotEmail, key: (req) => normalizeEmail((req.body as any)?.email) },
     ]) }, async (req, reply) => {
-      const Body = z.object({ email: z.string().email() });
+      const Body = z.strictObject({ email: emailSchema });
       const parsed = Body.safeParse(req.body ?? {});
       if (!parsed.success) {
         return reply.send({
@@ -264,9 +262,9 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
 
     // POST /auth/reset-password
     app.post("/reset-password", { preHandler: rateLimitPreHandler([{ rule: HTTP_LIMITS.resetIp, key: requestIpKey }]) }, async (req, reply) => {
-      const Body = z.object({
-        token: z.string().min(1),
-        newPassword: z.string().min(8),
+      const Body = z.strictObject({
+        token: z.string().min(1).max(256),
+        newPassword: passwordSchema,
       });
       const parsed = Body.safeParse(req.body ?? {});
       if (!parsed.success) {
@@ -298,11 +296,9 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       { rule: HTTP_LIMITS.loginIpEmail, key: (req) => `${requestIpKey(req)}:${normalizeEmail((req.body as any)?.email)}` },
       { rule: HTTP_LIMITS.loginEmail, key: (req) => normalizeEmail((req.body as any)?.email) },
     ]) }, async (req, reply) => {
-      const body = (req.body ?? {}) as { email?: string; password?: string };
-      const email = normEmail(body.email || "");
-      const password = (body.password || "").trim();
-
-      if (!email || !password) return reply.code(400).send({ error: "missing-fields" });
+      const parsed = loginBodySchema.safeParse(req.body ?? {});
+      if (!parsed.success) return reply.code(400).send({ error: "invalid_payload" });
+      const { email, password } = parsed.data;
 
       const user = await prisma.user.findUnique({
         where: { email },
@@ -415,7 +411,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
       if (user.guest) return reply.code(403).send({ error: "guest-account" });
 
-      const Body = z.object({
+      const Body = z.strictObject({
         dataUrl: z.string().min(1).max(AVATAR_DATA_URL_MAX_LENGTH),
         filename: z.string().max(255).optional(),
       });
@@ -485,10 +481,10 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
       if (user.guest) return reply.code(403).send({ error: "guest-account" });
 
-      const Body = z.object({
-        email: z.string().email(),
-        playerName: z.string().trim().min(1).max(64),
-        currentPassword: z.string().optional(),
+      const Body = z.strictObject({
+        email: emailSchema,
+        playerName: displayNameSchema,
+        currentPassword: z.string().max(MAX_PASSWORD_LENGTH).optional(),
       });
       const parsed = Body.safeParse(req.body ?? {});
       if (!parsed.success) return reply.code(400).send({ error: "invalid_payload" });
@@ -575,9 +571,9 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
       if (user.guest) return reply.code(403).send({ error: "guest-account" });
 
-      const Body = z.object({
-        currentPassword: z.string().min(1),
-        newPassword: z.string().min(8),
+      const Body = z.strictObject({
+        currentPassword: z.string().min(1).max(MAX_PASSWORD_LENGTH),
+        newPassword: passwordSchema,
       });
       const parsed = Body.safeParse(req.body ?? {});
       if (!parsed.success) return reply.code(400).send({ error: "invalid_payload" });

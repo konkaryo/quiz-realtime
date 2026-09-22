@@ -66,7 +66,7 @@ export function dailyRoutes({ prisma }: { prisma: PrismaClient }) {
     });
 
     app.get("/challenges/:date", async (req, reply) => {
-      const Params = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
+      const Params = z.strictObject({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
       const parsed = Params.safeParse(req.params);
       if (!parsed.success) {
         return reply.code(400).send({ error: "invalid_date" });
@@ -82,7 +82,7 @@ export function dailyRoutes({ prisma }: { prisma: PrismaClient }) {
     });
 
     app.get("/results/:date", async (req, reply) => {
-      const Params = z.object({
+      const Params = z.strictObject({
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       });
       const parsed = Params.safeParse(req.params);
@@ -120,7 +120,7 @@ export function dailyRoutes({ prisma }: { prisma: PrismaClient }) {
 
     app.get("/leaderboard/monthly", async (req, reply) => {
       try {
-        const Query = z.object({
+        const Query = z.strictObject({
           month: z.string().optional(),
           limit: z.coerce.number().int().min(1).max(100).optional(),
           all: z.coerce.boolean().optional(),
@@ -152,7 +152,7 @@ export function dailyRoutes({ prisma }: { prisma: PrismaClient }) {
     });
 
     app.get("/leaderboard/daily/:date", async (req, reply) => {
-      const Params = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
+      const Params = z.strictObject({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
       const parsed = Params.safeParse(req.params);
       if (!parsed.success) {
         return reply.code(400).send({ error: "invalid_date" });

@@ -86,7 +86,7 @@ export const notificationRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
 
-      const Body = z.object({
+      const Body = z.strictObject({
         targetPlayerId: z.string().min(1),
         roomId: z.string().min(1),
         destination: z.enum(["lobby", "room"]),
@@ -149,7 +149,7 @@ export const notificationRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
 
-      const Params = z.object({ notificationId: z.string().min(1) });
+      const Params = z.strictObject({ notificationId: z.string().min(1) });
       const parsed = Params.safeParse(req.params);
       if (!parsed.success) return reply.code(400).send({ error: "invalid_notification_id" });
 
@@ -213,7 +213,7 @@ export const notificationRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       const { user, session } = await currentUser(prisma, req);
       if (!user || !session) return reply.code(401).send({ error: "unauthorized" });
 
-      const Params = z.object({ notificationId: z.string().min(1) });
+      const Params = z.strictObject({ notificationId: z.string().min(1) });
       const parsed = Params.safeParse(req.params);
       if (!parsed.success) return reply.code(400).send({ error: "invalid_notification_id" });
 

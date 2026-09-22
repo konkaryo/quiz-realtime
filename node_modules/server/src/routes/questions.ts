@@ -13,8 +13,8 @@ export const questionRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       const { user } = await currentUser(prisma, req);
       if (!user) return reply.code(401).send({ error: "unauthorized" });
 
-      const Params = z.object({ questionId: z.string().min(1) });
-      const Body = z.object({ reason: z.nativeEnum(QuestionReportReason) });
+      const Params = z.strictObject({ questionId: z.string().min(1) });
+      const Body = z.strictObject({ reason: z.nativeEnum(QuestionReportReason) });
 
       const paramsParsed = Params.safeParse(req.params);
       if (!paramsParsed.success) return reply.code(400).send({ error: "invalid-question-id" });

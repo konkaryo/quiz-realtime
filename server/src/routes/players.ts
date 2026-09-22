@@ -9,7 +9,7 @@ import { refreshPlayerStats } from "../domain/player/player-stats.service";
 export function playerRoutes({ prisma }: { prisma: PrismaClient }) {
   return async function register(app: FastifyInstance) {
     app.get("/search", async (req, reply) => {
-      const Query = z.object({
+      const Query = z.strictObject({
         q: z.string().trim().min(1).max(40),
         limit: z.coerce.number().int().min(1).max(10).optional(),
       });
@@ -45,7 +45,7 @@ export function playerRoutes({ prisma }: { prisma: PrismaClient }) {
       });
     });
     app.get("/:playerId", async (req, reply) => {
-      const Params = z.object({ playerId: z.string().min(1) });
+      const Params = z.strictObject({ playerId: z.string().min(1) });
       const parsed = Params.safeParse(req.params);
       if (!parsed.success) {
         return reply.code(400).send({ error: "invalid_player_id" });
@@ -72,7 +72,7 @@ export function playerRoutes({ prisma }: { prisma: PrismaClient }) {
     });
 
     app.get("/:playerId/stats", async (req, reply) => {
-      const Params = z.object({ playerId: z.string().min(1) });
+      const Params = z.strictObject({ playerId: z.string().min(1) });
       const parsed = Params.safeParse(req.params);
       if (!parsed.success) {
         return reply.code(400).send({ error: "invalid_player_id" });
