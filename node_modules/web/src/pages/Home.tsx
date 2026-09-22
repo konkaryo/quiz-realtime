@@ -4,6 +4,7 @@ import { ArrowDown, ArrowRight, ArrowUpRight, Check, LockKeyhole, Menu, Plus, Se
 import { io } from "socket.io-client";
 import ShapeGrid from "../components/ShapeGrid";
 import LoadingScreen from "../components/LoadingScreen";
+import SiteFooter from "../components/SiteFooter";
 import "./Home.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string;
@@ -288,6 +289,7 @@ export default function Home() {
           </div>
         </section>
       </main>
+      <SiteFooter />
     </div>
   );
 }

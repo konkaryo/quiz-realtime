@@ -21,6 +21,7 @@ import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
+import LegalNoticePage from "./pages/LegalNoticePage";
 import "./index.css";
 import { Toaster } from "./components/ui/toaster";
 import LoadingScreen from "./components/LoadingScreen";
@@ -126,6 +127,10 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 // ---------------------------------------------------------------------------
 
 const router = createBrowserRouter([
+  {
+    path: "/mentions-legales",
+    element: <LegalNoticePage />,
+  },
   {
     path: "/login",
     element: (
