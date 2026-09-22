@@ -198,6 +198,8 @@ model Room {
   closedAt               DateTime?
   bannedThemes           Theme[]
   questionCount          Int            @default(10)
+  answerAttempts         Int            @default(3)
+  qcmUses                Int            @default(3)
   roundMs                Int            @default(10000)
   dynamicQuestionDisplay Boolean        @default(true)
   manualQuestionLaunch   Boolean        @default(false)

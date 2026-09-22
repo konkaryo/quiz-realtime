@@ -3,8 +3,8 @@
 import { PrismaClient } from "@prisma/client";
 import type { Server } from "socket.io";
 import { emitPublicRoomsUpdated } from "../room/public-room-events";
-import type { Client } from "../../types";
-import { ensureBotsForRoomIfPublic } from "./bot.service";
+import type { Client, GameState } from "../../types";
+import { ensureBotsForRoomIfPublic, releaseBotFromRoom } from "./bot.service";
 
 export const HOURLY_TRAFFIC: number[] = [
   0.3, // 00:00
@@ -34,7 +34,12 @@ export const HOURLY_TRAFFIC: number[] = [
 ];
 
 type Daypart = "night" | "morning" | "afternoon" | "evening";
-type RoomMinimal = { id: string; visibility: "PUBLIC" | "PRIVATE"; traffic: number };
+type RoomMinimal = {
+  id: string;
+  visibility: "PUBLIC" | "PRIVATE";
+  traffic: number;
+  difficulty: number;
+};
 
 const HOUR_TO_DAYPART: Daypart[] = [
   "night","night","night","night","night","night", // 0–5
@@ -166,6 +171,7 @@ export async function rebalanceBotsAfterGame(opts: {
     for (const [sid, c] of clients) {
       if (c.playerGameId === pgId) {
         clients.delete(sid);
+        releaseBotFromRoom(c.playerId, room.id);
         sessionGamesByPgId.delete(pgId);
         removed++;
         break;
@@ -202,7 +208,14 @@ export async function rebalanceBotsAfterGame(opts: {
       const p = pConnect(need - added, roomTarget, avail);
       if (Math.random() < p) {
         // attacher 1 bot (réutilise ta fonction existante)
-        const attached = await ensureBotsForRoomIfPublic(prisma, io, clients, { id: room.id, visibility: "PUBLIC" }, { id: gameId}, 1);
+        const attached = await ensureBotsForRoomIfPublic(
+          prisma,
+          io,
+          clients,
+          { id: room.id, visibility: "PUBLIC", difficulty: room.difficulty },
+          { id: gameId },
+          1,
+        );
         for (const { id } of attached) {
           if (!sessionGamesByPgId.has(id)) {
             sessionGamesByPgId.set(id, { played: 0, target: sampleGamesBeforeDisconnect() });
@@ -217,5 +230,120 @@ export async function rebalanceBotsAfterGame(opts: {
       emitPublicRoomsUpdated(io);
     }
   }
+}
+
+const removeBotClient = (
+  clients: Map<string, Client>,
+  gameStates: Map<string, GameState>,
+  socketId: string,
+  client: Client,
+) => {
+  clients.delete(socketId);
+  releaseBotFromRoom(client.playerId, client.roomId);
+  sessionGamesByPgId.delete(client.playerGameId);
+
+  const state = gameStates.get(client.roomId);
+  state?.pgIds.delete(client.playerGameId);
+  state?.playerData.delete(client.playerGameId);
+  state?.qcmUsesByPgId.delete(client.playerGameId);
+};
+
+/** Maintient des bots dans tous les salons publics, même sans joueur humain. */
+export async function rebalancePublicBotRooms(opts: {
+  prisma: PrismaClient;
+  io: Server;
+  clients: Map<string, Client>;
+  gameStates: Map<string, GameState>;
+  xMax: number;
+  hour?: number;
+  onBotsJoined?: (roomId: string) => Promise<void>;
+}) {
+  const { prisma, io, clients, gameStates, xMax } = opts;
+  const rooms = await prisma.room.findMany({
+    where: { visibility: "PUBLIC", status: "OPEN" },
+    select: { id: true, popularity: true, difficulty: true },
+  });
+  if (rooms.length === 0) return;
+
+  const hour = typeof opts.hour === "number" ? opts.hour : new Date().getHours();
+  const targetByRoom = splitByRoomsTarget(
+    rooms.map((room) => ({ id: room.id, traffic: room.popularity ?? 5 })),
+    globalTargetAtHour(xMax, hour),
+  );
+
+  for (const room of rooms) {
+    const connected = Array.from(clients.entries()).filter(
+      ([socketId, client]) => socketId.startsWith("bot:") && client.roomId === room.id,
+    );
+    const target = targetByRoom[room.id] ?? 0;
+    let changed = false;
+
+    const departing = connected.filter((_, index) => index >= target || Math.random() < 0.015);
+    for (const [socketId, client] of departing) {
+      removeBotClient(clients, gameStates, socketId, client);
+      changed = true;
+    }
+
+    const need = Math.max(0, target - (connected.length - departing.length));
+    if (need > 0) {
+      const existingMember = Array.from(clients.values()).find((client) => client.roomId === room.id);
+      const game = existingMember
+        ? { id: existingMember.gameId }
+        : (await prisma.game.findFirst({
+            where: { roomId: room.id, state: { in: ["running", "lobby"] } },
+            orderBy: { createdAt: "desc" },
+            select: { id: true },
+          })) ?? await prisma.game.create({
+            data: { roomId: room.id, state: "lobby" },
+            select: { id: true },
+          });
+      const attached = await ensureBotsForRoomIfPublic(
+        prisma,
+        io,
+        clients,
+        { id: room.id, visibility: "PUBLIC", difficulty: room.difficulty },
+        game,
+        need,
+      );
+      if (attached.length > 0 && opts.onBotsJoined) {
+        // Le callback démarre la partie lorsque le premier bot arrive, ou
+        // rattache les nouveaux bots à la partie déjà en cours.
+        await opts.onBotsJoined(room.id);
+      } else {
+        const state = gameStates.get(room.id);
+        for (const bot of attached) {
+          state?.pgIds.add(bot.id);
+          if (state && !state.playerData.has(bot.id)) {
+            state.playerData.set(bot.id, { score: 0, answers: [] });
+          }
+        }
+      }
+      changed ||= attached.length > 0;
+    }
+
+    if (changed) io.to(room.id).emit("lobby_update");
+  }
+
+  emitPublicRoomsUpdated(io);
+}
+
+export function startPublicBotTraffic(opts: Parameters<typeof rebalancePublicBotRooms>[0]) {
+  let running = false;
+  const run = async () => {
+    if (running) return;
+    running = true;
+    try {
+      await rebalancePublicBotRooms(opts);
+    } catch (error) {
+      console.error("Public bot traffic rebalance failed", error);
+    } finally {
+      running = false;
+    }
+  };
+
+  void run();
+  const timer = setInterval(() => void run(), 45_000);
+  timer.unref();
+  return () => clearInterval(timer);
 }
 /* -------------------------------------------------------------------------- */

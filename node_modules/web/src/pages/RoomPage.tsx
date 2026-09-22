@@ -65,6 +65,7 @@ type LeaderRow = {
   bits?: number;
   xp?: number;
   experience?: number;
+  inactive?: boolean;
 };
 type SpeedLeader = {
   id: string;
@@ -302,6 +303,8 @@ export default function RoomPage() {
 
   const [lives, setLives] = useState<number>(TEXT_LIVES);
   const livesRef = useRef<number>(TEXT_LIVES);
+  const [totalLives, setTotalLives] = useState<number>(TEXT_LIVES);
+  const totalLivesRef = useRef<number>(TEXT_LIVES);
 
   const mcChoicesRef = useRef<ChoiceLite[] | null>(null);
 
@@ -321,11 +324,9 @@ export default function RoomPage() {
   const displayScoreRef = useRef(0);
   const scoreAnimationRef = useRef<number | null>(null);
   const leaderboardRef = useRef<HTMLOListElement | null>(null);
-  const [keepSelfCentered, setKeepSelfCentered] = useState(false);
   const [isLeaderboardTargetingPaused, setIsLeaderboardTargetingPaused] = useState(false);
   const leaderboardTargetingTimerRef = useRef<number | null>(null);
-  const isProgrammaticLeaderboardScrollRef = useRef(false);
-
+  const leaderboardTargetScrollTopRef = useRef<number | null>(null);
 
   const [roomMeta, setRoomMeta] = useState<RoomMeta | null>(null);
   /* ---- recap des questions reçu en fin de partie ---- */
@@ -560,8 +561,15 @@ export default function RoomPage() {
       transports: ["websocket", "polling"],
     });
     setSocket(s);
-    s.once("joined", (payload: { qcmUsesLeft?: number }) => {
+    s.once("joined", (payload: { qcmUsesLeft?: number; answerAttempts?: number }) => {
       if (typeof payload.qcmUsesLeft === "number") setQcmUsesLeft(Math.max(0, payload.qcmUsesLeft));
+      if (typeof payload.answerAttempts === "number") {
+        const nextLives = Math.max(1, payload.answerAttempts);
+        setTotalLives(nextLives);
+        totalLivesRef.current = nextLives;
+        setLives(nextLives);
+        livesRef.current = nextLives;
+      }
       finishLoading();
     });
     s.once("connect_error", finishLoading);
@@ -591,7 +599,7 @@ export default function RoomPage() {
 
     s.on(
       "game_countdown",
-      (p: { seconds?: number; endsAt?: number; serverNow?: number; leaderboard?: LeaderRow[]; qcmUsesLeft?: number }) => {
+      (p: { seconds?: number; endsAt?: number; serverNow?: number; leaderboard?: LeaderRow[]; qcmUsesLeft?: number; answerAttempts?: number }) => {
         const nextSkew =
           typeof p.serverNow === "number" ? p.serverNow - Date.now() : skew;
         if (typeof p.serverNow === "number") setSkew(nextSkew);
@@ -627,6 +635,10 @@ export default function RoomPage() {
         setAnswerMode(null);
         setChoicesRevealed(false);
         if (typeof p.qcmUsesLeft === "number") setQcmUsesLeft(Math.max(0, p.qcmUsesLeft));
+        if (typeof p.answerAttempts === "number") {
+          totalLivesRef.current = Math.max(1, p.answerAttempts);
+          setTotalLives(totalLivesRef.current);
+        }
         setFinalRecap(null);
         setFinalQuestionSnapshots([]);
         setPending(false);
@@ -645,6 +657,7 @@ export default function RoomPage() {
         question: QuestionLite;
         dynamicQuestionDisplay?: boolean;
         manualQuestionLaunch?: boolean;
+        textLives?: number;
         serverNow?: number;
       }) => {
         const nextSkew = typeof p.serverNow === "number" ? p.serverNow - Date.now() : skew;
@@ -694,10 +707,11 @@ export default function RoomPage() {
         setFeedbackPoints(null);
         setAnswerMode(null);
         setChoicesRevealed(false);
-        setLives(() => {
-          livesRef.current = TEXT_LIVES;
-          return TEXT_LIVES;
-        });
+        const nextRoundLives = typeof p.textLives === "number" ? Math.max(1, p.textLives) : totalLivesRef.current;
+        totalLivesRef.current = nextRoundLives;
+        livesRef.current = nextRoundLives;
+        setTotalLives(nextRoundLives);
+        setLives(nextRoundLives);
         setFinalRecap(null);
         setFinalQuestionSnapshots((prev) => {
           const next = Array.from({ length: p.total }, (_, idx) => prev[idx] ?? null);
@@ -1514,53 +1528,36 @@ export default function RoomPage() {
     } as React.CSSProperties;
   }, [rankLabel]);
 
-  useLayoutEffect(() => {
+  const centerLeaderboardOnSelf = () => {
     const list = leaderboardRef.current;
-    if (!list || isLeaderboardTargetingPaused) return;
-    isProgrammaticLeaderboardScrollRef.current = true;
-    if (!keepSelfCentered) {
-      list.scrollTop = 0;
-    } else {
-      const selfCell = list.querySelector<HTMLElement>('[data-self="true"]');
-      if (selfCell) {
-        const centeredTop = selfCell.offsetTop - (list.clientHeight - selfCell.offsetHeight) / 2;
-        list.scrollTop = Math.max(0, centeredTop);
-      }
-    }
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        isProgrammaticLeaderboardScrollRef.current = false;
-      });
-    });
-  }, [keepSelfCentered, isLeaderboardTargetingPaused, leaderboard, selfIndex]);
+    const selfCell = list?.querySelector<HTMLElement>('[data-self="true"]');
+    if (!list || !selfCell || isLeaderboardTargetingPaused) return;
+    const listRect = list.getBoundingClientRect();
+    const selfRect = selfCell.getBoundingClientRect();
+    const centeredTop = list.scrollTop + selfRect.top + selfRect.height / 2 - listRect.top - listRect.height / 2;
+    const nextScrollTop = Math.min(Math.max(0, centeredTop), Math.max(0, list.scrollHeight - list.clientHeight));
+    if (Math.abs(list.scrollTop - nextScrollTop) <= 1) return;
+    leaderboardTargetScrollTopRef.current = nextScrollTop;
+    list.scrollTop = nextScrollTop;
+  };
 
-  useEffect(() => {
-    return () => {
-      if (leaderboardTargetingTimerRef.current !== null) {
-        window.clearTimeout(leaderboardTargetingTimerRef.current);
-      }
-    };
+  useLayoutEffect(centerLeaderboardOnSelf, [isLeaderboardTargetingPaused, leaderboard, selfIndex]);
+
+  useEffect(() => () => {
+    if (leaderboardTargetingTimerRef.current !== null) window.clearTimeout(leaderboardTargetingTimerRef.current);
   }, []);
 
   const pauseLeaderboardTargeting = () => {
-    if (isProgrammaticLeaderboardScrollRef.current) return;
+    const list = leaderboardRef.current;
+    const targetScrollTop = leaderboardTargetScrollTopRef.current;
+    if (list && targetScrollTop !== null && Math.abs(list.scrollTop - targetScrollTop) <= 1) return;
+    leaderboardTargetScrollTopRef.current = null;
     setIsLeaderboardTargetingPaused(true);
-    if (leaderboardTargetingTimerRef.current !== null) {
-      window.clearTimeout(leaderboardTargetingTimerRef.current);
-    }
+    if (leaderboardTargetingTimerRef.current !== null) window.clearTimeout(leaderboardTargetingTimerRef.current);
     leaderboardTargetingTimerRef.current = window.setTimeout(() => {
       setIsLeaderboardTargetingPaused(false);
       leaderboardTargetingTimerRef.current = null;
     }, 5000);
-  };
-
-  const toggleLeaderboardTarget = () => {
-    if (leaderboardTargetingTimerRef.current !== null) {
-      window.clearTimeout(leaderboardTargetingTimerRef.current);
-      leaderboardTargetingTimerRef.current = null;
-    }
-    setIsLeaderboardTargetingPaused(false);
-    setKeepSelfCentered((centered) => !centered);
   };
 
   // ✅ rendu unique d'une ligne leaderboard (cellule + badge)
@@ -1666,9 +1663,12 @@ return (
                 {leaderboard.map((row, playerIndex) => {
                   const isSelf = (selfId && row.id === selfId) || (!!selfName && row.name.toLowerCase() === selfName.toLowerCase());
                   const status = phase === "final" ? null : answeredByPg[row.id];
-                  return <li className={isSelf ? "is-self" : ""} key={row.id} data-self={isSelf ? "true" : undefined}>
+                  return <li className={[isSelf ? "is-self" : "", row.inactive ? "is-inactive" : ""].filter(Boolean).join(" ")} key={row.id} data-self={isSelf ? "true" : undefined}>
                     <span className="room-player-rank">{String(playerIndex + 1).padStart(2, "0")}</span>
-                    <button className="room-player-avatar" type="button" onClick={() => handlePlayerProfile(row)} disabled={!row.playerId}>{row.img ? <img src={row.img} alt="" /> : row.name.slice(0, 1)}</button>
+                    <span className="room-player-avatar-wrap">
+                      <button className="room-player-avatar" type="button" onClick={() => handlePlayerProfile(row)} disabled={!row.playerId}>{row.img ? <img src={row.img} alt="" /> : row.name.slice(0, 1)}</button>
+                      {row.inactive && <span className="room-player-inactive" aria-label="Joueur inactif"><i>Z</i><i>Z</i><i>Z</i></span>}
+                    </span>
                     <span className="room-player-name">{row.name}</span><strong className="room-player-score">{row.score.toLocaleString("fr-FR")}</strong>
                     <span className={`room-player-status ${status ?? "pending"}`} aria-label={status === "correct" ? "Bonne réponse" : status === "correct-mc" ? "Bonne réponse QCM" : status === "wrong" ? "Mauvaise réponse" : "Pas encore répondu"}>{status === "correct" ? "✓" : status === "correct-mc" ? "⚡︎" : status === "wrong" ? "✕" : ""}</span>
                   </li>;
@@ -1772,7 +1772,7 @@ return (
                   : <SpeedCountdown timing={speedTiming} label={index + 1 >= total ? "Résultats de la partie dans" : "Prochaine question dans"} />}
               </section>
             ) : normalizedQuestion ? (
-              <RoomQuestionPanel questionIndex={index} questionTotal={total} remainingSeconds={remaining ?? 0} timerDurationMs={roundDuration ?? 0} theme={normalizedQuestion.theme} questionText={normalizedQuestion.text} lives={lives} totalLives={TEXT_LIVES} choices={showChoices ? choicesForPanel : null} selectedChoiceId={selected} correctChoiceId={correctId} isPlaying={isPlaying} isTimerRunning={isTimerRunning} inputRef={inputRef} textAnswer={textAnswer} textLocked={textLocked} animateQuestionText={dynamicQuestionDisplay} questionRevealStartedAtMs={questionRevealStartedAtMs} qcmUsesLeft={qcmUsesLeft} onTextChange={setTextAnswer} onSubmitText={sendText} onShowChoices={showMultipleChoice} onSelectChoice={answerByChoice} feedback={feedbackText} feedbackWasCorrect={feedbackWasCorrect} feedbackCorrectLabel={feedbackCorrectLabel} feedbackPoints={feedbackPoints} feedbackResponseMs={feedbackResponseMs} wrongTextAnswers={wrongTextAnswers} />
+              <RoomQuestionPanel questionIndex={index} questionTotal={total} remainingSeconds={remaining ?? 0} timerDurationMs={roundDuration ?? 0} theme={normalizedQuestion.theme} questionText={normalizedQuestion.text} lives={lives} totalLives={totalLives} choices={showChoices ? choicesForPanel : null} selectedChoiceId={selected} correctChoiceId={correctId} isPlaying={isPlaying} isTimerRunning={isTimerRunning} inputRef={inputRef} textAnswer={textAnswer} textLocked={textLocked} animateQuestionText={dynamicQuestionDisplay} questionRevealStartedAtMs={questionRevealStartedAtMs} qcmUsesLeft={qcmUsesLeft} onTextChange={setTextAnswer} onSubmitText={sendText} onShowChoices={showMultipleChoice} onSelectChoice={answerByChoice} feedback={feedbackText} feedbackWasCorrect={feedbackWasCorrect} feedbackCorrectLabel={feedbackCorrectLabel} feedbackPoints={feedbackPoints} feedbackResponseMs={feedbackResponseMs} wrongTextAnswers={wrongTextAnswers} />
             ) : <div className="room-question-loading">Question en cours…</div>}
             {isRoomOwner && manualQuestionLaunch && manualNextAvailable && <button className="room-owner-action" type="button" onClick={launchNextQuestion} disabled={manualNextPending}>{manualNextPending ? "Lancement…" : "Question suivante"}<Play size={15} /></button>}
           </main>

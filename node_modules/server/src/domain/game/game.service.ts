@@ -13,6 +13,7 @@ import { awardBitsForGame } from "./bits-reward.service";
 import { awardXpForGame } from "./xp-reward.service";
 import { emitPublicRoomsUpdated } from "../room/public-room-events";
 import { CFG } from "../../config";
+import { completeQuestionForPlayers, isPlayerInactive } from "./player-activity.service";
 
 type Leaderboard = Awaited<ReturnType<typeof lb_service.buildLeaderboard>>;
 
@@ -139,7 +140,12 @@ export async function startGameForRoom(
 ) {
 
   const running = gameStates.get(roomId);
-  if (running && !running.finished) {
+  // L'état terminé conserve le timer d'affichage du classement final. Toute
+  // tentative de démarrage (joueur, propriétaire ou bot) doit attendre que ce
+  // timer supprime l'état avant de lancer la partie suivante.
+  if (running?.finished) return;
+
+  if (running) {
     const refreshed = await room_service.ensurePlayerGamesForRoom(clients, running.gameId, io, prisma, roomId);
     const missing = refreshed.filter((pg) => !running.pgIds.has(pg.id));
     for (const pg of refreshed) { running.pgIds.add(pg.id); }
@@ -289,6 +295,11 @@ export async function startGameForRoom(
     qcmUsesByPgId: new Map<string, number>(),
     pgIds: new Set(pgs.map((p) => p.id)),
     attemptsThisRound: new Map<string, number>(),
+    attemptedThisRound: new Set<string>(),
+    answerAttempts: Math.min(4, Math.max(1, room.answerAttempts ?? CFG.TEXT_LIVES)),
+    qcmUses: Math.min(QUESTION_COUNT, Math.max(0, room.qcmUses ?? CFG.ROOM_QCM_USES)),
+    isPublicRoom: room.visibility === "PUBLIC",
+    difficulty: difficultyPercent,
     roundMs: room.roundMs ?? Number(process.env.ROUND_MS || 10000),
     dynamicQuestionDisplay: room.dynamicQuestionDisplay ?? true,
     manualQuestionLaunch,
@@ -318,7 +329,8 @@ export async function startGameForRoom(
       seconds: countdownSeconds,
       endsAt,
       serverNow: Date.now(),
-      qcmUsesLeft: CFG.ROOM_QCM_USES,
+      qcmUsesLeft: st.qcmUses,
+      answerAttempts: st.answerAttempts,
     });
     emitPublicRoomsUpdated(io);
     st.timer = setTimeout(() => {
@@ -421,13 +433,13 @@ async function startRound(
   const myUid = st.roundUid;
 
   const ROUND_MS = st.roundMs ?? Number(process.env.ROUND_MS || 10000);
-  const TEXT_LIVES = Number(process.env.TEXT_LIVES || 3);
 
   st.waitingForManualLaunch = false;
   st.countdownEndsAt = undefined;
   st.answeredThisRound.clear();
   st.answeredOrderText = [];
   st.attemptsThisRound = new Map();
+  st.attemptedThisRound = new Set();
   st.mcModePgIds = new Set<string>();
   st.roundStartMs = Date.now();
   st.endsAt = st.roundStartMs + ROUND_MS;
@@ -440,7 +452,7 @@ async function startRound(
     endsAt: st.endsAt,
     durationMs: ROUND_MS,
     question: { id: q.id, text: q.text, img: q.img, theme: q.theme, difficulty: q.difficulty },
-    textLives: TEXT_LIVES,
+    textLives: st.answerAttempts,
     dynamicQuestionDisplay: st.dynamicQuestionDisplay,
     manualQuestionLaunch: st.manualQuestionLaunch,
     speedBonusEnabled: st.speedBonusEnabled,
@@ -480,6 +492,15 @@ async function endRound(
   const q = st.questions[st.index]; if (!q) return;
 
   const leaderboard = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
+  const playerIdByPgId = new Map(leaderboard.map((player) => [player.id, player.playerId]));
+  const attemptedPlayerIds = new Set(
+    Array.from(st.attemptedThisRound, (playerGameId) => playerIdByPgId.get(playerGameId)).filter(Boolean) as string[],
+  );
+  const playerIds = leaderboard.map((player) => player.playerId).filter(Boolean);
+  completeQuestionForPlayers(st.roomId, playerIds, attemptedPlayerIds);
+  leaderboard.forEach((player) => {
+    player.inactive = isPlayerInactive(st.roomId, player.playerId);
+  });
   const correct = q.choices.find(c => c.isCorrect) || null;
   const leaderboardById = new Map(leaderboard.map((player) => [player.id, player]));
   const speedLeaders = Array.from(st.playerData.entries())
@@ -647,13 +668,18 @@ async function finalizeGameAfterReveal(
   // Rééquilibrage des bots pour la prochaine partie (sur la même room)
   const room = await prisma.room.findUnique({
     where: { id: st.roomId },
-    select: { id: true, visibility: true, popularity: true },
+    select: { id: true, visibility: true, popularity: true, difficulty: true },
   });
   if (room && room.visibility === "PUBLIC") {
     const xMax = Number(process.env.BOT_TRAFFIC_MAX || 100); // affluence max globale
     await rebalanceBotsAfterGame({
       prisma, io, clients,
-      room: { id: room.id, visibility: room.visibility, traffic: room.popularity ?? 5 },
+      room: {
+        id: room.id,
+        visibility: room.visibility,
+        traffic: room.popularity ?? 5,
+        difficulty: room.difficulty,
+      },
       gameId: nextGameId, // ✅ on passe le vrai gameId cible
       xMax,
     });

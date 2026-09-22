@@ -89,7 +89,13 @@ export default function Home() {
   }, []);
 
   useLayoutEffect(() => {
-    if (landingLoaded) return;
+    if (landingLoaded) {
+      // A full-screen page may have left an inline scroll lock behind while the
+      // route was changing. The revealed landing page must always be scrollable.
+      document.documentElement.style.removeProperty("overflow");
+      document.body.style.removeProperty("overflow");
+      return;
+    }
     const previousRootOverflow = document.documentElement.style.overflow;
     const previousBodyOverflow = document.body.style.overflow;
     document.documentElement.style.overflow = "hidden";
@@ -276,7 +282,7 @@ export default function Home() {
           <div className="private-actions-grid">
             <div className="private-action private-join" onClick={(event) => { if (!(event.target as HTMLElement).closest("button")) privateCodeInputsRef.current[privateCode.findIndex((character) => !character) === -1 ? 3 : privateCode.findIndex((character) => !character)]?.focus(); }}>
               <div className="private-access-copy"><span className="private-icon"><LockKeyhole size={18} /></span><div><h3>Rejoindre une partie</h3><p>{privateError || "Entrez le code du salon"}</p></div></div>
-              <form className="private-code-form" onSubmit={joinPrivateRoom}><div className="private-code-entry"><div className="private-code-slots" role="group" aria-label="Code de la partie privée">{privateCode.map((character, index) => <input className="private-code-slot" key={index} ref={(element) => { privateCodeInputsRef.current[index] = element; }} value={character} onChange={(event) => updatePrivateCode(index, event.target.value)} onPaste={(event) => { event.preventDefault(); updatePrivateCode(index, event.clipboardData.getData("text")); }} onKeyDown={(event) => handlePrivateKeyDown(event, index)} aria-label={`Caractère ${index + 1} du code`} maxLength={1} autoCapitalize="characters" />)}</div><button type="submit" disabled={joiningPrivate || privateCode.some((character) => !character)} aria-label="Rejoindre la partie privée"><ArrowRight size={19} /></button></div></form>
+              <form className="private-code-form" onSubmit={joinPrivateRoom}><div className="private-code-entry"><div className={`private-code-slots${privateCode.every(Boolean) ? " is-complete" : ""}`} role="group" aria-label="Code de la partie privée">{privateCode.map((character, index) => <input className="private-code-slot" key={index} ref={(element) => { privateCodeInputsRef.current[index] = element; }} value={character} onChange={(event) => updatePrivateCode(index, event.target.value)} onPaste={(event) => { event.preventDefault(); updatePrivateCode(index, event.clipboardData.getData("text")); }} onKeyDown={(event) => handlePrivateKeyDown(event, index)} aria-label={`Caractère ${index + 1} du code`} maxLength={1} autoCapitalize="characters" />)}</div><button type="submit" disabled={joiningPrivate || privateCode.some((character) => !character)} aria-label="Rejoindre la partie privée"><ArrowRight size={19} /></button></div></form>
             </div>
             <Link className="private-action private-create" to="/rooms/new"><div className="private-access-copy"><span className="private-icon"><Plus size={19} /></span><div><h3>Créer une partie</h3><p>Configurez votre salon privé</p></div></div><span className="private-action-arrow"><ArrowRight size={19} /></span></Link>
           </div>

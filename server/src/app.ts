@@ -27,6 +27,8 @@ import { notificationRoutes } from "./routes/notifications";
 import { adminRoutes } from "./routes/admin";
 import { Theme, RoomVisibility } from "@prisma/client";
 import { toProfileUrl } from "./domain/media/media.service";
+import { startPublicBotTraffic } from "./domain/bot/traffic";
+import { startGameForRoom } from "./domain/game/game.service";
 
 /* ---------------- runtime maps ---------------- */
 const clients = new Map<string, Client>();
@@ -133,7 +135,7 @@ async function main() {
           visibility: RoomVisibility.PRIVATE,
         },
         orderBy: { createdAt: "desc" },
-        select: { id: true, code: true },
+        select: { id: true, code: true, name: true },
       });
 
       return reply.send({ room });
@@ -161,6 +163,8 @@ async function main() {
         difficulty:    z.number().int().min(0).max(100).optional(),
         bannedThemes:  z.array(z.nativeEnum(Theme)).optional(),
         questionCount: z.number().int().min(1).max(50).optional(),
+        answerAttempts: z.number().int().min(1).max(4).optional(),
+        qcmUses: z.number().int().min(0).max(50).optional(),
         roundSeconds:  z.number().int().min(10).max(30).optional(),
         dynamicQuestionDisplay: z.boolean().optional(),
         manualQuestionLaunch: z.boolean().optional(),
@@ -174,6 +178,8 @@ async function main() {
         difficulty = 45,
         bannedThemes = [],
         questionCount = 10,
+        answerAttempts = 3,
+        qcmUses = 3,
         roundSeconds = 10,
         dynamicQuestionDisplay = true,
         manualQuestionLaunch = false,
@@ -202,7 +208,7 @@ async function main() {
           visibility: RoomVisibility.PRIVATE,
         },
         orderBy: { createdAt: "desc" },
-        select: { id: true, code: true },
+        select: { id: true, code: true, name: true },
       });
       if (visibility === RoomVisibility.PRIVATE && existingOwnedRoom) {
         return reply.code(200).send({ result: existingOwnedRoom, existing: true });
@@ -226,12 +232,14 @@ async function main() {
             difficulty,
             bannedThemes,
             questionCount,
+            answerAttempts,
+            qcmUses: Math.min(qcmUses, questionCount),
             roundMs,
             dynamicQuestionDisplay,
             visibility,
             image: roomImage,
           },
-          select: { id: true },
+          select: { id: true, name: true },
         });
 
         await tx.$executeRaw`UPDATE "Room" SET "manualQuestionLaunch" = ${manualQuestionLaunch}, "speedBonusEnabled" = ${speedBonusEnabled} WHERE "id" = ${room.id}`;
@@ -262,6 +270,8 @@ async function main() {
         ownerId: true,
         difficulty: true,
         questionCount: true,
+        answerAttempts: true,
+        qcmUses: true,
         roundMs: true,
         bannedThemes: true,
         dynamicQuestionDisplay: true,
@@ -310,7 +320,7 @@ async function main() {
       const id = (req.params as any).id as string;
       const room = await prisma.room.findUnique({
         where: { id },
-        select: { id: true, ownerId: true, status: true },
+        select: { id: true, ownerId: true, status: true, questionCount: true, qcmUses: true },
       });
       if (!room) return reply.code(404).send({ error: "Room not found" });
       if (room.status === "CLOSED") return reply.code(410).send({ error: "Room closed" });
@@ -320,6 +330,8 @@ async function main() {
         difficulty: z.number().int().min(0).max(100).optional(),
         bannedThemes: z.array(z.nativeEnum(Theme)).optional(),
         questionCount: z.number().int().min(1).max(50).optional(),
+        answerAttempts: z.number().int().min(1).max(4).optional(),
+        qcmUses: z.number().int().min(0).max(50).optional(),
         roundSeconds: z.number().int().min(10).max(30).optional(),
         dynamicQuestionDisplay: z.boolean().optional(),
         manualQuestionLaunch: z.boolean().optional(),
@@ -332,12 +344,20 @@ async function main() {
         difficulty?: number;
         bannedThemes?: Theme[];
         questionCount?: number;
+        answerAttempts?: number;
+        qcmUses?: number;
         roundMs?: number;
         dynamicQuestionDisplay?: boolean;
       } = {};
       if (typeof parsed.data.difficulty === "number") data.difficulty = parsed.data.difficulty;
       if (parsed.data.bannedThemes) data.bannedThemes = parsed.data.bannedThemes;
       if (typeof parsed.data.questionCount === "number") data.questionCount = parsed.data.questionCount;
+      if (typeof parsed.data.answerAttempts === "number") data.answerAttempts = parsed.data.answerAttempts;
+      if (typeof parsed.data.qcmUses === "number" || typeof parsed.data.questionCount === "number") {
+        const nextQuestionCount = parsed.data.questionCount ?? room.questionCount;
+        const requestedQcmUses = parsed.data.qcmUses ?? room.qcmUses;
+        data.qcmUses = Math.min(requestedQcmUses, nextQuestionCount);
+      }
       if (typeof parsed.data.roundSeconds === "number") data.roundMs = parsed.data.roundSeconds * 1000;
       if (typeof parsed.data.dynamicQuestionDisplay === "boolean") {
         data.dynamicQuestionDisplay = parsed.data.dynamicQuestionDisplay;
@@ -354,6 +374,8 @@ async function main() {
           difficulty: true,
           bannedThemes: true,
           questionCount: true,
+          answerAttempts: true,
+          qcmUses: true,
           roundMs: true,
           dynamicQuestionDisplay: true,
         },
@@ -652,6 +674,16 @@ async function main() {
 
   // Register all socket handlers
   registerSocketHandlers(io, clients, gameStates);
+
+  const stopPublicBotTraffic = startPublicBotTraffic({
+    prisma,
+    io,
+    clients,
+    gameStates,
+    xMax: Number(process.env.BOT_TRAFFIC_MAX || 100),
+    onBotsJoined: (roomId) => startGameForRoom(clients, gameStates, io, prisma, roomId),
+  });
+  app.addHook("onClose", async () => stopPublicBotTraffic());
 
   await app.listen({ port: CFG.PORT, host: "localhost" });
   app.log.info(`HTTP + WS on http://localhost:${CFG.PORT}`);

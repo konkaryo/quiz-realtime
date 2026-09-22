@@ -8,6 +8,12 @@ import * as lb_service from "../game/leaderboard.service";
 import { computeSpeedBonus, computeTextAnswerPoints } from "../player/scoring.service";
 
 const THEME_FALLBACK = "CULTURE_GENERALE" as Theme;
+const botInactivityByRoom = new Map<string, number>();
+const botRoomByPlayerId = new Map<string, string>();
+
+export function releaseBotFromRoom(playerId: string, roomId: string) {
+  if (botRoomByPlayerId.get(playerId) === roomId) botRoomByPlayerId.delete(playerId);
+}
 
 /* -------------------------------------------------------------------------- */
 /* Utils                                                                       */
@@ -17,20 +23,29 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-/** délai dépendant de la vitesse mais borné pour arriver avant la fin */
-function delayFromSpeed(speed: number, roundMs: number, remainingMs: number): number {
-  const base = 0.15 + (1 - speed / 100) * 0.65;
-  const jitter = 0.9 + Math.random() * 0.2; // ±10%
+/** Délai humain : la lecture dynamique ralentit, et un QCM arrive plus tard. */
+function delayFromSpeed(
+  speed: number,
+  roundMs: number,
+  remainingMs: number,
+  mode: "text" | "mc",
+  dynamicQuestionDisplay: boolean,
+  questionLength: number,
+  hasImage: boolean,
+): number {
+  const readingDelay = dynamicQuestionDisplay ? 0.12 : 0;
+  const qcmDelay = mode === "mc" ? 0.1 : 0;
+  const lengthDelay = Math.max(-0.08, Math.min(0.14, (questionLength - 100) / 600));
+  const imageDelay = hasImage ? -0.09 : 0;
+  const base = Math.max(
+    0.12,
+    Math.min(0.92, 0.15 + (1 - speed / 100) * 0.58 + readingDelay + qcmDelay + lengthDelay + imageDelay),
+  );
+  const jitter = 0.85 + Math.random() * 0.3; // ±15%
   const raw = Math.floor(roundMs * base * jitter);
   const SAFETY = 150;
   const maxAllowed = Math.max(120, (remainingMs ?? roundMs) - SAFETY);
   return Math.min(Math.max(120, raw), maxAllowed);
-}
-
-/** choix “cosmétique” du mode quand on veut varier (uniquement pour les mauvaises réponses) */
-function botChooseMode(skill: number): "text" | "mc" {
-  const pText = 0.35 + (skill / 100) * 0.45; // 35..80%
-  return Math.random() < pText ? "text" : "mc";
 }
 
 /** retrouve le client factice d’un PG */
@@ -76,6 +91,7 @@ function drawRandom(): number {
 const ensurePlayerData = (st: GameState, pgId: string) => {
   if (!st.playerData) st.playerData = new Map();
   let entry = st.playerData.get(pgId);
+  st.attemptedThisRound.add(pgId);
   if (!entry) {
     entry = { score: 0, answers: [] as StoredAnswer[] };
     st.playerData.set(pgId, entry);
@@ -99,19 +115,25 @@ export async function ensureBotsForRoomIfPublic(
   prisma: PrismaClient,
   io: Server,
   clients: Map<string, Client>,
-  room: { id: string; visibility: "PUBLIC" | "PRIVATE"; roundMs?: number },
+  room: { id: string; visibility: "PUBLIC" | "PRIVATE"; roundMs?: number; difficulty?: number },
   game: WithId,
   botCount = Number(process.env.DEFAULT_BOT_COUNT || 10)
 ) {
-  if (room.visibility !== "PUBLIC" || botCount <= 0) return [] as { id: string }[];
+  if (room.visibility !== "PUBLIC" || botCount <= 0) return [] as { id: string; playerId: string }[];
 
+  const roomDifficulty = Math.max(0, Math.min(100, room.difficulty ?? 50));
   const bots = await prisma.$queryRaw<{ id: string }[]>`
-    SELECT "id" FROM "Bot" ORDER BY random() LIMIT ${botCount};
+    SELECT "id"
+    FROM "Bot"
+    ORDER BY ABS(COALESCE("averageSkill", 50) - ${roomDifficulty}) + random() * 30
+    LIMIT ${Math.max(10, botCount * 4)};
   `;
 
-  const attached: { id: string }[] = [];
+  const attached: { id: string; playerId: string }[] = [];
+  const connectedPlayerIds = new Set(Array.from(clients.values(), (client) => client.playerId));
 
   for (const b of bots) {
+    if (attached.length >= botCount) break;
     const bot = await prisma.bot.findUnique({
       where: { id: b.id },
       select: { id: true, name: true, playerId: true },
@@ -128,12 +150,21 @@ export async function ensureBotsForRoomIfPublic(
       playerId = player.id;
     }
 
-    const pg = await prisma.playerGame.upsert({
-      where: { gameId_playerId: { gameId: game.id, playerId } },
-      update: {},
-      create: { gameId: game.id, playerId, score: 0 },
-      select: { id: true },
-    });
+    if (connectedPlayerIds.has(playerId) || botRoomByPlayerId.has(playerId)) continue;
+    botRoomByPlayerId.set(playerId, room.id);
+
+    let pg: { id: string };
+    try {
+      pg = await prisma.playerGame.upsert({
+        where: { gameId_playerId: { gameId: game.id, playerId } },
+        update: {},
+        create: { gameId: game.id, playerId, score: 0 },
+        select: { id: true },
+      });
+    } catch (error) {
+      releaseBotFromRoom(playerId, room.id);
+      throw error;
+    }
 
     const fakeSocketId = `bot:${bot.id}:${game.id}`;
     clients.set(fakeSocketId, {
@@ -145,7 +176,8 @@ export async function ensureBotsForRoomIfPublic(
       name: bot.name,
     });
 
-    attached.push({ id: pg.id });
+    connectedPlayerIds.add(playerId);
+    attached.push({ id: pg.id, playerId });
   }
 
   io.to(room.id).emit("lobby_update");
@@ -175,6 +207,52 @@ export async function scheduleBotAnswers(
   const correctChoice = q.choices.find((c) => c.isCorrect) || null;
   const wrongChoices  = q.choices.filter((c) => !c.isCorrect);
 
+  // Les bots peuvent quitter ou rejoindre un salon public entre deux questions,
+  // y compris pendant une partie. Un playerId reste toutefois attaché à un seul
+  // salon à la fois grâce au filtrage réalisé dans ensureBotsForRoomIfPublic.
+  if (st.isPublicRoom) {
+    let membershipChanged = false;
+    const connectedBots = Array.from(clients.entries()).filter(
+      ([socketId, client]) => socketId.startsWith("bot:") && client.roomId === st.roomId,
+    );
+    for (const [socketId, client] of connectedBots) {
+      if (Math.random() >= 0.012) continue;
+      clients.delete(socketId);
+      releaseBotFromRoom(client.playerId, st.roomId);
+      st.pgIds.delete(client.playerGameId);
+      st.playerData.delete(client.playerGameId);
+      st.qcmUsesByPgId.delete(client.playerGameId);
+      membershipChanged = true;
+    }
+
+    const targetBotCount = Math.max(0, Number(process.env.DEFAULT_BOT_COUNT || 10));
+    const currentBotCount = Array.from(clients.entries()).filter(
+      ([socketId, client]) => socketId.startsWith("bot:") && client.roomId === st.roomId,
+    ).length;
+    if (currentBotCount < targetBotCount && Math.random() < 0.12) {
+      const attached = await ensureBotsForRoomIfPublic(
+        prisma,
+        io,
+        clients,
+        { id: st.roomId, visibility: "PUBLIC", roundMs: st.roundMs, difficulty: st.difficulty },
+        { id: st.gameId },
+        1,
+      );
+      for (const bot of attached) {
+        st.pgIds.add(bot.id);
+        ensurePlayerData(st, bot.id);
+        membershipChanged = true;
+      }
+    }
+
+    if (membershipChanged) {
+      const leaderboard = await lb_service.buildLeaderboard(prisma, st.gameId, Array.from(st.pgIds), st);
+      io.to(st.roomId).emit("leaderboard_update", { leaderboard });
+      io.to(st.roomId).emit("lobby_update");
+      emitPublicRoomsUpdated(io);
+    }
+  }
+
   // ⬇️ on récupère aussi playerId et le nom du joueur
   const pgs = await prisma.playerGame.findMany({
     where: { id: { in: Array.from(st.pgIds) } },
@@ -194,33 +272,63 @@ export async function scheduleBotAnswers(
   for (const pg of pgs) {
     if (!pg.player.isBot) continue;
 
+    const inactivityKey = `${st.roomId}:${pg.playerId}`;
+    const inactiveRoundsRemaining = botInactivityByRoom.get(inactivityKey) ?? 0;
+    if (inactiveRoundsRemaining > 0) {
+      if (inactiveRoundsRemaining === 1) botInactivityByRoom.delete(inactivityKey);
+      else botInactivityByRoom.set(inactivityKey, inactiveRoundsRemaining - 1);
+      continue;
+    }
+    // De rares pauses de 4 à 15 questions reproduisent une absence temporaire,
+    // indépendamment de la capacité du bot à trouver la bonne réponse.
+    if (Math.random() < 0.035) {
+      botInactivityByRoom.set(inactivityKey, 3 + Math.floor(Math.random() * 12));
+      continue;
+    }
+
     const speed = pg.player.bot?.speed ?? 50;
     const themeKey = (q.theme ?? THEME_FALLBACK) as any;
     const skill =
       pg.player.bot?.skills.find((s) => s.theme === themeKey)?.value ??
       pg.player.bot?.skills.find((s) => s.theme === THEME_FALLBACK)?.value ?? 30;
 
-    // --- Nouvelle logique : probas successives ---
+    // Une mauvaise connaissance produit le plus souvent une absence de réponse.
+    // Les mauvaises tentatives texte restent rares et un QCM n'est envisagé que
+    // si le bot dispose encore d'un usage pour cette partie.
     const diffNum = Math.max(1, Math.min(4, Number(q.difficulty ?? 2)));
     const textParams = TEXT_SUCCESS_PARAMS[diffNum];
     const mcParams = MC_SUCCESS_PARAMS[diffNum];
     const textSuccessProb = computeSuccessProbability(skill, textParams);
     const textDraw = drawRandom();
 
-    let outcome: "text-correct" | "mc-correct" | "wrong";
+    const qcmUsed = st.qcmUsesByPgId.get(pg.id) ?? 0;
+    const canUseQcm = qcmUsed < st.qcmUses;
+    let outcome: "text-correct" | "mc-correct" | "mc-wrong" | "text-wrong" | "no-attempt";
     if (textDraw < textSuccessProb) {
       outcome = "text-correct";
-    } else {
+    } else if (canUseQcm && Math.random() < 0.28) {
       const mcSuccessProb = computeSuccessProbability(skill, mcParams);
-      const mcDraw = drawRandom();
-      outcome = mcDraw < mcSuccessProb ? "mc-correct" : "wrong";
+      outcome = drawRandom() < mcSuccessProb ? "mc-correct" : "mc-wrong";
+    } else if (Math.random() < 0.12) {
+      outcome = "text-wrong";
+    } else {
+      outcome = "no-attempt";
     }
-    // ---------------------------------------------------------------
+    if (outcome === "no-attempt") continue;
 
     const now = Date.now();
     const remainingMs = Math.max(0, (st.endsAt ?? now) - now);
     const totalRoundMs = st.roundMs ?? Number(process.env.ROUND_MS || 10000);
-    const delay = delayFromSpeed(speed, totalRoundMs, remainingMs);
+    const plannedMode = outcome.startsWith("mc-") ? "mc" : "text";
+    const delay = delayFromSpeed(
+      speed,
+      totalRoundMs,
+      remainingMs,
+      plannedMode,
+      st.dynamicQuestionDisplay,
+      q.text.length,
+      Boolean(q.img),
+    );
 
     setTimeout(async () => {
       try {
@@ -250,6 +358,9 @@ export async function scheduleBotAnswers(
         if (outcome === "mc-correct") {
           // QCM correct
           if (!correctChoice) return;
+          const used = st.qcmUsesByPgId.get(pg.id) ?? 0;
+          if (used >= st.qcmUses) return;
+          st.qcmUsesByPgId.set(pg.id, used + 1);
           st.answeredThisRound.add(pg.id);
           await botApplyMcScoring(prisma, st, client, q.id, correctChoice.label, true, responseMs);
         } else if (outcome === "text-correct") {
@@ -268,22 +379,19 @@ export async function scheduleBotAnswers(
           }
           st.answeredThisRound.add(pg.id);
           await botApplyTextScoring(prisma, st, client, { id: q.id }, rawText, true, responseMs, speedBonus);
+        } else if (outcome === "mc-wrong") {
+          const used = st.qcmUsesByPgId.get(pg.id) ?? 0;
+          if (used >= st.qcmUses) return;
+          const wrong = wrongChoices.length ? pick(wrongChoices) : correctChoice;
+          if (!wrong) return;
+          st.qcmUsesByPgId.set(pg.id, used + 1);
+          st.answeredThisRound.add(pg.id);
+          await botApplyMcScoring(prisma, st, client, q.id, wrong.label, false, responseMs);
         } else {
-          // Mauvaise réponse : varier (texte/QCM) pondéré par skill
-          const mode = botChooseMode(skill);
-          if (mode === "mc") {
-            const wrong = wrongChoices.length ? pick(wrongChoices) : correctChoice; // fallback
-            if (!wrong) return;
-            st.answeredThisRound.add(pg.id);
-            await botApplyMcScoring(prisma, st, client, q.id, wrong.label, false, responseMs);
-          } else {
-            answerMode = "text";
-            const rawText =
-              wrongChoices.length ? pick(wrongChoices).label :
-              correctChoice ? correctChoice.label + "?" : "???";
-            st.answeredThisRound.add(pg.id);
-            await botApplyTextScoring(prisma, st, client, { id: q.id }, rawText, false, responseMs, 0);
-          }
+          answerMode = "text";
+          const rawText = wrongChoices.length ? pick(wrongChoices).label : correctChoice ? `${correctChoice.label}?` : "???";
+          st.answeredThisRound.add(pg.id);
+          await botApplyTextScoring(prisma, st, client, { id: q.id }, rawText, false, responseMs, 0);
         }
 
         // 🔒 enregistré une seule fois dans answeredOrder (dédupliqué)

@@ -110,7 +110,7 @@
 .synapz-landing .rooms-state.error { color: #ff8994; border-color: rgba(255,115,128,.35); }
 .synapz-landing .room-grid { display: grid; grid-auto-flow: column; grid-auto-columns: clamp(224px,20vw,252px); justify-content: safe center; gap: 32px; overflow-x: auto; padding: 24px 18px 32px; scroll-snap-type: x proximity; scrollbar-color: #444650 transparent; scrollbar-width: thin; }
 .synapz-landing .room-card { min-height: 320px; position: relative; overflow: hidden; display: flex; flex-direction: column; padding: 9px; border: 1px solid #343640; border-radius: 14px; color: #f7f7fa; background: #191a20; font: inherit; text-align: left; cursor: pointer; scroll-snap-align: start; transition: box-shadow .35s, border-color .35s; }
-.synapz-landing .room-card:hover, .synapz-landing .room-card:focus-visible { border-color: #50535e; outline: none; box-shadow: 0 24px 60px rgba(0,0,0,.24); }
+.synapz-landing .room-card:hover, .synapz-landing .room-card:focus-visible { border-color: #6257f5; outline: none; box-shadow: 0 24px 60px rgba(0,0,0,.24); }
 .synapz-landing .room-visual { width: 100%; height: 55px; flex: 0 0 55px; position: relative; display: grid; place-items: center; overflow: hidden; border-radius: 11px; background: #111221; }
 .synapz-landing .room-fibers { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .synapz-landing .room-visual-mark { position: relative; z-index: 1; width: 33px; height: 33px; object-fit: contain; filter: drop-shadow(0 4px 16px rgba(255,255,255,.08)); }
@@ -130,7 +130,7 @@
 
 .synapz-landing .private-actions-grid { margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .synapz-landing .private-action { min-width: 0; min-height: 92px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 18px; border: 1px solid #2b2d35; border-radius: 22px; color: #f7f7fa; background: #191a20; transition: border-color .25s, box-shadow .25s, transform .25s; }
-.synapz-landing .private-action:hover { border-color: #474a56; box-shadow: 0 18px 44px rgba(0,0,0,.2); }
+.synapz-landing .private-action:hover, .synapz-landing .private-action:focus-visible { border-color: #6257f5; outline: none; box-shadow: 0 18px 44px rgba(0,0,0,.2); }
 .synapz-landing .private-join { cursor: pointer; }
 .synapz-landing .private-access-copy { min-width: 0; display: flex; align-items: center; gap: 13px; }
 .synapz-landing .private-icon { width: 46px; height: 46px; flex: 0 0 46px; display: grid; place-items: center; border-radius: 13px; color: #b7b7c0; background: #24262d; }
@@ -141,6 +141,7 @@
 .synapz-landing .private-code-slots { display: grid; grid-template-columns: repeat(4,38px); gap: 6px; pointer-events: none; }
 .synapz-landing .private-code-slot { width: 38px; height: 42px; padding: 0; border: 1px solid #383a44; border-radius: 11px; outline: 0; color: #fff; background: #202127; font-size: 14px; font-weight: 720; text-align: center; text-transform: uppercase; caret-color: #8178f4; }
 .synapz-landing .private-code-slot:focus { transform: translateY(-1px); border-color: #8178f4; box-shadow: 0 0 0 3px rgba(98,87,245,.18); }
+.synapz-landing .private-code-slots.is-complete .private-code-slot { border-color: #6257f5; }
 .synapz-landing .private-code-entry button, .synapz-landing .private-action-arrow { width: 42px; height: 42px; flex: 0 0 42px; padding: 0; border: 1px solid rgba(255,255,255,.04); border-radius: 11px; color: #6f7079; background: #26272d; transition: color .2s, background .2s, border-color .2s, opacity .2s; }
 .synapz-landing .private-code-entry button { display: grid; place-items: center; cursor: pointer; }
 .synapz-landing .private-code-entry button:disabled { opacity: 1; cursor: not-allowed; }

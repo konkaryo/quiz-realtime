@@ -17,6 +17,7 @@ import { launchNextManualRound, startGameForRoom } from "../domain/game/game.ser
 import { getChallengeByDate } from "../domain/daily/daily.service";
 import { getDailyChallengeRankingSnapshot, getMonthlyDailyRankingSnapshot, getDailyQuestionResponseStats, recordDailyQuestionResults, recordDailyScoreIfFirst, updateDailyQuestionAverageScores } from "../domain/daily/daily-score.service";
 import { ensurePlayerForUser } from "../domain/player/player.service";
+import { markPlayerActive } from "../domain/game/player-activity.service";
 
 type RacePlayerState = {
   userId: string;
@@ -38,6 +39,8 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
   const ongoingRaces = new Map<string, { players: Map<string, RacePlayerState>; lastTickMs: number }>();
   const raceMembershipBySocket = new Map<string, { raceId: string; userId: string }>();
   const pendingRoomCleanup = new Map<string, NodeJS.Timeout>();
+  const lobbyBans = new Map<string, number>();
+  const LOBBY_BAN_DURATION_MS = 5 * 60 * 1000;
   const RACE_MAX_POINTS = 10_000;
   const RACE_TICK_MS = 1_000;
   const ENERGY_DECAY_PER_SECOND = 0.98;
@@ -100,6 +103,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     img?: string | null,
   ) => {
     const entry = ensurePlayerData(st, pgId, name, img);
+    st.attemptedThisRound.add(pgId);
     entry.answers.push({ ...answer, points: gained });
     if (gained > 0) {
       entry.score += gained;
@@ -921,7 +925,23 @@ socket.on(
         }
         else { return socket.emit("error_msg", "Missing roomId or code."); }
 
-        const game = await getOrCreateCurrentGame(prisma, room.id);
+        const banKey = `${room.id}:${userId}`;
+        const bannedUntil = lobbyBans.get(banKey) ?? 0;
+        if (bannedUntil > Date.now()) {
+          socket.emit("removed_from_room", { roomId: room.id, bannedUntil, reason: "temporarily-banned" });
+          return socket.emit("error_msg", "Vous ne pouvez pas rejoindre ce salon pendant 5 minutes.");
+        }
+        if (bannedUntil) lobbyBans.delete(banKey);
+
+        const roomState = gameStates.get(room.id);
+        const game = roomState?.finished
+          ? (await prisma.game.findFirst({
+              where: { roomId: room.id, state: "lobby" },
+              orderBy: { createdAt: "desc" },
+            })) ?? await getOrCreateCurrentGame(prisma, room.id)
+          : roomState
+            ? await prisma.game.findUniqueOrThrow({ where: { id: roomState.gameId } })
+            : await getOrCreateCurrentGame(prisma, room.id);
 
         const user = await prisma.user.findUnique({
           where: { id: userId },
@@ -962,10 +982,10 @@ socket.on(
         }
         io.to(room.id).emit("lobby_update");
         emitPublicRoomsUpdated(io);
-        const st = gameStates.get(room.id);
+        const st = roomState;
         const qcmUsesLeft = Math.max(
           0,
-          CFG.ROOM_QCM_USES - (st?.qcmUsesByPgId.get(pg.id) ?? 0),
+          (st?.qcmUses ?? CFG.ROOM_QCM_USES) - (st?.qcmUsesByPgId.get(pg.id) ?? 0),
         );
         socket.emit("joined", {
           playerGameId: pg.id,
@@ -974,6 +994,7 @@ socket.on(
           roomId: room.id,
           isOwner: room.ownerId === user.id,
           qcmUsesLeft,
+          answerAttempts: st?.answerAttempts ?? CFG.TEXT_LIVES,
         });
 
         if (st && st.gameId === game.id) {
@@ -1018,13 +1039,14 @@ socket.on(
               .catch((err) => console.error("[leaderboard join_game]", err));
         }
 
-        const alreadyRunning = !!(st && !st.finished);
         const shouldAutoStart = room.visibility === "PUBLIC";
 
         // `Game.state` may still be "running" after a server restart even though
         // the in-memory state (the only state that can drive rounds/timers) is
         // gone. Public rooms must start whenever no live GameState exists.
-        if (!alreadyRunning && shouldAutoStart) {
+        // A finished state still owns the final-leaderboard timer: joining it
+        // must never shorten that wait or start the following game early.
+        if (!st && shouldAutoStart) {
           try {
             await startGameForRoom(clients, gameStates, io, prisma, room.id);
           } catch (e: any) {
@@ -1036,6 +1058,42 @@ socket.on(
       } catch (err) {
         console.error("[join_game] error", err);
         socket.emit("error_msg", "Server error.");
+      }
+    });
+
+    /* ---------------- remove_lobby_player ---------------- */
+    socket.on("remove_lobby_player", async (p: { playerId?: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
+      const roomId = socket.data.roomId as string | undefined;
+      const userId = socket.data.userId as string | undefined;
+      const playerId = p?.playerId;
+      if (!roomId || !userId) return ack?.({ ok: false, reason: "not-in-room" });
+      if (!playerId) return ack?.({ ok: false, reason: "missing-player" });
+
+      try {
+        const room = await prisma.room.findUnique({ where: { id: roomId }, select: { ownerId: true } });
+        if (!room) return ack?.({ ok: false, reason: "room-not-found" });
+        if (room.ownerId !== userId) return ack?.({ ok: false, reason: "forbidden" });
+
+        const targets = clientsInRoom(clients, roomId).filter((client) => client.playerId === playerId);
+        if (!targets.length) return ack?.({ ok: false, reason: "player-not-found" });
+
+        const bannedUntil = Date.now() + LOBBY_BAN_DURATION_MS;
+        for (const target of targets) {
+          const targetSocket = io.sockets.sockets.get(target.socketId);
+          const targetUserId = targetSocket?.data.userId as string | undefined;
+          if (!targetSocket || !targetUserId || targetUserId === room.ownerId) continue;
+          lobbyBans.set(`${roomId}:${targetUserId}`, bannedUntil);
+          targetSocket.emit("removed_from_room", { roomId, bannedUntil, reason: "removed-by-owner" });
+          await handleRoomClientDeparture(target.socketId);
+          delete targetSocket.data.roomId;
+          delete targetSocket.data.gameId;
+        }
+
+        io.to(roomId).emit("lobby_update");
+        return ack?.({ ok: true });
+      } catch (error) {
+        console.error("[remove_lobby_player] error", error);
+        return ack?.({ ok: false, reason: "server-error" });
       }
     });
 
@@ -1228,6 +1286,8 @@ socket.on(
         const responseMs = Math.max(0, Date.now() - start);
 
         st.answeredThisRound.add(client.playerGameId);
+        st.attemptedThisRound.add(client.playerGameId);
+        markPlayerActive(st.roomId, client.playerId);
         st.answeredOrder.push(client.playerGameId);
 
         const gained = choice.isCorrect ? CFG.MC_ANSWER_POINTS_GAIN : 0;
@@ -1297,7 +1357,7 @@ socket.on(
         const responseMs = Math.max(0, Date.now() - start);
 
         const prevAttempts = st.attemptsThisRound.get(client.playerGameId) || 0;
-        if (prevAttempts >= CFG.TEXT_LIVES) {
+        if (prevAttempts >= st.answerAttempts) {
           return ack?.({ ok: false, reason: "no-lives" });
         }
 
@@ -1305,14 +1365,17 @@ socket.on(
         const userNorm = norm(raw);
         if (!userNorm) return ack?.({ ok: false, reason: "empty" });
 
+        st.attemptedThisRound.add(client.playerGameId);
+        markPlayerActive(st.roomId, client.playerId);
+
         const result = classifyTextAnswer(raw, q.acceptedNorms, q.exactNorms);
         const correct = result === "correct";
 
         // Gestion des tentatives
         let attempts = prevAttempts + 1;
-        const livesLeft = CFG.TEXT_LIVES - attempts;
+        const livesLeft = st.answerAttempts - attempts;
 
-        if (correct || attempts >= CFG.TEXT_LIVES) {
+        if (correct || attempts >= st.answerAttempts) {
           st.answeredThisRound.add(client.playerGameId);
           st.answeredOrder.push(client.playerGameId);
         } else {
@@ -1390,7 +1453,7 @@ socket.on(
       if (!client) return ack?.({ ok: false, reason: "no-client", qcmUsesLeft: 0 });
 
       const used = st.qcmUsesByPgId.get(client.playerGameId) ?? 0;
-      const usesLeft = Math.max(0, CFG.ROOM_QCM_USES - used);
+      const usesLeft = Math.max(0, st.qcmUses - used);
       if (usesLeft <= 0) {
         return ack?.({ ok: false, reason: "qcm-limit", qcmUsesLeft: 0 });
       }

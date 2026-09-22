@@ -2,12 +2,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
-import { Check, LogOut, Play, Save, Settings, Trash2 } from "lucide-react";
+import { Copy, LogOut, MoreHorizontal, Play, RefreshCw, Save, Settings, Trash2, UserMinus, Users } from "lucide-react";
 import { getLevelFromExperience } from "../utils/experience";
 import ShapeGrid from "../components/ShapeGrid";
 import { PreviewSlider } from "../components/react-bits/preview-slider";
 import { PreviewMultiSelect, PreviewSelect } from "../components/react-bits/preview-select";
 import { PreviewSwitch } from "../components/react-bits/preview-switch";
+import { useToast } from "../hooks/use-toast";
 import "./RoomPage.css";
 import "./CreateRoomPage.css";
 
@@ -38,7 +39,7 @@ const DIFFICULTY_OPTIONS = [
 ] as const;
 
 type ThemeKey = (typeof THEME_OPTIONS)[number]["key"];
-type PanelKey = "settings" | "code" | "lobby";
+type PanelKey = "settings" | "lobby";
 
 type NavItem = {
   key: PanelKey;
@@ -66,6 +67,7 @@ type CreateRoomResponse = {
   result?: {
     id?: string;
     code?: string;
+    name?: string | null;
   };
 };
 
@@ -78,6 +80,7 @@ type LobbyPlayer = {
 
 type LobbyStatePayload = {
   ok: boolean;
+  room?: { id?: string; name?: string | null };
   owner?: { userId?: string | null; playerId?: string | null };
   players?: LobbyPlayer[];
 };
@@ -86,9 +89,12 @@ type RoomSettingsResponse = {
   room?: {
     id?: string;
     code?: string | null;
+    name?: string | null;
     ownerId?: string | null;
     difficulty?: number;
     questionCount?: number;
+    answerAttempts?: number;
+    qcmUses?: number;
     roundMs?: number;
     bannedThemes?: ThemeKey[];
     dynamicQuestionDisplay?: boolean;
@@ -115,6 +121,8 @@ type RoomClosedPayload = {
 type SavedRoomSettings = {
   difficulty: number;
   questionCount: number;
+  answerAttempts: number;
+  qcmUses: number;
   questionDuration: number;
   dynamicQuestionDisplay: boolean;
   manualQuestionLaunch: boolean;
@@ -130,6 +138,8 @@ function areRoomSettingsEqual(left: SavedRoomSettings, right: SavedRoomSettings)
   return (
     left.difficulty === right.difficulty &&
     left.questionCount === right.questionCount &&
+    left.answerAttempts === right.answerAttempts &&
+    left.qcmUses === right.qcmUses &&
     left.questionDuration === right.questionDuration &&
     left.dynamicQuestionDisplay === right.dynamicQuestionDisplay &&
     left.manualQuestionLaunch === right.manualQuestionLaunch &&
@@ -182,26 +192,9 @@ function closestDifficulty(value: number) {
   ).value;
 }
 
-function CopyIcon(props: { className?: string }) {
-  return (
-    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.8" />
-      <rect x="4" y="4" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" opacity="0.55" />
-    </svg>
-  );
-}
-function RefreshIcon(props: { className?: string }) {
-
-  return (
-    <svg className={props.className} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-      <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 export default function CreateRoomPageCorrected() {
   const nav = useNavigate();
+  const { toast } = useToast();
 
   const { roomId: routeRoomId } = useParams<{ roomId?: string }>();
   const [loading, setLoading] = useState(false);
@@ -209,8 +202,11 @@ export default function CreateRoomPageCorrected() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [refreshingCode, setRefreshingCode] = useState(false);
   const [difficulty, setDifficulty] = useState(45);
   const [questionCount, setQuestionCount] = useState(10);
+  const [answerAttempts, setAnswerAttempts] = useState(3);
+  const [qcmUses, setQcmUses] = useState(3);
   const [questionDuration, setQuestionDuration] = useState(20);
   const [maxPlayers, setMaxPlayers] = useState(50);
   const [dynamicQuestionDisplay, setDynamicQuestionDisplay] = useState(true);
@@ -218,6 +214,8 @@ export default function CreateRoomPageCorrected() {
   const [speedBonusEnabled, setSpeedBonusEnabled] = useState(true);
   const [selectedThemes, setSelectedThemes] = useState<ThemeKey[]>(THEME_OPTIONS.map((theme) => theme.key));
   const [code, setCode] = useState("");
+  const [isCodeHidden, setIsCodeHidden] = useState(false);
+  const [roomName, setRoomName] = useState("");
   const [activePanel, setActivePanel] = useState<PanelKey>("settings");
   const [createdRoomId, setCreatedRoomId] = useState<string | null>(null);
   const [lobbyPlayers, setLobbyPlayers] = useState<LobbyPlayer[]>([]);
@@ -228,16 +226,17 @@ export default function CreateRoomPageCorrected() {
   const [savedSettings, setSavedSettings] = useState<SavedRoomSettings | null>(null);
   const [lobbySocket, setLobbySocket] = useState<Socket | null>(null);
   const [lobbyPlayerPage, setLobbyPlayerPage] = useState(0);
+  const [selectedLobbyPlayerId, setSelectedLobbyPlayerId] = useState<string | null>(null);
+  const [removingPlayerId, setRemovingPlayerId] = useState<string | null>(null);
 
   const copyResetTimeoutRef = useRef<number | null>(null);
 
   const navItems: NavItem[] = useMemo(
     () => [
       { key: "settings", label: "Paramètres" },
-      { key: "code", label: "Code" },
-      { key: "lobby", label: "Lobby" },
+      { key: "lobby", label: roomName || "Salon" },
     ],
-    [],
+    [roomName],
   );
 
   const bannedThemes = useMemo(
@@ -249,13 +248,15 @@ export default function CreateRoomPageCorrected() {
     () => ({
       difficulty,
       questionCount,
+      answerAttempts,
+      qcmUses,
       questionDuration,
       dynamicQuestionDisplay,
       manualQuestionLaunch,
       speedBonusEnabled,
       bannedThemes,
     }),
-    [bannedThemes, difficulty, dynamicQuestionDisplay, manualQuestionLaunch, questionCount, questionDuration, speedBonusEnabled],
+    [answerAttempts, bannedThemes, difficulty, dynamicQuestionDisplay, manualQuestionLaunch, qcmUses, questionCount, questionDuration, speedBonusEnabled],
   );
   const hasUnsavedSettings = savedSettings !== null && !areRoomSettingsEqual(currentSettings, savedSettings);
   const canManageRoom = !createdRoomId || createdByCurrentUser || (!!currentUserId && ownerUserId === currentUserId);
@@ -277,8 +278,21 @@ export default function CreateRoomPageCorrected() {
     setLobbyPlayerPage((page) => Math.min(page, lobbyPlayerPageCount - 1));
   }, [lobbyPlayerPageCount]);
 
+  useEffect(() => {
+    setQcmUses((value) => Math.min(value, questionCount));
+  }, [questionCount]);
+
+  useEffect(() => {
+    if (!selectedLobbyPlayerId) return;
+    const closeMenu = (event: PointerEvent) => {
+      if (!(event.target as HTMLElement).closest("[data-lobby-player-card]")) setSelectedLobbyPlayerId(null);
+    };
+    document.addEventListener("pointerdown", closeMenu);
+    return () => document.removeEventListener("pointerdown", closeMenu);
+  }, [selectedLobbyPlayerId]);
+
   function openPanel(panel: PanelKey) {
-    if ((panel === "code" || panel === "lobby") && !createdRoomId) return;
+    if (panel === "lobby" && !createdRoomId) return;
     setActivePanel(panel);
   }
 
@@ -318,22 +332,6 @@ export default function CreateRoomPageCorrected() {
       cancelled = true;
     };
   }, [nav, routeRoomId]);
-
-
-  useEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
-    const prevHtmlOverflow = html.style.overflow;
-    const prevBodyOverflow = body.style.overflow;
-
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-
-    return () => {
-      html.style.overflow = prevHtmlOverflow;
-      body.style.overflow = prevBodyOverflow;
-    };
-  }, []);
 
   useEffect(() => {
     if (routeRoomId) return;
@@ -381,6 +379,7 @@ export default function CreateRoomPageCorrected() {
     const refreshLobby = () => {
       socket.emit("lobby_state", {}, (res: LobbyStatePayload) => {
         if (!res?.ok) return;
+        if (res.room?.name) setRoomName(res.room.name);
         setLobbyPlayers(res.players ?? []);
         setOwnerPlayerId(res.owner?.playerId ?? null);
         setOwnerUserId(res.owner?.userId ?? null);
@@ -399,6 +398,8 @@ export default function CreateRoomPageCorrected() {
 
       const nextDifficulty = typeof room.difficulty === "number" ? closestDifficulty(room.difficulty) : 45;
       const nextQuestionCount = typeof room.questionCount === "number" ? room.questionCount : 10;
+      const nextAnswerAttempts = typeof room.answerAttempts === "number" ? room.answerAttempts : 3;
+      const nextQcmUses = typeof room.qcmUses === "number" ? Math.min(room.qcmUses, nextQuestionCount) : 3;
       const nextQuestionDuration =
         typeof room.roundMs === "number" ? Math.max(1, Math.round(room.roundMs / 1000)) : 20;
       const nextBannedThemes = Array.isArray(room.bannedThemes)
@@ -413,6 +414,8 @@ export default function CreateRoomPageCorrected() {
 
       setDifficulty(nextDifficulty);
       setQuestionCount(nextQuestionCount);
+      setAnswerAttempts(nextAnswerAttempts);
+      setQcmUses(nextQcmUses);
       setQuestionDuration(nextQuestionDuration);
       setSelectedThemes(
         THEME_OPTIONS.filter((theme) => !nextBannedThemes.includes(theme.key)).map((theme) => theme.key),
@@ -423,6 +426,8 @@ export default function CreateRoomPageCorrected() {
       setSavedSettings({
         difficulty: nextDifficulty,
         questionCount: nextQuestionCount,
+        answerAttempts: nextAnswerAttempts,
+        qcmUses: nextQcmUses,
         questionDuration: nextQuestionDuration,
         dynamicQuestionDisplay: nextDynamicQuestionDisplay,
         manualQuestionLaunch: nextManualQuestionLaunch,
@@ -448,6 +453,19 @@ export default function CreateRoomPageCorrected() {
     socket.on("room_settings_updated", handleSettingsUpdated);
     socket.on("room_code_updated", handleCodeUpdated);
     socket.on("room_closed", handleRoomClosed);
+    socket.on("removed_from_room", (payload: { reason?: "removed-by-owner" | "temporarily-banned"; bannedUntil?: number }) => {
+      const isReconnectAttempt = payload?.reason === "temporarily-banned";
+      nav("/");
+      window.setTimeout(() => {
+        toast({
+          title: isReconnectAttempt ? "Accès temporairement bloqué" : "Vous avez été exclu du salon",
+          description: isReconnectAttempt
+            ? "Vous pourrez rejoindre ce salon dans quelques minutes."
+            : "Le propriétaire vous a retiré de la partie. Vous pourrez revenir dans 5 minutes.",
+          variant: "destructive",
+        });
+      }, 0);
+    });
     socket.on("error_msg", (message: string) => setErr(message));
 
     return () => {
@@ -458,11 +476,12 @@ export default function CreateRoomPageCorrected() {
       socket.off("room_settings_updated", handleSettingsUpdated);
       socket.off("room_code_updated", handleCodeUpdated);
       socket.off("room_closed", handleRoomClosed);
+      socket.off("removed_from_room");
       socket.off("error_msg");
       socket.close();
       setLobbySocket(null);
     };
-  }, [code, createdRoomId, nav]);
+  }, [code, createdRoomId, nav, toast]);
 
   useEffect(() => {
     if (!routeRoomId) return;
@@ -478,11 +497,14 @@ export default function CreateRoomPageCorrected() {
         if (!room?.id) throw new Error("Room introuvable");
 
         setCreatedRoomId(room.id);
+        setRoomName(room.name?.trim() || "Salon privé");
         setOwnerUserId(room.ownerId ?? null);
         setCreatedByCurrentUser(false);
         setCode(room.code ?? "");
         const loadedDifficulty = typeof room.difficulty === "number" ? closestDifficulty(room.difficulty) : 45;
         const loadedQuestionCount = typeof room.questionCount === "number" ? room.questionCount : 10;
+        const loadedAnswerAttempts = typeof room.answerAttempts === "number" ? room.answerAttempts : 3;
+        const loadedQcmUses = typeof room.qcmUses === "number" ? Math.min(room.qcmUses, loadedQuestionCount) : 3;
         const loadedQuestionDuration = typeof room.roundMs === "number" ? Math.max(1, Math.round(room.roundMs / 1000)) : 20;
         const loadedBannedThemes = Array.isArray(room.bannedThemes)
           ? THEME_OPTIONS.filter((theme) => room.bannedThemes?.includes(theme.key)).map((theme) => theme.key)
@@ -496,6 +518,8 @@ export default function CreateRoomPageCorrected() {
 
         setDifficulty(loadedDifficulty);
         setQuestionCount(loadedQuestionCount);
+        setAnswerAttempts(loadedAnswerAttempts);
+        setQcmUses(loadedQcmUses);
         setQuestionDuration(loadedQuestionDuration);
         setSelectedThemes(THEME_OPTIONS.filter((theme) => !loadedBannedThemes.includes(theme.key)).map((theme) => theme.key));
         setDynamicQuestionDisplay(loadedDynamicQuestionDisplay);
@@ -504,6 +528,8 @@ export default function CreateRoomPageCorrected() {
         setSavedSettings({
           difficulty: loadedDifficulty,
           questionCount: loadedQuestionCount,
+          answerAttempts: loadedAnswerAttempts,
+          qcmUses: loadedQcmUses,
           questionDuration: loadedQuestionDuration,
           dynamicQuestionDisplay: loadedDynamicQuestionDisplay,
           manualQuestionLaunch: loadedManualQuestionLaunch,
@@ -547,7 +573,8 @@ export default function CreateRoomPageCorrected() {
   }
 
   async function refreshCodeFromServer() {
-    if (!canManageRoom) return;
+    if (!canManageRoom || refreshingCode) return;
+    setRefreshingCode(true);
     try {
       const data = (await fetchJSON(
         createdRoomId ? `/rooms/${createdRoomId}/code` : "/rooms/new-code",
@@ -560,6 +587,8 @@ export default function CreateRoomPageCorrected() {
       setCode("");
       setCopied(false);
       setErr("Impossible de générer un nouveau code.");
+    } finally {
+      window.setTimeout(() => setRefreshingCode(false), 600);
     }
   }
 
@@ -579,6 +608,8 @@ export default function CreateRoomPageCorrected() {
           code,
           difficulty,
           questionCount,
+          answerAttempts,
+          qcmUses,
           roundSeconds: questionDuration,
           maxPlayers,
           dynamicQuestionDisplay,
@@ -590,10 +621,12 @@ export default function CreateRoomPageCorrected() {
 
       const id = data.result?.id;
       const finalCode = data.result?.code;
+      const finalRoomName = data.result?.name;
 
       if (!id) throw new Error("Création: id manquant");
 
       if (finalCode && finalCode !== code) setCode(finalCode);
+      setRoomName(finalRoomName?.trim() || "Salon privé");
       setCreatedRoomId(id);
       setOwnerUserId(currentUserId);
       setCreatedByCurrentUser(true);
@@ -624,6 +657,8 @@ export default function CreateRoomPageCorrected() {
         body: JSON.stringify({
           difficulty,
           questionCount,
+          answerAttempts,
+          qcmUses,
           roundSeconds: questionDuration,
           dynamicQuestionDisplay,
           manualQuestionLaunch,
@@ -666,6 +701,18 @@ export default function CreateRoomPageCorrected() {
     }
     lobbySocket?.emit("start_game");
   }
+
+  function removeLobbyPlayer(playerId: string) {
+    if (!lobbySocket || !canManageRoom || playerId === ownerPlayerId || removingPlayerId) return;
+    setRemovingPlayerId(playerId);
+    setErr(null);
+    lobbySocket.emit("remove_lobby_player", { playerId }, (response: { ok: boolean; reason?: string }) => {
+      setRemovingPlayerId(null);
+      setSelectedLobbyPlayerId(null);
+      if (!response?.ok) setErr("Impossible de supprimer ce joueur du salon.");
+    });
+  }
+
 
   return (
     <div className="create-room-shell room-game-shell">
@@ -757,16 +804,11 @@ export default function CreateRoomPageCorrected() {
 
       <main className="create-room-layout">
           <aside className="create-room-sidebar">
-            <h1 className="font-brandUpright text-[42px] uppercase leading-[0.95] tracking-[0.01em] text-white drop-shadow-[0_10px_26px_rgba(0,0,0,0.4)] sm:text-[50px]">
-              CRÉER UNE
-              <br />
-              PARTIE PRIVÉE
-            </h1>
 
             <nav className="create-room-steps" aria-label="Progression de la création">
               {navItems.map((item) => {
                 const active = item.key === activePanel;
-                const disabled = (item.key === "code" || item.key === "lobby") && !createdRoomId;
+                const disabled = item.key === "lobby" && !createdRoomId;
 
                 return (
                   <button
@@ -781,7 +823,9 @@ export default function CreateRoomPageCorrected() {
                       disabled ? "is-disabled" : "",
                     ].join(" ")}
                   >
-                    <span className="create-room-step-index">{item.key === "settings" ? (createdRoomId ? <Check size={13} /> : "01") : item.key === "code" ? "02" : "03"}</span>
+                    <span className="create-room-step-index">
+                      {item.key === "settings" ? <Settings size={15} /> : <Users size={15} />}
+                    </span>
                     <span>{item.label}</span>
                   </button>
                 );
@@ -800,7 +844,7 @@ export default function CreateRoomPageCorrected() {
           </aside>
 
           <div className="create-room-content">
-            <div className="create-room-heading"><h2>{activePanel === "settings" ? "Paramètres" : activePanel === "code" ? "Code d’accès" : "Lobby"}</h2></div>
+            {activePanel === "lobby" && <div className="create-room-heading"><h2>{roomName || "Salon privé"}</h2></div>}
             <section className={`create-room-panel${activePanel === "settings" ? " create-room-panel--settings" : activePanel === "lobby" ? " create-room-panel--lobby" : ""}`}>
             {err && (
               <div className="mb-4 rounded-md border border-rose-300/40 bg-rose-950/45 px-4 py-3 text-sm text-rose-100">
@@ -819,6 +863,8 @@ export default function CreateRoomPageCorrected() {
                     <PreviewSelect title="Difficulté" options={DIFFICULTY_OPTIONS.map((option) => ({ value: String(option.value), label: option.label }))} value={String(difficulty)} onChange={(value) => setDifficulty(Number(value))} isDisabled={!canManageRoom} />
                     <PreviewSlider title="Temps de réponse" min={3} max={60} step={1} value={questionDuration} valueUnit="s" onChange={setQuestionDuration} isDisabled={!canManageRoom} />
                     <PreviewMultiSelect title="Thèmes sélectionnés" options={THEME_OPTIONS.map((theme) => ({ value: theme.key, label: theme.label }))} value={selectedThemes} onChange={(value) => setSelectedThemes(value as ThemeKey[])} isDisabled={!canManageRoom} />
+                    <PreviewSlider title="Nombre de vies" min={1} max={4} step={1} value={answerAttempts} onChange={setAnswerAttempts} isDisabled={!canManageRoom} />
+                    <PreviewSlider title="Nombre de QCM possibles" min={0} max={questionCount} step={1} value={qcmUses} displayValue={(value) => value === questionCount ? "Pas de limite" : String(value)} onChange={setQcmUses} isDisabled={!canManageRoom} />
                   </div>
                   <div className="preview-options preview-options--secondary">
                     <PreviewSlider title="Nombre de joueurs" min={1} max={50} step={1} value={maxPlayers} onChange={setMaxPlayers} isDisabled={!canManageRoom} />
@@ -830,54 +876,50 @@ export default function CreateRoomPageCorrected() {
               </div>
             )}
 
-            {activePanel === "code" && (
-              <div id="create-room-panel-code" role="tabpanel" aria-label="Code" className="space-y-4">
-                <div className="mx-auto w-full max-w-[420px] rounded-[8px] border border-white/[0.06] bg-[#191c2c] p-6 text-center">
-                  <p className="font-brandUpright text-[18px] uppercase leading-none tracking-[0.05em] text-white">
-                    Code de la partie
-                  </p>
-                  <div className="mt-5 rounded-md bg-white px-6 py-4 font-mono text-4xl font-black tracking-[0.32em] text-[#0B1229]">
-                    {code || "----"}
-                  </div>
-                  <div className="mt-5 grid grid-cols-2 gap-3 max-sm:grid-cols-1">
-                    <button
-                      type="button"
-                      onClick={refreshCodeFromServer}
-                      disabled={!canManageRoom}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-[6px] bg-white/[0.055] font-inter text-[13px] font-extrabold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      <RefreshIcon className="h-4 w-4" />
-                      Régénérer
-                    </button>
-                    <button
-                      type="button"
-                      onClick={copyCode}
-                      disabled={!code}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-[6px] bg-white/[0.055] font-inter text-[13px] font-extrabold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      <CopyIcon className="h-4 w-4" />
-                      {copied ? "Copié !" : "Copier"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {activePanel === "lobby" && (
               <div id="create-room-panel-lobby" role="tabpanel" aria-label="Lobby">
                 {createdRoomId ? (
                   <div className="create-room-lobby">
+                    <section className="create-room-access" aria-label="Code d’accès au salon">
+                      <div className="create-room-access-controls">
+                        <button type="button" className="create-room-access-code" onClick={() => setIsCodeHidden((hidden) => !hidden)} aria-label={isCodeHidden ? "Afficher le code de la partie" : "Masquer le code de la partie"} aria-pressed={isCodeHidden}>
+                          {(isCodeHidden ? "*".repeat(code.length || 4) : code || "----").split("").map((character, index) => <span key={`${character}-${index}`} aria-hidden="true">{character}</span>)}
+                        </button>
+                        <div className="create-room-access-actions">
+                          <button type="button" onClick={copyCode} disabled={!code} className={`create-room-code-action create-room-code-action--copy${copied ? " is-success" : ""}`} aria-label={copied ? "Code copié" : "Copier le code"} title={copied ? "Code copié" : "Copier le code"}>
+                            <Copy size={15} />
+                          </button>
+                          <button type="button" onClick={refreshCodeFromServer} disabled={!canManageRoom || refreshingCode} className={`create-room-code-action create-room-code-action--refresh${refreshingCode ? " is-refreshing" : ""}`} aria-label="Renouveler le code" title="Renouveler le code">
+                            <RefreshCw size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+                    <div className="create-room-lobby-heading">
+                      <div><span>Joueurs</span><strong>{orderedLobbyPlayers.length}</strong></div>
+                      {orderedLobbyPlayers.length === 0 && <p>En attente de joueurs…</p>}
+                    </div>
                     <div className="room-countdown-players create-room-lobby-players">
-                      {visibleLobbyPlayers.map((player) => (
-                        <div key={player.id}>
+                      {visibleLobbyPlayers.map((player) => {
+                        const canRemovePlayer = canManageRoom && player.id !== ownerPlayerId;
+                        const menuOpen = selectedLobbyPlayerId === player.id;
+                        return (
+                        <div key={player.id} className={canRemovePlayer ? "create-room-player-card--interactive" : undefined} data-lobby-player-card={canRemovePlayer ? "" : undefined} role={canRemovePlayer ? "button" : undefined} tabIndex={canRemovePlayer ? 0 : undefined} aria-expanded={canRemovePlayer ? menuOpen : undefined} onClick={() => canRemovePlayer && setSelectedLobbyPlayerId(menuOpen ? null : player.id)} onKeyDown={(event) => { if (canRemovePlayer && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); setSelectedLobbyPlayerId(menuOpen ? null : player.id); } }}>
                           <img src={player.img || "/img/profiles/0.avif"} alt="" draggable={false} loading="lazy" />
                           <strong>{player.name}</strong>
                           <small>Niveau {getLevelFromExperience(player.experience ?? 0)}</small>
+                          {canRemovePlayer && <span className="create-room-player-menu-trigger" aria-hidden="true"><MoreHorizontal size={14} /></span>}
+                          {menuOpen && (
+                            <div className="create-room-player-menu" role="menu" onClick={(event) => event.stopPropagation()}>
+                              <button type="button" role="menuitem" disabled={removingPlayerId === player.id} onClick={() => removeLobbyPlayer(player.id)}>
+                                <UserMinus size={14} /> {removingPlayerId === player.id ? "Suppression…" : "Supprimer le joueur"}
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      ))}
+                      );})}
                     </div>
-                    {orderedLobbyPlayers.length === 0 ? <p className="text-[13px] font-semibold text-white/40">En attente de joueurs…</p> : null}
-                    <div className="mt-16 flex h-3 items-center justify-center gap-2" aria-label={`Page ${lobbyPlayerPage + 1} sur ${lobbyPlayerPageCount}`}>
+                    <div className="create-room-lobby-pagination" aria-label={`Page ${lobbyPlayerPage + 1} sur ${lobbyPlayerPageCount}`}>
                       {Array.from({ length: lobbyPlayerPageCount }, (_, page) => (
                         <button key={page} type="button" onClick={() => setLobbyPlayerPage(page)} className={`h-2 w-2 rounded-[2px] transition-colors ${page === lobbyPlayerPage ? "bg-[#7C5CFF]" : "bg-slate-500/70"}`} aria-label={`Afficher la page ${page + 1}`} />
                       ))}

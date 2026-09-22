@@ -2,6 +2,7 @@
 import { PrismaClient } from "@prisma/client";
 import type { GameState, StoredAnswer } from "../../types";
 import * as media_service from "../media/media.service";
+import { isPlayerInactive } from "./player-activity.service";
 
 
 type LeaderboardRow = {
@@ -14,6 +15,7 @@ type LeaderboardRow = {
   statsCorrect: number;
   statsCorrectQcm: number;
   statsWrong: number;
+  inactive: boolean;
 };
 
 type PlayerStats = {
@@ -127,6 +129,7 @@ export async function buildLeaderboard(prisma: PrismaClient, gameId: string, onl
           statsCorrect: stats.correct,
           statsCorrectQcm: stats.correctQcm,
           statsWrong: stats.wrong,
+          inactive: isPlayerInactive(st.roomId, meta?.playerId ?? ""),
         } as LeaderboardRow;
       })
       .filter(Boolean) as LeaderboardRow[];
@@ -193,6 +196,7 @@ export async function buildLeaderboard(prisma: PrismaClient, gameId: string, onl
       statsCorrect: stats.correct,
       statsCorrectQcm: stats.correctQcm,
       statsWrong: stats.wrong,
+      inactive: st ? isPlayerInactive(st.roomId, r.playerId) : false,
     };
   });
 

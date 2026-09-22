@@ -36,6 +36,11 @@ export type GameState = {
   roundUid?: string;
   pgIds: Set<string>;
   attemptsThisRound: Map<string, number>;
+  attemptedThisRound: Set<string>;
+  answerAttempts: number;
+  qcmUses: number;
+  isPublicRoom: boolean;
+  difficulty: number;
   roundMs: number;
   dynamicQuestionDisplay: boolean;
   manualQuestionLaunch: boolean;
