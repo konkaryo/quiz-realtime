@@ -21,7 +21,6 @@ import { registerSocketHandlers } from "./sockets/handlers";
 import { clientsInRoom, isCodeValid, genCode, genRoomId, getNextArenaRoomName } from "./domain/room/room.service";
 import { getInterfaceImages, resolveRoomImage } from "./domain/room/room-images";
 import { emitPublicRoomsUpdated } from "./domain/room/public-room-events";
-import { raceRoutes } from "./routes/race";
 import { questionRoutes } from "./routes/questions";
 import { notificationRoutes } from "./routes/notifications";
 import { adminRoutes } from "./routes/admin";
@@ -82,7 +81,6 @@ async function main() {
   await app.register(dailyRoutes({ prisma }), { prefix: "/daily" });
   await app.register(leaderboardRoutes({ prisma }), { prefix: "/leaderboard" });
   await app.register(playerRoutes({ prisma }), { prefix: "/players" });
-  await app.register(raceRoutes({ prisma }), { prefix: "/race" });
   await app.register(questionRoutes({ prisma }), { prefix: "/questions" });
   await app.register(notificationRoutes({ prisma }), { prefix: "/notifications" });
   await app.register(adminRoutes({ prisma }), { prefix: "/admin" });

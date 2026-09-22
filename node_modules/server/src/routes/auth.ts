@@ -21,6 +21,7 @@ import { CFG } from "../config";
 import { sendEmailChangeVerificationEmail, sendResetPasswordEmail, sendVerificationEmail } from "../infra/email";
 import emailTokenService from "../domain/auth/email-token.service";
 import { refreshPlayerStats } from "../domain/player/player-stats.service";
+import { revokeAllUserSessions, revokeOtherUserSessions } from "../domain/auth/session-security.service";
 import { moderateProfileImage } from "../domain/media/avatar-moderation.service";
 
 type Opts = { prisma: PrismaClient };
@@ -66,10 +67,10 @@ async function normalizeAvatar(buffer: Buffer, declaredMime: string) {
     limitInputPixels: 40_000_000,
   });
   const metadata = await image.metadata();
-  const decodedMime = metadata.format === "jpg" ? "image/jpeg" : `image/${metadata.format}`;
+  const decodedMime = metadata.format ? `image/${metadata.format}` : null;
   const normalizedDeclaredMime = declaredMime === "image/jpg" ? "image/jpeg" : declaredMime;
 
-  if (!metadata.width || !metadata.height || !(decodedMime in AVATAR_MIME_TO_EXT)) return null;
+  if (!metadata.width || !metadata.height || !decodedMime || !(decodedMime in AVATAR_MIME_TO_EXT)) return null;
   if (decodedMime !== normalizedDeclaredMime) return null;
 
   return image
@@ -278,6 +279,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
         });
         await emailTokenService.markEmailTokenUsed(tx, emailToken.id);
         await emailTokenService.invalidateActiveEmailTokens(tx, emailToken.userId, EmailTokenType.PASSWORD_RESET);
+        await revokeAllUserSessions(tx, emailToken.userId);
       });
 
       return reply.send({ ok: true, message: "password-reset-success" });
@@ -471,6 +473,7 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       const Body = z.object({
         email: z.string().email(),
         playerName: z.string().trim().min(1).max(64),
+        currentPassword: z.string().optional(),
       });
       const parsed = Body.safeParse(req.body ?? {});
       if (!parsed.success) return reply.code(400).send({ error: "invalid_payload" });
@@ -480,6 +483,17 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       const emailChanged = email !== normEmail(user.email ?? "");
 
       if (emailChanged) {
+        if (!parsed.data.currentPassword) {
+          return reply.code(400).send({ error: "current-password-required" });
+        }
+        if (!user.passwordHash) {
+          return reply.code(400).send({ error: "missing-password" });
+        }
+        const passwordOk = await verifyPassword(user.passwordHash, parsed.data.currentPassword);
+        if (!passwordOk) {
+          return reply.code(401).send({ error: "invalid-current-password" });
+        }
+
         const existing = await prisma.user.findUnique({
           where: { email },
           select: { id: true },
@@ -559,9 +573,12 @@ export const authRoutes = ({ prisma }: Opts): FastifyPluginAsync =>
       if (!passwordOk) return reply.code(401).send({ error: "invalid-current-password" });
 
       const passwordHash = await hashPassword(parsed.data.newPassword);
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { passwordHash },
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: user.id },
+          data: { passwordHash },
+        });
+        await revokeOtherUserSessions(tx, user.id, session.token);
       });
 
       return reply.send({ ok: true });

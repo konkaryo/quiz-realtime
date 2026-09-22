@@ -3,7 +3,6 @@ import { Server } from "socket.io";
 import type { Client, GameState, StoredAnswer } from "../types";
 import { prisma } from "../infra/prisma";
 import { CFG } from "../config";
-import { randomUUID } from "crypto";
 
 // Domain services
 import { getOrCreateCurrentGame, clientsInRoom } from "../domain/room/room.service";
@@ -19,33 +18,14 @@ import { getDailyChallengeRankingSnapshot, getMonthlyDailyRankingSnapshot, getDa
 import { ensurePlayerForUser } from "../domain/player/player.service";
 import { markPlayerActive } from "../domain/game/player-activity.service";
 
-type RacePlayerState = {
-  userId: string;
-  name: string;
-  socketId: string;
-  points: number;
-  speed: number;
-  energy: number;
-  finished: boolean;
-};
-
-
 /**
  * Enregistre tous les handlers Socket.IO.
  * - io.use(...) (auth) est fait dans app.ts pour garder ce fichier centré sur les events.
  */
 export function registerSocketHandlers( io: Server, clients: Map<string, Client>, gameStates: Map<string, GameState> ) {
-  const raceLobby = new Map<string, { socketId: string; userId: string; name: string }>();
-  const ongoingRaces = new Map<string, { players: Map<string, RacePlayerState>; lastTickMs: number }>();
-  const raceMembershipBySocket = new Map<string, { raceId: string; userId: string }>();
   const pendingRoomCleanup = new Map<string, NodeJS.Timeout>();
   const lobbyBans = new Map<string, number>();
   const LOBBY_BAN_DURATION_MS = 5 * 60 * 1000;
-  const RACE_MAX_POINTS = 10_000;
-  const RACE_TICK_MS = 1_000;
-  const ENERGY_DECAY_PER_SECOND = 0.98;
-  const MAX_DELTA_ENERGY = 120;
-  const MIN_DELTA_ENERGY = -40;
 
   const handleRoomClientDeparture = async (socketId: string) => {
     const c = clients.get(socketId);
@@ -110,128 +90,6 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     }
   };
 
-
-  const speedFromEnergy = (energy: number) => {
-    const inner = 0.1 * energy - 3;
-    if (inner <= 0) return 0;
-    const base = Math.sqrt(inner) - 0.5;
-    const raw = 10 * base;
-    if (!Number.isFinite(raw) || raw < 0) return 0;
-    return raw;
-  };
-
-  const applyRaceProgress = (
-    race: { players: Map<string, RacePlayerState>; lastTickMs: number },
-    now = Date.now(),
-  ) => {
-    const deltaSeconds = Math.max(0, (now - race.lastTickMs) / 1000);
-    if (deltaSeconds <= 0) return { changed: false, newlyFinished: [] as RacePlayerState[] };
-
-    race.lastTickMs = now;
-    let changed = false;
-    const newlyFinished: RacePlayerState[] = [];
-
-    const decayFactor = Math.pow(ENERGY_DECAY_PER_SECOND, deltaSeconds);
-
-    for (const [userId, player] of race.players) {
-      if (player.finished) {
-        const normalized: RacePlayerState = {
-          ...player,
-          points: RACE_MAX_POINTS,
-          speed: 0,
-          energy: 0,
-        };
-        if (
-          normalized.points !== player.points ||
-          normalized.speed !== player.speed ||
-          normalized.energy !== player.energy
-        ) {
-          changed = true;
-        }
-        race.players.set(userId, normalized);
-        continue;
-      }
-
-      const decayedEnergy = player.energy * decayFactor;
-      const candidateSpeed = speedFromEnergy(decayedEnergy);
-      const candidatePoints = player.points + candidateSpeed * deltaSeconds;
-      const reachedGoal = candidatePoints >= RACE_MAX_POINTS;
-      const nextPoints = reachedGoal ? RACE_MAX_POINTS : candidatePoints;
-      const nextSpeed = reachedGoal ? 0 : candidateSpeed;
-      const nextEnergy = reachedGoal ? 0 : decayedEnergy;
-
-      if (nextPoints !== player.points || nextSpeed !== player.speed || nextEnergy !== player.energy) {
-        changed = true;
-      }
-
-      const finished = player.finished || reachedGoal;
-      const nextPlayer: RacePlayerState = {
-        ...player,
-        points: nextPoints,
-        speed: nextSpeed,
-        energy: nextEnergy,
-        finished,
-      };
-
-      if (finished && !player.finished) {
-        newlyFinished.push(nextPlayer);
-      }
-
-      race.players.set(userId, {
-        ...nextPlayer,
-      });
-    }
-
-    return { changed, newlyFinished };
-  };
-
-  const notifyRaceFinished = (raceId: string, players: RacePlayerState[]) => {
-    for (const player of players) {
-      io.to(player.socketId).emit("race_finished", {
-        raceId,
-        points: Math.round(player.points),
-      });
-    }
-  };
-
-  const emitRaceLobbyUpdate = () => {
-    io.to("race_lobby").emit("race_lobby_update", {
-      players: Array.from(raceLobby.values()).map(({ userId, name }) => ({ id: userId, name })),
-    });
-  };
-
-  const emitRaceLeaderboard = (raceId: string, skipProgress = false) => {
-    const race = ongoingRaces.get(raceId);
-    if (!race) return;
-
-    if (!skipProgress) {
-      const { newlyFinished } = applyRaceProgress(race);
-      if (newlyFinished.length) notifyRaceFinished(raceId, newlyFinished);
-    }
-
-    const players = Array.from(race.players.values())
-      .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
-      .map((p) => ({
-        id: p.userId,
-        name: p.name,
-        points: Math.round(p.points),
-        speed: Number.isFinite(p.speed) ? Number(p.speed.toFixed(1)) : 0,
-      }));
-
-    io.to(`race:${raceId}`).emit("race_leaderboard", { players });
-  };
-
-  setInterval(() => {
-    const now = Date.now();
-
-    for (const [raceId, race] of ongoingRaces) {
-      const { changed, newlyFinished } = applyRaceProgress(race, now);
-      if (newlyFinished.length) notifyRaceFinished(raceId, newlyFinished);
-      if (changed) {
-        emitRaceLeaderboard(raceId, true);
-      }
-    }
-  }, RACE_TICK_MS);
   // Daily challenge sessions are scoped to a single socket (solo mode)
   type DailySession = {
     date: string;
@@ -439,151 +297,6 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
   io.on("connection", (socket) => {
     socket.emit("welcome", { id: socket.id });
   
-    socket.on("race_lobby_join", async (_p: unknown, ack?: (res: { ok: boolean; reason?: string; players?: { id: string; name: string }[] }) => void) => {
-      try {
-        const userId = socket.data.userId as string | undefined;
-        if (!userId) return ack?.({ ok: false, reason: "unauthorized" });
-
-        const user = await prisma.user.findUnique({ where: { id: userId }, select: { displayName: true } });
-        const name = user?.displayName || "Joueur";
-
-        raceLobby.set(socket.id, { socketId: socket.id, userId, name });
-        socket.join("race_lobby");
-        emitRaceLobbyUpdate();
-        ack?.({ ok: true, players: Array.from(raceLobby.values()).map(({ userId: id, name: n }) => ({ id, name: n })) });
-      } catch (err) {
-        console.error("[race_lobby_join]", err);
-        ack?.({ ok: false, reason: "server-error" });
-      }
-    });
-
-    socket.on("race_lobby_start", (_p: unknown, ack?: (res: { ok: boolean; reason?: string; raceId?: string }) => void) => {
-      if (!raceLobby.has(socket.id)) {
-        return ack?.({ ok: false, reason: "not-in-lobby" });
-      }
-      const raceId = randomUUID();
-      const players = Array.from(raceLobby.values()).map((p) => ({
-        userId: p.userId,
-        name: p.name,
-        socketId: p.socketId,
-        points: 0,
-        speed: 0,
-        energy: 0,
-        finished: false,
-      }));
-      ongoingRaces.set(raceId, { players: new Map(players.map((p) => [p.userId, p])), lastTickMs: Date.now() });
-      io.to("race_lobby").emit("race_lobby_started", { raceId, startedBy: raceLobby.get(socket.id)?.userId ?? null });
-      ack?.({ ok: true, raceId });
-    });
-
-    socket.on(
-      "race_join",
-      (
-        payload: { raceId?: string },
-        ack?: (res: { ok: boolean; reason?: string; players?: { id: string; name: string; points: number; speed: number }[] }) => void,
-      ) => {
-        const raceId = (payload?.raceId || "").trim();
-        const userId = socket.data.userId as string | undefined;
-        if (!raceId) return ack?.({ ok: false, reason: "invalid-race" });
-        if (!userId) return ack?.({ ok: false, reason: "unauthorized" });
-
-        const race = ongoingRaces.get(raceId);
-        if (!race) return ack?.({ ok: false, reason: "not-found" });
-
-        const { newlyFinished } = applyRaceProgress(race);
-        if (newlyFinished.length) notifyRaceFinished(raceId, newlyFinished);
-
-        const knownPlayer = race.players.get(userId);
-        const lobbyPlayer = raceLobby.get(socket.id);
-
-        const entry: RacePlayerState = {
-          userId,
-          name: knownPlayer?.name ?? lobbyPlayer?.name ?? "Joueur",
-          socketId: socket.id,
-          points: knownPlayer?.points ?? 0,
-          energy: knownPlayer?.energy ?? 0,
-          speed: knownPlayer?.speed ?? speedFromEnergy(knownPlayer?.energy ?? 0),
-          finished: knownPlayer?.finished ?? false,
-        };
-
-        socket.join(`race:${raceId}`);
-        raceMembershipBySocket.set(socket.id, { raceId, userId });
-        race.players.set(userId, entry);
-
-        emitRaceLeaderboard(raceId);
-        ack?.({ ok: true, players: Array.from(race.players.values()).map((p) => ({ id: p.userId, name: p.name, points: p.points, speed: p.speed })) });
-      },
-    );
-
-    socket.on(
-      "race_progress",
-      (payload: { raceId?: string; deltaEnergy?: number }) => {
-        const raceId = (payload?.raceId || "").trim();
-        const userId = socket.data.userId as string | undefined;
-        if (!raceId || !userId) return;
-
-        const race = ongoingRaces.get(raceId);
-        if (!race) return;
-
-        const now = Date.now();
-        const { newlyFinished } = applyRaceProgress(race, now);
-        if (newlyFinished.length) notifyRaceFinished(raceId, newlyFinished);
-
-        const current = race.players.get(userId);
-        const lobbyPlayer = raceLobby.get(socket.id);
-        const currentEntry: RacePlayerState = current ?? {
-          userId,
-          name: lobbyPlayer?.name ?? "Joueur",
-          socketId: socket.id,
-          points: 0,
-          speed: 0,
-          energy: 0,
-          finished: false,
-        };
-
-        if (currentEntry.finished) {
-          race.players.set(userId, { ...currentEntry, socketId: socket.id, speed: 0, energy: 0 });
-          return;
-        }
-
-        const deltaEnergyRaw = Number(payload?.deltaEnergy ?? 0);
-        const deltaEnergy = Number.isFinite(deltaEnergyRaw)
-          ? Math.max(MIN_DELTA_ENERGY, Math.min(MAX_DELTA_ENERGY, deltaEnergyRaw))
-          : 0;
-
-        const updatedEnergy = Math.max(0, currentEntry.energy + deltaEnergy);
-        const nextSpeed = speedFromEnergy(updatedEnergy);
-
-        const next: RacePlayerState = {
-          ...currentEntry,
-          socketId: socket.id,
-          speed: nextSpeed,
-          energy: updatedEnergy,
-          finished: false,
-        };
-
-        race.players.set(userId, next);
-      },
-    );
-
-    socket.on("disconnect", () => {
-      if (raceLobby.has(socket.id)) {
-        raceLobby.delete(socket.id);
-        emitRaceLobbyUpdate();
-      }
-    });
-
-      const raceMembership = raceMembershipBySocket.get(socket.id);
-      if (raceMembership) {
-        const { raceId, userId } = raceMembership;
-        raceMembershipBySocket.delete(socket.id);
-        const race = ongoingRaces.get(raceId);
-        if (race) {
-          race.players.delete(userId);
-          emitRaceLeaderboard(raceId);
-        }
-      }
-
     /* ---------------- DAILY CHALLENGE (solo) ---------------- */
     socket.on("join_daily", async (p: { date: string }, ack?: (res: { ok: boolean; reason?: string }) => void) => {
       const date = (p?.date || "").trim();

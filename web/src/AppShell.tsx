@@ -325,7 +325,6 @@ export default function AppShell() {
   const isRoomRoute = location.pathname.startsWith("/room/");
   const isCreateRoomRoute = location.pathname === "/rooms/new" || /^\/rooms\/[^/]+\/lobby$/.test(location.pathname);
   const isAccountRoute = location.pathname === "/me/account";
-  const isTestRoute = location.pathname === "/test";
   const isLandingRoute = location.pathname === "/";
   const isGuest = !user || Boolean(user?.guest);
   const isAdmin = user?.role === "ADMIN";
@@ -1074,11 +1073,11 @@ export default function AppShell() {
           alignItems: "center",
           gap: 16,
           padding: "0 16px",
-          background: isTestRoute ? "transparent" : "#212539",
+          background: "#212539",
           zIndex: 60,
           color: "#e5e7eb",
-          boxShadow: isTestRoute ? "none" : "0 10px 30px rgba(0,0,0,.55)",
-          borderBottom: isTestRoute ? "none" : "1px solid rgba(255,255,255,.06)",
+          boxShadow: "0 10px 30px rgba(0,0,0,.55)",
+          borderBottom: "1px solid rgba(255,255,255,.06)",
         }}
       >
         {/* Left: logo → renvoie à la home */}
@@ -1094,8 +1093,6 @@ export default function AppShell() {
             }}
           />
         </Link>
-        {!isTestRoute && (
-          <>
 
         {/* Center: nav (sans le bouton Accueil) */}
         <nav
@@ -1802,47 +1799,14 @@ export default function AppShell() {
             </>
           )}
         </div>
-          </>
-        )}
-        {isTestRoute && (
-          <Link
-            to="/me/account"
-            aria-label="Ouvrir les paramètres du compte"
-            title={user?.displayName || "Compte"}
-            style={{
-              display: "block",
-              width: 32,
-              height: 32,
-              marginLeft: "auto",
-              overflow: "hidden",
-              borderRadius: 8,
-              background: "#0f172a",
-              flexShrink: 0,
-            }}
-          >
-            <img
-              src={avatarUrl}
-              alt=""
-              onError={(event) => {
-                event.currentTarget.src = "/img/profiles/0.avif";
-              }}
-              style={{
-                display: "block",
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          </Link>
-        )}
       </header>
 
       {/* ---- Page content ---- */}
       <main
         style={{
           flex: 1,
-          paddingTop: isTestRoute || isLandingRoute || isRoomRoute || isCreateRoomRoute || isAccountRoute ? 0 : HEADER_H,
-          minHeight: isTestRoute || isLandingRoute || isRoomRoute || isCreateRoomRoute || isAccountRoute ? "100dvh" : `calc(100dvh - ${HEADER_H}px)`,
+          paddingTop: isLandingRoute || isRoomRoute || isCreateRoomRoute || isAccountRoute ? 0 : HEADER_H,
+          minHeight: isLandingRoute || isRoomRoute || isCreateRoomRoute || isAccountRoute ? "100dvh" : `calc(100dvh - ${HEADER_H}px)`,
           width: "100%",
           boxSizing: "border-box",
           margin: "0 auto",

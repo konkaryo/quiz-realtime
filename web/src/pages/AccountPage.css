@@ -28,6 +28,9 @@
 .account-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
 .account-password-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
 .account-password-form label:first-child { grid-column: 1/-1; }
+.account-form .account-required-field>span:first-child { color: #fbbf24; }
+.account-required-field .account-input input { border-color: rgba(245,158,11,.62); box-shadow: 0 0 0 3px rgba(245,158,11,.08); }
+.account-validation-error { display: block; margin-top: 6px; color: #ff727e; font-size: 10px; line-height: 1.35; }
 .account-email-form { grid-template-columns: minmax(0,1fr); }
 .account-profile-form { grid-template-columns: 1fr; }
 .account-form label { display: block; min-width: 0; }
@@ -35,6 +38,8 @@
 .account-input { position: relative; display: flex; align-items: center; }
 .account-input input { width: 100%; height: 40px; padding: 0 12px; border: 1px solid #383a44; border-radius: 9px; outline: none; color: #f7f7fa; background: #202127; font-family: inherit; font-size: 11px; transition: border-color .2s,box-shadow .2s; }
 .account-input input:focus { border-color: #756cff; box-shadow: 0 0 0 3px rgba(98,87,245,.13); }
+.account-input-valid input:not(:focus) { border-color: #34c97b; box-shadow: 0 0 0 3px rgba(52,201,123,.1); }
+.account-input-invalid input:not(:focus) { border-color: #ef4b59; box-shadow: 0 0 0 3px rgba(239,75,89,.1); }
 .account-input button { position: absolute; right: 4px; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 7px; color: #858690; background: transparent; cursor: pointer; }
 .account-input button:hover { color: #fff; background: #2b2c33; }
 .account-input:has(button) input { padding-right: 42px; }

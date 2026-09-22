@@ -50,6 +50,8 @@ export default function AccountPage() {
   const [playerName, setPlayerName] = useState("");
   const [initialEmail, setInitialEmail] = useState("");
   const [initialPlayerName, setInitialPlayerName] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [playerNameTouched, setPlayerNameTouched] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -138,9 +140,18 @@ export default function AccountPage() {
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const changesPassword = Boolean(currentPassword || newPassword || confirmPassword);
+    const emailChanged = email.trim().toLowerCase() !== initialEmail.trim().toLowerCase();
+    const changesPassword = Boolean(newPassword || confirmPassword);
+    if (emailChanged && !currentPassword) {
+      toast({
+        title: "Mot de passe requis",
+        description: "Saisissez votre mot de passe actuel pour confirmer la modification de l’adresse e-mail.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (changesPassword && (!currentPassword || !newPassword || !confirmPassword)) {
-      toast({ title: "Informations manquantes", description: "Complétez les trois champs du mot de passe.", variant: "destructive" });
+      toast({ title: "Mot de passe requis", description: "Complétez les trois champs pour modifier votre mot de passe.", variant: "destructive" });
       return;
     }
     if (changesPassword && newPassword !== confirmPassword) {
@@ -149,7 +160,7 @@ export default function AccountPage() {
     }
     setSaving(true);
     try {
-      const accountUpdate = await updateAccount(email.trim(), playerName.trim());
+      const accountUpdate = await updateAccount(email.trim(), playerName.trim(), emailChanged ? currentPassword : undefined);
       if (avatarFile) await uploadAvatar(avatarFile);
       if (changesPassword) {
         await updatePassword(currentPassword, newPassword);
@@ -158,10 +169,16 @@ export default function AccountPage() {
         setConfirmPassword("");
       }
       notifyAuthUpdated();
-      const savedEmail = String(accountUpdate.user?.email ?? initialEmail);
+      const savedEmail = String(
+        accountUpdate.emailVerificationSent
+          ? accountUpdate.pendingEmail ?? email.trim()
+          : accountUpdate.user?.email ?? initialEmail,
+      );
       setEmail(savedEmail);
       setInitialEmail(savedEmail);
       setInitialPlayerName(playerName.trim());
+      setEmailTouched(false);
+      setPlayerNameTouched(false);
       toast(accountUpdate.emailVerificationSent
         ? { title: "Vérification envoyée", description: `Confirmez votre nouvelle adresse depuis l’e-mail envoyé à ${accountUpdate.pendingEmail}.` }
         : { title: "Compte enregistré", description: "Vos modifications ont bien été prises en compte." });
@@ -196,6 +213,16 @@ export default function AccountPage() {
     || newPassword
     || confirmPassword
   );
+  const emailChanged = email.trim().toLowerCase() !== initialEmail.trim().toLowerCase();
+  const passwordChangeStarted = Boolean(newPassword || confirmPassword);
+  const currentPasswordRequired = emailChanged || passwordChangeStarted;
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const playerNameValid = playerName.trim().length >= 1 && playerName.trim().length <= 64;
+  const emailValidationState = emailTouched && emailChanged ? (emailValid ? "valid" : "invalid") : undefined;
+  const playerNameChanged = playerName.trim() !== initialPlayerName.trim();
+  const playerNameValidationState = playerNameTouched && playerNameChanged
+    ? (playerNameValid ? "valid" : "invalid")
+    : undefined;
 
   return (
     <div className="synapz-landing account-page">
@@ -231,21 +258,21 @@ export default function AccountPage() {
               <div className="account-profile-divider" />
               <div className="account-card-title"><UserRound size={17} /><h2>Profil</h2></div>
               <div className="account-form account-profile-form">
-                <label><span>Nom du joueur</span><span className="account-input"><input type="text" value={playerName} onChange={(event) => setPlayerName(event.target.value)} minLength={1} maxLength={64} autoComplete="nickname" spellCheck={false} required /></span></label>
+                <label><span>Nom du joueur</span><span className={`account-input${playerNameValidationState ? ` account-input-${playerNameValidationState}` : ""}`}><input type="text" value={playerName} onChange={(event) => setPlayerName(event.target.value)} onBlur={() => setPlayerNameTouched(true)} minLength={1} maxLength={64} autoComplete="nickname" spellCheck={false} required aria-invalid={playerNameValidationState === "invalid"} /></span>{playerNameValidationState === "invalid" && <small className="account-validation-error">Le nom du joueur doit contenir entre 1 et 64 caractères.</small>}</label>
               </div>
             </section>
 
             <section className="account-card account-email-card">
               <div className="account-card-title"><Mail size={17} /><h2>Adresse e-mail</h2></div>
               <div className="account-form account-email-form">
-                <label><span>Adresse e-mail</span><span className="account-input"><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" spellCheck={false} required /></span></label>
+                <label><span>Adresse e-mail</span><span className={`account-input${emailValidationState ? ` account-input-${emailValidationState}` : ""}`}><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} onBlur={() => setEmailTouched(true)} autoComplete="email" spellCheck={false} required aria-invalid={emailValidationState === "invalid"} /></span>{emailValidationState === "invalid" && <small className="account-validation-error">Saisissez une adresse e-mail valide.</small>}</label>
               </div>
             </section>
 
             <section className="account-card account-password-card">
               <div className="account-card-title"><LockKeyhole size={17} /><h2>Mot de passe</h2></div>
               <div className="account-form account-password-form">
-                <label><span>Mot de passe actuel</span><span className="account-input"><input type={showPasswords ? "text" : "password"} value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" spellCheck={false} /><button type="button" onClick={() => setShowPasswords((shown) => !shown)} aria-label={showPasswords ? "Masquer les mots de passe" : "Afficher les mots de passe"}>{showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}</button></span></label>
+                <label className={currentPasswordRequired ? "account-required-field" : undefined}><span>Mot de passe actuel{currentPasswordRequired ? " — requis" : ""}</span><span className="account-input"><input type={showPasswords ? "text" : "password"} value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" spellCheck={false} required={currentPasswordRequired} aria-required={currentPasswordRequired} /><button type="button" onClick={() => setShowPasswords((shown) => !shown)} aria-label={showPasswords ? "Masquer les mots de passe" : "Afficher les mots de passe"}>{showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}</button></span></label>
                 <label><span>Nouveau mot de passe</span><span className="account-input"><input type={showPasswords ? "text" : "password"} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} autoComplete="new-password" spellCheck={false} /></span></label>
                 <label><span>Confirmer le mot de passe</span><span className="account-input"><input type={showPasswords ? "text" : "password"} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} autoComplete="new-password" spellCheck={false} /></span></label>
               </div>

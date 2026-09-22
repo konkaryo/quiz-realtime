@@ -63,14 +63,24 @@ export async function logout() {
   if (!res.ok) throw new Error(await extractErrorMessage(res, "Logout failed"));
 }
 
-export async function updateAccount(email: string, playerName: string) {
+export async function updateAccount(email: string, playerName: string, currentPassword?: string) {
   const res = await fetch(`${API_BASE}/auth/me/account`, {
     method: "PATCH",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, playerName }),
+    body: JSON.stringify({ email, playerName, currentPassword }),
   });
-  if (!res.ok) throw new Error(await extractErrorMessage(res, "Update account failed"));
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null) as { error?: string } | null;
+    const messages: Record<string, string> = {
+      "current-password-required": "Saisissez votre mot de passe actuel pour modifier votre adresse e-mail.",
+      "invalid-current-password": "Le mot de passe actuel est incorrect.",
+      "missing-password": "Aucun mot de passe n’est associé à ce compte.",
+      "email-taken": "Cette adresse e-mail est déjà utilisée.",
+      "verification-email-unavailable": "L’e-mail de vérification n’a pas pu être envoyé. Réessayez plus tard.",
+    };
+    throw new Error(messages[payload?.error ?? ""] ?? "Les informations du compte n’ont pas pu être enregistrées.");
+  }
   return res.json() as Promise<{
     ok: boolean;
     emailVerificationSent?: boolean;

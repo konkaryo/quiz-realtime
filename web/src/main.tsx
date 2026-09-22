@@ -13,7 +13,6 @@ import Home from "./pages/Home";
 import RoomPage from "./pages/RoomPage";
 import CreateRoomPage from "./pages/CreateRoomPage";
 import JoinPrivateRoomPage from "./pages/JoinPrivateRoomPage";
-import LobbyRacePage from "./pages/LobbyRacePage";
 
 // ✅ nouvelle page
 import RankingPage from "./pages/RankingPage";
@@ -22,7 +21,6 @@ import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
-import TestPage from "./pages/TestPage";
 import "./index.css";
 import { Toaster } from "./components/ui/toaster";
 import LoadingScreen from "./components/LoadingScreen";
@@ -37,9 +35,7 @@ const ResetPasswordPage = React.lazy(() => import("./pages/ResetPasswordPage"));
 const VerifyEmailPage = React.lazy(() => import("./pages/VerifyEmailPage"));
 const RegisterConfirmationPage = React.lazy(() => import("./pages/RegisterConfirmationPage"));
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE ??
-  (typeof window !== "undefined" ? window.location.origin : "");
+const API_BASE = import.meta.env.VITE_API_BASE ?? window.location.origin;
 
 async function fetchMe() {
   try {
@@ -55,6 +51,7 @@ async function fetchMe() {
 }
 
 // ----- Auth Guard ------------------------------------------------------------
+// eslint-disable-next-line react-refresh/only-export-components
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"pending" | "authed" | "guest">("pending");
 
@@ -80,6 +77,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 function RequireRegisteredUser({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [status, setStatus] = useState<"pending" | "authed" | "guest">("pending");
@@ -185,8 +183,6 @@ const router = createBrowserRouter([
         ),
       },
       { path: "/", element: <Home /> },
-      { path: "/test", element: <TestPage /> },
-
       { path: "/solo/daily", element: <DailyChallengePage /> },
       { path: "/solo/daily/:date", element: <DailyChallengePlayPage /> },
       { path: "/multi/public", element: <Home /> },

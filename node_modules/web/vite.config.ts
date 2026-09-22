@@ -28,10 +28,6 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
-      '/race': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
       '^/(auth|rooms|img|health)': {
         target: 'http://localhost:3001',
         changeOrigin: true,
