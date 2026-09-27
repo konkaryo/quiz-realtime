@@ -125,6 +125,17 @@
 .login-form-meta a:hover,
 .login-signup a:hover { color: #aaa3ff; text-decoration: underline; }
 
+.login-privacy-notice {
+  margin: 18px 0 0;
+  color: #8e8e98;
+  font-size: 11px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.login-privacy-notice a { color: #b8b2ff; text-underline-offset: 3px; }
+.login-privacy-notice a:hover { color: #d5d1ff; }
+
 .login-page .login-submit {
   width: 160px;
   height: 38px;

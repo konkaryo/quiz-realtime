@@ -22,6 +22,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
 import LegalNoticePage from "./pages/LegalNoticePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import "./index.css";
 import { Toaster } from "./components/ui/toaster";
 import LoadingScreen from "./components/LoadingScreen";
@@ -130,6 +131,10 @@ const router = createBrowserRouter([
   {
     path: "/mentions-legales",
     element: <LegalNoticePage />,
+  },
+  {
+    path: "/confidentialite",
+    element: <PrivacyPolicyPage />,
   },
   {
     path: "/login",

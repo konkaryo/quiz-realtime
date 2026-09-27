@@ -57,6 +57,7 @@ export default function RegisterPage() {
             <label><span>Mot de passe</span><span className="login-password-field"><input value={password} onChange={(event) => setPassword(event.target.value)} type={showPassword ? "text" : "password"} autoComplete="new-password" spellCheck={false} placeholder="Choisissez un mot de passe" required /><button type="button" aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"} onClick={() => setShowPassword((visible) => !visible)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></span></label>
             <button className="login-submit" type="submit" disabled={submitting}>{submitting ? "Inscription…" : "S’inscrire"}<ArrowRight size={17} /></button>
           </form>
+          <p className="login-privacy-notice">En créant votre compte, vos données sont traitées conformément à notre <Link to="/confidentialite">Politique de confidentialité</Link>.</p>
           <p className="login-signup">Vous avez déjà un compte ? <Link to="/login">Se connecter</Link></p>
         </section>
       </main>

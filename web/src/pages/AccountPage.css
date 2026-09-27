@@ -43,12 +43,14 @@
 .account-input button { position: absolute; right: 4px; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 7px; color: #858690; background: transparent; cursor: pointer; }
 .account-input button:hover { color: #fff; background: #2b2c33; }
 .account-input:has(button) input { padding-right: 42px; }
-.account-save-area { display: flex; justify-content: flex-end; margin-top: 22px; }
+.account-save-area { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 22px; }
+.account-privacy-notice { max-width: 620px; margin: 0; color: #8e8e98; font-size: 12px; line-height: 1.55; }
+.account-privacy-notice a { color: #b8b2ff; text-underline-offset: 3px; }
 .account-guest { display: flex; align-items: center; gap: 14px; max-width: 680px; margin: 40px auto 0; padding: 20px; border: 1px solid #3a3c45; border-radius: 14px; background: #191a20; }
 .account-guest>svg { color: #8c82ff; }
 .account-guest div { flex: 1; }
 .account-guest strong { font-size: 13px; }
 .account-guest p { margin: 5px 0 0; color: #858690; font-size: 11px; }
 .account-guest a { color: #8c82ff; font-size: 11px; font-weight: 700; }
-@media(max-width:800px){.account-grid{grid-template-columns:1fr}.account-profile-card{grid-row:auto}.account-password-form{grid-template-columns:1fr}.account-save-area .create-room-save-action{width:100%}}
+@media(max-width:800px){.account-grid{grid-template-columns:1fr}.account-profile-card{grid-row:auto}.account-password-form{grid-template-columns:1fr}.account-save-area{align-items:stretch;flex-direction:column}.account-save-area .create-room-save-action{width:100%}}
 @media(max-width:680px){.account-header .site-nav,.account-header .nav-divider{display:none}.account-header{padding-inline:12px}.account-header .site-header-inner{padding-left:12px}.account-main{align-content:start;padding-top:92px}.account-form{grid-template-columns:1fr}.account-card{padding:18px}.account-guest{align-items:flex-start;flex-wrap:wrap}.account-guest a{width:100%;margin-left:34px}}

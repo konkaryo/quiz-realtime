@@ -38,6 +38,12 @@
   object-fit: contain;
 }
 
+.site-footer nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
 .site-footer nav a {
   display: inline-flex;
   min-height: 44px;
@@ -58,4 +64,6 @@
     justify-content: center;
     gap: 8px;
   }
+  
+  .site-footer nav { flex-wrap: wrap; gap: 4px 20px; }
 }

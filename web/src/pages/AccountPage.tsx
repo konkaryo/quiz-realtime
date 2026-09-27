@@ -278,7 +278,10 @@ export default function AccountPage() {
               </div>
             </section>
           </div>
-          <div className="account-save-area"><button className="create-room-save-action" type="submit" disabled={saving || !hasChanges}><Save size={15} /> {saving ? "Enregistrement…" : "Enregistrer"}</button></div>
+          <div className="account-save-area">
+            <p className="account-privacy-notice">Les modifications du profil, de l’adresse e-mail et de l’avatar sont décrites dans la <Link to="/confidentialite">Politique de confidentialité</Link>.</p>
+            <button className="create-room-save-action" type="submit" disabled={saving || !hasChanges}><Save size={15} /> {saving ? "Enregistrement…" : "Enregistrer"}</button>
+          </div>
           </form>
         )}
       </main>

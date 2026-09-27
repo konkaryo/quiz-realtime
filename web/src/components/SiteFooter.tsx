@@ -11,6 +11,7 @@ export default function SiteFooter() {
         </Link>
         <nav aria-label="Informations légales">
           <Link to="/mentions-legales">Mentions légales</Link>
+          <Link to="/confidentialite">Confidentialité</Link>
         </nav>
       </div>
     </footer>

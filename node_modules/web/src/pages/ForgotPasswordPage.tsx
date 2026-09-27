@@ -60,6 +60,7 @@ export default function ForgotPasswordPage() {
             <label><span>Adresse e-mail</span><input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" spellCheck={false} placeholder="vous@exemple.fr" required /></label>
             <button className="login-submit" type="submit" disabled={loading}>{loading ? "Envoi…" : "Envoyer le lien"}<ArrowRight size={17} /></button>
           </form>
+          <p className="login-privacy-notice">Votre adresse est utilisée pour rechercher votre compte et, s'il existe, envoyer le lien. <Link to="/confidentialite">Politique de confidentialité</Link></p>
           <p className="login-signup">Vous connaissez votre mot de passe ? <Link to="/login">Se connecter</Link></p>
         </section>
       </main>
