@@ -113,10 +113,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
     }[];
     index: number;
     score: number;
-    attempts: number;
     answered: boolean;
-    mcMode: boolean;
-    mcUses: number;
     endsAt: number | null;
     roundStartMs: number | null;
     timer: NodeJS.Timeout | null;
@@ -143,7 +140,6 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
 
   const dailySessions = new Map<string, DailySession>();
   const DAILY_ROUND_MS = Number(process.env.DAILY_ROUND_MS || 20000);
-  const DAILY_MAX_MC_USES = 3;
 
   function parseDailyMonth(dateIso: string): { year: number; monthIndex: number } | null {
     const [year, month] = dateIso.split("-").map((value) => Number(value));
@@ -234,9 +230,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
       return;
     }
     sess.index = nextIndex;
-    sess.attempts = 0;
     sess.answered = false;
-    sess.mcMode = false;
     sess.roundStartMs = Date.now();
     sess.endsAt = sess.roundStartMs + DAILY_ROUND_MS;
     sess.timer = setTimeout(() => {
@@ -286,6 +280,9 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         slotLabel: nextQuestion.slotLabel,
         averageScore: nextQuestion.averageScore,
       },
+      choices: [...nextQuestion.choices]
+        .map(({ id, label }) => ({ id, label }))
+        .sort(() => Math.random() - 0.5),
       score: sess.score,
     });
   };
@@ -321,10 +318,7 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
           questions: challenge.questions,
           index: -1,
           score: 0,
-          attempts: 0,
           answered: false,
-          mcMode: false,
-          mcUses: 0,
           endsAt: null,
           roundStartMs: null,
           timer: null,
@@ -337,21 +331,6 @@ export function registerSocketHandlers( io: Server, clients: Map<string, Client>
         console.error("[join_daily]", err);
         ack?.({ ok: false, reason: "server-error" });
       }
-    });
-
-    socket.on("daily_request_choices", (ack?: (res: { ok: boolean; reason?: string; mcUses?: number; mcUsesLeft?: number }) => void) => {
-      const sess = dailySessions.get(socket.id);
-      if (!sess || sess.answered) return ack?.({ ok: false, reason: "no-session" });
-      const q = sess.questions[sess.index];
-      if (!q) return ack?.({ ok: false, reason: "no-question" });
-      if (sess.mcUses >= DAILY_MAX_MC_USES) {
-        return ack?.({ ok: false, reason: "mc-limit", mcUses: sess.mcUses, mcUsesLeft: 0 });
-      }
-      sess.mcMode = true;
-      sess.mcUses += 1;
-      const choices = [...q.choices].map(({ id, label }) => ({ id, label })).sort(() => Math.random() - 0.5);
-      socket.emit("daily_multiple_choice", { choices });
-      ack?.({ ok: true, mcUses: sess.mcUses, mcUsesLeft: Math.max(0, DAILY_MAX_MC_USES - sess.mcUses) });
     });
 
     socket.on("daily_abandon", async (ack?: (res: { ok: boolean; reason?: string }) => void) => {
@@ -520,108 +499,6 @@ socket.on(
     });
 
     queueNextRound(socket);
-    ack?.({ ok: true });
-  },
-);
-
-socket.on(
-  "daily_submit_answer_text",
-  (p: unknown, ack?: (res: { ok: boolean; reason?: string }) => void) => {
-    const parsed = answerTextPayloadSchema.safeParse(p);
-    if (!parsed.success) return ack?.({ ok: false, reason: "invalid-payload" });
-    const sess = dailySessions.get(socket.id);
-    if (!sess) return ack?.({ ok: false, reason: "no-session" });
-    if (sess.answered) return ack?.({ ok: false, reason: "already" });
-    if (!sess.endsAt || Date.now() > sess.endsAt) return ack?.({ ok: false, reason: "too-late" });
-
-    const q = sess.questions[sess.index];
-    if (!q) return ack?.({ ok: false, reason: "no-question" });
-
-    if (sess.mcMode) return ack?.({ ok: false, reason: "mc-mode" });
-
-    const raw = parsed.data.text;
-    const userNorm = norm(raw);
-    if (!userNorm) return ack?.({ ok: false, reason: "empty" });
-
-    const result = classifyTextAnswer(raw, q.acceptedNorms, q.exactNorms);
-    const correct = result === "correct";
-    const responseMs = Math.max(0, Date.now() - (sess.roundStartMs || Date.now()));
-
-    // --- Gestion des tentatives / vies ---
-    // On ne consomme un "cœur" QUE si la réponse est fausse.
-    if (!correct) {
-      sess.attempts += 1;
-    }
-    const remainingLives = Math.max(0, CFG.TEXT_LIVES - sess.attempts);
-
-    // Fin du round : soit bonne réponse, soit plus de vies (3 mauvaises réponses)
-    if (correct || sess.attempts >= CFG.TEXT_LIVES) {
-      sess.answered = true;
-      stopDailyTimer(socket.id);
-
-      let gained = 0;
-      if (correct) {
-        const remainingMs = Math.max(0, (sess.endsAt ?? Date.now()) - Date.now());
-        const secsLeft = Math.floor(remainingMs / 1000);
-        const bonus = Math.floor(secsLeft / 2) * 5;
-        gained = CFG.TXT_ANSWER_POINTS_GAIN + bonus; // MOVED TO SERVER
-        sess.score += gained;
-      }
-
-      sess.results.push({
-        entryId: q.entryId,
-        questionId: q.id,
-        questionText: q.text,
-        slotLabel: q.slotLabel,
-        theme: q.theme,
-        difficulty: q.difficulty,
-        img: q.img,
-        correct,
-        attempts: correct ? sess.attempts + 1 : sess.attempts,
-        answer: raw,
-        mode: "text",
-        responseMs,
-        correctLabel: q.correctLabel,
-        points: gained,
-        averageScore: q.averageScore,
-        correctRate: q.correctRate,
-      });
-
-      const baseFeedback = {
-        correct,
-        result,
-        correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
-        correctLabel: q.correctLabel,
-        responseMs,
-        score: sess.score,
-        points: gained,
-      };
-
-      // 👉 Si la réponse est fausse ET qu'on vient d'épuiser les vies, on envoie livesLeft (0)
-      // 👉 Si la réponse est correcte, on NE touche pas aux cœurs : pas de livesLeft dans le payload
-      socket.emit(
-        "daily_answer_feedback",
-        correct ? baseFeedback : { ...baseFeedback, livesLeft: remainingLives },
-      );
-
-      socket.emit("daily_round_end", {
-        index: sess.index,
-        correctChoiceId: q.choices.find((c) => c.isCorrect)?.id ?? null,
-        correctLabel: q.correctLabel,
-        score: sess.score,
-      });
-
-      queueNextRound(socket);
-    } else {
-      // Mauvaise réponse mais il reste encore des vies
-      socket.emit("daily_answer_feedback", {
-        correct: false,
-        result,
-        livesLeft: remainingLives,
-        points: 0,
-      });
-    }
-
     ack?.({ ok: true });
   },
 );

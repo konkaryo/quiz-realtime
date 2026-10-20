@@ -14,13 +14,6 @@ const DAILY_ROUND_MS = Number(process.env.DAILY_ROUND_MS || 20000);
 
 type DifficultyParams = { pMin: number; pMax: number; t: number; s: number; k: number };
 
-const TEXT_SUCCESS_PARAMS: Record<number, DifficultyParams> = {
-  1: { pMin: 0.000894, pMax: 0.987059, t: -0.6738, s: 31.4048, k: 3.3622 },
-  2: { pMin: 0.000128, pMax: 0.996224, t: 40.0608, s: 25.9796, k: 1.9613 },
-  3: { pMin: 0.000085, pMax: 0.789855, t: 41.4811, s: 21.362, k: 3.4659 },
-  4: { pMin: 0.000147, pMax: 0.646214, t: 84.9999, s: 13.44, k: 2.1857 },
-};
-
 const MC_SUCCESS_PARAMS: Record<number, DifficultyParams> = {
   1: { pMin: 0.25, pMax: 0.80, t: 55, s: 20, k: 1.30 },
   2: { pMin: 0.25, pMax: 0.68, t: 60, s: 18, k: 1.40 },
@@ -135,24 +128,11 @@ async function simulateDailyChallengeForBot(
     const skill = skillWithRegularity(baseSkill, bot.regularity);
     const diff = difficultyNumber(question.difficulty);
     const responseMs = simulatedResponseMs(bot.speed);
-    const textSuccessProb = computeSuccessProbability(skill, TEXT_SUCCESS_PARAMS[diff]);
-
-    let points = 0;
-    let correct = false;
-    let mode: DailyQuestionResultDetail["mode"] = "text";
+    const correct = Math.random() < computeSuccessProbability(skill, MC_SUCCESS_PARAMS[diff]);
+    const points = correct ? CFG.MC_ANSWER_POINTS_GAIN + dailyTimeBonus(responseMs) : 0;
+    const mode: DailyQuestionResultDetail["mode"] = "choice";
     const attempts = 1;
-    let answer: string | null = question.correctLabel || null;
-    if (Math.random() < textSuccessProb) {
-      correct = true;
-      points = CFG.TXT_ANSWER_POINTS_GAIN + dailyTimeBonus(responseMs);
-    } else {
-      mode = "choice";
-      if (Math.random() < computeSuccessProbability(skill, MC_SUCCESS_PARAMS[diff])) {
-        points = CFG.MC_ANSWER_POINTS_GAIN + dailyTimeBonus(responseMs);
-      } else {
-        answer = null;
-      }
-    }
+    const answer = correct ? question.correctLabel || null : null;
 
     score += points;
     questionResults.push({ entryId: question.entryId, questionId: question.id, correct, attempts, responseMs, mode, answer, points });

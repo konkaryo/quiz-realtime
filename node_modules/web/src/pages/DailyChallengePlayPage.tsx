@@ -20,7 +20,6 @@ const SOCKET_URL =
 const QUESTION_DURATION_MS = Number(import.meta.env.VITE_DAILY_ROUND_MS ?? 20000);
 const TEXT_LIVES = Number(import.meta.env.VITE_TEXT_LIVES ?? 3);
 const STORAGE_KEY = "dailyChallenge:results:v1";
-const DAILY_MAX_MC_USES = 3;
 const RIGHT_IMAGE_WIDTH = 300;
 const TOP_BAR_H = 12;
 const NAVBAR_TOP = 52;
@@ -50,6 +49,7 @@ type DailyRoundBegin = {
   endsAt: number;
   serverNow?: number;
   question: QuestionLite;
+  choices: Choice[];
   score: number;
 };
 
@@ -522,20 +522,16 @@ export default function DailyChallengePlayPage() {
   const [totalQuestions, setTotalQuestions] = useState(completedInfo?.questionStates?.length ?? 0);
   const [phase, setPhase] = useState<"idle" | "playing" | "reveal" | "finished">(shouldShowStoredResults ? "finished" : "idle");
   const [lives, setLives] = useState(TEXT_LIVES);
-  const [showChoices, setShowChoices] = useState(false);
   const [choices, setChoices] = useState<Choice[] | null>(null);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [correctChoiceId, setCorrectChoiceId] = useState<string | null>(null);
   const [question, setQuestion] = useState<QuestionLite | null>(null);
-  const [textAnswer, setTextAnswer] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackResponseMs, setFeedbackResponseMs] = useState<number | null>(null);
   const [feedbackWasCorrect, setFeedbackWasCorrect] = useState<boolean | null>(null);
   const [feedbackCorrectLabel, setFeedbackCorrectLabel] = useState<string | null>(null);
   const [feedbackPoints, setFeedbackPoints] = useState<number | null>(null);
   const [answerMode, setAnswerMode] = useState<"text" | "choice" | null>(null);
-  const [choicesRevealed, setChoicesRevealed] = useState(false);
-  const [mcUses, setMcUses] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [results, setResults] = useState<Result[]>([]);
@@ -664,16 +660,13 @@ export default function DailyChallengePlayPage() {
       // initialisation de la barre de progression à la première question
       if (p.index === 0) {
         setQuestionProgress(Array(p.total).fill("pending"));
-        setMcUses(0);
       }
 
       setQuestion(p.question);
       setLives(TEXT_LIVES);
-      setShowChoices(false);
-      setChoices(null);
+      setChoices(p.choices);
       setSelectedChoice(null);
       setCorrectChoiceId(null);
-      setTextAnswer("");
       setFeedbackResponseMs(null);
       setFeedbackWasCorrect(null);
       feedbackWasCorrectRef.current = null;
@@ -681,20 +674,11 @@ export default function DailyChallengePlayPage() {
       setFeedbackPoints(null);
       setAnswerMode(null);
       answerModeRef.current = null;
-      setChoicesRevealed(false);
       setEndsAt(p.endsAt);
       setPoints(p.score);
       setRemainingSeconds(
         Math.max(0, Math.ceil((p.endsAt - (p.serverNow ?? Date.now())) / 1000)),
       );
-      window.setTimeout(() => inputRef.current?.focus(), 60);
-    });
-
-    s.on("daily_multiple_choice", (p: { choices: Choice[] }) => {
-      setShowChoices(true);
-      setChoices(p.choices);
-      setTextAnswer("");
-      setChoicesRevealed(true);
     });
 
     s.on("daily_answer_feedback", (p: DailyAnswerFeedback) => {
@@ -716,8 +700,6 @@ export default function DailyChallengePlayPage() {
       }
       if (!p.correct && typeof p.livesLeft === "number" && p.livesLeft > 0) {
         setFeedback("Mauvaise réponse, essayez encore !");
-        setTextAnswer("");
-        requestAnimationFrame(() => inputRef.current?.focus());
         return;
       }
       if (p.correct) setFeedback("Bravo !");
@@ -749,7 +731,6 @@ export default function DailyChallengePlayPage() {
       setEndsAt(null);
       setRemainingSeconds(0);
       setPoints(p.score);
-      setShowChoices(true);
       revealTimeoutRef.current = window.setTimeout(() => {
         setFeedback(null);
       }, 1500);
@@ -799,16 +780,11 @@ export default function DailyChallengePlayPage() {
     };
   }, [dateParam, validDate, shouldShowStoredResults, completedLookupDone]);
 
-  useEffect(() => {
-    if (phase === "playing") inputRef.current?.focus();
-  }, [phase, question]);
-
   const timerProgress = useMemo(() => {
     if (remainingSeconds === null) return 1;
     return Math.max(0, Math.min(1, remainingSeconds / (QUESTION_DURATION_MS / 1000)));
   }, [remainingSeconds]);
 
-  const textLocked = choicesRevealed || showChoices;
   const shouldConfirmDeparture = status === "ready" && (phase === "playing" || phase === "reveal");
   const navigationBlocker = useBlocker(shouldConfirmDeparture);
 
@@ -840,16 +816,6 @@ export default function DailyChallengePlayPage() {
     });
   }, [navigationBlocker, socket]);
 
-  const submitText = () => {
-    if (phaseRef.current !== "playing" || !question || !socket) return;
-    if (choicesRevealed || showChoices) return;
-    const value = textAnswer.trim();
-    if (!value) return;
-    setAnswerMode("text");
-    answerModeRef.current = "text";
-    socket.emit("daily_submit_answer_text", { text: value });
-  };
-
   const onSelectChoice = (choice: Choice) => {
     if (!socket || phaseRef.current !== "playing" || selectedChoice) return;
     setSelectedChoice(choice.id);
@@ -858,38 +824,11 @@ export default function DailyChallengePlayPage() {
     socket.emit("daily_submit_answer", { choiceId: choice.id });
   };
 
-  const showMultipleChoice = () => {
-    if (!socket || phaseRef.current !== "playing" || lives <= 0 || !!feedback?.includes("Bravo"))
-      return;
-    if (mcUses >= DAILY_MAX_MC_USES) {
-      setFeedback("Mode QCM indisponible : limite de 3 utilisations atteinte.");
-      return;
-    }
-    setChoicesRevealed(true);
-    socket.emit("daily_request_choices", (res: { ok: boolean; reason?: string; mcUses?: number }) => {
-      if (res?.ok) {
-        if (typeof res.mcUses === "number") setMcUses(res.mcUses);
-        return;
-      }
-      setChoicesRevealed(false);
-      if (res?.reason === "mc-limit") {
-        setMcUses(DAILY_MAX_MC_USES);
-        setFeedback("Mode QCM indisponible : limite de 3 utilisations atteinte.");
-      }
-    });
-  };
-
   const skipQuestion = () => {
     if (!socket || phaseRef.current !== "playing" || lives <= 0 || !!feedback?.includes("Bravo"))
       return;
-    setAnswerMode("text");
-    answerModeRef.current = "text";
-    setChoicesRevealed(true);
     socket.emit("daily_skip_question", (res: { ok: boolean; reason?: string }) => {
       if (res?.ok) return;
-      setChoicesRevealed(false);
-      setAnswerMode(null);
-      answerModeRef.current = null;
       if (res?.reason === "already" || res?.reason === "too-late") return;
       setFeedback("Impossible de passer cette question.");
     });
@@ -983,11 +922,11 @@ export default function DailyChallengePlayPage() {
     isReveal={phase === "reveal" && remainingSeconds === 0}
     isPlaying={phase === "playing" && socketStatus === "connected"}
     inputRef={inputRef}
-    textAnswer={textAnswer}
-    textLocked={textLocked}
-    onChangeText={setTextAnswer}
-    onSubmitText={submitText}
-    onShowChoices={showMultipleChoice}
+    textAnswer=""
+    textLocked
+    onChangeText={() => {}}
+    onSubmitText={() => {}}
+    onShowChoices={() => {}}
     onSkipQuestion={skipQuestion}
     feedback={feedback}
     feedbackResponseMs={feedbackResponseMs}
@@ -995,14 +934,13 @@ export default function DailyChallengePlayPage() {
     feedbackCorrectLabel={feedbackCorrectLabel}
     feedbackPoints={feedbackPoints}
     answerMode={answerMode}
-    choicesRevealed={choicesRevealed}
-    showChoices={showChoices}
+    choicesRevealed
+    showChoices
     choices={choices}
     selectedChoice={selectedChoice}
     correctChoiceId={correctChoiceId}
     onSelectChoice={onSelectChoice}
     questionProgress={questionProgress}
-    qcmUsesLeft={Math.max(0, DAILY_MAX_MC_USES - mcUses)}
     correctLabelPlacement="above"
     thumbButtonBackgroundClass="bg-[#191c2c]"
     skipButtonPlacement="below-progress"

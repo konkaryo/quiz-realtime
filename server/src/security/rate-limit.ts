@@ -128,11 +128,9 @@ export async function enforceRateLimit(
 
 const SOCKET_LIMITS: Record<string, RateLimitRule> = {
   join_daily: { name: "socket-join-daily", max: 4, windowMs: 10_000 },
-  daily_request_choices: { name: "socket-daily-choices", max: 4, windowMs: 10_000 },
   daily_abandon: { name: "socket-daily-abandon", max: 3, windowMs: 30_000 },
   daily_skip_question: { name: "socket-daily-skip", max: 4, windowMs: 10_000 },
   daily_submit_answer: { name: "socket-daily-answer", max: 8, windowMs: 5_000 },
-  daily_submit_answer_text: { name: "socket-daily-answer-text", max: 8, windowMs: 5_000 },
   join_game: { name: "socket-join-game", max: 6, windowMs: 10_000 },
   leave_game: { name: "socket-leave-game", max: 6, windowMs: 10_000 },
   remove_lobby_player: { name: "socket-remove-player", max: 6, windowMs: 10_000 },
