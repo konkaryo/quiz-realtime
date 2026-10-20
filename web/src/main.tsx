@@ -21,6 +21,7 @@ import DailyChallengePlayPage from "./pages/DailyChallengePlayPage";
 import ProfilePage from "./pages/ProfilePage";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
+import GeneratorPage from "./pages/GeneratorPage";
 import LegalNoticePage from "./pages/LegalNoticePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import "./index.css";
@@ -194,6 +195,7 @@ const router = createBrowserRouter([
       },
       { path: "/", element: <Home /> },
       { path: "/solo/daily", element: <DailyChallengePage /> },
+      { path: "/solo/generator", element: <GeneratorPage /> },
       { path: "/solo/daily/:date", element: <DailyChallengePlayPage /> },
       { path: "/multi/public", element: <Home /> },
       { path: "/multi/ranking", element: <RankingPage /> },

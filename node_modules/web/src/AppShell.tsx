@@ -9,6 +9,7 @@ import lockIconUrl from "@/assets/lock.png";
 import calendarIconUrl from "@/assets/calendar_icon.png";
 import cardsIconUrl from "@/assets/cards.png";
 import rankingIconUrl from "@/assets/ranking.png";
+import brainIconUrl from "@/assets/brain.png";
 import { getLevelProgress } from "@/utils/experience";
 import LoadingScreen from "@/components/LoadingScreen";
 import { AUTH_UPDATED_EVENT } from "@/auth/events";
@@ -947,6 +948,24 @@ export default function AppShell() {
 
   // menus
   const soloItems: MenuItem[] = [
+    {
+      to: "/solo/generator",
+      title: "Générateur",
+      desc: "Tirez une question selon vos critères.",
+      icon: (
+        <img
+          src={brainIconUrl}
+          alt=""
+          aria-hidden
+          style={{
+            width: 28,
+            height: 28,
+            display: "block",
+            objectFit: "contain",
+          }}
+        />
+      ),
+    },
     {
       to: "/solo/daily",
       title: "Défi du jour",
